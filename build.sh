@@ -1,9 +1,9 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/usr/bin/env bash
 # NovelSpeak on-device build (no Android SDK / Gradle required).
 #
 # Toolchain used here: Termux packages (aapt2, kotlinc, d8, apksigner, zip, openjdk-21) plus a
-# platform android.jar. The same sources build in Android Studio with the Gradle files in
-# android/ (see README).
+# platform android.jar. The same sources build on a desktop with the Android SDK build-tools;
+# see README and RELEASING.md.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -16,8 +16,23 @@ PKG="app.novelspeak"
 ABI="${ABI:-arm64-v8a}"
 MIN_SDK=24
 TARGET_SDK=34
+OUT_APK="${OUT_APK:-$BUILD/NovelSpeak-debug.apk}"
+if [ -n "${KEYSTORE:-}" ]; then
+  KS_ALIAS="${KS_ALIAS:?KS_ALIAS is required when KEYSTORE is set}"
+  KS_PASS="${KS_PASS:?KS_PASS is required when KEYSTORE is set}"
+else
+  KEYSTORE="$BUILD/debug.keystore"
+  KS_ALIAS="${KS_ALIAS:-androiddebugkey}"
+  KS_PASS="${KS_PASS:-android}"
+fi
+KEY_PASS="${KEY_PASS:-$KS_PASS}"
+ZIPALIGN="${ZIPALIGN:-}"
+# zipalign must run before signing. Auto-detect it when present; Termux users may not have it.
+if [ -z "$ZIPALIGN" ] && command -v zipalign >/dev/null 2>&1; then
+  ZIPALIGN="$(command -v zipalign)"
+fi
 
-mkdir -p "$BUILD/stage" "$BUILD/dex"
+mkdir -p "$BUILD/stage" "$BUILD/dex" "$(dirname "$OUT_APK")"
 
 echo "==> 1/7 aapt2 link (manifest + assets)"
 aapt2 link \
@@ -26,8 +41,7 @@ aapt2 link \
   --manifest "$APP/AndroidManifest.xml" \
   -A "$APP/assets" \
   --min-sdk-version $MIN_SDK \
-  --target-sdk-version $TARGET_SDK \
-  --version-code 13 --version-name 0.3.1
+  --target-sdk-version $TARGET_SDK
 
 echo "==> 2/7 preparing sherpa-onnx classes + native libs ($ABI)"
 if [ ! -f "$DEPS/aar/classes.jar" ]; then
@@ -75,17 +89,31 @@ cp "$BUILD/jni/$ABI/"*.so "$BUILD/stage/lib/$ABI/"
 ( cd "$BUILD/stage" && zip -q -X -r "$BUILD/unsigned.apk" classes.dex lib )
 
 echo "==> 6/7 signing"
-KEYSTORE="$BUILD/debug.keystore"
 if [ ! -f "$KEYSTORE" ]; then
-  keytool -genkeypair -keystore "$KEYSTORE" -alias androiddebugkey \
-    -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
+  if [ "$KEYSTORE" != "$BUILD/debug.keystore" ]; then
+    echo "Release keystore not found: $KEYSTORE" >&2
+    exit 1
+  fi
+  keytool -genkeypair -keystore "$KEYSTORE" -alias "$KS_ALIAS" \
+    -storepass "$KS_PASS" -keypass "$KEY_PASS" -keyalg RSA -keysize 2048 -validity 10000 \
     -dname "CN=NovelSpeak Debug,O=NovelSpeak,C=IN" >/dev/null 2>&1
 fi
-apksigner sign --ks "$KEYSTORE" --ks-pass pass:android --key-pass pass:android \
-  --out "$BUILD/NovelSpeak-debug.apk" "$BUILD/unsigned.apk"
+if [ -n "$ZIPALIGN" ]; then
+  rm -f "$BUILD/aligned.apk"
+  "$ZIPALIGN" -f -p 4 "$BUILD/unsigned.apk" "$BUILD/aligned.apk"
+  SIGN_INPUT="$BUILD/aligned.apk"
+else
+  SIGN_INPUT="$BUILD/unsigned.apk"
+fi
+# Pass secrets through the environment so they do not appear in the process list.
+export KS_PASS KEY_PASS
+rm -f "$OUT_APK"
+apksigner sign --ks "$KEYSTORE" --ks-key-alias "$KS_ALIAS" \
+  --ks-pass env:KS_PASS --key-pass env:KEY_PASS \
+  --out "$OUT_APK" "$SIGN_INPUT"
 
 echo "==> 7/7 verify"
-apksigner verify --print-certs "$BUILD/NovelSpeak-debug.apk" | head -5
-ls -la "$BUILD/NovelSpeak-debug.apk"
+apksigner verify --print-certs "$OUT_APK" | head -5
+ls -la "$OUT_APK"
 echo
-echo "Install with:  termux-open $BUILD/NovelSpeak-debug.apk"
+echo "Install with:  termux-open $OUT_APK"
