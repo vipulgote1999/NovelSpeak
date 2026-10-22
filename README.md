@@ -72,6 +72,20 @@ and the URL extension), no redirect targets, and no response bodies. `$csp`,
 `$removeparam`, trusted scriptlets and system-wide VPN/DNS blocking are out of scope.
 Licences and sources are in `app/assets/adblock/NOTICE.txt`.
 
+### Reader reliability
+
+- The sherpa-onnx callback now follows the library contract (`1 = continue`,
+  `0 = stop`); the previous inverted return truncated every sentence after the
+  first 1.2 s chunk.
+- Duplicate `onPageFinished` events for the same URL no longer rewind playback.
+- Extraction normalizes site-level dotted obfuscation, skips CSS-hidden nodes, and
+  keeps short repeated dialogue.
+- Long sentences split at punctuation/whitespace boundaries, with a 180-char
+  default and a migration for the old 90-char default.
+- The reader and settings screens respect status/navigation bar insets.
+
+Root causes and on-device evidence: [docs/reader-fixes.md](docs/reader-fixes.md).
+
 ### Neural voices
 
 `⚙ → Neural model → Install` downloads and SHA-256-verifies the upstream sherpa-onnx bundle:

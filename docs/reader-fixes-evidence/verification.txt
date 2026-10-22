@@ -1,0 +1,51 @@
+# Verification commands and results
+
+Date: 2026-10-22
+Branch: `vipulgote1999/feat-adblocker-integration`
+Final code commit: `f114806` (reader reload retag) on top of `9df3ba9`.
+
+## Build
+
+```bash
+kotlinc app/src \
+  -classpath "$ANDROID_JAR:$SHERPA_CLASSES:$COMMONS_COMPRESS:$COMMONS_IO" \
+  -jvm-target 1.8 -nowarn -d /tmp/classes
+# 0 errors
+
+node --check app/assets/extract.js
+node --check app/assets/adblock/content.js
+# JS_OK
+
+kotlinc app/src/app/novelspeak/adblock tools/adblock-test/TestMain.kt \
+  -include-runtime -d /tmp/adblock-test.jar
+java -jar /tmp/adblock-test.jar app/assets/adblock
+# Self-test: 22/22 passed (8 network, 4 cosmetic rules)
+```
+
+APKs (final):
+
+| APK | SHA-256 | Size |
+|---|---|---|
+| normal `app.novelspeak` | `b2ff8a0113f50a670cf57aee600565add9b3510549c2ed1ff11d3d55a1a39f7f` | 15 MB |
+| test `app.novelspeak.adblocktest` | `fd29597c64036d87c22e40fcfa18fa4c6b8fe81231239ffd1c866389a34b57f8` | 15 MB |
+
+Built with Kotlin 2.2.20, `aapt2` (build-tools 34), R8/D8 9.5.28, `apksigner`.
+
+## iqoo I2214 (Android 15)
+
+* Engine: `adblock ready network=122884 cosmetic=32403 scriptlets=4612 build=365ms skipped=527`
+* Live chapter: `Ad 0/125`, `Ready · 108 sentences`.
+* Self-test: **22/22 passed** (screenshot `iqoo-selftest.png`).
+* Audio before: 238/269 generations ended at 28,800 samples (1.2 s).
+* Audio after: first 3.3 s sentence = 80,002 samples; subsequent generations
+  385k / 634k / 865k / 966k / 1.18M cumulative frames; playback continued.
+* Same-URL reload during playback: `extract-lines before=2 after=2`; CDP
+  `hasExtract: true`, `hasAdblock: true`, 39 blocks; no cursor reset.
+* Extraction: 39 blocks, 8,172 chars, `dotted: []`, `classroom: true`,
+  `bastard: true`, `hasNavNoise: false`.
+
+## Notes
+
+The iqoo disconnected after the final reload check; the self-test screenshot is
+from the same merged engine build, taken immediately before the reload-only
+commit (`f114806`). No later code path affects the self-test or adblock engine.

@@ -1,0 +1,17 @@
+{
+  "title": "My Werewolf System Chapter 67",
+  "blocks": 39,
+  "chars": 8172,
+  "dotted": [],
+  "classroom": true,
+  "bastard": true,
+  "first": [
+    "Chapter 67: Who is he?",
+    "The police arrived at the scene and quickly went to work. The teaching faculty provided them with a ",
+    "The only thing they couldn’t really figure out was who this hooded stranger was that had arrived and"
+  ],
+  "hasNavNoise": false,
+  "source": "CDP Runtime.evaluate(() => window.__nsExtract()) on app.novelspeak.adblocktest",
+  "url": "https://www.empirenovel.com/novel/my-werewolf-system/67",
+  "note": "The app splits these 39 blocks into 108 spoken sentences. The visible page is not rewritten; normalization applies to the speech text only."
+}

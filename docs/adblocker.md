@@ -183,8 +183,8 @@ checked.
   (3 network requests blocked, 127 cosmetic selectors applied) and the in-app
   self-test passed 22/22. On the reported problem chapter
   (`/novel/my-werewolf-system/67`) the final build rendered the chapter cleanly
-  with `Ad 0/128`; the fake Cloudflare/notification click-layer (including its
-  same-origin `srcdoc` iframe nag) was gone.
+  with `Ad 0/125` (108 spoken sentences); the fake Cloudflare/notification
+  click-layer (including its same-origin `srcdoc` iframe nag) was gone.
   Logcat showed the redirect guard refusing `yourbestplace.top`
   (`gesture=false suspicious=true`) and `ho.beefycasease.cfd`
   (`gesture=true suspicious=true`), with the WebView staying on the chapter.
