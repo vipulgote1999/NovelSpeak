@@ -27,7 +27,7 @@ aapt2 link \
   -A "$APP/assets" \
   --min-sdk-version $MIN_SDK \
   --target-sdk-version $TARGET_SDK \
-  --version-code 3 --version-name 0.2.1
+  --version-code 13 --version-name 0.3.1
 
 echo "==> 2/7 preparing sherpa-onnx classes + native libs ($ABI)"
 if [ ! -f "$DEPS/aar/classes.jar" ]; then
@@ -50,18 +50,22 @@ echo "==> 4/7 d8 (dex)"
 rm -f "$BUILD/classes.jar"
 ( cd "$BUILD/classes" && jar cf "$BUILD/classes.jar" . )
 rm -rf "$BUILD/dex"; mkdir -p "$BUILD/dex"
-# Prefer a modern R8/D8 from a jar (Termux's d8 3.3 chokes on newer libraries such as commons-io).
+# Prefer a modern R8/D8 from a jar: Termux's d8 3.3 crashes on newer libraries (commons-io).
 if [ -f "$DEPS/r8.jar" ]; then
   D8=(java -cp "$DEPS/r8.jar" com.android.tools.r8.D8)
+  LIBS=("$BUILD/classes.jar" "$DEPS/aar/classes.jar" "$DEPS/commons-compress.jar" "$DEPS/commons-io.jar" "$KOTLIN_STDLIB")
 else
   D8=(d8)
+  # Old d8 cannot parse multi-release jars; strip module-info before feeding it.
+  for j in commons-compress commons-io; do
+    if [ ! -f "$DEPS/$j-d8.jar" ]; then
+      cp "$DEPS/$j.jar" "$DEPS/$j-d8.jar"
+      zip -q -d "$DEPS/$j-d8.jar" 'META-INF/versions/*' 'module-info.class' 2>/dev/null || true
+    fi
+  done
+  LIBS=("$BUILD/classes.jar" "$DEPS/aar/classes.jar" "$DEPS/commons-compress-d8.jar" "$DEPS/commons-io-d8.jar" "$KOTLIN_STDLIB")
 fi
-"${D8[@]}" --lib "$ANDROID_JAR" --min-api $MIN_SDK --output "$BUILD/dex" \
-  "$BUILD/classes.jar" \
-  "$DEPS/aar/classes.jar" \
-  "$DEPS/commons-compress-d8.jar" \
-  "$DEPS/commons-io-d8.jar" \
-  "$KOTLIN_STDLIB"
+"${D8[@]}" --lib "$ANDROID_JAR" --min-api $MIN_SDK --output "$BUILD/dex" "${LIBS[@]}"
 
 echo "==> 5/7 packaging"
 rm -rf "$BUILD/stage"; mkdir -p "$BUILD/stage/lib/$ABI"

@@ -31,27 +31,36 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
 
     override fun prepare(onResult: (Boolean, String?) -> Unit) {
         if (isReady) { onResult(true, null); return }
+        DiagLog.line(ctx, "tts init start")
         tts = TextToSpeech(ctx) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                val t = tts
-                if (t == null) { onResult(false, "TTS unavailable"); return@TextToSpeech }
-                t.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {}
-                    override fun onDone(utteranceId: String?) = finish(utteranceId, true)
-                    @Deprecated("deprecated")
-                    override fun onError(utteranceId: String?) = finish(utteranceId, false)
-                    override fun onError(utteranceId: String?, errorCode: Int) = finish(utteranceId, false)
-                    override fun onStop(utteranceId: String?, interrupted: Boolean) = finish(utteranceId, false)
-                })
-                try {
-                    t.language = Locale.getDefault()
-                } catch (e: Throwable) {
+            try {
+                if (status == TextToSpeech.SUCCESS) {
+                    val t = tts
+                    if (t == null) { onResult(false, "TTS unavailable"); return@TextToSpeech }
+                    t.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String?) {}
+                        override fun onDone(utteranceId: String?) = finish(utteranceId, true)
+                        @Deprecated("deprecated")
+                        override fun onError(utteranceId: String?) = finish(utteranceId, false)
+                        override fun onError(utteranceId: String?, errorCode: Int) = finish(utteranceId, false)
+                        override fun onStop(utteranceId: String?, interrupted: Boolean) = finish(utteranceId, false)
+                    })
+                    try {
+                        t.language = Locale.getDefault()
+                    } catch (e: Throwable) {
+                    }
+                    isReady = true
+                    DiagLog.line(ctx, "tts init ok voices=${t.voices?.size ?: 0}")
+                    onResult(true, null)
+                } else {
+                    isReady = false
+                    DiagLog.line(ctx, "tts init failed status=$status")
+                    onResult(false, "TextToSpeech init failed ($status)")
                 }
-                isReady = true
-                onResult(true, null)
-            } else {
+            } catch (t: Throwable) {
                 isReady = false
-                onResult(false, "TextToSpeech init failed ($status)")
+                DiagLog.exception(ctx, "tts init callback failed", t)
+                onResult(false, "TextToSpeech init error: ${t.javaClass.simpleName}")
             }
         }
     }
@@ -65,18 +74,23 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
     override fun speak(text: String, onDone: (Boolean) -> Unit) {
         val t = tts
         if (t == null || !isReady) { main.post { onDone(false) }; return }
-        val utt = "ns-" + counter.incrementAndGet()
-        synchronized(pending) { pending[utt] = onDone }
-        t.setSpeechRate(prefs.speed.coerceIn(0.5f, 2.0f))
-        voiceId?.let { vid ->
-            try {
-                val v = t.voices?.firstOrNull { it.name == vid }
-                if (v != null) t.voice = v
-            } catch (e: Throwable) {}
-        }
-        val res = t.speak(text, TextToSpeech.QUEUE_ADD, null, utt)
-        if (res != TextToSpeech.SUCCESS) {
-            synchronized(pending) { pending.remove(utt) }
+        try {
+            val utt = "ns-" + counter.incrementAndGet()
+            synchronized(pending) { pending[utt] = onDone }
+            t.setSpeechRate(prefs.speed.coerceIn(0.5f, 2.0f))
+            voiceId?.let { vid ->
+                try {
+                    val v = t.voices?.firstOrNull { it.name == vid }
+                    if (v != null) t.voice = v
+                } catch (e: Throwable) {}
+            }
+            val res = t.speak(text, TextToSpeech.QUEUE_ADD, null, utt)
+            if (res != TextToSpeech.SUCCESS) {
+                synchronized(pending) { pending.remove(utt) }
+                main.post { onDone(false) }
+            }
+        } catch (t2: Throwable) {
+            DiagLog.exception(ctx, "tts speak failed len=${text.length}", t2)
             main.post { onDone(false) }
         }
     }

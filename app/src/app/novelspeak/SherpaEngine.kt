@@ -64,35 +64,47 @@ class SherpaEngine(
     override fun prepare(onResult: (Boolean, String?) -> Unit) {
         if (isReady) { onResult(true, null); return }
         Thread {
+            val started = System.currentTimeMillis()
             try {
                 val model = ModelManager.model(prefs.modelId)
                 if (model == null) {
+                    DiagLog.line(ctx, "engine prepare: unknown model ${prefs.modelId}")
                     main.post { onResult(false, "Unknown model") }
                     return@Thread
                 }
                 val dir = ModelManager.modelDir(ctx, model.id)
                 if (!ModelManager.isInstalled(ctx, model.id)) {
+                    DiagLog.line(ctx, "engine prepare: model missing dir=$dir")
                     main.post { onResult(false, "Model not installed: ${model.label}") }
                     return@Thread
                 }
                 family = model.family
+                DiagLog.line(
+                    ctx,
+                    "engine prepare model=${model.id} family=$family threads=${prefs.threads} " +
+                        "nnapi=${prefs.nnapi} provider=${if (prefs.nnapi) "nnapi" else "cpu"}"
+                )
                 reference = loadReference(dir)
+                DiagLog.line(ctx, "engine reference samples=${reference?.size ?: 0} @${referenceRate}Hz")
                 val config = buildConfig(dir, model.family)
                 val engine = try {
                     OfflineTts(ctx.assets, config)
                 } catch (e: Throwable) {
+                    DiagLog.exception(ctx, "engine init failed, retrying cpu", e)
                     // Retry on plain CPU if the optional provider was rejected.
                     val fallback = buildConfig(dir, model.family, provider = "cpu")
                     OfflineTts(ctx.assets, fallback)
                 }
                 tts = engine
                 sampleRate = engine.sampleRate().takeIf { it > 0 } ?: model.sampleRate
+                DiagLog.line(ctx, "engine ready rate=$sampleRate speakers=${engine.numSpeakers()} in ${System.currentTimeMillis() - started}ms")
                 player.ensure(sampleRate)
                 startWorkers()
                 isReady = true
                 main.post { onResult(true, null) }
             } catch (e: Throwable) {
                 isReady = false
+                DiagLog.exception(ctx, "engine prepare FAILED", e)
                 main.post { onResult(false, e.message ?: e.javaClass.simpleName) }
             }
         }.start()
@@ -192,6 +204,7 @@ class SherpaEngine(
                     main.post { task.onDone(generated.samples.isNotEmpty() && !stopFlag) }
                 }
             } catch (e: Throwable) {
+                DiagLog.exception(ctx, "generation failed for \"${task.text.take(40)}…\"", e)
                 main.post { task.onDone(false) }
             }
         }

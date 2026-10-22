@@ -30,6 +30,7 @@ object ModelManager {
         val url: String,
         val sha256: String,
         val sizeMb: Int,
+        val unpackedMb: Int,
         val sampleRate: Int,
         val family: String
     )
@@ -41,6 +42,7 @@ object ModelManager {
             url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-en-v0_19.tar.bz2",
             sha256 = "c9f0dd393615805b0bab050c340834d5e684e732aec91c0e860cd30e982c08bd",
             sizeMb = 103,
+            unpackedMb = 152,
             sampleRate = 24000,
             family = "kokoro"
         ),
@@ -50,6 +52,7 @@ object ModelManager {
             url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2",
             sha256 = "2f3b88823cbbb9bf0b2477ec8ae7b3fec417b3a87b6bb5f256dba66f2ad967cb",
             sizeMb = 98,
+            unpackedMb = 200,
             sampleRate = 24000,
             family = "pocket"
         )
@@ -86,12 +89,31 @@ object ModelManager {
 
     /** Downloads + verifies + extracts. [onProgress] gets 0..100, -1 for extracting. */
     fun install(ctx: Context, model: Model, onProgress: (Int, String) -> Unit): Boolean {
+        if (installInProgress) {
+            onProgress(-1, "Another install is already running")
+            return false
+        }
+        installInProgress = true
+        try {
+            return installLocked(ctx, model, onProgress)
+        } finally {
+            installInProgress = false
+        }
+    }
+
+    @Volatile
+    private var installInProgress = false
+
+    private fun installLocked(ctx: Context, model: Model, onProgress: (Int, String) -> Unit): Boolean {
         val dest = modelDir(ctx, model.id)
         val tmp = File(ctx.cacheDir, model.id + ".tar.bz2")
+        val started = System.currentTimeMillis()
+        DiagLog.line(ctx, "install start id=${model.id} size=${model.sizeMb}MB unpacked~${model.unpackedMb}MB")
         return try {
             // Download + extracted tree + temp archive; fail fast with a readable message.
             val need = model.sizeMb.toLong() * 1024L * 1024L * 2L + 64L * 1024L * 1024L
             val free = android.os.StatFs(ctx.filesDir.absolutePath).availableBytes
+            DiagLog.line(ctx, "storage free=${free / 1048576}MB need=${need / 1048576}MB")
             if (free < need) {
                 onProgress(-1, "Not enough storage: need ~${need / 1048576} MB free, have ${free / 1048576} MB")
                 return false
@@ -100,11 +122,14 @@ object ModelManager {
             val downloaded = download(model.url, tmp, model.sizeMb, onProgress)
             if (downloaded != true) {
                 tmp.delete()
+                DiagLog.line(ctx, "download FAILED url=${model.url}")
                 onProgress(-1, "Download failed (HTTP error or no connection)")
                 return false
             }
+            DiagLog.line(ctx, "download done bytes=${tmp.length()} in ${(System.currentTimeMillis() - started) / 1000}s")
             onProgress(-1, "Verifying checksum…")
             val digest = sha256(tmp)
+            DiagLog.line(ctx, "sha256=$digest expected=${model.sha256}")
             if (!digest.equals(model.sha256, ignoreCase = true)) {
                 tmp.delete()
                 onProgress(-1, "Checksum mismatch (got ${digest.take(12)}…)")
@@ -113,19 +138,35 @@ object ModelManager {
             onProgress(-1, "Extracting…")
             dest.deleteRecursively()
             dest.mkdirs()
-            extractTarBz2(tmp, dest) { n ->
-                if (n % 40 == 0) onProgress(-1, "Extracting… $n files")
+            DiagLog.line(ctx, "extract start dest=$dest")
+            var lastLoggedMb = -1L
+            extractTarBz2(tmp, dest) { name, done, size, total ->
+                val pct = if (size > 0) ((done * 100) / size).toInt() else 0
+                val totalMb = total / 1048576
+                val bucket = totalMb / 16
+                if (bucket != lastLoggedMb) {
+                    lastLoggedMb = bucket
+                    DiagLog.line(ctx, "extract $name ${done / 1048576}/${size / 1048576}MB total=${totalMb}MB")
+                }
+                onProgress(
+                    -1,
+                    "Extracting $name  $pct%  (${done / 1048576}/${size / 1048576} MB) · " +
+                        "total $totalMb/${model.unpackedMb} MB"
+                )
             }
             tmp.delete()
             if (!isInstalled(ctx, model.id)) {
                 dest.deleteRecursively()
+                DiagLog.line(ctx, "extract INCOMPLETE — required files missing")
                 onProgress(-1, "Extraction incomplete (missing model files)")
                 return false
             }
+            DiagLog.line(ctx, "install OK in ${(System.currentTimeMillis() - started) / 1000}s")
             onProgress(100, "Installed")
             true
         } catch (e: Throwable) {
             tmp.delete()
+            DiagLog.exception(ctx, "install exception", e)
             onProgress(-1, "Failed: ${e.javaClass.simpleName}: ${e.message ?: "no details"}")
             false
         }
@@ -185,29 +226,59 @@ object ModelManager {
         }
     }
 
-    private fun extractTarBz2(archive: File, dest: File, onEntry: (Int) -> Unit = {}) {
-        val raw: InputStream = archive.inputStream().buffered(128 * 1024)
+    /**
+     * Streams the tar.bz2 into [dest]. bzip2 is single-threaded and the model files are huge
+     * (Kokoro's ONNX entry alone is 134 MB), so progress is reported per chunk and a stall
+     * watchdog aborts with a readable error instead of appearing hung forever.
+     */
+    private fun extractTarBz2(archive: File, dest: File, onProgress: (String, Long, Long, Long) -> Unit) {
+        val raw: InputStream = archive.inputStream().buffered(256 * 1024)
         val bz: InputStream = BZip2CompressorInputStream(raw, true)
+        var totalBytes = 0L
+        var lastReport = 0L
+        var lastProgressAt = System.currentTimeMillis()
         TarArchiveInputStream(bz).use { tar ->
-            var count = 0
             var entry = tar.nextEntry
             while (entry != null) {
                 val name = entry.name.trimStart('/', '.')
                 if (name.isNotEmpty() && !name.contains("..")) {
-                    // strip the single leading bundle directory
                     val rel = if (name.contains('/')) name.substringAfter('/') else ""
                     if (rel.isNotEmpty()) {
                         val target = File(dest, rel)
+                        val label = target.name
                         if (entry.isDirectory) {
                             target.mkdirs()
                         } else {
                             target.parentFile?.mkdirs()
-                            FileOutputStream(target).use { fos -> tar.copyTo(fos, 128 * 1024) }
+                            val size = entry.size
+                            var done = 0L
+                            FileOutputStream(target).buffered(256 * 1024).use { out ->
+                                val buf = ByteArray(256 * 1024)
+                                while (true) {
+                                    val n = tar.read(buf)
+                                    if (n < 0) break
+                                    if (n == 0) continue
+                                    out.write(buf, 0, n)
+                                    done += n
+                                    totalBytes += n
+                                    val now = System.currentTimeMillis()
+                                    if (done - lastReport >= 4L * 1048576 || now - lastProgressAt > 1000) {
+                                        lastReport = done
+                                        lastProgressAt = now
+                                        onProgress(label, done, size, totalBytes)
+                                    }
+                                }
+                            }
+                            if (size > 0 && done != size) {
+                                throw java.io.IOException("Truncated entry $label ($done/$size bytes)")
+                            }
                         }
                     }
                 }
-                count++
-                onEntry(count)
+                if (System.currentTimeMillis() - lastProgressAt > 45_000) {
+                    throw java.io.IOException("Extraction stalled for 45 s — keep the screen on and retry")
+                }
+                lastReport = 0
                 entry = tar.nextEntry
             }
         }

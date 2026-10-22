@@ -31,47 +31,65 @@ class PlaybackService : Service(), Reader.Listener {
 
     override fun onCreate() {
         super.onCreate()
-        createChannel()
-        session = MediaSession(this, "NovelSpeak").apply {
-            setCallback(object : MediaSession.Callback() {
-                override fun onPlay() { NovelSpeakApp.instance.reader.play() }
-                override fun onPause() { NovelSpeakApp.instance.reader.pause() }
-                override fun onStop() { NovelSpeakApp.instance.reader.stop() }
-                override fun onSkipToNext() { NovelSpeakApp.instance.reader.nextSentence() }
-                override fun onSkipToPrevious() { NovelSpeakApp.instance.reader.prevSentence() }
-            })
-            isActive = true
+        try {
+            createChannel()
+            session = MediaSession(this, "NovelSpeak").apply {
+                setCallback(object : MediaSession.Callback() {
+                    override fun onPlay() { NovelSpeakApp.instance.reader.play() }
+                    override fun onPause() { NovelSpeakApp.instance.reader.pause() }
+                    override fun onStop() { NovelSpeakApp.instance.reader.stop() }
+                    override fun onSkipToNext() { NovelSpeakApp.instance.reader.nextSentence() }
+                    override fun onSkipToPrevious() { NovelSpeakApp.instance.reader.prevSentence() }
+                })
+                isActive = true
+            }
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "novelspeak:playback").apply { setReferenceCounted(false) }
+            NovelSpeakApp.instance.reader.addListener(this)
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "service onCreate failed", t)
         }
-        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "novelspeak:playback").apply { setReferenceCounted(false) }
-        NovelSpeakApp.instance.reader.addListener(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_PAUSE -> NovelSpeakApp.instance.reader.pause()
-            ACTION_PLAY -> NovelSpeakApp.instance.reader.play()
-            ACTION_STOP -> { NovelSpeakApp.instance.reader.stop(); stopSelfSafely() }
-            ACTION_NEXT -> NovelSpeakApp.instance.reader.nextSentence()
-        }
-        if (!started) {
-            started = true
-            startForegroundSafely(buildNotification("Preparing…"))
+        try {
+            when (intent?.action) {
+                ACTION_PAUSE -> NovelSpeakApp.instance.reader.pause()
+                ACTION_PLAY -> NovelSpeakApp.instance.reader.play()
+                ACTION_STOP -> { NovelSpeakApp.instance.reader.stop(); stopSelfSafely() }
+                ACTION_NEXT -> NovelSpeakApp.instance.reader.nextSentence()
+            }
+            if (!started) {
+                started = true
+                val ok = startForegroundSafely(buildNotification("Preparing…"))
+                DiagLog.line(this, "startForeground ok=$ok")
+                if (!ok) {
+                    started = false
+                    stopSelfSafely()
+                }
+            }
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "service onStartCommand failed", t)
+            stopSelfSafely()
         }
         return START_STICKY
     }
 
     override fun onReaderState(state: Reader.State) {
-        if (state.playing) {
-            try { wake?.acquire(6 * 60 * 60 * 1000L) } catch (e: Throwable) {}
-            updateSession(PlaybackState.STATE_PLAYING)
-        } else {
-            try { if (wake?.isHeld == true) wake?.release() } catch (e: Throwable) {}
-            updateSession(PlaybackState.STATE_PAUSED)
-        }
-        if (started) {
-            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.notify(NOTIF_ID, buildNotification(state.status))
+        try {
+            if (state.playing) {
+                try { wake?.acquire(6 * 60 * 60 * 1000L) } catch (e: Throwable) {}
+                updateSession(PlaybackState.STATE_PLAYING)
+            } else {
+                try { if (wake?.isHeld == true) wake?.release() } catch (e: Throwable) {}
+                updateSession(PlaybackState.STATE_PAUSED)
+            }
+            if (started) {
+                val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                nm.notify(NOTIF_ID, buildNotification(state.status))
+            }
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "notification update failed", t)
         }
     }
 
@@ -98,11 +116,17 @@ class PlaybackService : Service(), Reader.Listener {
         session?.setPlaybackState(pb)
     }
 
-    private fun startForegroundSafely(n: Notification) {
-        if (Build.VERSION.SDK_INT >= 29) {
-            startForeground(NOTIF_ID, n, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-        } else {
-            startForeground(NOTIF_ID, n)
+    private fun startForegroundSafely(n: Notification): Boolean {
+        return try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                startForeground(NOTIF_ID, n, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+            } else {
+                startForeground(NOTIF_ID, n)
+            }
+            true
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "startForeground failed", t)
+            false
         }
     }
 
@@ -112,22 +136,33 @@ class PlaybackService : Service(), Reader.Listener {
     }
 
     private fun buildNotification(text: String): Notification {
-        val open = PendingIntent.getActivity(
-            this, 0, Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL) else Notification.Builder(this)
-        return builder
-            .setContentTitle("NovelSpeak")
-            .setContentText(text)
-            .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentIntent(open)
-            .setOngoing(true)
-            .addAction(action(android.R.drawable.ic_media_previous, "Prev", ACTION_PREV))
-            .addAction(action(android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE))
-            .addAction(action(android.R.drawable.ic_media_next, "Next", ACTION_NEXT))
-            .addAction(action(android.R.drawable.ic_menu_close_clear_cancel, "Stop", ACTION_STOP))
-            .build()
+        try {
+            val open = PendingIntent.getActivity(
+                this, 0, Intent(this, MainActivity::class.java),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL) else Notification.Builder(this)
+            return builder
+                .setContentTitle("NovelSpeak")
+                .setContentText(text)
+                .setSmallIcon(android.R.drawable.ic_media_play)
+                .setContentIntent(open)
+                .setOngoing(true)
+                .addAction(action(android.R.drawable.ic_media_previous, "Prev", ACTION_PREV))
+                .addAction(action(android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE))
+                .addAction(action(android.R.drawable.ic_media_next, "Next", ACTION_NEXT))
+                .addAction(action(android.R.drawable.ic_menu_close_clear_cancel, "Stop", ACTION_STOP))
+                .build()
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "notification build failed", t)
+            val fallback = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL) else Notification.Builder(this)
+            return fallback
+                .setContentTitle("NovelSpeak")
+                .setContentText(text)
+                .setSmallIcon(android.R.drawable.ic_media_play)
+                .setOngoing(true)
+                .build()
+        }
     }
 
     private fun action(icon: Int, title: String, action: String): Notification.Action {

@@ -170,6 +170,10 @@ class MainActivity : Activity(), Reader.Listener {
     private fun extractNow(append: Boolean) {
         WebExtractor.install(web)
         WebExtractor.extract(web) { title, blocks ->
+            DiagLog.line(
+                this,
+                "extract url=${web.url} append=$append title=\"${title.take(60)}\" blocks=${blocks.size}"
+            )
             runOnUiThread {
                 if (blocks.isEmpty()) {
                     statusView.text = "No readable text found on this page"

@@ -64,6 +64,9 @@ unzip -o platform-34-ext7_r03.zip "android-34/android.jar" -d sdk34
 mkdir -p ~/build/deps && cd ~/build/deps
 curl -LO https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-1.13.8.aar
 curl -LO https://repo1.maven.org/maven2/org/apache/commons/commons-compress/1.27.1/commons-compress-1.27.1.jar
+curl -LO https://repo1.maven.org/maven2/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar
+# d8 9.x from Google Maven (Termux's d8 3.3 crashes on commons-io)
+curl -LO https://dl.google.com/dl/android/maven2/com/android/tools/r8/9.5.28/r8-9.5.28.jar && mv r8-9.5.28.jar r8.jar
 cd - && ./build.sh
 ```
 
@@ -75,7 +78,8 @@ cd - && ./build.sh
 The sources are plain Kotlin with **no AndroidX** (framework APIs only), so the project opens
 anywhere. For AGP 8 remove the `package="app.novelspeak"` attribute from `app/AndroidManifest.xml`
 and set `namespace = "app.novelspeak"` in the module's `build.gradle.kts`; add
-`implementation(files("libs/sherpa-onnx.aar"))` and `implementation("org.apache.commons:commons-compress:1.27.1")`.
+`implementation(files("libs/sherpa-onnx.aar"))`, `implementation("org.apache.commons:commons-compress:1.27.1")`,
+`implementation("commons-io:commons-io:2.20.0")`.
 
 ## Architecture
 
@@ -102,7 +106,10 @@ PlaybackService     foreground service + MediaSession + wake lock (screen-off pl
 - **ZipVoice** (transcript-based cloning) is not wired yet — Pocket already gives zero-shot cloning
   without a transcript, which is the better fit for a reader. ZipVoice fields are documented in
   `docs/re-natural-ai-voices.md` §3.
-- Model downloads are large; use Wi-Fi. Progress is shown in Settings.
+- Model downloads are large; use Wi-Fi. Settings shows download %, then per-file extraction
+  progress (`Extracting model.int8.onnx 42% (56/134 MB)`). Extraction is single-threaded bzip2 and
+  takes roughly 1–3 minutes on a phone; a wake lock + keep-screen-on is held during install so it
+  cannot be suspended. A 45 s no-progress watchdog aborts with a readable error.
 - The default build is arm64-v8a only.
 
 ## Roadmap

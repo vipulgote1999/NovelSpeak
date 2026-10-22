@@ -1,7 +1,9 @@
 package app.novelspeak
 
 import android.app.Application
+import android.content.ContentUris
 import android.content.ContentValues
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
@@ -22,12 +24,15 @@ class NovelSpeakApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        DiagLog.init(this)
+        DiagLog.line(this, "app start")
 
         // No adb on this device: persist crashes to /sdcard/Download/novelspeak-crash.txt
         // (MediaStore insert works without storage permission on API 29+; Termux can read it).
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, error ->
             try {
+                DiagLog.exception(this, "FATAL thread=${thread?.name}", error)
                 dumpCrash("thread=${thread?.name}\n" + Log.getStackTraceString(error))
             } catch (ignored: Throwable) {
             }
@@ -41,15 +46,36 @@ class NovelSpeakApp : Application() {
 
     private fun dumpCrash(text: String) {
         if (Build.VERSION.SDK_INT >= 29) {
-            val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, "novelspeak-crash.txt")
-                put(MediaStore.Downloads.MIME_TYPE, "text/plain")
-                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-            }
-            val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-            if (uri != null) {
-                contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray()) }
-                return
+            try {
+                val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+                // Reuse one crash file; repeated inserts were creating " (1)", " (2)" clutter.
+                var uri: Uri? = null
+                contentResolver.query(
+                    collection,
+                    arrayOf(MediaStore.Downloads._ID),
+                    "${MediaStore.Downloads.DISPLAY_NAME}=? AND ${MediaStore.Downloads.RELATIVE_PATH} LIKE ?",
+                    arrayOf("novelspeak-crash.txt", "Download%"),
+                    null
+                )?.use { c ->
+                    if (c.moveToFirst()) uri = ContentUris.withAppendedId(collection, c.getLong(0))
+                }
+                if (uri == null) {
+                    val values = ContentValues().apply {
+                        put(MediaStore.Downloads.DISPLAY_NAME, "novelspeak-crash.txt")
+                        put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                        put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    }
+                    uri = contentResolver.insert(collection, values)
+                }
+                val u = uri
+                if (u != null) {
+                    contentResolver.openOutputStream(u, "wt")?.use { it.write(text.toByteArray()) }
+                    // Clear IS_PENDING or the file stays invisible/unreadable to other apps.
+                    val done = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+                    contentResolver.update(u, done, null, null)
+                    return
+                }
+            } catch (ignored: Throwable) {
             }
         }
         // Fallback: external app dir (readable via adb/shell on older builds).
@@ -149,6 +175,7 @@ class Reader(private val app: NovelSpeakApp) {
         engine = null
         engineName = wanted
         status = "Preparing $wanted engine…"
+        DiagLog.line(app, "engine requested=$wanted")
         notifyState()
         val e: TtsEngine = if (wanted == Prefs.ENGINE_SHERPA) {
             SherpaEngine(app, app.prefs, app.player)
@@ -172,15 +199,24 @@ class Reader(private val app: NovelSpeakApp) {
     fun play() {
         if (sentences.isEmpty()) { status = "Nothing to read"; notifyState(); return }
         if (playing) return
+        DiagLog.line(app, "play clicked engine=${app.prefs.engine} cursor=$cursor total=${sentences.size}")
         ensureEngine { e ->
             if (e == null) return@ensureEngine
-            playing = true
-            status = "Playing"
-            generation++
-            submitted = cursor - 1
-            pump()
-            notifyState()
-            PlaybackService.start(app)
+            try {
+                playing = true
+                status = "Playing"
+                generation++
+                submitted = cursor - 1
+                pump()
+                notifyState()
+                PlaybackService.start(app)
+                DiagLog.line(app, "play started engine=${e.id} sentence=$cursor/" + sentences.size)
+            } catch (t: Throwable) {
+                playing = false
+                DiagLog.exception(app, "play FAILED", t)
+                status = "Play error: ${t.javaClass.simpleName}: ${t.message}"
+                notifyState()
+            }
         }
     }
 
@@ -234,17 +270,24 @@ class Reader(private val app: NovelSpeakApp) {
     private fun pump() {
         if (!playing) return
         val e = engine ?: return
-        val gen = generation
-        val lookahead = app.prefs.prefetch.coerceIn(0, 5)
-        while (submitted < cursor + lookahead && submitted < sentences.size - 1) {
-            submitted++
-            val index = submitted
-            e.speak(sentences[index].text) { ok -> onSentenceDone(gen, index, ok) }
-        }
-        if (submitted < cursor) {
-            submitted = cursor
-            val index = cursor
-            e.speak(sentences[index].text) { ok -> onSentenceDone(gen, index, ok) }
+        try {
+            val gen = generation
+            val lookahead = app.prefs.prefetch.coerceIn(0, 5)
+            while (submitted < cursor + lookahead && submitted < sentences.size - 1) {
+                submitted++
+                val index = submitted
+                e.speak(sentences[index].text) { ok -> onSentenceDone(gen, index, ok) }
+            }
+            if (submitted < cursor) {
+                submitted = cursor
+                val index = cursor
+                e.speak(sentences[index].text) { ok -> onSentenceDone(gen, index, ok) }
+            }
+        } catch (t: Throwable) {
+            DiagLog.exception(app, "pump/speak failed at sentence $submitted", t)
+            playing = false
+            status = "Speech error: ${t.javaClass.simpleName}: ${t.message}"
+            notifyState()
         }
     }
 

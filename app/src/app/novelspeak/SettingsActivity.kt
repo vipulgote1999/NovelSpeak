@@ -1,11 +1,16 @@
 package app.novelspeak
 
 import android.app.Activity
+import android.content.Context
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.PowerManager
 import android.view.Gravity
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.LinearLayout
@@ -31,6 +36,11 @@ class SettingsActivity : Activity() {
     private lateinit var container: LinearLayout
     private lateinit var status: TextView
     private var installing = false
+    private val ui = Handler(Looper.getMainLooper())
+    private var installStartedAt = 0L
+    private var lastMessage = ""
+    private var wake: PowerManager.WakeLock? = null
+    private var ticker: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,6 +76,9 @@ class SettingsActivity : Activity() {
     }
 
     private fun build() {
+        // Rebuilds happen on install success / engine change; clear first or re-adding `status`
+        // throws "The specified child already has a parent".
+        container.removeAllViews()
         header("Speech engine")
         val group = RadioGroup(this)
         val sys = RadioButton(this).apply { text = "Android system TTS (instant, offline, all languages)"; id = 1 }
@@ -221,25 +234,96 @@ class SettingsActivity : Activity() {
             return
         }
         installing = true
-        status.text = "Downloading ${m.label}…"
+        lastMessage = "Starting ${m.label}…"
+        installStartedAt = System.currentTimeMillis()
+        status.text = lastMessage
+        DiagLog.line(this, "ui install tap model=${m.id}")
+
+        // Long download + single-threaded bzip2 decode: keep CPU and screen alive so the install
+        // cannot be suspended when the screen times out.
+        try {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "novelspeak:model-install").apply {
+                setReferenceCounted(false)
+                acquire(20 * 60 * 1000L)
+            }
+        } catch (e: Throwable) {
+        }
+        startTicker()
+
         Thread {
-            var lastMessage = ""
+            var lastUiUpdate = 0L
             val ok = ModelManager.install(this, m) { pct, msg ->
-                lastMessage = msg
-                runOnUiThread { status.text = if (pct < 0) "${m.label}: $msg" else "Downloading ${m.label}: $msg" }
+                lastMessage = if (pct >= 0) "Downloading ${m.label}: $msg" else "${m.label}: $msg"
+                val now = System.currentTimeMillis()
+                if (now - lastUiUpdate > 200) {
+                    lastUiUpdate = now
+                    runOnUiThread { status.text = withElapsed(lastMessage) }
+                }
             }
             runOnUiThread {
-                installing = false
+                if (isFinishing || isDestroyed) {
+                    stopInstallUi()
+                    return@runOnUiThread
+                }
+                stopInstallUi()
+                DiagLog.line(this, "ui install result ok=$ok last=\"${lastMessage.take(160)}\"")
                 if (ok) {
                     prefs.modelId = m.id
                     prefs.engine = Prefs.ENGINE_SHERPA
                     status.text = "Installed ${m.label} — active"
                     build()
                 } else {
-                    status.text = if (lastMessage.isNotEmpty()) lastMessage else "Install failed"
+                    status.text = lastMessage.ifEmpty { "Install failed" }
                 }
             }
         }.start()
+    }
+
+    private fun withElapsed(msg: String): String {
+        if (!installing) return msg
+        val s = ((System.currentTimeMillis() - installStartedAt) / 1000).toInt()
+        val mm = s / 60
+        val ss = s % 60
+        // Never treat `msg` as a format string: progress text contains '%' (e.g. "42%"),
+        // which made String.format throw DuplicateFormatFlagsException on every tick.
+        return msg + "  ·  " + mm + ":" + if (ss < 10) "0$ss" else ss.toString()
+    }
+
+    private fun startTicker() {
+        stopTicker()
+        val r = object : Runnable {
+            override fun run() {
+                if (!installing) return
+                if (isFinishing || isDestroyed) { stopInstallUi(); return }
+                status.text = withElapsed(lastMessage)
+                ui.postDelayed(this, 1000)
+            }
+        }
+        ticker = r
+        ui.postDelayed(r, 1000)
+    }
+
+    private fun stopTicker() {
+        ticker?.let { ui.removeCallbacks(it) }
+        ticker = null
+    }
+
+    private fun stopInstallUi() {
+        installing = false
+        stopTicker()
+        try { window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) } catch (e: Throwable) {}
+        try {
+            if (wake?.isHeld == true) wake?.release()
+        } catch (e: Throwable) {}
+        wake = null
+    }
+
+    override fun onDestroy() {
+        // If an install is running, leave the wake lock to the worker thread's completion path.
+        if (!installing) stopInstallUi()
+        super.onDestroy()
     }
 
     private fun maybeAskNotifications() {
