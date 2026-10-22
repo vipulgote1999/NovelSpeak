@@ -439,6 +439,16 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     lastExtractedUrl = url
                     lastExtractedBlocks = -1
                     extractNow(append = appendNext)
+                } else {
+                    // Same document reloaded (ad reload or manual reload): keep the
+                    // native reader position, but reinstall the page-side extractor
+                    // and refresh data-ns marks so highlight/next-link keep working.
+                    try {
+                        WebExtractor.install(web)
+                        WebExtractor.extract(web) { _, _ -> }
+                        WebExtractor.setReader(web, NovelSpeakApp.instance.prefs.readerMode)
+                    } catch (t: Throwable) {
+                    }
                 }
                 appendNext = false
             }
