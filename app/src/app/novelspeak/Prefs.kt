@@ -92,6 +92,28 @@ class Prefs(ctx: Context) {
         get() = sp.getInt(K_MAX_CHARS, 90)
         set(v) = sp.edit().putInt(K_MAX_CHARS, v).apply()
 
+    var adblockEnabled: Boolean
+        get() = sp.getBoolean(K_ADBLOCK, true)
+        set(v) = sp.edit().putBoolean(K_ADBLOCK, v).apply()
+
+    var adblockCosmetic: Boolean
+        get() = sp.getBoolean(K_ADBLOCK_COSMETIC, true)
+        set(v) = sp.edit().putBoolean(K_ADBLOCK_COSMETIC, v).apply()
+
+    var adblockPopups: Boolean
+        get() = sp.getBoolean(K_ADBLOCK_POPUPS, true)
+        set(v) = sp.edit().putBoolean(K_ADBLOCK_POPUPS, v).apply()
+
+    /** Registrable domains where the reader explicitly disabled ad blocking. */
+    val adblockAllowedSites: Set<String>
+        get() = sp.getStringSet(K_ADBLOCK_ALLOW, emptySet()) ?: emptySet()
+
+    fun setAdblockSiteAllowed(site: String, allowed: Boolean) {
+        val current = sp.getStringSet(K_ADBLOCK_ALLOW, emptySet())?.toMutableSet() ?: mutableSetOf()
+        if (allowed) current.add(site) else current.remove(site)
+        sp.edit().putStringSet(K_ADBLOCK_ALLOW, current).apply()
+    }
+
     companion object {
         const val ENGINE_SYSTEM = "system"
         const val ENGINE_SHERPA = "sherpa"
@@ -113,6 +135,10 @@ class Prefs(ctx: Context) {
         private const val K_MAX_CHARS = "max_chars"
         private const val K_TUNING_V2 = "tuning_v2"
         private const val K_TUNING_V3 = "tuning_v3"
+        private const val K_ADBLOCK = "adblock_enabled"
+        private const val K_ADBLOCK_COSMETIC = "adblock_cosmetic"
+        private const val K_ADBLOCK_POPUPS = "adblock_popups"
+        private const val K_ADBLOCK_ALLOW = "adblock_allow_sites"
 
         /** Kokoro en-v0_19 speakers, in the order stored in voices.bin. */
         val KOKORO_VOICES = listOf(
