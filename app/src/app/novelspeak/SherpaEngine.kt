@@ -50,10 +50,38 @@ class SherpaEngine(
     private var referenceRate = 24000
 
     @Volatile private var stopFlag = false
+    @Volatile private var peakLogged = false
     private val main = Handler(Looper.getMainLooper())
 
     private class Task(val text: String, val onDone: (Boolean) -> Unit)
     private class Boundary(val endFrame: Long, val onDone: (Boolean) -> Unit)
+
+    /**
+     * sherpa's JNI looks up invoke([F)Ljava/lang/Integer; on the callback object. Kotlin 2.2
+     * compiles lambdas with invokedynamic, whose generated class only has invoke(Object), so
+     * that lookup aborts the process. A named Function1 subclass keeps the specialised bridge.
+     */
+    private inner class SampleSink : (FloatArray) -> Int {
+        var wrote = false
+        override fun invoke(samples: FloatArray): Int {
+            if (stopFlag) return 1
+            if (!peakLogged) {
+                peakLogged = true
+                var peak = 0f
+                for (s in samples) {
+                    val a = if (s < 0f) -s else s
+                    if (a > peak) peak = a
+                }
+                DiagLog.line(ctx, "tts chunk peak=${"%.3f".format(peak)} samples=${samples.size}")
+            }
+            return if (player.write(samples)) {
+                wrote = true
+                0
+            } else {
+                1
+            }
+        }
+    }
 
     private val genQueue = LinkedBlockingQueue<Task>()
     private val boundaries = LinkedBlockingQueue<Boundary>()
@@ -88,17 +116,23 @@ class SherpaEngine(
                 DiagLog.line(ctx, "engine reference samples=${reference?.size ?: 0} @${referenceRate}Hz")
                 val config = buildConfig(dir, model.family)
                 val engine = try {
-                    OfflineTts(ctx.assets, config)
+                    // Models live in filesDir, not in the APK assets. Passing a non-null
+                    // AssetManager makes sherpa's ReadFile treat the absolute paths as assets,
+                    // and it calls exit(255) when the lookup fails (uncatchable process death).
+                    OfflineTts(null, config)
                 } catch (e: Throwable) {
                     DiagLog.exception(ctx, "engine init failed, retrying cpu", e)
                     // Retry on plain CPU if the optional provider was rejected.
                     val fallback = buildConfig(dir, model.family, provider = "cpu")
-                    OfflineTts(ctx.assets, fallback)
+                    OfflineTts(null, fallback)
                 }
                 tts = engine
                 sampleRate = engine.sampleRate().takeIf { it > 0 } ?: model.sampleRate
                 DiagLog.line(ctx, "engine ready rate=$sampleRate speakers=${engine.numSpeakers()} in ${System.currentTimeMillis() - started}ms")
                 player.ensure(sampleRate)
+                // Shared PcmPlayer may still be stopped from a previous engine; clear that state
+                // so the new engine's first write is accepted.
+                player.reset()
                 startWorkers()
                 isReady = true
                 main.post { onResult(true, null) }
@@ -183,7 +217,7 @@ class SherpaEngine(
             try {
                 player.ensure(sampleRate)
                 val cfg = GenerationConfig(
-                    1.0f,               // speed: HayaiTTS uses 1.0 for the cloning/streaming path
+                    prefs.speed.coerceIn(0.5f, 2.0f), // speed from the player controls
                     1.0f,               // silenceScale: HayaiTTS value
                     if (family == "pocket") 0 else prefs.kokoroSid,
                     reference ?: FloatArray(0),
@@ -192,16 +226,24 @@ class SherpaEngine(
                     8,                  // numSteps: HayaiTTS default for cloning generation
                     emptyMap()
                 )
-                val generated = engine.generateWithConfigAndCallback(task.text, cfg) { samples ->
-                    if (stopFlag) 1
-                    else if (player.write(samples)) 0
-                    else 1
-                }
+                val sink = SampleSink()
+                val started = System.currentTimeMillis()
+                val label = task.text.take(28).replace('\n', ' ')
+                DiagLog.line(ctx, "gen start \"$label\" queue=${player.queueDepth()}")
+                engine.generateWithConfigAndCallback(task.text, cfg, sink)
+                // Safety: make sure the track is running before tracking the drain boundary.
+                player.startIfBuffered()
                 val end = player.writtenFrames
-                if (end > 0) {
+                DiagLog.line(
+                    ctx,
+                    "gen done \"$label\" in ${System.currentTimeMillis() - started}ms " +
+                        "frames=$end queue=${player.queueDepth()}"
+                )
+                if (sink.wrote && end > 0) {
                     boundaries.put(Boundary(end, task.onDone))
                 } else {
-                    main.post { task.onDone(generated.samples.isNotEmpty() && !stopFlag) }
+                    // Never advance the reader when nothing reached the audio track.
+                    main.post { task.onDone(false) }
                 }
             } catch (e: Throwable) {
                 DiagLog.exception(ctx, "generation failed for \"${task.text.take(40)}…\"", e)
