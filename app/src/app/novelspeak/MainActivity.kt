@@ -1,134 +1,314 @@
 package app.novelspeak
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.res.ColorStateList
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
+import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.InputType
+import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.SeekBar
+import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
+import kotlin.math.min
 
 /**
  * WebView browser + reader UI.
  *
- * The page itself is untouched: we only inject the extractor after load, then drive TTS from the
- * extracted sentences. Works for any URL, which is the requirement (empirenovel and any similar
- * serialized-novel site).
+ * The page itself is untouched; we inject the extractor after load, then drive TTS from the
+ * extracted sentences. Reader mode is a presentation-only overlay that strips site chrome,
+ * ads and challenge dialogs so the same page reads like a book.
  */
 class MainActivity : Activity(), Reader.Listener {
 
     private lateinit var web: WebView
     private lateinit var urlBar: EditText
-    private lateinit var statusView: TextView
     private lateinit var titleView: TextView
-    private lateinit var playBtn: Button
+    private lateinit var statusView: TextView
+    private lateinit var progressView: TextView
     private lateinit var speedView: TextView
+    private lateinit var engineChip: TextView
+    private lateinit var dotView: View
+    private lateinit var seekBar: SeekBar
+    private lateinit var playButton: FrameLayout
+    private lateinit var playGlyph: GlyphView
+    private lateinit var readerBtn: TextView
+    private lateinit var backButton: FrameLayout
+    private lateinit var forwardButton: FrameLayout
 
     private var appendNext = false
+    private var seeking = false
+    private var sentenceTotal = 0
+
+    private val reader: Reader get() = NovelSpeakApp.instance.reader
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        NovelSpeakApp.instance.reader.addListener(this)
+        applyWindowTheme()
         buildUi()
         configureWebView()
+        reader.addListener(this)
+        onReaderState(reader.state())
         val last = getSharedPreferences("novelspeak", MODE_PRIVATE).getString("last_url", null)
         web.loadUrl(last ?: DEFAULT_URL)
     }
 
+    private fun applyWindowTheme() {
+        window.statusBarColor = Palette.BG
+        window.navigationBarColor = Palette.BG
+        window.setBackgroundDrawable(ColorDrawable(Palette.BG))
+        @Suppress("DEPRECATION")
+        window.decorView.systemUiVisibility = 0
+    }
+
     private fun buildUi() {
-        val pad = (resources.displayMetrics.density * 8).toInt()
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.WHITE)
+            setBackgroundColor(Palette.BG)
         }
 
-        // --- URL bar ---
-        val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(pad, pad, pad, 0) }
-        bar.addView(iconButton("◀") { if (web.canGoBack()) web.goBack() })
-        bar.addView(iconButton("▶") { if (web.canGoForward()) web.goForward() })
-        bar.addView(iconButton("⟳") { web.reload() })
+        // ---- top browser bar ----
+        val top = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(8), dp(6), dp(8), dp(4))
+        }
+        backButton = iconButton(Glyph.BACK, "Back", 40) { navigateBack() }
+        forwardButton = iconButton(Glyph.FORWARD, "Forward", 40) { navigateForward() }
+        top.addView(backButton)
+        top.addView(forwardButton)
+        top.addView(iconButton(Glyph.RELOAD, "Reload", 40) { web.reload() })
+
         urlBar = EditText(this).apply {
             inputType = InputType.TYPE_TEXT_VARIATION_URI
             imeOptions = EditorInfo.IME_ACTION_GO
             setSingleLine(true)
-            hint = "https://…"
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        urlBar.setOnEditorActionListener { _, _, _ -> loadFromBar(); true }
-        bar.addView(urlBar)
-        bar.addView(iconButton("Go") { loadFromBar() })
-        bar.addView(iconButton("⚙") { startActivity(Intent(this, SettingsActivity::class.java)) })
-        root.addView(bar)
-
-        titleView = TextView(this).apply {
-            setPadding(pad, 2, pad, 2)
+            hint = "Paste a chapter URL"
             textSize = 12f
-            maxLines = 1
-            setTextColor(Color.DKGRAY)
+            setTextColor(Palette.TEXT)
+            setHintTextColor(Palette.MUTED)
+            background = rounded(Palette.SURFACE_HIGH, 20)
+            setPadding(dp(14), 0, dp(14), 0)
+            layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f).apply {
+                marginStart = dp(2)
+                marginEnd = dp(6)
+            }
+            setOnEditorActionListener { _, _, _ ->
+                loadFromBar()
+                true
+            }
         }
-        root.addView(titleView)
+        top.addView(urlBar)
+        top.addView(
+            textButton("Go", primary = false, widthDp = 42, heightDp = 40) { loadFromBar() }
+                .apply { setTextColor(Palette.ACCENT) }
+        )
+        top.addView(iconButton(Glyph.GEAR, "Settings", 40) {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        })
+        root.addView(top)
 
-        // --- WebView ---
-        web = WebView(this)
-        web.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
-        root.addView(web)
-
-        // --- Player bar ---
-        val player = LinearLayout(this).apply {
+        // ---- chapter title + reader toggle ----
+        val titleRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(pad, pad, pad, pad)
+            setPadding(dp(16), 0, dp(10), dp(6))
         }
-        player.addView(iconButton("Read") { extractNow(append = false) })
-        player.addView(iconButton("Next ch") { loadNextChapter() })
-        player.addView(iconButton("⏮") { NovelSpeakApp.instance.reader.prevSentence() })
-        playBtn = iconButton("▶") { NovelSpeakApp.instance.reader.toggle() }
-        player.addView(playBtn)
-        player.addView(iconButton("⏭") { NovelSpeakApp.instance.reader.nextSentence() })
-        player.addView(iconButton("■") { NovelSpeakApp.instance.reader.stop() })
-        player.addView(iconButton("−") { bumpSpeed(-0.05f) })
+        titleView = TextView(this).apply {
+            text = "NovelSpeak"
+            textSize = 13f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        titleRow.addView(titleView)
+        readerBtn = textButton("Reader", primary = false, widthDp = 0, heightDp = 32) {
+            toggleReader()
+        }.apply {
+            textSize = 11f
+            setPadding(dp(12), 0, dp(12), 0)
+        }
+        titleRow.addView(readerBtn)
+        root.addView(titleRow)
+
+        // ---- page ----
+        web = WebView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
+            )
+            setBackgroundColor(Palette.BG)
+        }
+        root.addView(web)
+
+        // ---- now-playing card ----
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(Palette.SURFACE, 18)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            elevation = dp(8).toFloat()
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(dp(8), dp(4), dp(8), dp(8))
+            }
+        }
+
+        val statusRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        dotView = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(8), dp(8)).apply { marginEnd = dp(8) }
+            background = oval(Palette.MUTED)
+        }
+        statusRow.addView(dotView)
+        statusView = TextView(this).apply {
+            text = "Open a chapter, then tap Read"
+            textSize = 13f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        statusRow.addView(statusView)
+        engineChip = TextView(this).apply {
+            text = "idle"
+            textSize = 10f
+            setTextColor(Palette.MUTED)
+            background = rounded(Palette.SURFACE_HIGH, 8)
+            setPadding(dp(8), dp(3), dp(8), dp(3))
+            visibility = View.GONE
+        }
+        statusRow.addView(engineChip)
+        card.addView(statusRow)
+
+        val progressRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(6), 0, 0)
+        }
+        seekBar = SeekBar(this).apply {
+            max = 0
+            splitTrack = false
+            progressTintList = ColorStateList.valueOf(Palette.ACCENT)
+            thumbTintList = ColorStateList.valueOf(Palette.ACCENT)
+            progressBackgroundTintList = ColorStateList.valueOf(Palette.BORDER)
+            layoutParams = LinearLayout.LayoutParams(0, dp(28), 1f)
+            setPadding(dp(6), 0, dp(6), 0)
+            contentDescription = "Sentence progress"
+        }
+        progressView = TextView(this).apply {
+            text = "0 / 0"
+            textSize = 11f
+            setTextColor(Palette.MUTED)
+            gravity = Gravity.END
+            minWidth = dp(62)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+        progressRow.addView(seekBar)
+        progressRow.addView(progressView)
+        card.addView(progressRow)
+
+        val actionsRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(4), 0, 0)
+        }
+        actionsRow.addView(textButton("Read", primary = false, widthDp = 0, heightDp = 38) {
+            extractNow(append = false)
+        })
+        actionsRow.addView(textButton("Next ch", primary = false, widthDp = 0, heightDp = 38) {
+            loadNextChapter()
+        })
+        actionsRow.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
+        actionsRow.addView(iconButton(Glyph.MINUS, "Slower", 34) { bumpSpeed(-0.05f) })
         speedView = TextView(this).apply {
             text = "1.00×"
-            setPadding(pad, 0, pad, 0)
             textSize = 13f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+            gravity = Gravity.CENTER
+            minWidth = dp(54)
         }
-        player.addView(speedView)
-        player.addView(iconButton("+") { bumpSpeed(0.05f) })
-        root.addView(player)
+        actionsRow.addView(speedView)
+        actionsRow.addView(iconButton(Glyph.PLUS, "Faster", 34) { bumpSpeed(0.05f) })
+        card.addView(actionsRow)
 
-        statusView = TextView(this).apply {
-            setPadding(pad, 0, pad, pad)
-            textSize = 12f
-            setTextColor(Color.DKGRAY)
-            text = "Open a chapter, then tap Read"
+        val transportRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(0, dp(6), 0, 0)
         }
-        root.addView(statusView)
+        transportRow.addView(iconButton(Glyph.PREV, "Previous sentence", 44) {
+            reader.prevSentence()
+        })
+        playButton = iconButton(
+            Glyph.PLAY, "Play", 56, Palette.ACCENT, Palette.BG, oval = true
+        ) {
+            maybeAskNotifications()
+            reader.toggle()
+        }
+        playGlyph = playButton.getChildAt(0) as GlyphView
+        transportRow.addView(playButton)
+        transportRow.addView(iconButton(Glyph.NEXT, "Next sentence", 44) {
+            reader.nextSentence()
+        })
+        transportRow.addView(iconButton(Glyph.STOP, "Stop", 40) {
+            reader.stop()
+        })
+        card.addView(transportRow)
+        root.addView(card)
+
+        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser && sentenceTotal > 0) {
+                    progressView.text = "${progress + 1} / $sentenceTotal"
+                }
+            }
+
+            override fun onStartTrackingTouch(sb: SeekBar?) {
+                seeking = true
+            }
+
+            override fun onStopTrackingTouch(sb: SeekBar?) {
+                seeking = false
+                if (sentenceTotal > 0) reader.seek(sb?.progress ?: 0)
+            }
+        })
 
         setContentView(root)
+        updateReaderButton()
     }
-
-    private fun iconButton(label: String, onClick: () -> Unit): Button =
-        Button(this).apply {
-            text = label
-            textSize = 13f
-            minWidth = 0
-            minimumWidth = 0
-            setPadding(12, 0, 12, 0)
-            setOnClickListener { onClick() }
-        }
 
     private fun configureWebView() {
         val s = web.settings
@@ -144,15 +324,27 @@ class MainActivity : Activity(), Reader.Listener {
         s.builtInZoomControls = true
         s.displayZoomControls = false
         CookieManager.getInstance().setAcceptCookie(true)
-        if (Build.VERSION.SDK_INT >= 21) CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
+        if (Build.VERSION.SDK_INT >= 21) {
+            CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
+        }
 
         web.webViewClient = object : WebViewClient() {
+            override fun onPageStarted(
+                view: WebView?,
+                url: String?,
+                favicon: android.graphics.Bitmap?
+            ) {
+                super.onPageStarted(view, url, favicon)
+                updateNavButtons()
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 urlBar.setText(url ?: "")
                 titleView.text = view?.title ?: ""
-                getSharedPreferences("novelspeak", MODE_PRIVATE).edit().putString("last_url", url ?: "").apply()
-                // Auto-extract so "next chapter" can continue seamlessly.
+                getSharedPreferences("novelspeak", MODE_PRIVATE).edit()
+                    .putString("last_url", url ?: "").apply()
+                updateNavButtons()
                 extractNow(append = appendNext)
                 appendNext = false
             }
@@ -160,11 +352,47 @@ class MainActivity : Activity(), Reader.Listener {
         web.webChromeClient = WebChromeClient()
     }
 
+    private fun navigateBack() {
+        if (web.canGoBack()) {
+            web.goBack()
+            updateNavButtons()
+        }
+    }
+
+    private fun navigateForward() {
+        if (web.canGoForward()) {
+            web.goForward()
+            updateNavButtons()
+        }
+    }
+
+    private fun updateNavButtons() {
+        try {
+            val canBack = web.canGoBack()
+            backButton.isEnabled = canBack
+            backButton.alpha = if (canBack) 1f else 0.35f
+            val canForward = web.canGoForward()
+            forwardButton.isEnabled = canForward
+            forwardButton.alpha = if (canForward) 1f else 0.35f
+        } catch (e: Throwable) {
+        }
+    }
+
     private fun loadFromBar() {
         var u = urlBar.text.toString().trim()
         if (u.isEmpty()) return
         if (!u.startsWith("http")) u = "https://$u"
+        hideKeyboard()
+        urlBar.clearFocus()
         web.loadUrl(u)
+    }
+
+    private fun hideKeyboard() {
+        try {
+            (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
+                .hideSoftInputFromWindow(urlBar.windowToken, 0)
+        } catch (e: Throwable) {
+        }
     }
 
     private fun extractNow(append: Boolean) {
@@ -175,15 +403,35 @@ class MainActivity : Activity(), Reader.Listener {
                 "extract url=${web.url} append=$append title=\"${title.take(60)}\" blocks=${blocks.size}"
             )
             runOnUiThread {
-                if (blocks.isEmpty()) {
+                val badPage = title.contains("not found", true) ||
+                    title.contains("404", true)
+                val blocked = badPage ||
+                    title.contains("just a moment", true) ||
+                    title.contains("security verification", true) ||
+                    title.contains("cloudflare", true) ||
+                    title.contains("attention required", true)
+                if (append && (blocked || blocks.size < 2)) {
+                    // Never append a 404/Cloudflare interstitial to the reading queue.
+                    appendNext = false
+                    Toast.makeText(this, "Next chapter not found", Toast.LENGTH_SHORT).show()
+                    WebExtractor.setReader(web, false)
+                } else if (blocks.isEmpty()) {
                     statusView.text = "No readable text found on this page"
+                    WebExtractor.setReader(web, false)
                 } else {
-                    if (append && NovelSpeakApp.instance.reader.hasContent()) {
-                        NovelSpeakApp.instance.reader.appendContent(blocks)
+                    if (append && reader.hasContent()) {
+                        reader.appendContent(blocks)
                     } else {
-                        NovelSpeakApp.instance.reader.setContent(title.ifEmpty { web.title ?: "" }, blocks)
+                        reader.setContent(title.ifEmpty { web.title ?: "" }, blocks)
                     }
                     statusView.text = "Extracted ${blocks.size} sentences"
+                    // Do not hide a Cloudflare challenge: it must stay interactive
+                    // until the site finishes verification. Reader mode resumes on
+                    // the real page automatically.
+                    WebExtractor.setReader(
+                        web,
+                        if (blocked) false else NovelSpeakApp.instance.prefs.readerMode
+                    )
                 }
             }
         }
@@ -191,6 +439,7 @@ class MainActivity : Activity(), Reader.Listener {
 
     private fun loadNextChapter() {
         WebExtractor.nextLink(web) { link ->
+            DiagLog.line(this, "next chapter link=${link.ifEmpty { "(none)" }}")
             runOnUiThread {
                 if (link.isNullOrEmpty()) {
                     Toast.makeText(this, "No next-chapter link found", Toast.LENGTH_SHORT).show()
@@ -204,32 +453,320 @@ class MainActivity : Activity(), Reader.Listener {
 
     private fun bumpSpeed(delta: Float) {
         val v = (NovelSpeakApp.instance.prefs.speed + delta).coerceIn(0.5f, 2.5f)
-        NovelSpeakApp.instance.reader.setSpeed(v)
+        reader.setSpeed(v)
         speedView.text = "%.2f×".format(v)
+        speedView.contentDescription = "Playback speed ${"%.2f".format(v)} times"
+    }
+
+    private fun toggleReader() {
+        val p = NovelSpeakApp.instance.prefs
+        p.readerMode = !p.readerMode
+        WebExtractor.setReader(web, p.readerMode)
+        updateReaderButton()
+    }
+
+    private fun updateReaderButton() {
+        val on = NovelSpeakApp.instance.prefs.readerMode
+        readerBtn.text = if (on) "Reader on" else "Reader"
+        readerBtn.setTextColor(if (on) Palette.ACCENT else Palette.TEXT)
+        readerBtn.background = ripple(Palette.SURFACE_HIGH, 16)
+        readerBtn.contentDescription =
+            if (on) "Turn reader mode off" else "Turn reader mode on"
     }
 
     override fun onReaderState(state: Reader.State) {
-        playBtn.text = if (state.playing) "⏸" else "▶"
+        val total = state.total.coerceAtLeast(0)
+        sentenceTotal = total
         titleView.text = state.title.ifEmpty { web.title ?: "" }
-        statusView.text = "${state.status}  ·  ${state.cursor + 1}/${state.total}  ·  ${state.engine}"
+        statusView.text = state.status
+        engineChip.text = state.engine
+        engineChip.visibility = if (state.engine.isEmpty()) View.GONE else View.VISIBLE
+        progressView.text = if (total > 0) "${state.cursor + 1} / $total" else "0 / 0"
         speedView.text = "%.2f×".format(NovelSpeakApp.instance.prefs.speed)
+        speedView.contentDescription =
+            "Playback speed ${"%.2f".format(NovelSpeakApp.instance.prefs.speed)} times"
+        if (!seeking) {
+            seekBar.max = (total - 1).coerceAtLeast(0)
+            seekBar.progress = state.cursor.coerceIn(0, (total - 1).coerceAtLeast(0))
+        }
+        playGlyph.glyph = if (state.playing) Glyph.PAUSE else Glyph.PLAY
+        playGlyph.invalidate()
+        playButton.contentDescription = if (state.playing) "Pause" else "Play"
+        dotView.background = oval(statusColor(state))
+        updateReaderButton()
+    }
+
+    private fun statusColor(state: Reader.State): Int {
+        val s = state.status.lowercase()
+        return when {
+            s.contains("error") || s.contains("failed") -> Palette.RED
+            state.playing -> Palette.ACCENT
+            s.contains("paused") -> Palette.AMBER
+            else -> Palette.MUTED
+        }
     }
 
     override fun onHighlight(blockIndex: Int) {
-        if (NovelSpeakApp.instance.prefs.highlight) WebExtractor.highlight(web, blockIndex)
+        if (NovelSpeakApp.instance.prefs.highlight) {
+            WebExtractor.highlight(web, blockIndex)
+        }
+    }
+
+    private fun maybeAskNotifications() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            try {
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 10)
+            } catch (e: Throwable) {
+            }
+        }
     }
 
     override fun onBackPressed() {
-        if (web.canGoBack()) web.goBack() else super.onBackPressed()
+        if (web.canGoBack()) {
+            web.goBack()
+            updateNavButtons()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateReaderButton()
+        WebExtractor.setReader(web, NovelSpeakApp.instance.prefs.readerMode)
     }
 
     override fun onDestroy() {
-        NovelSpeakApp.instance.reader.removeListener(this)
+        reader.removeListener(this)
         super.onDestroy()
     }
 
+    // ---- tiny design system ------------------------------------------------
+
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+    private fun rounded(color: Int, radiusDp: Int): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(radiusDp).toFloat()
+        }
+
+    private fun oval(color: Int): GradientDrawable =
+        GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(color)
+        }
+
+    private fun ripple(color: Int, radiusDp: Int, oval: Boolean = false): RippleDrawable {
+        val content = GradientDrawable().apply {
+            setColor(color)
+            if (oval) shape = GradientDrawable.OVAL else cornerRadius = dp(radiusDp).toFloat()
+        }
+        val mask = GradientDrawable().apply {
+            setColor(Color.WHITE)
+            if (oval) shape = GradientDrawable.OVAL else cornerRadius = dp(radiusDp).toFloat()
+        }
+        return RippleDrawable(ColorStateList.valueOf(Palette.RIPPLE), content, mask)
+    }
+
+    private fun textButton(
+        label: String,
+        primary: Boolean,
+        widthDp: Int,
+        heightDp: Int,
+        onClick: () -> Unit
+    ): TextView = TextView(this).apply {
+        text = label
+        textSize = 12f
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        gravity = Gravity.CENTER
+        setTextColor(if (primary) Palette.BG else Palette.TEXT)
+        background = ripple(if (primary) Palette.ACCENT else Palette.SURFACE_HIGH, 12)
+        setPadding(dp(12), 0, dp(12), 0)
+        minWidth = 0
+        minHeight = 0
+        isClickable = true
+        isFocusable = true
+        layoutParams = LinearLayout.LayoutParams(
+            if (widthDp > 0) dp(widthDp) else ViewGroup.LayoutParams.WRAP_CONTENT,
+            dp(heightDp)
+        ).apply { marginEnd = dp(8) }
+        setOnClickListener { onClick() }
+    }
+
+    private fun iconButton(
+        glyph: Glyph,
+        description: String,
+        sizeDp: Int,
+        background: Int = Palette.SURFACE_HIGH,
+        foreground: Int = Palette.TEXT,
+        oval: Boolean = false,
+        onClick: () -> Unit
+    ): FrameLayout {
+        val size = dp(sizeDp)
+        val container = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(size, size).apply { marginEnd = dp(4) }
+            this.background = ripple(background, sizeDp / 2, oval)
+            contentDescription = description
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onClick() }
+        }
+        val icon = GlyphView(this, glyph, foreground)
+        container.addView(
+            icon,
+            FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER)
+        )
+        icon.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        return container
+    }
+
     companion object {
-        // Generic default; any URL works.
         private const val DEFAULT_URL = "https://www.empirenovel.com/"
+    }
+}
+
+// ---- palette + drawn icons -------------------------------------------------
+
+private object Palette {
+    val BG = 0xFF0F1115.toInt()
+    val SURFACE = 0xFF171A21.toInt()
+    val SURFACE_HIGH = 0xFF222833.toInt()
+    val BORDER = 0xFF2C3442.toInt()
+    val TEXT = 0xFFF3F6F9.toInt()
+    val MUTED = 0xFF9AA6B6.toInt()
+    val ACCENT = 0xFF6EE7B7.toInt()
+    val AMBER = 0xFFF6C453.toInt()
+    val RED = 0xFFF87171.toInt()
+    val RIPPLE = 0x33FFFFFF
+}
+
+private enum class Glyph {
+    PLAY, PAUSE, STOP, PREV, NEXT, BACK, FORWARD, RELOAD, GEAR, MENU, PLUS, MINUS
+}
+
+private class GlyphView(
+    context: android.content.Context,
+    var glyph: Glyph,
+    color: Int
+) : View(context) {
+
+    private val density = resources.displayMetrics.density
+    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = color
+        style = Paint.Style.STROKE
+        strokeWidth = 2f * density
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = color
+        style = Paint.Style.FILL
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val cx = width / 2f
+        val cy = height / 2f
+        val s = min(width, height) * 0.42f
+        when (glyph) {
+            Glyph.PLAY -> {
+                val p = Path()
+                p.moveTo(cx - s * 0.45f, cy - s)
+                p.lineTo(cx + s, cy)
+                p.lineTo(cx - s * 0.45f, cy + s)
+                p.close()
+                canvas.drawPath(p, fill)
+            }
+            Glyph.PAUSE -> {
+                val w = s * 0.34f
+                val gap = s * 0.22f
+                canvas.drawRoundRect(
+                    cx - gap / 2 - w, cy - s, cx - gap / 2, cy + s, w / 2, w / 2, fill
+                )
+                canvas.drawRoundRect(
+                    cx + gap / 2, cy - s, cx + gap / 2 + w, cy + s, w / 2, w / 2, fill
+                )
+            }
+            Glyph.STOP -> canvas.drawRoundRect(
+                cx - s * 0.72f, cy - s * 0.72f, cx + s * 0.72f, cy + s * 0.72f,
+                s * 0.18f, s * 0.18f, fill
+            )
+            Glyph.PREV -> {
+                val p = Path()
+                p.moveTo(cx + s * 0.55f, cy - s)
+                p.lineTo(cx - s * 0.35f, cy)
+                p.lineTo(cx + s * 0.55f, cy + s)
+                p.close()
+                canvas.drawPath(p, fill)
+                canvas.drawRoundRect(
+                    cx - s * 0.78f, cy - s, cx - s * 0.48f, cy + s,
+                    s * 0.12f, s * 0.12f, fill
+                )
+            }
+            Glyph.NEXT -> {
+                val p = Path()
+                p.moveTo(cx - s * 0.55f, cy - s)
+                p.lineTo(cx + s * 0.35f, cy)
+                p.lineTo(cx - s * 0.55f, cy + s)
+                p.close()
+                canvas.drawPath(p, fill)
+                canvas.drawRoundRect(
+                    cx + s * 0.48f, cy - s, cx + s * 0.78f, cy + s,
+                    s * 0.12f, s * 0.12f, fill
+                )
+            }
+            Glyph.BACK -> {
+                val p = Path()
+                p.moveTo(cx + s * 0.35f, cy - s * 0.8f)
+                p.lineTo(cx - s * 0.45f, cy)
+                p.lineTo(cx + s * 0.35f, cy + s * 0.8f)
+                canvas.drawPath(p, stroke)
+            }
+            Glyph.FORWARD -> {
+                val p = Path()
+                p.moveTo(cx - s * 0.35f, cy - s * 0.8f)
+                p.lineTo(cx + s * 0.45f, cy)
+                p.lineTo(cx - s * 0.35f, cy + s * 0.8f)
+                canvas.drawPath(p, stroke)
+            }
+            Glyph.RELOAD -> {
+                val r = RectF(cx - s * 0.75f, cy - s * 0.75f, cx + s * 0.75f, cy + s * 0.75f)
+                canvas.drawArc(r, -55f, 285f, false, stroke)
+                val p = Path()
+                p.moveTo(cx + s * 0.55f, cy - s * 0.95f)
+                p.lineTo(cx + s * 0.05f, cy - s * 0.72f)
+                p.lineTo(cx + s * 0.58f, cy - s * 0.38f)
+                p.close()
+                canvas.drawPath(p, fill)
+            }
+            Glyph.MENU -> {
+                val half = s * 0.8f
+                for (i in -1..1) {
+                    val y = cy + i * s * 0.45f
+                    canvas.drawLine(cx - half, y, cx + half, y, stroke)
+                }
+            }
+            Glyph.GEAR -> {
+                val r = s * 0.55f
+                canvas.drawCircle(cx, cy, r, stroke)
+                canvas.drawCircle(cx, cy, r * 0.34f, stroke)
+                for (i in 0 until 8) {
+                    val a = Math.toRadians((i * 45).toDouble())
+                    val x1 = cx + (r * 0.85f * Math.cos(a)).toFloat()
+                    val y1 = cy + (r * 0.85f * Math.sin(a)).toFloat()
+                    val x2 = cx + (r * 1.18f * Math.cos(a)).toFloat()
+                    val y2 = cy + (r * 1.18f * Math.sin(a)).toFloat()
+                    canvas.drawLine(x1, y1, x2, y2, stroke)
+                }
+            }
+            Glyph.PLUS -> {
+                canvas.drawLine(cx - s * 0.7f, cy, cx + s * 0.7f, cy, stroke)
+                canvas.drawLine(cx, cy - s * 0.7f, cx, cy + s * 0.7f, stroke)
+            }
+            Glyph.MINUS -> canvas.drawLine(cx - s * 0.7f, cy, cx + s * 0.7f, cy, stroke)
+        }
     }
 }

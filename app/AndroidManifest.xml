@@ -28,7 +28,9 @@
             android:name=".MainActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -39,7 +41,8 @@
             android:name=".SettingsActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:label="Settings" />
+            android:label="Settings"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <service
             android:name=".PlaybackService"

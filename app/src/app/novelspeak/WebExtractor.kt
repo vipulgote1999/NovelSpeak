@@ -50,11 +50,19 @@ object WebExtractor {
     }
 
     fun highlight(web: WebView, blockIndex: Int) {
-        web.evaluateJavascript("window.__nsHighlight && window.__nsHighlight($blockIndex)", null)
+        val scroll = NovelSpeakApp.instance.prefs.autoScroll
+        web.evaluateJavascript(
+            "window.__nsHighlight && window.__nsHighlight($blockIndex, $scroll)", null
+        )
     }
 
     fun clearHighlight(web: WebView) {
         web.evaluateJavascript("window.__nsClearHighlight && window.__nsClearHighlight()", null)
+    }
+
+    /** Toggle the injected reader theme (hides site chrome/ads and restyles the article). */
+    fun setReader(web: WebView, on: Boolean) {
+        web.evaluateJavascript("window.__nsReader && window.__nsReader($on)", null)
     }
 
     fun nextLink(web: WebView, onResult: (String) -> Unit) {
