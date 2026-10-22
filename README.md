@@ -14,6 +14,9 @@ fails on novel sites and stops when the screen locks.
 - **Streaming pipeline**: sentences are pre-split, the next 1–2 are generated while the current one
   plays, PCM goes straight into a low-latency AudioTrack — no waiting for a whole chapter.
 - **Read-along**: the spoken paragraph is highlighted and auto-scrolled on the page itself.
+- **Ad blocking**: EasyList/EasyPrivacy/uBlock lists, a token-indexed matcher, cosmetic filtering,
+  popup/redirect blocking and a per-site bypass. Pure Kotlin, no native dependency. See
+  [docs/adblocker.md](docs/adblocker.md).
 
 Tuning values are not guesses: they were reverse-engineered from two shipped apps (HayaiTTS,
 NekoSpeak) and are listed with their provenance in [OPTIMIZATIONS.md](OPTIMIZATIONS.md).
@@ -37,6 +40,37 @@ permission (needed for the playback notification).
 3. **▶ / ⏸**, **⏮ / ⏭** move by sentence, **■** stops, **− / +** change speed.
 4. **Next ch** follows the page's own "next chapter" link and appends it to the queue.
 5. **⚙** → choose engine, install a neural model, pick a voice, tune threads/NNAPI/prefetch.
+
+### Ad blocking
+
+Ads are blocked at three levels, because a WebView cannot be a mini-uBO:
+
+* **Network** — `shouldInterceptRequest` matches each subresource against EasyList,
+  EasyPrivacy and uBlock rules and returns an empty body. Rules are indexed by a rare
+  token (the same strategy as Brave's `adblock-rust`), so a request checks a handful
+  of buckets instead of 120k patterns.
+* **Cosmetic** — a content script hides site-specific selectors and asks native code
+  for generic selectors that match the classes/ids actually present on the page.
+  It also handles `:has-text`, `:upward`, `:style`, `:remove` and friends.
+* **Behavioural** — popups/redirects are blocked when a `$popup` rule matches a
+  non-gesture navigation, `window.open` is neutralised, and blocked tracker scripts
+  get small surrogates (`ga`, `googletag`, `fbq`, …) so the page keeps working.
+  Full-page jumps to suspicious ad-landing domains (for example
+  `yourbestplace.top` or `ho.beefycasease.cfd`) are refused even when an invisible
+  click-layer makes them look gesture-driven. Fake “Chrome Mobile WebView Privacy”
+  / notification-permission nags and transparent full-screen click-layers are
+  removed — including nags inside same-origin `srcdoc` iframes — while real
+  page content and cross-origin Cloudflare-style security widgets are left alone.
+
+The **Ad** button in the URL bar disables blocking for the current site and reloads.
+Settings → **Ad blocking** has the master switch, cosmetic/popup toggles, **Update
+lists** and a deterministic **Self-test**. The lists are bundled (≈5 MB); updates
+are downloaded to `filesDir/adblock/` and override the bundled copies.
+
+Limits worth knowing: WebView exposes no resource type (it is inferred from `Accept`
+and the URL extension), no redirect targets, and no response bodies. `$csp`,
+`$removeparam`, trusted scriptlets and system-wide VPN/DNS blocking are out of scope.
+Licences and sources are in `app/assets/adblock/NOTICE.txt`.
 
 ### Neural voices
 
