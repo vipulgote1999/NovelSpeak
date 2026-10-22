@@ -10,7 +10,28 @@
   var SKIP_SEL = 'script, style, noscript, nav, header, footer, aside, form, button, select, svg, iframe';
 
   function norm(s) {
-    return (s || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+    return (s || '')
+      .replace(/\u00a0/g, ' ')
+      // Some novel sites obfuscate words with interior dots ("cla.s.sroom",
+      // "b.a.s.t.a.r.d") to evade text filters. Collapse only tokens made of
+      // three or more letter/dot segments; leave e.g./i.e./U.S.A. alone.
+      .replace(/\b[A-Za-z]+(?:\.[A-Za-z]+){2,}\b/g, function (m) {
+        return m === m.toUpperCase() ? m : m.replace(/\./g, '');
+      })
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function visible(el) {
+    try {
+      var cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') {
+        return false;
+      }
+      return el.getClientRects().length > 0;
+    } catch (e) {
+      return true;
+    }
   }
 
   function clearMarks() {
@@ -18,7 +39,7 @@
     for (var i = 0; i < old.length; i++) old[i].removeAttribute('data-ns');
   }
 
-  function collect(root) {
+  function collect(root, useTextContent) {
     if (!root) return [];
     var blocks = [];
     var seen = Object.create(null);
@@ -27,9 +48,14 @@
       var el = nodes[i];
       if (el.closest(SKIP_SEL)) continue;
       if (el.querySelector(BLOCK_SEL)) continue;      // container, not a leaf block
-      var t = norm(el.innerText || el.textContent);
+      // Readability's article holder is intentionally display:none, so visibility
+      // checks only apply to the live DOM fallback. In the holder, textContent is
+      // the only reliable source.
+      if (!useTextContent && !visible(el)) continue;
+      var t = norm(useTextContent ? (el.textContent || '') : (el.innerText || ''));
       if (t.length < 2) continue;
-      if (seen[t]) continue;
+      // Dedupe only long blocks; short repeated dialogue lines are real text.
+      if (t.length > 80 && seen[t]) continue;
       seen[t] = 1;
       el.setAttribute('data-ns', String(blocks.length));
       blocks.push({ i: blocks.length, text: t, tag: el.tagName.toLowerCase() });
@@ -79,7 +105,8 @@
         var el = nodes[i];
         if (el.closest(SKIP_SEL)) continue;
         if (el.querySelector(BLOCK_SEL)) continue;
-        var t = norm(el.innerText || el.textContent);
+        if (!visible(el)) continue;
+        var t = norm(el.innerText || '');
         if (!t) continue;
         var score = 0;
         if (t === want) score = 100;
@@ -109,7 +136,7 @@
           holder.style.display = 'none';
           holder.innerHTML = article.content;
           document.body.appendChild(holder);
-          blocks = collect(holder);
+          blocks = collect(holder, true);
           holder.parentNode.removeChild(holder);
           if (article.title) title = norm(article.title);
           usedReadability = blocks.length > 0;
@@ -119,7 +146,7 @@
 
     if (blocks.length < 2) {
       usedReadability = false;
-      blocks = collect(bestContainer() || document.body);
+      blocks = collect(bestContainer() || document.body, false);
     }
     if (usedReadability) tagLive(blocks);
     if (blocks.length === 0) {

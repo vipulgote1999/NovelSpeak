@@ -1,0 +1,95 @@
+NovelSpeak reader/TTS verification — iqoo I2214 (Android 15)
+================================================================
+
+Build under test
+----------------
+Branch: vipulgote1999/feat-adblocker-integration
+Code commit: f114806 (post-rebase, final reader reload fix)
+Normal APK SHA-256: b2ff8a0113f50a670cf57aee600565add9b3510549c2ed1ff11d3d55a1a39f7f
+Test APK SHA-256:   fd29597c64036d87c22e40fcfa18fa4c6b8fe81231239ffd1c866389a34b57f8
+Test package: app.novelspeak.adblocktest (side-by-side; existing 0.2.9 untouched)
+
+BEFORE the callback fix
+-----------------------
+Legacy diagnostic log analysis: 238 of 269 generations ended at exactly 28,800
+samples (1.2 s at 24 kHz), i.e. the first 15-frame Kokoro chunk. Sentences were
+therefore cut mid-phrase at a nearly constant duration. The callback returned 0
+(stop) after a successful write; sherpa-onnx's contract is 1=continue, 0=stop.
+
+AFTER the callback fix (final build)
+------------------------------------
+13:43:31.181  adblock ready network=122884 cosmetic=32403 scriptlets=4612 build=365ms skipped=527
+13:43:38.352  play started engine=sherpa sentence=0/108
+13:43:42.139  gen done "Chapter 67: Who is he?" in 3789ms frames=79975
+13:43:56.814  gen done "The teaching faculty provide" in 10233ms frames=385360
+13:44:08.488  gen done "Although none of them had ou" in 11663ms frames=634086
+13:44:20.045  gen done "The only thing they couldn't" in 11540ms frames=865829
+13:44:25.313  gen done "“You should have seen his en" in 5249ms frames=966309
+13:44:37.141  gen done "He came running in, pushed I" in 11814ms frames=1185131
+13:44:42.212  gen done "He was like a hero who came " in 5049ms frames=1277514
+
+`frames` is the cumulative PcmPlayer writtenFrames. The first 3.3 s sentence alone
+emitted 80,002 samples; generation continued through the chapter instead of
+stopping at the 28,800-sample chunk.
+
+Same-URL reload / duplicate onPageFinished guard
+------------------------------------------------
+Command: tap the reload button while the reader was playing.
+Result:
+  extract-lines before=2 after=2
+  CDP after reload: {"hasExtract":true,"hasAdblock":true,
+                     "url":"https://www.empirenovel.com/novel/my-werewolf-system/67",
+                     "blocks":39}
+Playback continued; no cursor=0 / play restart.
+
+Extraction check (live DOM via CDP, window.__nsExtract)
+-------------------------------------------------------
+{
+  "title": "My Werewolf System Chapter 67",
+  "blocks": 39,
+  "chars": 8172,
+  "dotted": [],
+  "classroom": true,
+  "bastard": true,
+  "hasNavNoise": false
+}
+
+The dotted tokens (`cla.s.sroom`, `b.a.s.t.a.r.d`, `n.o.body`) are normalized for
+speech; the visible page text is left untouched so highlighting offsets remain valid.
+The app-side extraction log for the same page reported blocks=108 after sentence
+splitting, status "Ready · 108 sentences", and `Ad 0/125`.
+
+Self-test
+---------
+On-device Settings → Ad blocking → Self-test:
+  "Self-test: 22/22 passed (8 network, 4 cosmetic rules)"
+Screenshot: docs/reader-fixes-evidence/iqoo-selftest.png
+
+Host checks
+-----------
+- Kotlin 2.2.20 full app compile: 0 errors
+- JVM AdBlockSelfTest: 22/22 (8 network, 4 cosmetic inline rules)
+- node --check app/assets/extract.js: OK
+- node --check app/assets/adblock/content.js: OK
+- Normal APK build: aapt2 + R8/D8 9.5.28 + apksigner, 15 MB
+- Test APK build: same toolchain, 15 MB, package app.novelspeak.adblocktest
+
+Merge audit
+-----------
+`git diff origin/main..HEAD --stat` contains only adblock files plus the reader
+fixes. Main-touched files (`app/AndroidManifest.xml`, `app/assets/extract.js`,
+`AudioDsp.kt`, `DiagLog.kt`, `PcmPlayer.kt`, `PlaybackService.kt`,
+`SentenceSplitter.kt`, `SherpaEngine.kt`, `WebExtractor.kt`) have an empty diff
+against `origin/main`. The rebase is linear and has no conflict markers.
+
+Reference APKs (REA, JADX 1.5.6)
+---------------------------------
+HayaiTTS 2.5.1  dev.ahmedmohamed.hayaitts  43ff2cf33b4b7da64182f90f7787c9b691db0e35d5ef66393204ed93a3a71a07
+NekoSpeak 1.4.2 com.nekospeak.tts          fabd52784a110e2abc751ead7b4b96249839cd01418cfacd07226ba2d861d428
+
+- HayaiTTS 2.5.1 calls blocking generate(text, sid, speed); streamPcm only
+  re-chunks a completed float[] (no progressive callback), max 2,000 chars.
+- NekoSpeak 1.4.2 split regex `(?<=[.!?])\s+|\n+|(?<=[;])\s+`; only the first
+  sentence is re-split at >75 chars (comma/60); later batches 148/398 tokens;
+  one callback per batch.
+- No GPL code copied. NekoSpeak (MIT) was used as prior-art evidence only.

@@ -42,6 +42,7 @@ class NovelSpeakApp : Application() {
         prefs = Prefs(this)
         player = PcmPlayer()
         reader = Reader(this)
+        AdBlocker.init(this)
     }
 
     private fun dumpCrash(text: String) {

@@ -36,6 +36,15 @@ class Prefs(ctx: Context) {
             if (maxChars == 150) edit.putInt(K_MAX_CHARS, 90)
             edit.putBoolean(K_TUNING_V3, true).apply()
         }
+        if (!sp.getBoolean(K_TUNING_V4, false)) {
+            // 90-char chunks cut too many clauses mid-thought. The callback/streaming
+            // fix makes 180 chars cheap enough; migrate only the old default.
+            val edit = sp.edit()
+            if (sp.getInt(K_MAX_CHARS, DEFAULT_MAX_CHARS) == 90) {
+                edit.putInt(K_MAX_CHARS, DEFAULT_MAX_CHARS)
+            }
+            edit.putBoolean(K_TUNING_V4, true).apply()
+        }
     }
 
     var engine: String
@@ -89,8 +98,30 @@ class Prefs(ctx: Context) {
         set(v) = sp.edit().putBoolean(K_AUTOSCROLL, v).apply()
 
     var maxSentenceChars: Int
-        get() = sp.getInt(K_MAX_CHARS, 90)
+        get() = sp.getInt(K_MAX_CHARS, DEFAULT_MAX_CHARS)
         set(v) = sp.edit().putInt(K_MAX_CHARS, v).apply()
+
+    var adblockEnabled: Boolean
+        get() = sp.getBoolean(K_ADBLOCK, true)
+        set(v) = sp.edit().putBoolean(K_ADBLOCK, v).apply()
+
+    var adblockCosmetic: Boolean
+        get() = sp.getBoolean(K_ADBLOCK_COSMETIC, true)
+        set(v) = sp.edit().putBoolean(K_ADBLOCK_COSMETIC, v).apply()
+
+    var adblockPopups: Boolean
+        get() = sp.getBoolean(K_ADBLOCK_POPUPS, true)
+        set(v) = sp.edit().putBoolean(K_ADBLOCK_POPUPS, v).apply()
+
+    /** Registrable domains where the reader explicitly disabled ad blocking. */
+    val adblockAllowedSites: Set<String>
+        get() = sp.getStringSet(K_ADBLOCK_ALLOW, emptySet()) ?: emptySet()
+
+    fun setAdblockSiteAllowed(site: String, allowed: Boolean) {
+        val current = sp.getStringSet(K_ADBLOCK_ALLOW, emptySet())?.toMutableSet() ?: mutableSetOf()
+        if (allowed) current.add(site) else current.remove(site)
+        sp.edit().putStringSet(K_ADBLOCK_ALLOW, current).apply()
+    }
 
     companion object {
         const val ENGINE_SYSTEM = "system"
@@ -98,6 +129,9 @@ class Prefs(ctx: Context) {
 
         const val MODEL_KOKORO = "kokoro-int8-en-v0_19"
         const val MODEL_POCKET = "sherpa-onnx-pocket-tts-int8-2026-01-26"
+
+        /** Longer than the old 90 so clauses are not chopped; 150-220 also matches NekoSpeak. */
+        const val DEFAULT_MAX_CHARS = 180
 
         private const val K_ENGINE = "engine"
         private const val K_MODEL = "model"
@@ -113,6 +147,11 @@ class Prefs(ctx: Context) {
         private const val K_MAX_CHARS = "max_chars"
         private const val K_TUNING_V2 = "tuning_v2"
         private const val K_TUNING_V3 = "tuning_v3"
+        private const val K_TUNING_V4 = "tuning_v4"
+        private const val K_ADBLOCK = "adblock_enabled"
+        private const val K_ADBLOCK_COSMETIC = "adblock_cosmetic"
+        private const val K_ADBLOCK_POPUPS = "adblock_popups"
+        private const val K_ADBLOCK_ALLOW = "adblock_allow_sites"
 
         /** Kokoro en-v0_19 speakers, in the order stored in voices.bin. */
         val KOKORO_VOICES = listOf(

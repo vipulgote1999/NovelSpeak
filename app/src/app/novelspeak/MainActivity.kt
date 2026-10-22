@@ -3,8 +3,10 @@ package app.novelspeak
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -16,15 +18,21 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import android.os.Bundle
+import android.os.Message
 import android.text.InputType
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.CookieManager
+import android.webkit.JsPromptResult
+import android.webkit.JsResult
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -35,6 +43,7 @@ import android.widget.SeekBar
 import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
+import app.novelspeak.adblock.UrlTools
 import kotlin.math.min
 
 /**
@@ -44,11 +53,13 @@ import kotlin.math.min
  * extracted sentences. Reader mode is a presentation-only overlay that strips site chrome,
  * ads and challenge dialogs so the same page reads like a book.
  */
-class MainActivity : Activity(), Reader.Listener {
+class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private lateinit var web: WebView
     private lateinit var urlBar: EditText
     private lateinit var titleView: TextView
+    private lateinit var adblockView: TextView
+    private lateinit var adButton: TextView
     private lateinit var statusView: TextView
     private lateinit var progressView: TextView
     private lateinit var speedView: TextView
@@ -64,6 +75,8 @@ class MainActivity : Activity(), Reader.Listener {
     private var appendNext = false
     private var seeking = false
     private var sentenceTotal = 0
+    private var lastExtractedUrl: String? = null
+    private var lastExtractedBlocks = -1
 
     private val reader: Reader get() = NovelSpeakApp.instance.reader
 
@@ -73,6 +86,7 @@ class MainActivity : Activity(), Reader.Listener {
         buildUi()
         configureWebView()
         reader.addListener(this)
+        AdBlocker.addListener(this)
         onReaderState(reader.state())
         val last = getSharedPreferences("novelspeak", MODE_PRIVATE).getString("last_url", null)
         web.loadUrl(last ?: DEFAULT_URL)
@@ -128,6 +142,13 @@ class MainActivity : Activity(), Reader.Listener {
             textButton("Go", primary = false, widthDp = 42, heightDp = 40) { loadFromBar() }
                 .apply { setTextColor(Palette.ACCENT) }
         )
+        adButton = textButton("Ad", primary = false, widthDp = 42, heightDp = 40) {
+            toggleAdblock()
+        }.apply {
+            textSize = 11f
+            setTextColor(Palette.ACCENT)
+        }
+        top.addView(adButton)
         top.addView(iconButton(Glyph.GEAR, "Settings", 40) {
             startActivity(Intent(this, SettingsActivity::class.java))
         })
@@ -149,6 +170,12 @@ class MainActivity : Activity(), Reader.Listener {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         titleRow.addView(titleView)
+        adblockView = TextView(this).apply {
+            textSize = 10f
+            setTextColor(Palette.MUTED)
+            setPadding(dp(8), 0, dp(8), 0)
+        }
+        titleRow.addView(adblockView)
         readerBtn = textButton("Reader", primary = false, widthDp = 0, heightDp = 32) {
             toggleReader()
         }.apply {
@@ -307,10 +334,33 @@ class MainActivity : Activity(), Reader.Listener {
         })
 
         setContentView(root)
+        applyInsets(root)
         updateReaderButton()
     }
 
+    /** Keep the browser bar below the status bar and the player card above the nav bar. */
+    private fun applyInsets(root: View) {
+        root.setOnApplyWindowInsetsListener { v, insets ->
+            val top: Int
+            val bottom: Int
+            if (Build.VERSION.SDK_INT >= 30) {
+                val bars = insets.getInsets(WindowInsets.Type.systemBars())
+                top = bars.top
+                bottom = bars.bottom
+            } else {
+                @Suppress("DEPRECATION")
+                top = insets.systemWindowInsetTop
+                @Suppress("DEPRECATION")
+                bottom = insets.systemWindowInsetBottom
+            }
+            v.setPadding(0, top, 0, bottom)
+            insets
+        }
+        root.requestApplyInsets()
+    }
+
     private fun configureWebView() {
+        AdBlocker.attach(web)
         val s = web.settings
         s.javaScriptEnabled = true
         s.domStorageEnabled = true
@@ -323,19 +373,52 @@ class MainActivity : Activity(), Reader.Listener {
         s.setSupportZoom(true)
         s.builtInZoomControls = true
         s.displayZoomControls = false
+        s.javaScriptCanOpenWindowsAutomatically = false
+        s.setSupportMultipleWindows(false)
         CookieManager.getInstance().setAcceptCookie(true)
         if (Build.VERSION.SDK_INT >= 21) {
             CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
+        }
+        try {
+            web.addJavascriptInterface(AdBlockBridge(), "NSAdBlock")
+        } catch (t: Throwable) {
+        }
+        try {
+            if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
+                WebView.setWebContentsDebuggingEnabled(true)
+            }
+        } catch (t: Throwable) {
         }
 
         web.webViewClient = object : WebViewClient() {
             override fun onPageStarted(
                 view: WebView?,
                 url: String?,
-                favicon: android.graphics.Bitmap?
+                favicon: Bitmap?
             ) {
                 super.onPageStarted(view, url, favicon)
                 updateNavButtons()
+                AdBlocker.onPageStarted(url ?: "")
+                updateShield()
+            }
+
+            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                super.onPageCommitVisible(view, url)
+                if (view != null) AdBlocker.inject(view, url ?: "")
+            }
+
+            override fun shouldInterceptRequest(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): WebResourceResponse? = AdBlocker.intercept(request)
+
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): Boolean {
+                if (request == null) return false
+                if (AdBlocker.shouldOverride(request)) return true
+                return super.shouldOverrideUrlLoading(view, request)
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -345,11 +428,79 @@ class MainActivity : Activity(), Reader.Listener {
                 getSharedPreferences("novelspeak", MODE_PRIVATE).edit()
                     .putString("last_url", url ?: "").apply()
                 updateNavButtons()
-                extractNow(append = appendNext)
+                if (view != null) AdBlocker.inject(view, url ?: "")
+                // A duplicate onPageFinished for the same document (ad-driven reload,
+                // popunder navigation back, WebView quirk) must not rewind the reader.
+                // Retry only when the previous extraction was weak (challenge page)
+                // and playback is not in progress.
+                val sameUrl = url != null && url == lastExtractedUrl
+                val retryWeakPage = !reader.state().playing && lastExtractedBlocks in 0..10
+                if (appendNext || !sameUrl || retryWeakPage) {
+                    lastExtractedUrl = url
+                    lastExtractedBlocks = -1
+                    extractNow(append = appendNext)
+                } else {
+                    // Same document reloaded (ad reload or manual reload): keep the
+                    // native reader position, but reinstall the page-side extractor
+                    // and refresh data-ns marks so highlight/next-link keep working.
+                    try {
+                        WebExtractor.install(web)
+                        WebExtractor.extract(web) { _, _ -> }
+                        WebExtractor.setReader(web, NovelSpeakApp.instance.prefs.readerMode)
+                    } catch (t: Throwable) {
+                    }
+                }
                 appendNext = false
             }
         }
-        web.webChromeClient = WebChromeClient()
+        web.webChromeClient = object : WebChromeClient() {
+            override fun onCreateWindow(
+                view: WebView?,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: Message?
+            ): Boolean = false
+
+            override fun onJsAlert(
+                view: WebView?,
+                url: String?,
+                message: String?,
+                result: JsResult?
+            ): Boolean {
+                if (AdBlocker.isAdLikeDialog(message)) {
+                    result?.cancel()
+                    return true
+                }
+                return super.onJsAlert(view, url, message, result)
+            }
+
+            override fun onJsConfirm(
+                view: WebView?,
+                url: String?,
+                message: String?,
+                result: JsResult?
+            ): Boolean {
+                if (AdBlocker.isAdLikeDialog(message)) {
+                    result?.cancel()
+                    return true
+                }
+                return super.onJsConfirm(view, url, message, result)
+            }
+
+            override fun onJsPrompt(
+                view: WebView?,
+                url: String?,
+                message: String?,
+                defaultValue: String?,
+                result: JsPromptResult?
+            ): Boolean {
+                if (AdBlocker.isAdLikeDialog(message)) {
+                    result?.cancel()
+                    return true
+                }
+                return super.onJsPrompt(view, url, message, defaultValue, result)
+            }
+        }
     }
 
     private fun navigateBack() {
@@ -403,6 +554,8 @@ class MainActivity : Activity(), Reader.Listener {
                 "extract url=${web.url} append=$append title=\"${title.take(60)}\" blocks=${blocks.size}"
             )
             runOnUiThread {
+                lastExtractedUrl = web.url
+                lastExtractedBlocks = blocks.size
                 val badPage = title.contains("not found", true) ||
                     title.contains("404", true)
                 val blocked = badPage ||
@@ -524,6 +677,50 @@ class MainActivity : Activity(), Reader.Listener {
         }
     }
 
+    private fun toggleAdblock() {
+        val p = NovelSpeakApp.instance.prefs
+        if (!p.adblockEnabled) {
+            Toast.makeText(this, "Enable ad blocking in Settings first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val host = UrlTools.host(web.url ?: "") ?: return
+        val nowAllowed = AdBlocker.toggleSite(host)
+        Toast.makeText(
+            this,
+            if (nowAllowed) "Ad blocking disabled on $host" else "Ad blocking enabled on $host",
+            Toast.LENGTH_SHORT
+        ).show()
+        updateShield()
+        web.reload()
+    }
+
+    private fun updateShield() {
+        if (!::adButton.isInitialized) return
+        val p = NovelSpeakApp.instance.prefs
+        val host = UrlTools.host(web.url ?: "") ?: ""
+        val allowed = host.isNotEmpty() && AdBlocker.isSiteAllowed(host)
+        adButton.text = if (!p.adblockEnabled || allowed) "Ad✕" else "Ad✓"
+        adButton.alpha = if (!p.adblockEnabled) 0.4f else 1f
+        if (!p.adblockEnabled || allowed) adblockView.text = ""
+    }
+
+    override fun onAdBlockStats(blocked: Int, hidden: Int) {
+        runOnUiThread {
+            if (isFinishing || isDestroyed) return@runOnUiThread
+            if (!::adButton.isInitialized) return@runOnUiThread
+            val p = NovelSpeakApp.instance.prefs
+            val host = UrlTools.host(web.url ?: "") ?: ""
+            val allowed = host.isNotEmpty() && AdBlocker.isSiteAllowed(host)
+            adButton.text = if (!p.adblockEnabled || allowed) "Ad✕" else "Ad✓"
+            adButton.alpha = if (!p.adblockEnabled) 0.4f else 1f
+            adblockView.text = if (p.adblockEnabled && !allowed && (blocked > 0 || hidden > 0)) {
+                if (hidden > 0) "Ad $blocked/$hidden" else "Ad $blocked"
+            } else {
+                ""
+            }
+        }
+    }
+
     override fun onBackPressed() {
         if (web.canGoBack()) {
             web.goBack()
@@ -537,10 +734,13 @@ class MainActivity : Activity(), Reader.Listener {
         super.onResume()
         updateReaderButton()
         WebExtractor.setReader(web, NovelSpeakApp.instance.prefs.readerMode)
+        updateShield()
+        AdBlocker.inject(web, web.url ?: "")
     }
 
     override fun onDestroy() {
         reader.removeListener(this)
+        AdBlocker.removeListener(this)
         super.onDestroy()
     }
 

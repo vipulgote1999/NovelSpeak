@@ -7,8 +7,8 @@ so only its *architecture and constants* are reused, on top of the same Apache-2
 
 | # | Optimization | Where it came from (verified) | What NovelSpeak does |
 |---|---|---|---|
-| 1 | Sentence chunking for low first-audio latency | NekoSpeak `KokoroEngine`: split regex `(?<=[.!?])\s+\|\n+\|(?<=[;])\s+`, long first sentence re-split on commas then hard-wrapped, `MAX_TOKENS = 150` batches | `SentenceSplitter.kt`: same enders, abbreviation/decimal guards, comma → space → hard wrap, 220-char default (setting) |
-| 2 | Stream while generating, never wait for full clip | HayaiTTS `HayaiTtsService.streamPcm` (float → 16-bit LE chunks into the TTS callback) and NekoSpeak per-batch callbacks | `SherpaEngine` writes every sherpa callback chunk straight into `PcmPlayer`; generation of sentence *n+1* runs while *n* plays (boundary + monitor threads) |
+| 1 | Sentence chunking for low first-audio latency | NekoSpeak `KokoroEngine`: split regex `(?<=[.!?])\s+\|\n+\|(?<=[;])\s+`, long first sentence re-split on commas then hard-wrapped, `MAX_TOKENS = 150` batches | `SentenceSplitter.kt`: same enders, abbreviation/decimal guards, terminal punctuation → comma → next-space boundary (never mid-word), 180-char default (setting, V4 migration) |
+| 2 | Stream while generating, never wait for full clip | NekoSpeak per-batch callbacks; HayaiTTS 2.5.1 actually calls blocking `generate()` and then `streamPcm` only re-chunks the completed float[] (no progressive synthesis; 2,000-char cap) | `SherpaEngine` writes every callback chunk straight into `PcmPlayer` and returns `1=continue / 0=stop` per sherpa-onnx `offline-tts.h`; generation of sentence *n+1* runs while *n* plays (boundary + monitor threads) |
 | 3 | Low-latency PCM playback | HayaiTTS preview player (decompiled `u8.k` / `androidx.room.w.u()`): `USAGE_MEDIA`+`CONTENT_TYPE_MUSIC`, mono 16-bit, `bufferSize = max(pcmBytes, 4096)`, `MODE_STREAM`, `PERFORMANCE_MODE_LOW_LATENCY`, max volume | `PcmPlayer.kt` uses exactly those values, plus drain tracking so highlighting follows *heard* audio |
 | 4 | Kokoro model choice | NekoSpeak downloads `kokoro-v1.0.int8.onnx` + `voices-v1.0.bin`; HayaiTTS catalog lists `kokoro-int8-en-v0_19` (103 MB, tier "high", narration/audiobook) | Model manifest pins `kokoro-int8-en-v0_19` (same int8 bundle: `model.int8.onnx`, `voices.bin`, `tokens.txt`, `espeak-ng-data/`) |
 | 5 | Pocket-TTS runtime values | NekoSpeak `PocketTtsEngine`: 24 kHz, `LATENT_DIM=32`, `EMBED_DIM=1024`, `ODE_STEPS=20`, decode chunk 15 frames (80 ms each), LSD steps 10, temperature 0.7, frames-after-EOS 3 | Pocket handled inside sherpa-onnx (same 5 ONNX graph + SentencePiece pipeline); we pass `numSteps = 8` from HayaiTTS and `voiceEmbeddingCacheCapacity = 16` |
@@ -19,7 +19,14 @@ so only its *architecture and constants* are reused, on top of the same Apache-2
 | 10 | Thread count / session tuning | NekoSpeak `PrefsManager.getCpuThreads()` default **6**, ORT `ALL_OPT` + memory-pattern optimization; HayaiTTS exposes "Synthesis Threads" and NNAPI ("Hardware Acceleration") | `numThreads` from settings (default 4, capped at core count), `provider = "cpu"` with optional `"nnapi"` and automatic CPU retry if the provider is rejected |
 | 11 | Model delivery | HayaiTTS `VoiceDownloadWorker`: tar.bz2 from the k2-fsa `tts-models` release, SHA-256 verified, extracted to files dir; NekoSpeak: per-file download with progress state | `ModelManager.kt`: streaming download with % progress, SHA-256 verify, tar.bz2 extraction (Commons Compress), install/delete, never bundle models in the APK |
 | 12 | Keep playing with the screen off | The thing Chrome fails at. HayaiTTS/NekoSpeak both live in a TTS process/foreground service, so audio survives backgrounding | `PlaybackService`: `mediaPlayback` foreground service + `PARTIAL_WAKE_LOCK` + `MediaSession` (lock-screen play/pause/next/stop) |
-| 13 | Generic text extraction | NekoSpeak/HayaiTTS read text handed to them by other apps (they never solve page extraction) — that gap is ours | `assets/readability.js` (Mozilla Readability, Apache-2.0) + density fallback in `extract.js`, `data-ns` block tags for highlight/scroll, `rel=next` / “Next chapter” link detection |
+| 13 | Generic text extraction | NekoSpeak/HayaiTTS read text handed to them by other apps (they never solve page extraction) — that gap is ours | `assets/readability.js` (Mozilla Readability, Apache-2.0) + density fallback in `extract.js`, dotted-obfuscation normalization, visibility checks that skip `display:none` blocks, `data-ns` block tags for highlight/scroll, `rel=next` / “Next chapter” link detection |
+
+> **2026-10-22 re-analysis correction.** HayaiTTS 2.5.1 has no streaming call site: it calls
+> blocking `generate()` and `streamPcm` only chunks the finished `float[]`; NekoSpeak's 75-char
+> re-split applies only to the first sentence (later batches 148/398 tokens); both silently cap
+> input (2,000 chars / 500 Pocket frames). The sherpa-onnx callback contract is `1=continue,
+> 0=stop`; the inverted return was the cause of the 1.2 s cutoffs fixed in `9df3ba9`. See
+> `docs/reader-fixes.md` and `docs/reader-fixes-evidence/`.
 
 ## Values we deliberately did NOT copy
 

@@ -1,0 +1,44 @@
+NovelSpeak ad-blocking data and attribution
+===========================================
+
+Filter lists bundled in this directory
+--------------------------------------
+
+EasyList
+  https://easylist.to/
+  License: GPLv3 and CC BY-SA 3.0 (see the header of easylist.txt)
+
+EasyPrivacy
+  https://easylist.to/
+  License: GPLv3 and CC BY-SA 3.0 (see the header of easyprivacy.txt)
+
+uBlock filters
+uBlock filters - Annoyances (others)
+uBlock filters - Badware risks
+  https://github.com/uBlockOrigin/uAssets
+  License: GPLv3 (see https://github.com/uBlockOrigin/uAssets/blob/master/LICENSE)
+
+Public Suffix List
+  https://publicsuffix.org/list/
+  License: Mozilla Public License 2.0
+
+These files are redistributed unmodified. They are data, not part of the NovelSpeak
+source code, and remain under their own licenses.
+
+Engineering references
+----------------------
+
+The engine design is based on published source and on inspecting a shipped WebView
+browser. No source code was copied from either project:
+
+  Brave adblock-rust (MPL-2.0)
+    https://github.com/brave/adblock-rust
+    Token-bucket rule indexing, frequency-aware token selection, cosmetic class/id
+    lookup, scriptlet resource model, serialized filter lists.
+
+  DuckDuckGo Privacy Browser for Android (Apache-2.0)
+    https://github.com/duckduckgo/Android
+    WebView request interception pipeline, empty-response blocking, tracker
+    allowlists and same-entity bypass, surrogate scripts, popup/redirect handling.
+
+NovelSpeak itself is not affiliated with Brave, DuckDuckGo, EasyList, or uBlock Origin.

@@ -318,3 +318,19 @@ jadx --no-res -j 2 -d hayai_src hayaitts-arm64-v2.5.1.apk
 jadx --no-res -j 2 -d neko_src  nekospeak-arm64-v1.4.2.apk
 grep -rE 'kokoro|pocket|generateWithConfig|OfflineTts' hayai_src/sources/com/k2fsa/sherpa/onnx
 ```
+
+## 10. Corrections from the 2026-10-22 re-analysis
+
+The shipped APKs were re-analysed with JADX 1.5.6. Both hashes match §0.
+
+* **HayaiTTS 2.5.1 does not use a streaming callback.** The TTS service calls blocking
+  `generate(text, sid, speed)`; `streamPcm` only re-chunks the completed `float[]` into 16-bit LE
+  writes (clamped/even buffer). It caps input at 2,000 chars and can cut mid-word.
+* **NekoSpeak 1.4.2** splits on `(?<=[.!?])\s+|\n+|(?<=[;])\s+`. The comma/60-char re-split applies
+  **only to the first sentence** when it exceeds 75 chars. Later sentences are batched to 148 tokens
+  (Kokoro) / 398 (Kitten); one callback per batch, never per token. Pocket caps at 500 frames (~40 s).
+* **`max_num_sentences`**: the app default is 2, but bundled sherpa 1.13.2 logs that values other
+  than 1 are ignored for Kokoro TTS models; the setting only affects VITS/Piper batching.
+* NovelSpeak now uses `maxNumSentences = 1` (we pre-split), a 180-char boundary splitter, and the
+  correct `1=continue / 0=stop` sherpa callback. No GPL code was copied; NekoSpeak (MIT) is
+  prior-art evidence only. See `docs/reader-fixes.md`.

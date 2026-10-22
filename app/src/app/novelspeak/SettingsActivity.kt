@@ -20,6 +20,7 @@ import android.text.style.RelativeSizeSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -28,6 +29,7 @@ import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import app.novelspeak.adblock.AdBlockSelfTest
 import java.io.File
 
 /**
@@ -43,6 +45,7 @@ class SettingsActivity : Activity() {
     private lateinit var scroll: ScrollView
     private lateinit var status: TextView
     private var installing = false
+    private var adblockUpdating = false
     private val ui = Handler(Looper.getMainLooper())
     private var installStartedAt = 0L
     private var lastMessage = ""
@@ -75,9 +78,31 @@ class SettingsActivity : Activity() {
         root.addView(scroll)
         root.addView(buildFooter())
         setContentView(root)
+        applyInsets(root)
 
         build()
         maybeAskNotifications()
+    }
+
+    /** Keep the top bar below the status bar and the footer above the nav bar. */
+    private fun applyInsets(root: View) {
+        root.setOnApplyWindowInsetsListener { v, insets ->
+            val top: Int
+            val bottom: Int
+            if (Build.VERSION.SDK_INT >= 30) {
+                val bars = insets.getInsets(WindowInsets.Type.systemBars())
+                top = bars.top
+                bottom = bars.bottom
+            } else {
+                @Suppress("DEPRECATION")
+                top = insets.systemWindowInsetTop
+                @Suppress("DEPRECATION")
+                bottom = insets.systemWindowInsetBottom
+            }
+            v.setPadding(0, top, 0, bottom)
+            insets
+        }
+        root.requestApplyInsets()
     }
 
     private fun applyWindowTheme() {
@@ -138,7 +163,7 @@ class SettingsActivity : Activity() {
             prefs.prefetch = 4
             prefs.threads = 4
             prefs.nnapi = false
-            prefs.maxSentenceChars = 90
+            prefs.maxSentenceChars = Prefs.DEFAULT_MAX_CHARS
             prefs.highlight = true
             prefs.autoScroll = true
             prefs.readerMode = true
@@ -248,6 +273,50 @@ class SettingsActivity : Activity() {
             "Hide site chrome, ads and verification dialogs", prefs.readerMode
         ) { prefs.readerMode = it }
         container.addView(readingCard)
+
+        section("AD BLOCKING")
+        val adblockCard = card()
+        toggleRow(
+            adblockCard, "Block ads and trackers",
+            "EasyList + EasyPrivacy + uBlock lists, token-indexed matcher",
+            prefs.adblockEnabled
+        ) { enabled ->
+            prefs.adblockEnabled = enabled
+            if (enabled) AdBlocker.reload()
+            status.text = AdBlocker.statusText()
+        }
+        toggleRow(
+            adblockCard, "Hide ad containers and overlays",
+            "Cosmetic filters, click-layers and fake notification nags",
+            prefs.adblockCosmetic
+        ) { prefs.adblockCosmetic = it }
+        toggleRow(
+            adblockCard, "Block popups and redirects",
+            "Refuse suspicious top-level ad landing domains",
+            prefs.adblockPopups
+        ) { prefs.adblockPopups = it }
+        adblockCard.addView(note(AdBlocker.statusText()))
+
+        val adblockActions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(8), 0, dp(4))
+        }
+        adblockActions.addView(pillButton("Update lists", primary = true) {
+            updateAdBlockLists()
+        })
+        adblockActions.addView(pillButton("Self-test") {
+            status.text = AdBlockSelfTest.run()
+        })
+        adblockActions.addView(pillButton("Status") {
+            status.text = AdBlocker.statusText()
+        })
+        adblockCard.addView(adblockActions)
+        adblockCard.addView(note(
+            "Lists: EasyList, EasyPrivacy, uBlock filters, uBlock Annoyances and uBlock " +
+                "Badware. Sources and licences are in assets/adblock/NOTICE.txt. Tap “Ad” in " +
+                "the browser bar to disable blocking for one site."
+        ))
+        container.addView(adblockCard)
 
         if (y > 0) scroll.post { scroll.scrollTo(0, y) }
     }
@@ -576,6 +645,32 @@ class SettingsActivity : Activity() {
                 } else {
                     status.text = lastMessage.ifEmpty { "Install failed" }
                 }
+            }
+        }.start()
+    }
+
+    private fun updateAdBlockLists() {
+        if (adblockUpdating) {
+            Toast.makeText(this, "A list update is already running", Toast.LENGTH_SHORT).show()
+            return
+        }
+        adblockUpdating = true
+        status.text = "Updating filter lists…"
+        Thread {
+            val ok = AdBlocker.updateLists(this) { msg ->
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) status.text = msg
+                }
+            }
+            runOnUiThread {
+                adblockUpdating = false
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                status.text = AdBlocker.statusText()
+                Toast.makeText(
+                    this,
+                    if (ok) "Filter lists updated" else "List update failed — using bundled lists",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }.start()
     }
