@@ -16,6 +16,28 @@ import android.content.SharedPreferences
 class Prefs(ctx: Context) {
     private val sp: SharedPreferences = ctx.getSharedPreferences("novelspeak", Context.MODE_PRIVATE)
 
+    init {
+        // One-time tuning migration. Older builds persisted prefetch=2 / max=220 even when the
+        // user never touched those sliders. The async PCM writer + shorter chunks need 3 / 150
+        // to keep generation ahead of playback.
+        if (!sp.getBoolean(K_TUNING_V2, false)) {
+            val prefetch = sp.getInt(K_PREFETCH, 4)
+            val maxChars = sp.getInt(K_MAX_CHARS, 90)
+            val edit = sp.edit()
+            if (prefetch == 2) edit.putInt(K_PREFETCH, 4)
+            if (maxChars == 220) edit.putInt(K_MAX_CHARS, 90)
+            edit.putBoolean(K_TUNING_V2, true).apply()
+        }
+        if (!sp.getBoolean(K_TUNING_V3, false)) {
+            val prefetch = sp.getInt(K_PREFETCH, 4)
+            val maxChars = sp.getInt(K_MAX_CHARS, 90)
+            val edit = sp.edit()
+            if (prefetch == 3) edit.putInt(K_PREFETCH, 4)
+            if (maxChars == 150) edit.putInt(K_MAX_CHARS, 90)
+            edit.putBoolean(K_TUNING_V3, true).apply()
+        }
+    }
+
     var engine: String
         get() = sp.getString(K_ENGINE, ENGINE_SYSTEM) ?: ENGINE_SYSTEM
         set(v) = sp.edit().putString(K_ENGINE, v).apply()
@@ -48,21 +70,26 @@ class Prefs(ctx: Context) {
         get() = sp.getBoolean(K_NNAPI, false)
         set(v) = sp.edit().putBoolean(K_NNAPI, v).apply()
 
-    /** Sentence look-ahead. HayaiTTS keeps one engine warm and streams; 2 is enough to hide latency. */
+    /** Sentence look-ahead. With the async PCM writer, 4 chunks keep generation ahead of playback. */
     var prefetch: Int
-        get() = sp.getInt(K_PREFETCH, 2)
+        get() = sp.getInt(K_PREFETCH, 4)
         set(v) = sp.edit().putInt(K_PREFETCH, v).apply()
 
     var highlight: Boolean
         get() = sp.getBoolean(K_HIGHLIGHT, true)
         set(v) = sp.edit().putBoolean(K_HIGHLIGHT, v).apply()
 
+    /** Reader mode strips site chrome/ads and uses a book-like dark typography theme. */
+    var readerMode: Boolean
+        get() = sp.getBoolean(K_READER, true)
+        set(v) = sp.edit().putBoolean(K_READER, v).apply()
+
     var autoScroll: Boolean
         get() = sp.getBoolean(K_AUTOSCROLL, true)
         set(v) = sp.edit().putBoolean(K_AUTOSCROLL, v).apply()
 
     var maxSentenceChars: Int
-        get() = sp.getInt(K_MAX_CHARS, 220)
+        get() = sp.getInt(K_MAX_CHARS, 90)
         set(v) = sp.edit().putInt(K_MAX_CHARS, v).apply()
 
     companion object {
@@ -81,8 +108,11 @@ class Prefs(ctx: Context) {
         private const val K_NNAPI = "nnapi"
         private const val K_PREFETCH = "prefetch"
         private const val K_HIGHLIGHT = "highlight"
+        private const val K_READER = "reader_mode"
         private const val K_AUTOSCROLL = "autoscroll"
         private const val K_MAX_CHARS = "max_chars"
+        private const val K_TUNING_V2 = "tuning_v2"
+        private const val K_TUNING_V3 = "tuning_v3"
 
         /** Kokoro en-v0_19 speakers, in the order stored in voices.bin. */
         val KOKORO_VOICES = listOf(

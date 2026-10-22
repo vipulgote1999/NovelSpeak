@@ -17,7 +17,7 @@ object SentenceSplitter {
         "no", "vol", "ch", "pt", "fig", "approx", "dept", "est", "min", "max", "sec"
     )
 
-    fun split(text: String, maxChars: Int = 220): List<String> {
+    fun split(text: String, maxChars: Int = 90): List<String> {
         val clean = text.replace('\u00a0', ' ').replace(Regex("[ \\t]+"), " ").trim()
         if (clean.isEmpty()) return emptyList()
 
