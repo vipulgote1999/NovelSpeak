@@ -2,38 +2,45 @@ package app.novelspeak
 
 import android.app.Activity
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.Button
-import android.widget.CheckBox
+import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.RadioButton
-import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.SeekBar
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import java.io.File
 
 /**
- * Engine + model + voice settings.
+ * Engine + model + voice settings, styled as the same dark "reader" system as MainActivity.
  *
- * Backends: Android system TTS (always available, no download) and sherpa-onnx neural voices
- * (Kokoro / Pocket). Tuning knobs mirror the reference apps' exposed settings: threads (NekoSpeak
- * exposes 6 by default, HayaiTTS exposes it too), NNAPI toggle (HayaiTTS "Hardware Acceleration"),
- * plus the sentence prefetch depth that drives the streaming pipeline.
+ * All existing controls are preserved: engine choice, model install/delete/use, voices,
+ * reader/playback tuning, install progress and notification permission.
  */
 class SettingsActivity : Activity() {
 
     private lateinit var prefs: Prefs
     private lateinit var container: LinearLayout
+    private lateinit var scroll: ScrollView
     private lateinit var status: TextView
     private var installing = false
     private val ui = Handler(Looper.getMainLooper())
@@ -41,167 +48,456 @@ class SettingsActivity : Activity() {
     private var lastMessage = ""
     private var wake: PowerManager.WakeLock? = null
     private var ticker: Runnable? = null
+    private val voiceRows = ArrayList<ChoiceRow>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyWindowTheme()
         prefs = Prefs(this)
-        val scroll = ScrollView(this)
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(SPalette.BG)
+        }
+        root.addView(buildTopBar())
+
+        scroll = ScrollView(this).apply {
+            isFillViewport = true
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
+            )
+        }
         container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(28, 28, 28, 28)
+            setPadding(dp(16), dp(2), dp(16), dp(20))
         }
         scroll.addView(container)
-        setContentView(scroll)
+        root.addView(scroll)
+        root.addView(buildFooter())
+        setContentView(root)
 
-        status = TextView(this).apply { setTextColor(Color.DKGRAY); textSize = 12f }
         build()
         maybeAskNotifications()
     }
 
-    private fun header(text: String) {
-        container.addView(TextView(this).apply {
-            this.text = text
-            textSize = 16f
-            setPadding(0, 24, 0, 8)
-        })
+    private fun applyWindowTheme() {
+        window.statusBarColor = SPalette.BG
+        window.navigationBarColor = SPalette.BG
+        window.setBackgroundDrawable(ColorDrawable(SPalette.BG))
+        @Suppress("DEPRECATION")
+        window.decorView.systemUiVisibility = 0
     }
 
-    private fun note(text: String) {
-        container.addView(TextView(this).apply {
-            this.text = text
-            textSize = 12f
-            setTextColor(Color.DKGRAY)
-            setPadding(0, 0, 0, 8)
+    private fun buildTopBar(): LinearLayout {
+        val bar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(8), dp(8), dp(16), dp(8))
+        }
+        val back = TextView(this).apply {
+            text = "←"
+            textSize = 22f
+            gravity = Gravity.CENTER
+            setTextColor(SPalette.TEXT)
+            background = ripple(SPalette.SURFACE_HIGH, 24, oval = true)
+            layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+            contentDescription = "Back"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { finish() }
+        }
+        bar.addView(back)
+        bar.addView(TextView(this).apply {
+            text = "Settings"
+            textSize = 20f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(SPalette.TEXT)
+            setPadding(dp(12), 0, 0, 0)
         })
+        return bar
+    }
+
+    private fun buildFooter(): LinearLayout {
+        val footer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(SPalette.SURFACE, 18)
+            setPadding(dp(16), dp(10), dp(16), dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(dp(16), 0, dp(16), dp(8)) }
+        }
+        status = TextView(this).apply {
+            text = "Changes are saved instantly"
+            textSize = 12f
+            setTextColor(SPalette.MUTED)
+            maxLines = 3
+        }
+        footer.addView(status)
+        footer.addView(pillButton("Reset to tuned defaults", danger = false, topMarginDp = 8) {
+            prefs.speed = 1.0f
+            prefs.prefetch = 4
+            prefs.threads = 4
+            prefs.nnapi = false
+            prefs.maxSentenceChars = 90
+            prefs.highlight = true
+            prefs.autoScroll = true
+            prefs.readerMode = true
+            status.text = "Defaults restored"
+            build()
+        })
+        return footer
     }
 
     private fun build() {
-        // Rebuilds happen on install success / engine change; clear first or re-adding `status`
-        // throws "The specified child already has a parent".
+        val y = scroll.scrollY
         container.removeAllViews()
-        header("Speech engine")
-        val group = RadioGroup(this)
-        val sys = RadioButton(this).apply { text = "Android system TTS (instant, offline, all languages)"; id = 1 }
-        val neu = RadioButton(this).apply { text = "Neural voices — Kokoro / Pocket (sherpa-onnx, download once)"; id = 2 }
-        group.addView(sys)
-        group.addView(neu)
-        group.check(if (prefs.engine == Prefs.ENGINE_SHERPA) 2 else 1)
-        group.setOnCheckedChangeListener { _, id ->
-            prefs.engine = if (id == 2) Prefs.ENGINE_SHERPA else Prefs.ENGINE_SYSTEM
-            NovelSpeakApp.instance.reader.stop()
-            build()
-        }
-        container.addView(group)
+        voiceRows.clear()
 
-        header("Neural model")
-        for (m in ModelManager.MODELS) {
-            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            val label = TextView(this).apply {
-                text = "${m.label}\n${m.sizeMb} MB · ${m.sha256.take(8)}…"
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            }
-            row.addView(label)
-            val installed = ModelManager.isInstalled(this, m.id)
-            row.addView(Button(this).apply {
-                text = if (installed) "Use" else "Install"
-                setOnClickListener {
-                    if (installed) {
-                        prefs.modelId = m.id
-                        status.text = "Active model: ${m.label}"
-                        NovelSpeakApp.instance.reader.stop()
-                    } else {
-                        downloadModel(m)
-                    }
-                }
-            })
-            if (installed) {
-                row.addView(Button(this).apply {
-                    text = "Delete"
-                    setOnClickListener {
-                        ModelManager.delete(this@SettingsActivity, m.id)
-                        status.text = "Deleted ${m.label}"
-                        build()
-                    }
-                })
-            }
-            container.addView(row)
-        }
-        note("Active: ${ModelManager.model(prefs.modelId)?.label ?: prefs.modelId}")
+        section("SPEECH ENGINE")
+        val engineCard = card()
+        engineCard.addView(ChoiceRow(
+            "Android system TTS",
+            "Instant, offline, uses the device's installed voices",
+            prefs.engine != Prefs.ENGINE_SHERPA
+        ) {
+            selectEngine(false)
+        })
+        engineCard.addView(divider())
+        engineCard.addView(ChoiceRow(
+            "Neural voices",
+            "Kokoro / Pocket via sherpa-onnx · download once",
+            prefs.engine == Prefs.ENGINE_SHERPA
+        ) {
+            selectEngine(true)
+        })
+        container.addView(engineCard)
 
-        header("Voice")
-        val engineVoices = currentVoices()
-        if (engineVoices.isEmpty()) {
-            note("No selectable voices for the current engine. System TTS voices are chosen from the device's TTS settings.")
+        section("NEURAL MODEL")
+        val modelCard = card()
+        ModelManager.MODELS.forEachIndexed { index, model ->
+            if (index > 0) modelCard.addView(divider())
+            modelCard.addView(modelBlock(model))
+        }
+        val active = ModelManager.model(prefs.modelId)?.label ?: prefs.modelId
+        modelCard.addView(note("Active model: $active"))
+        container.addView(modelCard)
+
+        section("VOICE")
+        val voiceCard = card()
+        val voices = currentVoices()
+        if (voices.isEmpty()) {
+            voiceCard.addView(note(
+                "No selectable voices for this engine. System TTS voices are chosen from " +
+                    "the device's text-to-speech settings."
+            ))
         } else {
-            for ((id, label) in engineVoices) {
-                val rb = RadioButton(this).apply {
-                    text = label
-                    isChecked = (id == currentVoiceId())
-                    setOnClickListener { applyVoice(id) }
+            for ((id, label) in voices) {
+                val row = ChoiceRow(label, null, id == currentVoiceId()) {
+                    applyVoice(id)
+                    voiceRows.forEach { it.setChecked(it.tag == id) }
+                    status.text = "Voice: $label"
                 }
-                container.addView(rb)
+                row.tag = id
+                voiceRows.add(row)
+                voiceCard.addView(row)
             }
         }
+        container.addView(voiceCard)
 
-        header("Tuning")
-        seekRow("Speech speed", 50, 250, (prefs.speed * 100).toInt()) { v ->
+        section("TUNING")
+        val tuningCard = card()
+        sliderRow(
+            tuningCard, "Speech speed", 50, 250, (prefs.speed * 100).toInt()
+        ) { v ->
             prefs.speed = v / 100f
             "%.2f×".format(prefs.speed)
         }
-        seekRow("Sentence prefetch (streaming look-ahead)", 0, 5, prefs.prefetch) { v ->
+        sliderRow(tuningCard, "Sentence look-ahead", 0, 5, prefs.prefetch) { v ->
             prefs.prefetch = v
             "$v sentence(s)"
         }
-        seekRow("Synthesis threads", 1, Runtime.getRuntime().availableProcessors(), prefs.threads) { v ->
+        sliderRow(
+            tuningCard, "Synthesis threads", 1,
+            Runtime.getRuntime().availableProcessors(), prefs.threads
+        ) { v ->
             prefs.threads = v
             "$v thread(s)"
         }
-        seekRow("Max sentence length", 80, 400, prefs.maxSentenceChars) { v ->
+        sliderRow(tuningCard, "Max sentence length", 80, 400, prefs.maxSentenceChars) { v ->
             prefs.maxSentenceChars = v
             "$v chars"
         }
+        container.addView(tuningCard)
 
-        container.addView(CheckBox(this).apply {
-            text = "Hardware acceleration (NNAPI) — falls back to CPU if unsupported"
-            isChecked = prefs.nnapi
-            setOnCheckedChangeListener { _, b -> prefs.nnapi = b }
-        })
-        container.addView(CheckBox(this).apply {
-            text = "Highlight spoken sentence and auto-scroll"
-            isChecked = prefs.highlight
-            setOnCheckedChangeListener { _, b -> prefs.highlight = b }
-        })
+        section("READING")
+        val readingCard = card()
+        toggleRow(
+            readingCard, "Hardware acceleration (NNAPI)",
+            "Falls back to CPU when the provider is unsupported", prefs.nnapi
+        ) { prefs.nnapi = it }
+        toggleRow(
+            readingCard, "Highlight spoken paragraph",
+            "Keep the active paragraph tinted while reading", prefs.highlight
+        ) { prefs.highlight = it }
+        toggleRow(
+            readingCard, "Auto-scroll",
+            "Center the active paragraph as playback advances", prefs.autoScroll
+        ) { prefs.autoScroll = it }
+        toggleRow(
+            readingCard, "Reader mode",
+            "Hide site chrome, ads and verification dialogs", prefs.readerMode
+        ) { prefs.readerMode = it }
+        container.addView(readingCard)
 
-        container.addView(status)
-        container.addView(Button(this).apply {
-            text = "Reset to tuned defaults"
-            setOnClickListener {
-                prefs.speed = 1.0f
-                prefs.prefetch = 2
-                prefs.threads = 4
-                prefs.nnapi = false
-                prefs.maxSentenceChars = 220
-                prefs.highlight = true
-                status.text = "Defaults restored"
-                build()
+        if (y > 0) scroll.post { scroll.scrollTo(0, y) }
+    }
+
+    private fun selectEngine(sherpa: Boolean) {
+        prefs.engine = if (sherpa) Prefs.ENGINE_SHERPA else Prefs.ENGINE_SYSTEM
+        NovelSpeakApp.instance.reader.stop()
+        status.text = if (sherpa) "Neural engine selected" else "System TTS selected"
+        build()
+    }
+
+    private fun modelBlock(m: ModelManager.Model): View {
+        val block = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(10), 0, dp(10))
+        }
+        val top = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        texts.addView(TextView(this).apply {
+            text = m.label
+            textSize = 14f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(SPalette.TEXT)
+        })
+        texts.addView(TextView(this).apply {
+            text = "${m.sizeMb} MB · ${m.sha256.take(8)}…"
+            textSize = 12f
+            setTextColor(SPalette.MUTED)
+            setPadding(0, dp(2), 0, 0)
+        })
+        top.addView(texts)
+        val installed = ModelManager.isInstalled(this, m.id)
+        val active = prefs.modelId == m.id
+        if (installed && active) {
+            top.addView(TextView(this).apply {
+                text = "ACTIVE"
+                textSize = 10f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                setTextColor(SPalette.ACCENT)
+                background = rounded(SPalette.SURFACE_HIGH, 8)
+                setPadding(dp(8), dp(3), dp(8), dp(3))
+            })
+        }
+        block.addView(top)
+
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(8), 0, 0)
+        }
+        if (installed) {
+            if (!active) {
+                actions.addView(pillButton("Use", primary = true) {
+                    prefs.modelId = m.id
+                    NovelSpeakApp.instance.reader.stop()
+                    status.text = "Active model: ${m.label}"
+                    build()
+                })
             }
+            actions.addView(pillButton("Delete", danger = true) {
+                ModelManager.delete(this, m.id)
+                status.text = "Deleted ${m.label}"
+                build()
+            })
+        } else {
+            actions.addView(pillButton("Install", primary = true) {
+                downloadModel(m)
+            })
+        }
+        block.addView(actions)
+        return block
+    }
+
+    private fun section(title: String) {
+        container.addView(TextView(this).apply {
+            text = title
+            textSize = 11f
+            letterSpacing = 0.1f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(SPalette.MUTED)
+            setPadding(dp(4), dp(18), 0, dp(8))
         })
     }
 
-    private fun seekRow(label: String, min: Int, max: Int, value: Int, onChange: (Int) -> String) {
-        val title = TextView(this).apply { text = "$label: ${onChange(value)}"; setPadding(0, 16, 0, 0) }
-        container.addView(title)
-        container.addView(SeekBar(this).apply {
+    private fun card(): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        background = rounded(SPalette.SURFACE, 18)
+        setPadding(dp(14), dp(8), dp(14), dp(8))
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    }
+
+    private fun divider(): View = View(this).apply {
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(1)
+        ).apply { setMargins(0, dp(2), 0, dp(2)) }
+        setBackgroundColor(SPalette.BORDER)
+    }
+
+    private fun note(text: String): TextView = TextView(this).apply {
+        this.text = text
+        textSize = 12f
+        setTextColor(SPalette.MUTED)
+        setPadding(0, dp(8), 0, 0)
+    }
+
+    private fun sliderRow(
+        parent: LinearLayout,
+        label: String,
+        min: Int,
+        max: Int,
+        value: Int,
+        onChange: (Int) -> String
+    ) {
+        val wrap = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(8), 0, dp(8))
+        }
+        val titleRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val title = TextView(this).apply {
+            text = label
+            textSize = 13f
+            setTextColor(SPalette.TEXT)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        val valueView = TextView(this).apply {
+            text = onChange(value)
+            textSize = 13f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(SPalette.ACCENT)
+            gravity = Gravity.END
+        }
+        titleRow.addView(title)
+        titleRow.addView(valueView)
+        wrap.addView(titleRow)
+        wrap.addView(SeekBar(this).apply {
             this.max = max - min
             progress = (value - min).coerceIn(0, max - min)
+            progressTintList = ColorStateList.valueOf(SPalette.ACCENT)
+            thumbTintList = ColorStateList.valueOf(SPalette.ACCENT)
+            progressBackgroundTintList = ColorStateList.valueOf(SPalette.BORDER)
+            splitTrack = false
+            setPadding(dp(12), dp(2), dp(12), 0)
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(sb: SeekBar?, p: Int, fromUser: Boolean) {
-                    title.text = "$label: ${onChange(p + min)}"
+                    valueView.text = onChange(p + min)
                 }
+
                 override fun onStartTrackingTouch(sb: SeekBar?) {}
                 override fun onStopTrackingTouch(sb: SeekBar?) {}
             })
         })
+        parent.addView(wrap)
+    }
+
+    private fun toggleRow(
+        parent: LinearLayout,
+        title: String,
+        subtitle: String,
+        checked: Boolean,
+        onChange: (Boolean) -> Unit
+    ) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(4), dp(8), dp(4), dp(8))
+            minimumHeight = dp(56)
+            isClickable = true
+            isFocusable = true
+            background = ripple(SPalette.SURFACE_HIGH, 12)
+        }
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        texts.addView(TextView(this).apply {
+            text = title
+            textSize = 13f
+            setTextColor(SPalette.TEXT)
+        })
+        texts.addView(TextView(this).apply {
+            text = subtitle
+            textSize = 11f
+            setTextColor(SPalette.MUTED)
+            setPadding(0, dp(1), 0, 0)
+        })
+        row.addView(texts)
+        val sw = Switch(this).apply {
+            isChecked = checked
+            showText = false
+            thumbTintList = switchThumbColors()
+            trackTintList = switchTrackColors()
+            contentDescription = title
+            setOnCheckedChangeListener { _, b -> onChange(b) }
+        }
+        row.addView(sw)
+        row.setOnClickListener { sw.toggle() }
+        parent.addView(row)
+    }
+
+    private fun switchThumbColors(): ColorStateList = ColorStateList(
+        arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+        intArrayOf(SPalette.ACCENT, SPalette.MUTED)
+    )
+
+    private fun switchTrackColors(): ColorStateList = ColorStateList(
+        arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+        intArrayOf(0x666EE7B7, SPalette.BORDER)
+    )
+
+    private fun pillButton(
+        label: String,
+        primary: Boolean = false,
+        danger: Boolean = false,
+        topMarginDp: Int = 0,
+        onClick: () -> Unit
+    ): TextView = TextView(this).apply {
+        text = label
+        textSize = 12f
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        gravity = Gravity.CENTER
+        setTextColor(
+            when {
+                primary -> SPalette.BG
+                danger -> SPalette.RED
+                else -> SPalette.TEXT
+            }
+        )
+        background = ripple(
+            if (primary) SPalette.ACCENT else SPalette.SURFACE_HIGH, 12
+        )
+        setPadding(dp(14), 0, dp(14), 0)
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, dp(38)
+        ).apply {
+            marginEnd = dp(8)
+            topMargin = dp(topMarginDp)
+        }
+        isClickable = true
+        isFocusable = true
+        setOnClickListener { onClick() }
     }
 
     private fun currentVoices(): List<Pair<String, String>> {
@@ -217,7 +513,11 @@ class SettingsActivity : Activity() {
     }
 
     private fun currentVoiceId(): String =
-        if (prefs.engine == Prefs.ENGINE_SHERPA && prefs.modelId != Prefs.MODEL_POCKET) prefs.kokoroSid.toString() else ""
+        if (prefs.engine == Prefs.ENGINE_SHERPA && prefs.modelId != Prefs.MODEL_POCKET) {
+            prefs.kokoroSid.toString()
+        } else {
+            ""
+        }
 
     private fun applyVoice(id: String) {
         if (prefs.modelId == Prefs.MODEL_POCKET) {
@@ -225,7 +525,6 @@ class SettingsActivity : Activity() {
         } else {
             id.toIntOrNull()?.let { prefs.kokoroSid = it }
         }
-        status.text = "Voice updated"
     }
 
     private fun downloadModel(m: ModelManager.Model) {
@@ -286,8 +585,6 @@ class SettingsActivity : Activity() {
         val s = ((System.currentTimeMillis() - installStartedAt) / 1000).toInt()
         val mm = s / 60
         val ss = s % 60
-        // Never treat `msg` as a format string: progress text contains '%' (e.g. "42%"),
-        // which made String.format throw DuplicateFormatFlagsException on every tick.
         return msg + "  ·  " + mm + ":" + if (ss < 10) "0$ss" else ss.toString()
     }
 
@@ -296,7 +593,10 @@ class SettingsActivity : Activity() {
         val r = object : Runnable {
             override fun run() {
                 if (!installing) return
-                if (isFinishing || isDestroyed) { stopInstallUi(); return }
+                if (isFinishing || isDestroyed) {
+                    stopInstallUi()
+                    return
+                }
                 status.text = withElapsed(lastMessage)
                 ui.postDelayed(this, 1000)
             }
@@ -313,24 +613,131 @@ class SettingsActivity : Activity() {
     private fun stopInstallUi() {
         installing = false
         stopTicker()
-        try { window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) } catch (e: Throwable) {}
+        try {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } catch (e: Throwable) {
+        }
         try {
             if (wake?.isHeld == true) wake?.release()
-        } catch (e: Throwable) {}
+        } catch (e: Throwable) {
+        }
         wake = null
     }
 
     override fun onDestroy() {
-        // If an install is running, leave the wake lock to the worker thread's completion path.
         if (!installing) stopInstallUi()
         super.onDestroy()
     }
 
     private fun maybeAskNotifications() {
-        if (Build.VERSION.SDK_INT >= 33) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
             try {
                 requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 10)
-            } catch (e: Throwable) {}
+            } catch (e: Throwable) {
+            }
         }
     }
+
+    // ---- small design system ----
+
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+    private fun rounded(color: Int, radiusDp: Int): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(radiusDp).toFloat()
+        }
+
+    private fun oval(color: Int): GradientDrawable =
+        GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(color)
+        }
+
+    private fun ring(checked: Boolean): GradientDrawable =
+        GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.TRANSPARENT)
+            setStroke(dp(2), if (checked) SPalette.ACCENT else SPalette.BORDER)
+        }
+
+    private fun ripple(color: Int, radiusDp: Int, oval: Boolean = false): RippleDrawable {
+        val content = GradientDrawable().apply {
+            setColor(color)
+            if (oval) shape = GradientDrawable.OVAL else cornerRadius = dp(radiusDp).toFloat()
+        }
+        val mask = GradientDrawable().apply {
+            setColor(Color.WHITE)
+            if (oval) shape = GradientDrawable.OVAL else cornerRadius = dp(radiusDp).toFloat()
+        }
+        return RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), content, mask)
+    }
+
+    private inner class ChoiceRow(
+        title: String,
+        subtitle: String?,
+        checked: Boolean,
+        onClick: () -> Unit
+    ) : LinearLayout(this@SettingsActivity) {
+        private val ringView = FrameLayout(this@SettingsActivity)
+        private val dot = View(this@SettingsActivity)
+
+        init {
+            orientation = HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(8), dp(10), dp(8), dp(10))
+            minimumHeight = dp(56)
+            background = ripple(SPalette.SURFACE_HIGH, 12)
+            isClickable = true
+            isFocusable = true
+
+            ringView.layoutParams = LayoutParams(dp(22), dp(22))
+            ringView.background = ring(checked)
+            dot.layoutParams = FrameLayout.LayoutParams(dp(10), dp(10), Gravity.CENTER)
+            dot.background = oval(SPalette.ACCENT)
+            dot.visibility = if (checked) View.VISIBLE else View.INVISIBLE
+            ringView.addView(dot)
+            addView(ringView)
+
+            val texts = LinearLayout(this@SettingsActivity).apply {
+                orientation = VERTICAL
+                setPadding(dp(12), 0, 0, 0)
+                layoutParams = LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            texts.addView(TextView(this@SettingsActivity).apply {
+                text = title
+                textSize = 14f
+                setTextColor(SPalette.TEXT)
+            })
+            if (!subtitle.isNullOrEmpty()) {
+                texts.addView(TextView(this@SettingsActivity).apply {
+                    text = subtitle
+                    textSize = 12f
+                    setTextColor(SPalette.MUTED)
+                    setPadding(0, dp(2), 0, 0)
+                })
+            }
+            addView(texts)
+            setOnClickListener { onClick() }
+        }
+
+        fun setChecked(checked: Boolean) {
+            ringView.background = ring(checked)
+            dot.visibility = if (checked) View.VISIBLE else View.INVISIBLE
+        }
+    }
+}
+
+private object SPalette {
+    val BG = 0xFF0F1115.toInt()
+    val SURFACE = 0xFF171A21.toInt()
+    val SURFACE_HIGH = 0xFF222833.toInt()
+    val BORDER = 0xFF2C3442.toInt()
+    val TEXT = 0xFFF3F6F9.toInt()
+    val MUTED = 0xFF9AA6B6.toInt()
+    val ACCENT = 0xFF6EE7B7.toInt()
+    val RED = 0xFFF87171.toInt()
 }
