@@ -7,10 +7,15 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.PowerManager
 
 /**
@@ -26,6 +31,16 @@ class PlaybackService : Service(), Reader.Listener {
     private var session: MediaSession? = null
     private var wake: PowerManager.WakeLock? = null
     private var started = false
+    private var focusRequest: AudioFocusRequest? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
+        if (change == AudioManager.AUDIOFOCUS_LOSS ||
+            change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
+        ) {
+            mainHandler.post { NovelSpeakApp.instance.reader.pause() }
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -34,6 +49,10 @@ class PlaybackService : Service(), Reader.Listener {
         try {
             createChannel()
             session = MediaSession(this, "NovelSpeak").apply {
+                setFlags(
+                    MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or
+                        MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS
+                )
                 setCallback(object : MediaSession.Callback() {
                     override fun onPlay() { NovelSpeakApp.instance.reader.play() }
                     override fun onPause() { NovelSpeakApp.instance.reader.pause() }
@@ -55,9 +74,10 @@ class PlaybackService : Service(), Reader.Listener {
         try {
             when (intent?.action) {
                 ACTION_PAUSE -> NovelSpeakApp.instance.reader.pause()
-                ACTION_PLAY -> NovelSpeakApp.instance.reader.play()
+                ACTION_PLAY -> { requestFocus(); NovelSpeakApp.instance.reader.play() }
                 ACTION_STOP -> { NovelSpeakApp.instance.reader.stop(); stopSelfSafely() }
                 ACTION_NEXT -> NovelSpeakApp.instance.reader.nextSentence()
+                ACTION_PREV -> NovelSpeakApp.instance.reader.prevSentence()
             }
             if (!started) {
                 started = true
@@ -97,11 +117,52 @@ class PlaybackService : Service(), Reader.Listener {
 
     override fun onDestroy() {
         NovelSpeakApp.instance.reader.removeListener(this)
+        abandonFocus()
         try { if (wake?.isHeld == true) wake?.release() } catch (e: Throwable) {}
         session?.release()
         session = null
         started = false
         super.onDestroy()
+    }
+
+    private fun requestFocus() {
+        try {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            if (Build.VERSION.SDK_INT >= 26) {
+                val attrs = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+                val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                    .setAudioAttributes(attrs)
+                    .setOnAudioFocusChangeListener(focusListener)
+                    .setWillPauseWhenDucked(true)
+                    .build()
+                focusRequest = req
+                am.requestAudioFocus(req)
+            } else {
+                @Suppress("DEPRECATION")
+                am.requestAudioFocus(
+                    focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN
+                )
+            }
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "requestAudioFocus failed", t)
+        }
+    }
+
+    private fun abandonFocus() {
+        try {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            if (Build.VERSION.SDK_INT >= 26) {
+                focusRequest?.let { am.abandonAudioFocusRequest(it) }
+            } else {
+                @Suppress("DEPRECATION")
+                am.abandonAudioFocus(focusListener)
+            }
+        } catch (e: Throwable) {
+        }
+        focusRequest = null
     }
 
     private fun updateSession(state: Int) {
