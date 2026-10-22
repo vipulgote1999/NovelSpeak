@@ -24,7 +24,15 @@ The reverse-engineering notes are in [docs/re-natural-ai-voices.md](docs/re-natu
 
 ## Install
 
-A signed debug build is produced at `build/NovelSpeak-debug.apk`:
+Download the latest APK from [GitHub Releases](https://github.com/vipulgote1999/NovelSpeak/releases/latest):
+
+- `NovelSpeak-1.0.0-arm64-v8a.apk` — Android 7.0 (API 24)+, arm64-v8a.
+- `NovelSpeak-1.0.0-arm64-v8a.apk.sha256` — verify with `sha256sum -c`.
+
+The release APK is signed with a dedicated release key. If you previously installed a
+debug-signed build, uninstall it first; that erases its settings and downloaded models.
+
+For development, `./build.sh` produces a debug-signed `build/NovelSpeak-debug.apk`:
 
 ```bash
 termux-open build/NovelSpeak-debug.apk      # opens the system installer
@@ -118,8 +126,11 @@ curl -LO https://dl.google.com/dl/android/maven2/com/android/tools/r8/9.5.28/r8-
 cd - && ./build.sh
 ```
 
-`build.sh` runs: `aapt2 link` → `kotlinc` → `d8` → package dex + `lib/arm64-v8a/*.so` → `apksigner`
-(debug keystore generated on first run). Use `ABI=armeabi-v7a ./build.sh` for 32-bit devices.
+`build.sh` runs: `aapt2 link` → `kotlinc` → `d8` → package dex + `lib/arm64-v8a/*.so` → `zipalign`
+→ `apksigner`. The version comes from `app/AndroidManifest.xml`; debug builds use
+`build/debug.keystore` and are generated on first run. For a signed release build, set
+`KEYSTORE`, `KS_ALIAS`, `KS_PASS`, `KEY_PASS`, and `OUT_APK` — see [RELEASING.md](RELEASING.md).
+Use `ABI=armeabi-v7a ./build.sh` for 32-bit devices.
 
 ### Android Studio
 
@@ -159,6 +170,12 @@ PlaybackService     foreground service + MediaSession + wake lock (screen-off pl
   takes roughly 1–3 minutes on a phone; a wake lock + keep-screen-on is held during install so it
   cannot be suspended. A 45 s no-progress watchdog aborts with a readable error.
 - The default build is arm64-v8a only.
+
+## License
+
+NovelSpeak is licensed under the [Apache License 2.0](LICENSE). Bundled ad-blocking lists are
+redistributed unmodified under their own licenses; see
+[app/assets/adblock/NOTICE.txt](app/assets/adblock/NOTICE.txt).
 
 ## Roadmap
 
