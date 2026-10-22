@@ -44,6 +44,16 @@ Built with Kotlin 2.2.20, `aapt2` (build-tools 34), R8/D8 9.5.28, `apksigner`.
 * Extraction: 39 blocks, 8,172 chars, `dotted: []`, `classroom: true`,
   `bastard: true`, `hasNavNoise: false`.
 
+## Merge audit
+
+At the rebase commit `a5a0eb6`, the main-touched files (`app/AndroidManifest.xml`,
+`app/assets/extract.js`, `AudioDsp.kt`, `DiagLog.kt`, `PcmPlayer.kt`,
+`PlaybackService.kt`, `SentenceSplitter.kt`, `SherpaEngine.kt`, `WebExtractor.kt`)
+had an empty diff against `origin/main`. The reader-fix commits `9df3ba9` /
+`f114806` intentionally modify `extract.js`, `SentenceSplitter.kt`, and
+`SherpaEngine.kt`; no main-only changes were lost. The rebase is linear and has
+no conflict markers.
+
 ## Notes
 
 The iqoo disconnected after the final reload check; the self-test screenshot is

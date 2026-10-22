@@ -95,15 +95,18 @@ bar and the footer/player above the navigation bar.
 
 ## 6. Merge audit
 
-The feature branch was rebased onto `origin/main` (`3deb352`). The following
-main-touched files are byte-identical to main (empty `git diff origin/main..HEAD`):
+The feature branch was rebased onto `origin/main` (`3deb352`). At the rebase
+commit (`a5a0eb6`), the following main-touched files were byte-identical to main
+(empty `git diff origin/main..HEAD`):
 
 `app/AndroidManifest.xml`, `app/assets/extract.js`, `AudioDsp.kt`, `DiagLog.kt`,
 `PcmPlayer.kt`, `PlaybackService.kt`, `SentenceSplitter.kt`, `SherpaEngine.kt`,
 `WebExtractor.kt`.
 
-No main functionality was lost. The only reader changes after the rebase are the
-fixes above.
+The subsequent reader-fix commits intentionally change `extract.js`,
+`SentenceSplitter.kt`, and `SherpaEngine.kt` (the dotted-word, boundary, and
+callback-contract fixes above). No main functionality was lost. The only reader
+changes after the rebase are the fixes above.
 
 ## 7. Reference-app evidence (REA)
 

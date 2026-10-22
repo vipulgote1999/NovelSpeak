@@ -7,17 +7,21 @@ Read-only audit of `vipulgote1999/feat-adblocker-integration`.
 * `git diff origin/main..HEAD --stat` contains only adblock assets/Kotlin plus
   `MainActivity.kt`, `Prefs.kt`, `Reader.kt`, `SettingsActivity.kt`, `README.md`,
   `docs/`, and the reader fixes.
-* Main-touched files have an **empty diff** against `origin/main`:
+* At the rebase commit (`a5a0eb6`), the main-touched files had an **empty diff**
+  against `origin/main`:
   - `app/AndroidManifest.xml`
-  - `app/assets/extract.js` (before the reader-fix commit; final diff is the
-    dotted-word/visibility fix described in `docs/reader-fixes.md`)
+  - `app/assets/extract.js`
   - `AudioDsp.kt`
   - `DiagLog.kt`
   - `PcmPlayer.kt`
   - `PlaybackService.kt`
-  - `SentenceSplitter.kt` (final diff is the boundary/default fix)
-  - `SherpaEngine.kt` (final diff is the callback-contract fix)
+  - `SentenceSplitter.kt`
+  - `SherpaEngine.kt`
   - `WebExtractor.kt`
+* The subsequent reader-fix commits (`9df3ba9`, `f114806`) intentionally modify
+  `extract.js`, `SentenceSplitter.kt`, and `SherpaEngine.kt` (the dotted-word,
+  boundary, and callback-contract fixes). These are not lost main changes; the
+  fixes are documented in `docs/reader-fixes.md`.
 * The rebase is linear: `3deb352` → `724e251` → `a720278` → `a5a0eb6` →
   `9df3ba9` → `f114806`.
 * No conflict markers remain.
