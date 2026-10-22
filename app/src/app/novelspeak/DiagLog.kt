@@ -27,50 +27,97 @@ object DiagLog {
     private const val TAG = "NovelSpeak"
     private val lock = Any()
     private var uri: Uri? = null
+    private var file: java.io.File? = null
     private val time = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
 
     fun init(ctx: Context) {
         synchronized(lock) {
-            if (uri != null) return
+            if (uri != null || file != null) return
+            if (Build.VERSION.SDK_INT < 29) { initFile(ctx); return }
             try {
-                if (Build.VERSION.SDK_INT >= 29) {
-                    val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
-                    var found: Uri? = null
-                    ctx.contentResolver.query(
-                        collection,
-                        arrayOf(MediaStore.Downloads._ID),
-                        "${MediaStore.Downloads.DISPLAY_NAME}=? AND ${MediaStore.Downloads.RELATIVE_PATH} LIKE ?",
-                        arrayOf(FILE_NAME, "Download%"),
-                        null
-                    )?.use { c ->
-                        if (c.moveToFirst()) found = ContentUris.withAppendedId(collection, c.getLong(0))
-                    }
-                    if (found == null) {
-                        val values = ContentValues().apply {
-                            put(MediaStore.Downloads.DISPLAY_NAME, FILE_NAME)
-                            put(MediaStore.Downloads.MIME_TYPE, "text/plain")
-                            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+                // Repair rows left pending by older builds before looking for the log row.
+                unpendStale(ctx)
+
+                var target: Uri? = null
+                ctx.contentResolver.query(
+                    collection,
+                    arrayOf(MediaStore.Downloads._ID),
+                    "${MediaStore.Downloads.DISPLAY_NAME}=? AND ${MediaStore.Downloads.RELATIVE_PATH} LIKE ?",
+                    arrayOf(FILE_NAME, "Download%"),
+                    null
+                )?.use { c ->
+                    if (c.moveToFirst()) target = ContentUris.withAppendedId(collection, c.getLong(0))
+                }
+                if (target == null) target = newRow(ctx, collection)
+
+                if (target != null) {
+                    try {
+                        // Write while the row is still pending: MediaProvider's demand scan deletes
+                        // non-pending rows whose backing file does not exist yet.
+                        writeHeader(ctx, target)
+                        publish(ctx, target)
+                    } catch (e: Throwable) {
+                        // The MediaStore row can outlive its file (snapshot restore, cleanup, or a
+                        // stale row from a previous install). openOutputStream then throws forever,
+                        // which used to disable file logging for the whole session.
+                        Log.w(TAG, "stale log row, recreating", e)
+                        try { ctx.contentResolver.delete(target, null, null) } catch (ignored: Throwable) {}
+                        target = newRow(ctx, collection)
+                        if (target != null) {
+                            writeHeader(ctx, target)
+                            publish(ctx, target)
                         }
-                        found = ctx.contentResolver.insert(collection, values)
                     }
-                    uri = found
-                    found?.let {
-                        // New Downloads rows are created pending (IS_PENDING=1) on Android 10+.
-                        // Until cleared the file is invisible and unreadable to other apps
-                        // (Termux), which made earlier crash/install logs look missing.
-                        publish(ctx, it)
-                        ctx.contentResolver.openOutputStream(it, "wt")?.use { os ->
-                            os.write(header(ctx).toByteArray())
-                        }
+                    uri = target
+                    if (target != null) {
                         // Now that the log is readable, rescue orphaned crash files from older
                         // builds: read them as their owning package and copy the text in.
-                        recoverStale(ctx, it)
+                        recoverStale(ctx, target)
                     }
                 }
             } catch (e: Throwable) {
                 Log.w(TAG, "DiagLog init failed", e)
             }
+            if (uri == null) initFile(ctx)
         }
+    }
+
+    /**
+     * MediaStore can be unavailable (or every row can be deleted by a scanner). Keep a private
+     * file fallback so a bug report still has a log; adb can read it from the app's external dir.
+     */
+    private fun initFile(ctx: Context) {
+        try {
+            val dir = ctx.getExternalFilesDir(null) ?: ctx.filesDir
+            val f = java.io.File(dir, FILE_NAME)
+            f.writeText(header(ctx))
+            file = f
+            Log.i(TAG, "DiagLog file fallback: ${f.absolutePath}")
+        } catch (e: Throwable) {
+            Log.w(TAG, "DiagLog file fallback failed", e)
+        }
+    }
+
+    private fun newRow(ctx: Context, collection: Uri): Uri? {
+        val values = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, FILE_NAME)
+            put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        return try { ctx.contentResolver.insert(collection, values) } catch (e: Throwable) {
+            Log.w(TAG, "insert log row failed", e)
+            null
+        }
+    }
+
+    private fun writeHeader(ctx: Context, target: Uri) {
+        // Throw instead of silently returning when the row has no backing file, so init can
+        // recreate the row.
+        val os = ctx.contentResolver.openOutputStream(target, "wt")
+            ?: throw IllegalStateException("no output stream for $target")
+        os.use { it.write(header(ctx).toByteArray()) }
     }
 
     private fun header(ctx: Context): String {
@@ -179,11 +226,23 @@ object DiagLog {
     fun line(ctx: Context, msg: String) {
         Log.i(TAG, msg)
         synchronized(lock) {
-            try {
-                val u = uri ?: return
-                ctx.contentResolver.openOutputStream(u, "wa")?.use { os ->
-                    os.write("${time.format(Date())} $msg\n".toByteArray())
+            val text = "${time.format(Date())} $msg\n"
+            val u = uri
+            if (u != null) {
+                try {
+                    val os = ctx.contentResolver.openOutputStream(u, "wa")
+                    if (os != null) {
+                        os.use { it.write(text.toByteArray()) }
+                        return
+                    }
+                } catch (e: Throwable) {
+                    // Row disappeared (MediaProvider scan); switch to the file fallback.
+                    uri = null
                 }
+            }
+            if (file == null) initFile(ctx)
+            try {
+                file?.appendText(text)
             } catch (e: Throwable) {
                 // last resort: keep going, install must not fail because logging failed
             }

@@ -64,6 +64,7 @@ class NovelSpeakApp : Application() {
                         put(MediaStore.Downloads.DISPLAY_NAME, "novelspeak-crash.txt")
                         put(MediaStore.Downloads.MIME_TYPE, "text/plain")
                         put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                        put(MediaStore.MediaColumns.IS_PENDING, 1)
                     }
                     uri = contentResolver.insert(collection, values)
                 }
@@ -319,7 +320,7 @@ class Reader(private val app: NovelSpeakApp) {
 
     fun setSpeed(v: Float) {
         app.prefs.speed = v
-        status = "Speed ${"%.2f".format(v)}×"
+        // Speed is shown in the player bar; keep the status focused on playback state.
         notifyState()
     }
 
