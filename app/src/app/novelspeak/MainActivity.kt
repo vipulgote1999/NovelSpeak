@@ -24,6 +24,7 @@ import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.CookieManager
@@ -74,6 +75,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private var appendNext = false
     private var seeking = false
     private var sentenceTotal = 0
+    private var lastExtractedUrl: String? = null
+    private var lastExtractedBlocks = -1
 
     private val reader: Reader get() = NovelSpeakApp.instance.reader
 
@@ -331,7 +334,29 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         })
 
         setContentView(root)
+        applyInsets(root)
         updateReaderButton()
+    }
+
+    /** Keep the browser bar below the status bar and the player card above the nav bar. */
+    private fun applyInsets(root: View) {
+        root.setOnApplyWindowInsetsListener { v, insets ->
+            val top: Int
+            val bottom: Int
+            if (Build.VERSION.SDK_INT >= 30) {
+                val bars = insets.getInsets(WindowInsets.Type.systemBars())
+                top = bars.top
+                bottom = bars.bottom
+            } else {
+                @Suppress("DEPRECATION")
+                top = insets.systemWindowInsetTop
+                @Suppress("DEPRECATION")
+                bottom = insets.systemWindowInsetBottom
+            }
+            v.setPadding(0, top, 0, bottom)
+            insets
+        }
+        root.requestApplyInsets()
     }
 
     private fun configureWebView() {
@@ -404,7 +429,17 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     .putString("last_url", url ?: "").apply()
                 updateNavButtons()
                 if (view != null) AdBlocker.inject(view, url ?: "")
-                extractNow(append = appendNext)
+                // A duplicate onPageFinished for the same document (ad-driven reload,
+                // popunder navigation back, WebView quirk) must not rewind the reader.
+                // Retry only when the previous extraction was weak (challenge page)
+                // and playback is not in progress.
+                val sameUrl = url != null && url == lastExtractedUrl
+                val retryWeakPage = !reader.state().playing && lastExtractedBlocks in 0..10
+                if (appendNext || !sameUrl || retryWeakPage) {
+                    lastExtractedUrl = url
+                    lastExtractedBlocks = -1
+                    extractNow(append = appendNext)
+                }
                 appendNext = false
             }
         }
@@ -509,6 +544,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 "extract url=${web.url} append=$append title=\"${title.take(60)}\" blocks=${blocks.size}"
             )
             runOnUiThread {
+                lastExtractedUrl = web.url
+                lastExtractedBlocks = blocks.size
                 val badPage = title.contains("not found", true) ||
                     title.contains("404", true)
                 val blocked = badPage ||

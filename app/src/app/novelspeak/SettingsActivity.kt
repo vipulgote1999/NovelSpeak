@@ -20,6 +20,7 @@ import android.text.style.RelativeSizeSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -77,9 +78,31 @@ class SettingsActivity : Activity() {
         root.addView(scroll)
         root.addView(buildFooter())
         setContentView(root)
+        applyInsets(root)
 
         build()
         maybeAskNotifications()
+    }
+
+    /** Keep the top bar below the status bar and the footer above the nav bar. */
+    private fun applyInsets(root: View) {
+        root.setOnApplyWindowInsetsListener { v, insets ->
+            val top: Int
+            val bottom: Int
+            if (Build.VERSION.SDK_INT >= 30) {
+                val bars = insets.getInsets(WindowInsets.Type.systemBars())
+                top = bars.top
+                bottom = bars.bottom
+            } else {
+                @Suppress("DEPRECATION")
+                top = insets.systemWindowInsetTop
+                @Suppress("DEPRECATION")
+                bottom = insets.systemWindowInsetBottom
+            }
+            v.setPadding(0, top, 0, bottom)
+            insets
+        }
+        root.requestApplyInsets()
     }
 
     private fun applyWindowTheme() {
@@ -140,7 +163,7 @@ class SettingsActivity : Activity() {
             prefs.prefetch = 4
             prefs.threads = 4
             prefs.nnapi = false
-            prefs.maxSentenceChars = 90
+            prefs.maxSentenceChars = Prefs.DEFAULT_MAX_CHARS
             prefs.highlight = true
             prefs.autoScroll = true
             prefs.readerMode = true

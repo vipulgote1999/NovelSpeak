@@ -14,10 +14,10 @@ object SentenceSplitter {
 
     private val ABBREV = setOf(
         "mr", "mrs", "ms", "dr", "prof", "sr", "jr", "st", "vs", "etc", "e.g", "i.e",
-        "no", "vol", "ch", "pt", "fig", "approx", "dept", "est", "min", "max", "sec"
+        "vol", "ch", "pt", "fig", "approx", "dept", "est", "min", "max", "sec"
     )
 
-    fun split(text: String, maxChars: Int = 90): List<String> {
+    fun split(text: String, maxChars: Int = 180): List<String> {
         val clean = text.replace('\u00a0', ' ').replace(Regex("[ \\t]+"), " ").trim()
         if (clean.isEmpty()) return emptyList()
 
@@ -59,7 +59,10 @@ object SentenceSplitter {
         }
         flush()
 
-        // second pass: split anything still too long on commas, then hard-wrap
+        // second pass: split only at real boundaries. Prefer terminal punctuation
+        // (never inside a decimal or abbreviation), then a comma, then a space.
+        // If no boundary is near the cap, extend to the next space so a word is
+        // never cut in half.
         val result = ArrayList<String>(out.size)
         for (s in out) {
             if (s.length <= maxChars) {
@@ -70,12 +73,33 @@ object SentenceSplitter {
             while (start < s.length) {
                 var end = minOf(start + maxChars, s.length)
                 if (end < s.length) {
-                    val comma = s.lastIndexOf(',', end)
-                    if (comma > start + 40) end = comma + 1
-                    else {
-                        val space = s.lastIndexOf(' ', end)
-                        if (space > start + 40) end = space
+                    var cut = -1
+                    var k = end - 1
+                    while (k > start + 40) {
+                        val c = s[k]
+                        val terminal = c == '.' || c == '!' || c == '?' || c == ';'
+                        val atBoundary = k + 1 == s.length || s[k + 1].isWhitespace()
+                        if (terminal && atBoundary &&
+                            !isFalseBreak(StringBuilder(s.substring(start, k + 1)))
+                        ) {
+                            cut = k + 1
+                            break
+                        }
+                        k--
                     }
+                    if (cut < 0) {
+                        val comma = s.lastIndexOf(',', end - 1)
+                        if (comma > start + 40) cut = comma + 1
+                    }
+                    if (cut < 0) {
+                        val space = s.lastIndexOf(' ', end - 1)
+                        if (space > start + 40) cut = space
+                    }
+                    if (cut < 0) {
+                        val nextSpace = s.indexOf(' ', end)
+                        if (nextSpace > end) cut = nextSpace
+                    }
+                    if (cut > start) end = cut
                 }
                 val piece = s.substring(start, end).trim()
                 if (piece.isNotEmpty()) result.add(piece)
@@ -92,11 +116,13 @@ object SentenceSplitter {
         val last = s.last()
         if (last == ';') return false
         // decimal number: "3." followed by digit handled by caller (next char whitespace check)
-        val word = s.trimEnd('.', '!', '?').takeLastWhile { it.isLetter() }.lowercase()
+        val raw = s.trimEnd('.', '!', '?').takeLastWhile { it.isLetter() }
+        val word = raw.lowercase()
         if (word.isEmpty()) return false
         if (word in ABBREV) return true
-        // single-letter initial like "J." / "A."
-        if (word.length == 1) return true
+        // Single-letter initial like "J." is a false break, but contraction tails
+        // ("don't.", "isn't.") end in a lowercase letter and must break.
+        if (word.length == 1) return raw[0].isUpperCase()
         return false
     }
 }

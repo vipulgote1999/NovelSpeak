@@ -64,7 +64,10 @@ class SherpaEngine(
     private inner class SampleSink : (FloatArray) -> Int {
         var wrote = false
         override fun invoke(samples: FloatArray): Int {
-            if (stopFlag) return 1
+            // sherpa-onnx offline-tts callback contract: 1 = continue generating,
+            // 0 = stop. The previous values were inverted, so every sentence stopped
+            // after the first 15-frame / 1.2 s chunk.
+            if (stopFlag) return 0
             if (!peakLogged) {
                 peakLogged = true
                 var peak = 0f
@@ -76,9 +79,9 @@ class SherpaEngine(
             }
             return if (player.write(samples)) {
                 wrote = true
-                0
-            } else {
                 1
+            } else {
+                0
             }
         }
     }
