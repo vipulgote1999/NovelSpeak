@@ -1,18 +1,33 @@
 appId: app.novelspeak
-name: "06 sleep timer: 15 minutes arms countdown, Off clears it"
-tags: [sleep-timer]
+name: "06 sleep timer: set 15 minutes, countdown appears, Off clears it"
+tags:
+  - pending
+  - sleep-timer
 ---
 - launchApp
+- tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter1.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter1.html"
+    timeout: 15000
+- tapOn: "Read"
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+"
+    timeout: 30000
 - tapOn: "More options"
 - tapOn: "Sleep timer"
+- assertVisible: "Off"
 - assertVisible: "15 minutes"
 - assertVisible: "30 minutes"
+- assertVisible: "45 minutes"
+- assertVisible: "60 minutes"
 - assertVisible: "End of chapter"
 - tapOn: "15 minutes"
-- extendedWaitUntil:
-    visible: "Sleep timer.*[0-9]+:[0-9]+"
-    timeout: 5000
+# The player card shows "Sleep timer · M:SS" while a timer is armed.
+- assertVisible: "Sleep timer · [0-9]+:[0-9]+"
 - tapOn: "More options"
 - tapOn: "Sleep timer"
 - tapOn: "Off"
-- assertNotVisible: "Sleep timer.*[0-9]+:[0-9]+"
+- assertNotVisible: "Sleep timer · [0-9]+:[0-9]+"

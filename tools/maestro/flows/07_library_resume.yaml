@@ -1,6 +1,8 @@
 appId: app.novelspeak
-name: "07 library: opened chapter appears and reopens"
-tags: [library]
+name: "07 library: opened chapter appears with progress and resumes"
+tags:
+  - pending
+  - library
 ---
 - launchApp
 - tapOn: "Edit address"
@@ -14,10 +16,29 @@ tags: [library]
 - extendedWaitUntil:
     visible: "Sentence [0-9]+ of [0-9]+"
     timeout: 30000
+- tapOn: "Next ch"
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter2.html"
+    timeout: 30000
+# Library entry is recorded post-extraction.
 - tapOn: "More options"
 - tapOn: "Library"
-- assertVisible: "The Lamplighter.*"
-- tapOn: "The Lamplighter.*"
+# Readability cleans the stored title to "<h1 minus chapter prefix> — <site>";
+# for chapter2 that is "The Salt Road — The Wick Chronicle".
+- assertVisible: "Library"
+- assertVisible: "Library entry"
+- assertVisible: ".*Salt Road.*"
+- assertVisible: ".*[0-9]+%.*"
+- tapOn:
+    text: ".*Salt Road.*"
+    index: 0
 - extendedWaitUntil:
-    visible: "Sentence [0-9]+ of [0-9]+"
+    visible: "Address bar, http://localhost:8765/chapter2.html"
     timeout: 20000
+- assertVisible: "Sentence [0-9]+ of [0-9]+"
+# Persistence after a process restart.
+- launchApp
+- tapOn: "More options"
+- tapOn: "Library"
+- assertVisible: "Library entry"
+- assertVisible: ".*Salt Road.*"

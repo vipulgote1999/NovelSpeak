@@ -1,7 +1,12 @@
 appId: app.novelspeak
-name: "05 per-site settings: dialog opens, reader toggle applies, page survives"
-tags: [per-site]
+name: "05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch"
+tags:
+  - pending
+  - per-site
 ---
+# Targets the per-site reader fix. The dialog checkbox (checked attr) is the
+# authoritative state; the top-bar "Reader/Reader on" label still reads the
+# GLOBAL pref in 1.2.0-dev, so it is deliberately not asserted here.
 - launchApp
 - tapOn: "Edit address"
 - eraseText: 200
@@ -10,10 +15,71 @@ tags: [per-site]
 - extendedWaitUntil:
     visible: "Address bar, http://localhost:8765/chapter1.html"
     timeout: 15000
-- tapOn: "Ad blocking and site settings"
+# Normalise site A to reader ON, then turn it OFF.
+- tapOn: "More options"
+- tapOn: "Site settings"
 - assertVisible: "Reader mode"
 - assertVisible: "Block ads on this site"
+- runFlow:
+    when:
+      visible:
+        text: "Reader mode"
+        checked: false
+    commands:
+      - tapOn: "Reader mode"
+- assertVisible:
+    text: "Reader mode"
+    checked: true
 - tapOn: "Reader mode"
+- assertVisible:
+    text: "Reader mode"
+    checked: false
 - tapOn: "Done"
-- assertVisible: "Read"
-- assertVisible: "Next ch"
+# Re-open: site A is still off.
+- tapOn: "More options"
+- tapOn: "Site settings"
+- assertVisible:
+    text: "Reader mode"
+    checked: false
+- tapOn: "Done"
+# Site B is a different host: it must still be ON.
+- tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://10.0.2.2:8765/chapter2.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://10.0.2.2:8765/chapter2.html"
+    timeout: 20000
+- tapOn: "More options"
+- tapOn: "Site settings"
+- assertVisible:
+    text: "Reader mode"
+    checked: true
+- tapOn: "Done"
+# Persistence across process restart: A off, B on.
+- launchApp
+- tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter1.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter1.html"
+    timeout: 15000
+- tapOn: "More options"
+- tapOn: "Site settings"
+- assertVisible:
+    text: "Reader mode"
+    checked: false
+- tapOn: "Done"
+- tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://10.0.2.2:8765/chapter2.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://10.0.2.2:8765/chapter2.html"
+    timeout: 20000
+- tapOn: "More options"
+- tapOn: "Site settings"
+- assertVisible:
+    text: "Reader mode"
+    checked: true

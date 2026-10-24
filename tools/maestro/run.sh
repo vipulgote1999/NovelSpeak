@@ -75,13 +75,18 @@ ensure_server() {
     local old
     old="$(cat "$PIDFILE" 2>/dev/null || true)"
     if [ -n "$old" ] && kill -0 "$old" 2>/dev/null; then
-      echo "== fixture server: stale pid $old is running but not serving; stopping it"
-      kill "$old" 2>/dev/null || true
-      sleep 1
+      # Only kill it if the pid still belongs to our http.server (pid reuse guard).
+      if tr '\0' ' ' <"/proc/$old/cmdline" 2>/dev/null | grep -q 'http\.server'; then
+        echo "== fixture server: stale pid $old is running but not serving; stopping it"
+        kill "$old" 2>/dev/null || true
+        sleep 1
+      else
+        echo "== fixture server: stale pid file ignored (pid $old is not our server)"
+      fi
     fi
     rm -f "$PIDFILE"
   fi
-  echo "== fixture server: starting python3 -m http.server $PORT --directory $FIXTURE_DIR"
+  echo "== fixture server: starting python3 -m http.server $PORT --bind 127.0.0.1 --directory $FIXTURE_DIR"
   nohup python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$FIXTURE_DIR" \
     >"$SERVER_LOG" 2>&1 &
   SERVER_PID=$!
