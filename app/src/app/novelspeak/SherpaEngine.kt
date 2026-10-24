@@ -50,24 +50,60 @@ class SherpaEngine(
     private var referenceRate = 24000
 
     @Volatile private var stopFlag = false
+
+    /**
+     * Monotonic cancellation token. [stop] increments it; [speak] never resets it. An
+     * in-flight sherpa generation captures the epoch and its callback returns 0 once the
+     * token moves, so a seek/pause aborts the native synthesis instead of spending seconds
+     * finishing audio nobody will hear. (Clearing a single stopFlag from speak() is what
+     * let stale generations run to completion.)
+     */
+    @Volatile private var cancelEpoch = 0
     @Volatile private var peakLogged = false
     private val main = Handler(Looper.getMainLooper())
 
-    private class Task(val text: String, val onDone: (Boolean) -> Unit)
-    private class Boundary(val endFrame: Long, val onDone: (Boolean) -> Unit)
+    private class Task(val text: String, val epoch: Int, val onDone: (Boolean) -> Unit)
+    private class Boundary(val endFrame: Long, val epoch: Int, val onDone: (Boolean) -> Unit)
 
     /**
      * sherpa's JNI looks up invoke([F)Ljava/lang/Integer; on the callback object. Kotlin 2.2
      * compiles lambdas with invokedynamic, whose generated class only has invoke(Object), so
      * that lookup aborts the process. A named Function1 subclass keeps the specialised bridge.
      */
-    private inner class SampleSink : (FloatArray) -> Int {
+    private inner class SampleSink(private val epoch: Int) : (FloatArray) -> Int {
         var wrote = false
+        var total = 0L
+
+        /**
+         * Set when the engine emits the int8 saturation artifact instead of speech:
+         * a large share of samples pinned at the quantisation rail (k2-fsa/sherpa-onnx#3754
+         * reports int8 Kokoro on Android/ARM returning whole sentences pinned at ~+1.0).
+         * Normal TTS output peaks transiently (~0.35 measured), so >50% of a chunk at
+         * the rail cannot be speech.
+         */
+        var garbage = false
+
         override fun invoke(samples: FloatArray): Int {
             // sherpa-onnx offline-tts callback contract: 1 = continue generating,
             // 0 = stop. The previous values were inverted, so every sentence stopped
             // after the first 15-frame / 1.2 s chunk.
             if (stopFlag) return 0
+            if (epoch != cancelEpoch) return 0
+            if (garbage) return 0
+            // Judge BEFORE writing: the first callback arrives while the AudioTrack is
+            // still pre-buffering, so a bad chunk can be dropped without ever playing.
+            if (looksRailPinned(samples)) {
+                garbage = true
+                return 0
+            }
+            // Safety cap: a normal ≤180-char sentence is ~10-15 s of audio.
+            // If the LM misses EOS (stray quote/asterisk/punct-only input slipping
+            // through), it babbles indefinitely — the reported "continuous noise
+            // for some time". Stop the generation at 45 s so at most a truncated
+            // fragment plays instead of minutes of babble (NekoSpeak caps Pocket
+            // at ~40 s / 500 frames for the same reason).
+            val cap = (if (sampleRate > 0) sampleRate else 24000) * 45L
+            if (total >= cap) return 0
             if (!peakLogged) {
                 peakLogged = true
                 var peak = 0f
@@ -77,12 +113,25 @@ class SherpaEngine(
                 }
                 DiagLog.line(ctx, "tts chunk peak=${"%.3f".format(peak)} samples=${samples.size}")
             }
-            return if (player.write(samples)) {
+            return if (player.write(samples, fadeIn = !wrote)) {
                 wrote = true
+                total += samples.size
                 1
             } else {
                 0
             }
+        }
+
+        private fun looksRailPinned(samples: FloatArray): Boolean {
+            if (samples.size < 480) return false // <20 ms: not enough evidence
+            var pinned = 0
+            var peak = 0f
+            for (s in samples) {
+                val a = if (s < 0f) -s else s
+                if (a > peak) peak = a
+                if (a >= 0.995f) pinned++
+            }
+            return peak >= 0.995f && pinned * 2 > samples.size
         }
     }
 
@@ -117,6 +166,8 @@ class SherpaEngine(
                 )
                 reference = loadReference(dir)
                 DiagLog.line(ctx, "engine reference samples=${reference?.size ?: 0} @${referenceRate}Hz")
+                // The denoiser targets vocoder hiss; enable it for the neural path.
+                player.setDenoiseEnabled(true)
                 val config = buildConfig(dir, model.family)
                 val engine = try {
                     // Models live in filesDir, not in the APK assets. Passing a non-null
@@ -216,7 +267,35 @@ class SherpaEngine(
                 null
             } ?: continue
             val engine = tts ?: run { main.post { task.onDone(false) }; continue }
-            if (stopFlag) { main.post { task.onDone(false) }; continue }
+            if (stopFlag || task.epoch != cancelEpoch) {
+                main.post { task.onDone(false) }
+                continue
+            }
+            // Neural-frontend guard: Kokoro (espeak-ng) and Pocket (SentencePiece
+            // LM) hallucinate on stray quotes / asterisks / censored stars /
+            // punctuation-only chunks ("...", '"', "*", "—"). Clean first; skip
+            // unspeakable sentences by advancing (success, no audio) instead of
+            // feeding "" / '"' to the model. See TtsTextCleaner.
+            var cleaned = try {
+                TtsTextCleaner.cleanForNeural(task.text)
+            } catch (e: Throwable) {
+                // Never let a sanitizer failure kill the generation thread (playback
+                // would hang). Fall back to the raw text only if it is speakable.
+                DiagLog.exception(ctx, "tts clean failed, using raw", e)
+                task.text.takeIf { t -> t.any { it.isLetterOrDigit() } }
+            }
+            if (cleaned == null) {
+                DiagLog.line(ctx, "tts skip unspeakable len=${task.text.length} raw=\"${task.text.take(48).replace('\n', ' ')}\"")
+                main.post { task.onDone(true) }
+                continue
+            }
+            if (cleaned != task.text) {
+                DiagLog.line(
+                    ctx,
+                    "tts clean \"${task.text.take(40).replace('\n', ' ')}\" -> " +
+                        "\"${cleaned.take(40).replace('\n', ' ')}\""
+                )
+            }
             try {
                 player.ensure(sampleRate)
                 val cfg = GenerationConfig(
@@ -229,27 +308,41 @@ class SherpaEngine(
                     8,                  // numSteps: HayaiTTS default for cloning generation
                     emptyMap()
                 )
-                val sink = SampleSink()
+                val sink = SampleSink(task.epoch)
                 val started = System.currentTimeMillis()
-                val label = task.text.take(28).replace('\n', ' ')
+                val label = cleaned.take(28).replace('\n', ' ')
                 DiagLog.line(ctx, "gen start \"$label\" queue=${player.queueDepth()}")
-                engine.generateWithConfigAndCallback(task.text, cfg, sink)
+                engine.generateWithConfigAndCallback(cleaned, cfg, sink)
+                if (sink.garbage) {
+                    // Deterministic (Kokoro) or sampled (Pocket) saturation: drop the
+                    // sentence instead of playing noise, and advance so the reader
+                    // does not stall. Logged so the offending input can be inspected.
+                    DiagLog.line(
+                        ctx,
+                        "tts garbage (rail-pinned) skipped \"${cleaned.take(48)}\""
+                    )
+                    main.post { task.onDone(true) }
+                    continue
+                }
                 // Safety: make sure the track is running before tracking the drain boundary.
                 player.startIfBuffered()
+                // Ramp the sentence tail to silence before the next one starts.
+                if (sink.wrote) player.endSentence()
                 val end = player.writtenFrames
                 DiagLog.line(
                     ctx,
                     "gen done \"$label\" in ${System.currentTimeMillis() - started}ms " +
-                        "frames=$end queue=${player.queueDepth()}"
+                        "frames=$end queue=${player.queueDepth()}" +
+                        if (sink.total >= (if (sampleRate > 0) sampleRate else 24000) * 45L) " CAPPED" else ""
                 )
                 if (sink.wrote && end > 0) {
-                    boundaries.put(Boundary(end, task.onDone))
+                    boundaries.put(Boundary(end, player.epoch(), task.onDone))
                 } else {
                     // Never advance the reader when nothing reached the audio track.
                     main.post { task.onDone(false) }
                 }
             } catch (e: Throwable) {
-                DiagLog.exception(ctx, "generation failed for \"${task.text.take(40)}…\"", e)
+                DiagLog.exception(ctx, "generation failed for \"${cleaned.take(40)}…\"", e)
                 main.post { task.onDone(false) }
             }
         }
@@ -263,7 +356,7 @@ class SherpaEngine(
                 null
             } ?: continue
             if (stopFlag) { main.post { b.onDone(false) }; continue }
-            player.awaitDrained(b.endFrame) { stopFlag }
+            player.awaitDrained(b.endFrame, b.epoch) { stopFlag }
             val ok = !stopFlag
             main.post { b.onDone(ok) }
         }
@@ -275,11 +368,12 @@ class SherpaEngine(
             stopFlag = false
             player.reset()
         }
-        genQueue.offer(Task(text, onDone))
+        genQueue.offer(Task(text, cancelEpoch, onDone))
     }
 
     override fun stop() {
         stopFlag = true
+        cancelEpoch++
         genQueue.clear()
         while (true) {
             val b = boundaries.poll() ?: break
@@ -308,4 +402,6 @@ class SherpaEngine(
         if (family == "pocket") return
         id.toIntOrNull()?.let { prefs.kokoroSid = it }
     }
+
+    override fun bufferedSeconds(): Float = player.bufferedSeconds()
 }
