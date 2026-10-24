@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "91fbe2f1-382b-443f-b942-927cc0b28e4f",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/candidate.json",
+  "output": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/target.html",
+  "specification": {
+    "sha256": "0252b41226387048cb483c1dfcff07b509e3ce06efda9c537a0aaa8b159ae47b",
+    "bytes": 7455
+  },
+  "artifact": {
+    "sha256": "17f60fcc0d9168675332fba84c7e9d3e703190bd3dc28332729fe7206a3e79f8",
+    "bytes": 777784
+  }
+}

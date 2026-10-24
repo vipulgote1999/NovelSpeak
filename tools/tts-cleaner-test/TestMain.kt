@@ -1,4 +1,5 @@
 import app.novelspeak.SentenceSplitter
+import app.novelspeak.TtsOverrides
 import app.novelspeak.TtsTextCleaner
 import java.io.File
 
@@ -6,7 +7,8 @@ import java.io.File
  * Host-side harness for the neural-TTS text path. Not part of the APK.
  *
  *   kotlinc app/src/app/novelspeak/SentenceSplitter.kt \
- *     app/src/app/novelspeak/TtsTextCleaner.kt tools/tts-cleaner-test/TestMain.kt \
+ *     app/src/app/novelspeak/TtsTextCleaner.kt app/src/app/novelspeak/TtsOverrides.kt \
+ *     tools/tts-cleaner-test/TestMain.kt \
  *     -include-runtime -d /tmp/tts-cleaner-test.jar
  *   java -jar /tmp/tts-cleaner-test.jar
  *
@@ -20,7 +22,9 @@ fun main() {
             println("FAILED $name $detail")
         }
     }
-    fun clean(raw: String) = TtsTextCleaner.cleanForNeural(raw)
+    // Rules default to empty here; the production one-arg call reads TtsOverrides (tested below).
+    fun clean(raw: String, rules: List<Pair<String, String>> = emptyList()) =
+        TtsTextCleaner.cleanForNeural(raw, rules)
 
     // ---- punct-only must be skipped (hallucination trigger) ----
     check("skip-ellipsis", clean("...") == null)
@@ -92,6 +96,49 @@ fun main() {
     check("terminal-dot", clean("He ran through the trees") == "He ran through the trees.")
     val normal = "There were a lot of dangers in a Tier-3 town like Slough."
     check("normal", clean(normal) == normal, "got=${clean(normal)}")
+
+    // ---- pronunciation overrides (P1.2): literal, case-insensitive, longest-first ----
+    val shenWay = listOf("Shen Wei" to "Shen Way")
+    check("pron-basic", clean("Shen Wei walked in", shenWay) == "Shen Way walked in.", "got=${clean("Shen Wei walked in", shenWay)}")
+    check("pron-case-insens", clean("SHEN WEI shouted", shenWay) == "Shen Way shouted.", "got=${clean("SHEN WEI shouted", shenWay)}")
+    check("pron-possessive", clean("Shen Wei's plan", shenWay) == "Shen Way's plan.", "got=${clean("Shen Wei's plan", shenWay)}")
+    // Longest source wins even when the shorter rule is listed first (overlap).
+    val overlap = listOf("Shen" to "Shenn", "Shen Wei" to "Shen Way")
+    check("pron-longest-first", clean("Shen Wei and Shen left", overlap) == "Shen Way and Shenn left.", "got=${clean("Shen Wei and Shen left", overlap)}")
+    // Single pass: replacements never cascade ("cat" -> "dog" must not become "bird").
+    check("pron-no-cascade", clean("cat", listOf("cat" to "dog", "dog" to "bird")) == "dog.", "got=${clean("cat", listOf("cat" to "dog", "dog" to "bird"))}")
+    // Word boundary: an alphanumeric source must not fire inside another word.
+    check("pron-boundary", clean("scatter the cat", listOf("cat" to "dog")) == "scatter the dog.", "got=${clean("scatter the cat", listOf("cat" to "dog"))}")
+    // Regex metacharacters in sources are literal, not patterns (applied before sanitisation).
+    check("pron-regex-special", clean("I code in C++ daily", listOf("C++" to "C plus plus")) == "I code in C plus plus daily.", "got=${clean("I code in C++ daily", listOf("C++" to "C plus plus"))}")
+    check("pron-bracket-literal", clean("He [sigh]ed twice", listOf("[sigh]" to "sigh")) == "He sighed twice.", "got=${clean("He [sigh]ed twice", listOf("[sigh]" to "sigh"))}")
+    check("pron-dotted-acronym", clean("The U.S.A. is big", listOf("U.S.A." to "U S A")) == "The U S A is big.", "got=${clean("The U.S.A. is big", listOf("U.S.A." to "U S A"))}")
+    // Empty replacement deletes the source.
+    check("pron-empty-replacement", clean("Hello um world", listOf("um" to "")) == "Hello world.", "got=${clean("Hello um world", listOf("um" to ""))}")
+    // Unsafe rules are ignored, not fatal.
+    check("pron-control-source-ignored", clean("abc", listOf("a\u0000" to "x")) == "abc.", "got=${clean("abc", listOf("a\u0000" to "x"))}")
+    check("pron-control-replacement-ignored", clean("abc", listOf("abc" to "x\u0007")) == "abc.", "got=${clean("abc", listOf("abc" to "x\u0007"))}")
+    check("pron-blank-source-ignored", clean("abc", listOf("  " to "x")) == "abc.", "got=${clean("abc", listOf("  " to "x"))}")
+
+    // ---- TtsOverrides validation + default path ----
+    TtsOverrides.set(listOf("" to "x", "  " to "y", "a\u0000b" to "x", "ok" to "yes\u0007", "Shen Wei" to "Shen Way"))
+    check("overrides-validation", TtsOverrides.pronunciationRules == listOf("Shen Wei" to "Shen Way"), "got=${TtsOverrides.pronunciationRules}")
+    TtsOverrides.set(listOf("q" to "x".repeat(250)))
+    check("overrides-replacement-cap", TtsOverrides.pronunciationRules.single().second.length == TtsOverrides.MAX_REPLACEMENT_CHARS, "len=${TtsOverrides.pronunciationRules.single().second.length}")
+    TtsOverrides.set((0 until 250).map { "w$it" to "x" })
+    check("overrides-rule-cap", TtsOverrides.pronunciationRules.size == TtsOverrides.MAX_RULES, "size=${TtsOverrides.pronunciationRules.size}")
+    TtsOverrides.set(listOf("Shen Wei" to "Shen Way"))
+    check("overrides-default-path", TtsTextCleaner.cleanForNeural("Shen Wei left") == "Shen Way left.", "got=${TtsTextCleaner.cleanForNeural("Shen Wei left")}")
+    // System TTS path: rules only, presentation (quotes/case/punctuation) untouched.
+    TtsOverrides.set(listOf("C++" to "C plus plus"))
+    check(
+        "apply-pronunciation-only",
+        TtsTextCleaner.applyPronunciation("Say \"C++\" now!") == "Say \"C plus plus\" now!",
+        "got=${TtsTextCleaner.applyPronunciation("Say \"C++\" now!")}"
+    )
+    TtsOverrides.clear()
+    check("overrides-clear", TtsOverrides.pronunciationRules.isEmpty())
+    check("pron-none-unchanged", clean("Shen Wei left") == "Shen Wei left.")
 
     // ---- end-to-end split -> merge on the chapter fixture ----
     val fixture = File("tools/tts-cleaner-test/sample-chapters.txt")

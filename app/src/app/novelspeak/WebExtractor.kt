@@ -31,14 +31,21 @@ object WebExtractor {
         }
     }
 
-    fun extract(web: WebView, onResult: (String, List<Reader.Block>) -> Unit) {
+    /**
+     * Extract the current page. [onResult] receives (title, blocks, wall) where wall is one of
+     * "", "login", "subscribe" or "challenge" when the page looks gated — the UI must warn
+     * instead of speaking paywall/interstitial text. Nothing is bypassed.
+     */
+    fun extract(web: WebView, onResult: (String, List<Reader.Block>, String) -> Unit) {
         web.evaluateJavascript("window.__nsExtract ? window.__nsExtract() : ''") { value ->
             val json = unquote(value)
-            if (json.isNullOrEmpty()) { onResult("", emptyList()); return@evaluateJavascript }
+            if (json.isNullOrEmpty()) { onResult("", emptyList(), ""); return@evaluateJavascript }
             try {
                 val obj = JSONObject(json)
                 val title = obj.optString("title", "")
-                val arr = obj.optJSONArray("blocks") ?: return@evaluateJavascript onResult(title, emptyList())
+                val wall = obj.optString("wall", "")
+                val arr = obj.optJSONArray("blocks")
+                    ?: return@evaluateJavascript onResult(title, emptyList(), wall)
                 val max = NovelSpeakApp.instance.prefs.maxSentenceChars
                 val raw = ArrayList<Reader.Block>()
                 for (i in 0 until arr.length()) {
@@ -50,9 +57,9 @@ object WebExtractor {
                         raw.add(Reader.Block(s, blockIndex))
                     }
                 }
-                onResult(title, mergeShortFragments(raw, max))
+                onResult(title, mergeShortFragments(raw, max), wall)
             } catch (e: Throwable) {
-                onResult("", emptyList())
+                onResult("", emptyList(), "")
             }
         }
     }
@@ -80,6 +87,26 @@ object WebExtractor {
             out.add(Reader.Block(text.toString(), blocks[g.first].blockIndex))
         }
         return out
+    }
+
+    /** Apply user typography (font size/family/theme/width) after the built-in reader CSS. */
+    fun applyReaderStyle(web: WebView, css: String) {
+        val escaped = org.json.JSONObject.quote(css)
+        web.evaluateJavascript(
+            "window.__nsApplyReaderStyle && window.__nsApplyReaderStyle($escaped)", null
+        )
+    }
+
+    /**
+     * Word-level read-along. charStart/charEnd are offsets into the normalized block text
+     * (the same text that was queued for speech). Chromium's CSS Custom Highlight API is
+     * used; engines/pages that lack it silently keep the sentence highlight.
+     */
+    fun highlightWord(web: WebView, blockIndex: Int, charStart: Int, charEnd: Int) {
+        web.evaluateJavascript(
+            "window.__nsHighlightWord && window.__nsHighlightWord($blockIndex,$charStart,$charEnd)",
+            null
+        )
     }
 
     fun highlight(web: WebView, blockIndex: Int) {

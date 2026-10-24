@@ -161,8 +161,48 @@
 
     var total = 0;
     for (var j = 0; j < blocks.length; j++) total += blocks[j].text.length;
-    return JSON.stringify({ title: title, blocks: blocks, chars: total, url: location.href });
+    var wall = detectWall(total);
+    return JSON.stringify({
+      title: title, blocks: blocks, chars: total, url: location.href, wall: wall
+    });
   }
+
+  // Detect login/subscription walls and challenge interstitials so the UI can warn
+  // honestly instead of speaking garbage. Never bypasses anything.
+  function detectWall(total) {
+    if (total >= 1200) return '';
+    var bodyText = '';
+    try {
+      bodyText = norm(document.body ? document.body.innerText : '').toLowerCase();
+    } catch (e) { bodyText = ''; }
+    var hasPassword = false;
+    try {
+      hasPassword = !!document.querySelector('input[type="password"]');
+    } catch (e) { hasPassword = false; }
+    var strong = /(sign ?in|log ?in) to (continue|read|comment|view)|login required|subscribe to (continue|read|unlock)|subscriber[- ]only|members?[- ]only|premium (chapter|content|story)|unlock (this )?chapter|create (a )?free account|register to (continue|read)|this (chapter|content|story) is for (subscribers|members)/;
+    var m = bodyText.match(strong);
+    if (m) {
+      return /sign ?in|log ?in|login/.test(m[0]) ? 'login' : 'subscribe';
+    }
+    if (hasPassword && total < 600) return 'login';
+    if (total < 200 && /(enable javascript|verify you are human|checking your browser|attention required|just a moment)/.test(bodyText)) {
+      return 'challenge';
+    }
+    return '';
+  }
+
+  // Apply user typography (font size/family/theme/width) after the built-in reader CSS.
+  window.__nsApplyReaderStyle = function (css) {
+    var id = 'ns-reader-user-style';
+    var el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('style');
+      el.id = id;
+      (document.head || document.documentElement).appendChild(el);
+    }
+    el.textContent = css || '';
+    return true;
+  };
 
   function findNext() {
     var anchors = document.querySelectorAll('a[rel~="next"], a.next, a[class*="next"], a[id*="next"]');
@@ -214,15 +254,17 @@
       color:#E9EDF2 !important;
     }
     html.ns-reader body {
-      max-width:760px !important; margin:0 auto !important;
+      max-width:var(--ns-width,760px) !important; margin:0 auto !important;
       padding:16px 16px 56px !important;
-      font-family:Georgia,'Times New Roman',serif !important;
-      font-size:17px !important; line-height:1.7 !important;
+      font-family:var(--ns-font-family,Georgia,'Times New Roman',serif) !important;
+      font-size:var(--ns-font-size,17px) !important;
+      line-height:var(--ns-line-height,1.7) !important;
     }
     html.ns-reader p, html.ns-reader li, html.ns-reader blockquote,
     html.ns-reader td, html.ns-reader dd {
       color:#E9EDF2 !important; background:transparent !important;
-      font-size:17px !important; line-height:1.7 !important;
+      font-size:var(--ns-font-size,17px) !important;
+      line-height:var(--ns-line-height,1.7) !important;
       margin:0 0 1.05em !important;
     }
     html.ns-reader h1, html.ns-reader h2, html.ns-reader h3,
@@ -239,7 +281,13 @@
     html.ns-reader [class*="chapter"], html.ns-reader [id*="chapter"],
     html.ns-reader [class*="content"], html.ns-reader [id*="content"] {
       background:transparent !important; color:#E9EDF2 !important;
-      max-width:760px !important; margin-left:auto !important; margin-right:auto !important;
+      max-width:var(--ns-width,760px) !important;
+      margin-left:auto !important; margin-right:auto !important;
+    }
+    /* Word-level read-along uses the CSS Custom Highlight API (Chromium 105+). */
+    ::highlight(ns-word) {
+      background: rgba(110, 231, 183, 0.55) !important;
+      color: #0F1115 !important;
     }
     html.ns-reader nav, html.ns-reader header, html.ns-reader footer,
     html.ns-reader aside, html.ns-reader iframe,
@@ -414,11 +462,57 @@
     }
     return true;
   };
+  // Map normalized block text (what TTS speaks) back to raw DOM text nodes so a
+  // character range can be highlighted without mutating the page.
+  function normMap(el) {
+    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
+    var norm = '', map = [], node;
+    while ((node = walker.nextNode())) {
+      var t = node.nodeValue || '';
+      for (var i = 0; i < t.length; i++) {
+        var c = t.charAt(i);
+        if (/\s/.test(c)) {
+          if (norm.length && norm.charAt(norm.length - 1) !== ' ') {
+            norm += ' ';
+            map.push({ n: node, o: i });
+          }
+        } else {
+          norm += c;
+          map.push({ n: node, o: i });
+        }
+      }
+    }
+    return { norm: norm, map: map };
+  }
+
+  window.__nsHighlightWord = function (idx, start, end) {
+    var el = document.querySelector('[data-ns="' + idx + '"]');
+    if (!el || !(window.CSS && CSS.highlights && window.Highlight)) return false;
+    try {
+      var m = normMap(el);
+      if (!m.norm.length) return false;
+      start = Math.max(0, Math.min(start | 0, m.norm.length - 1));
+      end = Math.max(start + 1, Math.min(end | 0, m.norm.length));
+      var a = m.map[start], b = m.map[end - 1];
+      if (!a || !b) return false;
+      var r = document.createRange();
+      r.setStart(a.n, a.o);
+      r.setEnd(b.n, b.o + 1);
+      CSS.highlights.set('ns-word', new Highlight(r));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
   window.__nsClearHighlight = function () {
     var prev = document.querySelector('[data-ns].ns-active');
     if (prev) {
       prev.classList.remove('ns-active');
       prev.classList.remove('ns-active-heading');
     }
+    try {
+      if (window.CSS && CSS.highlights) CSS.highlights.delete('ns-word');
+    } catch (e) { /* ignore */ }
   };
 })();

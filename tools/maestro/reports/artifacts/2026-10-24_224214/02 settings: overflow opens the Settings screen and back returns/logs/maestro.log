@@ -1,0 +1,5 @@
+22:44:00.185 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+22:44:00.186 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+22:44:00.186 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+22:44:00.186 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+22:44:00.186 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "app.novelspeak" RUNNING

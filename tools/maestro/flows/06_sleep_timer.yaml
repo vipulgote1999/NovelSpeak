@@ -1,0 +1,18 @@
+appId: app.novelspeak
+name: "06 sleep timer: 15 minutes arms countdown, Off clears it"
+tags: [sleep-timer]
+---
+- launchApp
+- tapOn: "More options"
+- tapOn: "Sleep timer"
+- assertVisible: "15 minutes"
+- assertVisible: "30 minutes"
+- assertVisible: "End of chapter"
+- tapOn: "15 minutes"
+- extendedWaitUntil:
+    visible: "Sleep timer.*[0-9]+:[0-9]+"
+    timeout: 5000
+- tapOn: "More options"
+- tapOn: "Sleep timer"
+- tapOn: "Off"
+- assertNotVisible: "Sleep timer.*[0-9]+:[0-9]+"

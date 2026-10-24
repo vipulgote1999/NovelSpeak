@@ -1,0 +1,70 @@
+# @Voice Aloud Reader 40.9.1 - manifest excerpt (apktool 3.0.3)
+## permissions
+android.permission.ACCESS_ADSERVICES_AD_ID"
+android.permission.ACCESS_ADSERVICES_ATTRIBUTION"
+android.permission.ACCESS_ADSERVICES_TOPICS"
+android.permission.ACCESS_LOCAL_NETWORK"
+android.permission.ACCESS_NETWORK_STATE"
+android.permission.ACCESS_WIFI_STATE"
+android.permission.BLUETOOTH"
+android.permission.BLUETOOTH_CONNECT"
+android.permission.FOREGROUND_SERVICE"
+android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+android.permission.INTERNET"
+android.permission.MANAGE_EXTERNAL_STORAGE"
+android.permission.POST_NOTIFICATIONS"
+android.permission.QUERY_ALL_PACKAGES"
+android.permission.READ_BASIC_PHONE_STATE"
+android.permission.READ_EXTERNAL_STORAGE"
+android.permission.RECORD_AUDIO"
+android.permission.VIBRATE"
+android.permission.WAKE_LOCK"
+android.permission.WRITE_EXTERNAL_STORAGE"
+com.amazon.privacypass.ATTEST"
+com.android.vending.CHECK_LICENSE"
+com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE"
+com.google.android.gms.permission.AD_ID"
+com.hyperionics.avar.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+com.hyperionics.avar.LICENSE_QUERY"
+
+## services (with foregroundServiceType)
+android:exported="false" android:name="com.hyperionics.avar.ReaderSearchRegexService" android:process=":readerSearch"/
+android:enabled="true" android:exported="true" android:foregroundServiceType="mediaPlayback" android:name="com.hyperionics.avar.SpeakService"/
+android:enabled="true" android:exported="true" android:foregroundServiceType="dataSync" android:name="com.hyperionics.PdfNativeLib.PdfExtractService" android:process=":pdfReader"/
+android:exported="false" android:name="com.unity3d.ads.adplayer.AdTaskRemovalDetectionService" android:stopWithTask="false"/
+android:exported="false" android:name="com.applovin.impl.adview.activity.FullscreenAdService" android:stopWithTask="false"/
+android:exported="false" android:name="com.applovin.impl.adview.activity.AppRestartDuringAdDetectionService"/
+android:enabled="true" android:exported="false" android:name="com.google.android.gms.measurement.AppMeasurementService"/
+android:enabled="true" android:exported="false" android:name="com.google.android.gms.measurement.AppMeasurementJobService" android:permission="android.permission.BIND_JOB_SERVICE"/
+android:directBootAware="true" android:exported="false" android:name="com.google.firebase.components.ComponentDiscoveryService"
+android:enabled="false" android:exported="true" android:name="com.google.android.play.core.assetpacks.AssetPackExtractionService"
+android:enabled="false" android:exported="false" android:foregroundServiceType="dataSync" android:name="com.google.android.play.core.assetpacks.ExtractionForegroundService"/
+android:enabled="false" android:exported="false" android:name="com.google.firebase.sessions.SessionLifecycleService"/
+android:directBootAware="false" android:enabled="@bool/enable_system_alarm_service_default" android:exported="false" android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"/
+android:directBootAware="false" android:enabled="@bool/enable_system_job_service_default" android:exported="true" android:name="androidx.work.impl.background.systemjob.SystemJobService" android:permission="android.permission.BIND_JOB_SERVICE"/
+android:directBootAware="false" android:enabled="@bool/enable_system_foreground_service_default" android:exported="false" android:name="androidx.work.impl.foreground.SystemForegroundService"/
+android:directBootAware="true" android:exported="false" android:name="androidx.room.MultiInstanceInvalidationService"/
+android:exported="false" android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+android:exported="false" android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService" android:permission="android.permission.BIND_JOB_SERVICE"/
+
+## receivers
+android:exported="false" android:name="com.hyperionics.avar.SleepTimerAlarmReceiver"/
+android:enabled="false" android:exported="true" android:name="com.hyperionics.avar.MediaButtonIntentReceiver"
+android:enabled="true" android:exported="true" android:name="com.hyperionics.avar.BluetoothConnectReceiver"
+android:exported="false" android:name="com.hyperionics.avar.PackageReplacedReceiver"
+android:exported="true" android:name="com.hyperionics.avar.DeskWidget.AvarWidget"
+android:exported="false" android:name="com.hyperionics.avar.textproc.TextProcessingCancelReceiver"/
+android:enabled="true" android:exported="false" android:name="com.google.android.gms.measurement.AppMeasurementReceiver"/
+android:enabled="true" android:exported="true" android:name="com.google.android.play.core.assetpacks.SessionStateBroadcastReceiver" android:permission="android.permission.INSTALL_PACKAGES"
+
+## providers (custom only)
+android:authorities="com.hyperionics.avar.androidx-startup" android:exported="false" android:name="androidx.startup.InitializationProvider"
+android:authorities="com.hyperionics.avar.fileprovider" android:exported="false" android:grantUriPermissions="true" android:name="androidx.core.content.FileProvider"
+android:authorities="com.hyperionics.avar.ai-services.usage" android:exported="false" android:grantUriPermissions="false" android:name="com.hyperionics.ai.AiUsageProvider"/
+android:authorities="com.hyperionics.avar.ai-services.credentials" android:exported="false" android:grantUriPermissions="false" android:name="com.hyperionics.ai.AiCredentialsProvider"/
+android:authorities="com.hyperionics.avar.applovininitprovider" android:exported="false" android:initOrder="101" android:name="com.applovin.sdk.AppLovinInitProvider"/
+android:authorities="com.hyperionics.avar.firebaseinitprovider" android:directBootAware="true" android:exported="false" android:initOrder="100" android:name="com.google.firebase.provider.FirebaseInitProvider"/
+android:authorities="com.hyperionics.avar.bidmachineinitprovider" android:exported="false" android:initOrder="100" android:name="io.bidmachine.BidMachineInitProvider"/
+android:authorities="com.hyperionics.avar.vungle-provider" android:exported="false" android:initOrder="102" android:name="com.vungle.ads.VungleProvider"/
+android:authorities="com.hyperionics.avar.plumber-installer" android:enabled="@bool/leak_canary_plumber_auto_install" android:exported="false" android:name="leakcanary.internal.PlumberInstaller"/

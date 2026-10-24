@@ -1,0 +1,17 @@
+appId: app.novelspeak
+name: "02 settings: overflow opens the Settings screen and back returns"
+tags:
+  - baseline
+  - smoke
+---
+- launchApp
+- tapOn: "More options"
+- assertVisible: "NovelSpeak settings"
+- tapOn: "NovelSpeak settings"
+- assertVisible: "Settings"
+- assertVisible: "SPEECH ENGINE"
+- assertVisible: "Changes are saved instantly"
+- assertVisible: "Back"
+- tapOn: "Back"
+- assertVisible: "Read"
+- assertVisible: "Address bar.*"

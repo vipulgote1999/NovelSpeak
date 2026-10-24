@@ -1,0 +1,14 @@
+# @Voice Aloud Reader APK identity
+artifact: hyperionics.com/downloads/atVoice/atVoice.apk (universal, official developer site)
+downloaded: 2026-10-24
+sha256: 7f48c57afe3376013f028f4902a114fb73a075e193ee88faba598482f2f02cbb
+sizeBytes: 73697675
+versionName: 40.9.1
+versionCode: 1640090140
+minSdk: 26  targetSdk: 37
+dexFiles: 6
+apkSignerCerts:
+Signer #1 certificate DN: CN=Greg Kochaniak, O=Hyperionics Technology LLC, L=Murrysville, ST=PA, C=US
+Signer #1 certificate SHA-256 digest: a953ec005e7fb5ada7547834b883588062dffd38b105e6ad1749a92f15da1b92
+Signer #1 certificate SHA-1 digest: f3151adeaa72e2c09c9d0e0f511a67362685524b
+Signer #1 certificate MD5 digest: b82f586e195843d381f0a953b7bf58cb

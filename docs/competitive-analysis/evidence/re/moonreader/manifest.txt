@@ -1,0 +1,30 @@
+# Moon+ Reader free 4.5.4 - manifest findings (apktool 3.0.3 decode)
+## apktool.yml
+version: 3.0.3
+apkFileName: moonreader-free-4.5.4.apk
+usesFramework:
+  ids:
+  - 1
+sdkInfo:
+  minSdkVersion: 14
+  targetSdkVersion: 26
+versionInfo:
+  versionCode: 454001
+  versionName: 4.5.4
+resourcesInfo:
+  packageId: 127
+doNotCompress:
+
+## permissions
+android.permission.GET_ACCOUNTS"
+android.permission.INTERNET"
+android.permission.ACCESS_NETWORK_STATE"
+android.permission.WRITE_EXTERNAL_STORAGE"
+android.permission.READ_EXTERNAL_STORAGE"
+com.android.vending.BILLING"
+
+## services/receivers
+receiver android:name="com.flyersoft.components.OpenFile_Receiver"
+receiver android:exported="true" android:name="com.google.android.apps.analytics.AnalyticsReceiver"
+service android:name="com.flyersoft.moonreader.BookDownloadService"/
+service android:exported="true" android:name="com.google.android.gms.auth.api.signin.RevocationBoundService" android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"/

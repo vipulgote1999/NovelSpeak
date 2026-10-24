@@ -157,6 +157,105 @@ class Prefs(ctx: Context) {
         sp.edit().putString(K_RECENT_URLS, current.take(8).joinToString("\n")).apply()
     }
 
+    // ---- competitive-parity settings (v1.2) ---------------------------------
+
+    /** Reader typography: font size percent (80..160), applied as a CSS variable. */
+    var readerFontScale: Int
+        get() = sp.getInt(K_READER_FONT_SCALE, 100).coerceIn(80, 160)
+        set(v) = sp.edit().putInt(K_READER_FONT_SCALE, v.coerceIn(80, 160)).apply()
+
+    /** "serif" | "sans" | "dyslexic". Anything else falls back to serif. */
+    var readerFontFamily: String
+        get() = sp.getString(K_READER_FONT_FAMILY, "serif")
+            ?.takeIf { it in FONT_FAMILIES } ?: "serif"
+        set(v) = sp.edit().putString(
+            K_READER_FONT_FAMILY, if (v in FONT_FAMILIES) v else "serif"
+        ).apply()
+
+    /** "dark" | "sepia" | "light". */
+    var readerTheme: String
+        get() = sp.getString(K_READER_THEME, "dark")
+            ?.takeIf { it in READER_THEMES } ?: "dark"
+        set(v) = sp.edit().putString(
+            K_READER_THEME, if (v in READER_THEMES) v else "dark"
+        ).apply()
+
+    /** Line height percent (120..200). */
+    var readerLineHeight: Int
+        get() = sp.getInt(K_READER_LINE_HEIGHT, 170).coerceIn(120, 200)
+        set(v) = sp.edit().putInt(K_READER_LINE_HEIGHT, v.coerceIn(120, 200)).apply()
+
+    /** Reader column width in px; 0 = automatic (760px). Clamped to a sane range. */
+    var readerWidthPx: Int
+        get() {
+            val v = sp.getInt(K_READER_WIDTH, 0)
+            return if (v <= 0) 0 else v.coerceIn(480, 1200)
+        }
+        set(v) = sp.edit().putInt(K_READER_WIDTH, if (v <= 0) 0 else v.coerceIn(480, 1200))
+            .apply()
+
+    /** Word-level highlight (falls back to sentence highlight when off/unavailable). */
+    var readerWordHighlight: Boolean
+        get() = sp.getBoolean(K_READER_WORD_HIGHLIGHT, false)
+        set(v) = sp.edit().putBoolean(K_READER_WORD_HIGHLIGHT, v).apply()
+
+    /** Output gain multiplier applied by PcmPlayer (1.0 .. 3.0). */
+    var ttsVolumeBoost: Float
+        get() = sp.getFloat(K_TTS_VOLUME_BOOST, 1.0f).coerceIn(1.0f, 3.0f)
+        set(v) = sp.edit().putFloat(K_TTS_VOLUME_BOOST, v.coerceIn(1.0f, 3.0f)).apply()
+
+    /** Trim leading/trailing silence from synthesized sentences. */
+    var ttsSkipSilence: Boolean
+        get() = sp.getBoolean(K_TTS_SKIP_SILENCE, false)
+        set(v) = sp.edit().putBoolean(K_TTS_SKIP_SILENCE, v).apply()
+
+    /** Pitch multiplier for AudioTrack playback params (0.8 .. 1.2). */
+    var ttsPitch: Float
+        get() = sp.getFloat(K_TTS_PITCH, 1.0f).coerceIn(0.8f, 1.2f)
+        set(v) = sp.edit().putFloat(K_TTS_PITCH, v.coerceIn(0.8f, 1.2f)).apply()
+
+    /** Pronunciation replacement rules, one "from=to" per line. */
+    var pronunciationRules: String
+        get() = sp.getString(K_PRONUNCIATION_RULES, "") ?: ""
+        set(v) = sp.edit().putString(K_PRONUNCIATION_RULES, v).apply()
+
+    /** Sleep timer default: 0=off, 15/30/45/60 minutes, -1=end of chapter. */
+    var sleepTimerMinutes: Int
+        get() = sp.getInt(K_SLEEP_TIMER, 0).let {
+            if (it in intArrayOf(0, 15, 30, 45, 60, -1)) it else 0
+        }
+        set(v) = sp.edit()
+            .putInt(K_SLEEP_TIMER, if (v in intArrayOf(0, 15, 30, 45, 60, -1)) v else 0)
+            .apply()
+
+    /** Auto-check the bundled model catalog (network-free for now; reserved for OTA). */
+    var modelCatalogAuto: Boolean
+        get() = sp.getBoolean(K_MODEL_CATALOG_AUTO, true)
+        set(v) = sp.edit().putBoolean(K_MODEL_CATALOG_AUTO, v).apply()
+
+    /**
+     * Reader-mode default for a registrable domain. Global [readerMode] is the fallback;
+     * a domain can opt out (e.g. sites whose reader CSS breaks navigation).
+     */
+    fun readerModeForSite(site: String): Boolean {
+        if (site.isEmpty()) return readerMode
+        val off = sp.getStringSet(K_READER_OFF_SITES, emptySet()) ?: emptySet()
+        return if (site in off) false else readerMode
+    }
+
+    fun setReaderModeForSite(site: String, on: Boolean) {
+        if (site.isEmpty()) { readerMode = on; return }
+        val current = sp.getStringSet(K_READER_OFF_SITES, emptySet())?.toMutableSet()
+            ?: mutableSetOf()
+        if (on) current.remove(site) else current.add(site)
+        sp.edit().putStringSet(K_READER_OFF_SITES, current).apply()
+    }
+
+    /** Last opened URL, used for continue-reading before the library store is populated. */
+    var lastUrl: String?
+        get() = sp.getString(K_LAST_URL, null)
+        set(v) = sp.edit().putString(K_LAST_URL, v).apply()
+
     companion object {
         const val ENGINE_SYSTEM = "system"
         const val ENGINE_SHERPA = "sherpa"
@@ -189,6 +288,23 @@ class Prefs(ctx: Context) {
         private const val K_ADBLOCK_ALLOW = "adblock_allow_sites"
         private const val K_NOTIFICATIONS_ASKED = "notifications_asked"
         private const val K_RECENT_URLS = "recent_urls"
+        private const val K_READER_FONT_SCALE = "reader_font_scale"
+        private const val K_READER_FONT_FAMILY = "reader_font_family"
+        private const val K_READER_THEME = "reader_theme"
+        private const val K_READER_LINE_HEIGHT = "reader_line_height"
+        private const val K_READER_WIDTH = "reader_width_px"
+        private const val K_READER_WORD_HIGHLIGHT = "reader_word_highlight"
+        private const val K_READER_OFF_SITES = "reader_off_sites"
+        private const val K_TTS_VOLUME_BOOST = "tts_volume_boost"
+        private const val K_TTS_SKIP_SILENCE = "tts_skip_silence"
+        private const val K_TTS_PITCH = "tts_pitch"
+        private const val K_PRONUNCIATION_RULES = "pronunciation_rules"
+        private const val K_SLEEP_TIMER = "sleep_timer_minutes"
+        private const val K_MODEL_CATALOG_AUTO = "model_catalog_auto"
+        private const val K_LAST_URL = "last_url"
+
+        val FONT_FAMILIES = setOf("serif", "sans", "dyslexic")
+        val READER_THEMES = setOf("dark", "sepia", "light")
 
         /** Kokoro en-v0_19 speakers, in the order stored in voices.bin. */
         val KOKORO_VOICES = listOf(

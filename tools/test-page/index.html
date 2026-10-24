@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Lamplighter's Daughter — Wick Chronicle fixture</title>
+<style>
+  body { margin:0; background:#f4f0e8; color:#24211c; font-family: Georgia, serif; line-height:1.6; }
+  .site-header { background:#1d2a33; color:#e9e2d0; padding:18px; }
+  .site-header .brand { font-weight:700; letter-spacing:.14em; font-family: system-ui, sans-serif; }
+  main { max-width:640px; margin:0 auto; padding:32px 20px 64px; }
+  h1 { font-size:1.8em; margin:0 0 8px; }
+  .lede { color:#5d564c; margin:0 0 28px; }
+  ul { list-style:none; padding:0; }
+  li { border-top:1px solid #d8cfbf; padding:16px 0; }
+  li:last-child { border-bottom:1px solid #d8cfbf; }
+  li a { color:#1d2a33; font-size:1.12em; font-weight:600; text-decoration:none; }
+  li span { display:block; color:#6b6358; font-size:13px; font-family: system-ui, sans-serif; margin-top:4px; }
+  .note { margin-top:32px; font-family: system-ui, sans-serif; font-size:12px; color:#6b6358; }
+</style>
+</head>
+<body>
+<header class="site-header"><div class="brand">THE WICK CHRONICLE</div></header>
+<main>
+<h1>The Lamplighter's Daughter</h1>
+<p class="lede">A serialized novel in three chapters, served locally for NovelSpeak E2E fixtures.</p>
+<ul>
+  <li><a href="chapter1.html">Chapter One: The Lamplighter's Daughter</a><span>Mara Hale lights forty-one lamps and finds a letter that should not exist.</span></li>
+  <li><a href="chapter2.html">Chapter Two: The Salt Road</a><span>Three days up the coast, a buyer in Saltsend, and a lamp that has never burned.</span></li>
+  <li><a href="chapter3.html">Chapter Three: The Keeper of Tides</a><span>The sixth lamp, the debt, and what the sea has been waiting for.</span></li>
+</ul>
+<p class="note">Fixture pages for <code>tools/maestro</code>. Serve with:<br>
+<code>python3 -m http.server 8765 --directory tools/test-page</code><br>
+and <code>adb reverse tcp:8765 tcp:8765</code>.</p>
+</main>
+</body>
+</html>

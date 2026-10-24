@@ -1,0 +1,68 @@
+# Moon+ Reader free 4.5.4 - architecture census
+## smali top-level third-party packages
+
+afollestad
+android
+caverock
+dozof
+dream
+dropbox
+example
+example2014
+facebook
+fasterxml
+flyersoft
+google
+radaee
+/tmp/re-work/moonreader-apktool/smali_classes2/com/:
+/tmp/re-work/moonreader-apktool/smali/com/:
+
+## com/flyersoft subpackages
+books
+components
+material
+moonreader
+opds
+staticlayout
+
+## android.speech.tts.TextToSpeech references (files)
+ActivityTxt$53.smali
+ActivityTxt.smali
+
+## MediaSession references inside com/flyersoft
+(empty = none)
+
+## hardcoded http(s) hosts inside com/flyersoft
+http://app.qq.com/
+http://baike.baidu.com/search
+http://dictionary.com/browse/
+http://opds-spec.org/cover
+http://opds-spec.org/image/thumbnail
+http://opds-spec.org/opds-cover-image-thumbnail
+http://opds-spec.org/sort/
+http://opds-spec.org/specs/opds-catalog-1-1-20110627/
+http://opds-spec.org/thumbnail
+http://pic.sogou.com/pics
+https://images.search.yahoo.com/search/images
+https://search.yahoo.com/search
+https://twitter.com/search/
+https://www.googleapis.com/auth/drive
+https://www.google.com/search
+http://www.amazon.com/gp/product/B004TN7QPG
+http://www.baidu.com/s
+http://www.bing.com/images/search
+http://www.bing.com/search
+http://www.ccil.org/
+http://www.facebook.com/search/results.php
+http://www.goodreads.com/search
+http://www.google.com/search
+http://www.google.com/translate_t
+http://www.moondownload.com/freefb.txt
+http://www.moondownload.com/freeinvite.txt
+http://www.moondownload.com/free.txt
+http://www.sogou.com/web
+http://www.yourdictionary.com/
+http://www.yunci4.com/
+http://xmlpull.org/v1/doc/features.html
+
+## legacy Play Billing AIDL present

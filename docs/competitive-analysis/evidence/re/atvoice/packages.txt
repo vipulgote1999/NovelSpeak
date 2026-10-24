@@ -1,0 +1,15 @@
+# @Voice smali package census (class counts per package)
+com/applovin 1360
+com/unity3d/ads 1297
+io/bidmachine 1663
+com/vungle 668
+com/google/android/gms/ads 99
+com/dropbox 200
+org/jsoup 313
+okhttp3 321
+com/hyperionics/avar 107
+com/hyperionics/CloudTts 15
+com/hyperionics/ai 5
+com/hyperionics/ttssetup 7
+com/hyperionics/speech 3
+util 244

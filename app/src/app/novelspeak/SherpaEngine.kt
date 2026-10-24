@@ -40,6 +40,12 @@ class SherpaEngine(
 
     override val id = "sherpa"
 
+    /**
+     * Kokoro/Pocket stay intelligible up to ~3x. The old 2.0 clamp made 2.05-2.5x in the UI a
+     * silent lie (P0.6); the UI now caps at this value and [generationSpeed] clamps to it.
+     */
+    override val maxSpeed: Float get() = MAX_SPEED
+
     @Volatile override var isReady = false
         private set
 
@@ -83,6 +89,24 @@ class SherpaEngine(
          */
         var garbage = false
 
+        /** At least one non-empty chunk arrived (audio may still have been trimmed to nothing). */
+        var produced = false
+
+        /** PcmPlayer rejected a write (stop/reset); abort like the inline path did before. */
+        var writeFailed = false
+
+        /** Skip-silence is read once per sentence so a Settings toggle cannot split a sentence. */
+        private val trim = prefs.ttsSkipSilence
+        private val rate = if (sampleRate > 0) sampleRate else 24000
+
+        /**
+         * With skip-silence ON, one chunk is held back: the last chunk can only lose its trailing
+         * silence once we know generation has ended. Costs one callback of extra first-audio
+         * latency, only for users who opted into the feature; OFF (default) writes immediately,
+         * byte-for-byte the previous behaviour.
+         */
+        private var pending: FloatArray? = null
+
         override fun invoke(samples: FloatArray): Int {
             // sherpa-onnx offline-tts callback contract: 1 = continue generating,
             // 0 = stop. The previous values were inverted, so every sentence stopped
@@ -90,6 +114,7 @@ class SherpaEngine(
             if (stopFlag) return 0
             if (epoch != cancelEpoch) return 0
             if (garbage) return 0
+            if (samples.isEmpty()) return 1
             // Judge BEFORE writing: the first callback arrives while the AudioTrack is
             // still pre-buffering, so a bad chunk can be dropped without ever playing.
             if (looksRailPinned(samples)) {
@@ -102,7 +127,7 @@ class SherpaEngine(
             // for some time". Stop the generation at 45 s so at most a truncated
             // fragment plays instead of minutes of babble (NekoSpeak caps Pocket
             // at ~40 s / 500 frames for the same reason).
-            val cap = (if (sampleRate > 0) sampleRate else 24000) * 45L
+            val cap = rate * 45L
             if (total >= cap) return 0
             if (!peakLogged) {
                 peakLogged = true
@@ -113,13 +138,64 @@ class SherpaEngine(
                 }
                 DiagLog.line(ctx, "tts chunk peak=${"%.3f".format(peak)} samples=${samples.size}")
             }
-            return if (player.write(samples, fadeIn = !wrote)) {
-                wrote = true
-                total += samples.size
-                1
-            } else {
-                0
+            produced = true
+            return if (trim) acceptDeferred(samples) else if (writeChunk(samples, false, false)) 1 else 0
+        }
+
+        /**
+         * Flushes the held-back final chunk, trimming its trailing silence. Must be called once
+         * after generation ends (a no-op when skip-silence is off or nothing is pending).
+         *
+         * @return false only when PcmPlayer rejected the write (stop/reset), so the caller can
+         *         fail the sentence instead of hanging on a boundary that will never drain.
+         */
+        fun flushPending(): Boolean {
+            val p = pending ?: return true
+            pending = null
+            if (stopFlag || epoch != cancelEpoch || garbage) return true
+            return writeChunk(p, trimStart = !wrote, trimEnd = true)
+        }
+
+        private fun acceptDeferred(samples: FloatArray): Int {
+            val prev = pending
+            if (prev != null) {
+                // The previous chunk is not final: trim its leading silence only when it is the
+                // first audio of the sentence, never its tail (a tail could be a real pause).
+                if (!writeChunk(prev, trimStart = !wrote, trimEnd = false)) {
+                    pending = null
+                    return 0
+                }
             }
+            // Copy: the native callback owns the array; keeping a reference across calls is not
+            // part of the JNI contract. One live chunk at a time, released on the next callback.
+            pending = samples.copyOf()
+            return 1
+        }
+
+        private fun writeChunk(samples: FloatArray, trimStart: Boolean, trimEnd: Boolean): Boolean {
+            val out = if (trim && (trimStart || trimEnd)) {
+                try {
+                    AudioDsp.trimSilence(
+                        samples,
+                        rate,
+                        trimStart = trimStart,
+                        trimEnd = trimEnd
+                    )
+                } catch (e: Throwable) {
+                    // Trimming is cosmetic; never lose speech over it.
+                    samples
+                }
+            } else {
+                samples
+            }
+            if (out.isEmpty()) return true // pure-silence chunk dropped; keep generating
+            if (!player.write(out, fadeIn = !wrote)) {
+                writeFailed = true
+                return false
+            }
+            wrote = true
+            total += out.size
+            return true
         }
 
         private fun looksRailPinned(samples: FloatArray): Boolean {
@@ -299,7 +375,7 @@ class SherpaEngine(
             try {
                 player.ensure(sampleRate)
                 val cfg = GenerationConfig(
-                    prefs.speed.coerceIn(0.5f, 2.0f), // speed from the player controls
+                    generationSpeed(), // speed from the player controls, clamped to this engine
                     1.0f,               // silenceScale: HayaiTTS value
                     if (family == "pocket") 0 else prefs.kokoroSid,
                     reference ?: FloatArray(0),
@@ -313,6 +389,12 @@ class SherpaEngine(
                 val label = cleaned.take(28).replace('\n', ' ')
                 DiagLog.line(ctx, "gen start \"$label\" queue=${player.queueDepth()}")
                 engine.generateWithConfigAndCallback(cleaned, cfg, sink)
+                // Skip-silence: generation has ended, so the held-back last chunk can now lose
+                // its trailing silence. No-op when the feature is off (nothing was held back).
+                if (!sink.garbage && !sink.flushPending()) {
+                    main.post { task.onDone(false) }
+                    continue
+                }
                 if (sink.garbage) {
                     // Deterministic (Kokoro) or sampled (Pocket) saturation: drop the
                     // sentence instead of playing noise, and advance so the reader
@@ -337,6 +419,10 @@ class SherpaEngine(
                 )
                 if (sink.wrote && end > 0) {
                     boundaries.put(Boundary(end, player.epoch(), task.onDone))
+                } else if (sink.produced && !sink.writeFailed) {
+                    // Skip-silence dropped every chunk (a sentence the vocoder rendered as pure
+                    // silence). Advance without audio instead of stalling the reader.
+                    main.post { task.onDone(true) }
                 } else {
                     // Never advance the reader when nothing reached the audio track.
                     main.post { task.onDone(false) }
@@ -404,4 +490,22 @@ class SherpaEngine(
     }
 
     override fun bufferedSeconds(): Float = player.bufferedSeconds()
+
+    /**
+     * Effective generation speed for the sherpa frontend: the player-control value clamped to
+     * this engine's [maxSpeed] contract. A corrupt/NaN pref falls back to 1.0 instead of
+     * poisoning the native config.
+     */
+    private fun generationSpeed(): Float {
+        val s = prefs.speed
+        return if (s.isFinite()) s.coerceIn(MIN_SPEED, MAX_SPEED) else 1.0f
+    }
+
+    private companion object {
+        /** Lowest supported speed (unchanged from the previous contract). */
+        const val MIN_SPEED = 0.5f
+
+        /** Highest speed Kokoro/Pocket still pronounce intelligibly; also reported as maxSpeed. */
+        const val MAX_SPEED = 3.0f
+    }
 }

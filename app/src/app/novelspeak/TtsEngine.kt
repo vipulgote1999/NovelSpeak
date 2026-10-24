@@ -34,4 +34,17 @@ interface TtsEngine {
      * 0 means the engine cannot report a buffer (treated as "keep the sentence lookahead").
      */
     fun bufferedSeconds(): Float = 0f
+
+    /**
+     * Highest speed multiplier this backend can honour.
+     *
+     * The UI must clamp its speed control to the *active* engine's value instead of using a
+     * single global maximum, otherwise values above it are silently rounded down (the audit
+     * finding behind P0.6). Backends clamp their own generation/synthesis rate to
+     * `0.5f..maxSpeed` as well, so a stale pref can never produce out-of-contract output.
+     *
+     * Default 2.0 keeps the original two-backend contract for any engine that does not
+     * override it.
+     */
+    val maxSpeed: Float get() = 2.0f
 }

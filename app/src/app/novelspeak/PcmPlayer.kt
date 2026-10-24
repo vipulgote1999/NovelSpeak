@@ -4,6 +4,8 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.util.Log
+import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.math.roundToInt
 
@@ -84,6 +86,36 @@ class PcmPlayer {
     @Volatile var writtenFrames: Long = 0
         private set
 
+    // ---- audio export (record while listening) -------------------------------
+    @Volatile private var capture: WavSink? = null
+    @Volatile private var captureFile: File? = null
+
+    /** Start capturing everything this player writes to a 24 kHz mono 16-bit WAV file. */
+    @Synchronized
+    fun startCapture(file: File): Boolean {
+        return try {
+            stopCapture()
+            capture = WavSink(FileOutputStream(file))
+            captureFile = file
+            true
+        } catch (t: Throwable) {
+            Log.w("NovelSpeak", "startCapture failed", t)
+            false
+        }
+    }
+
+    /** Stop capturing and return the written file (null if no capture was active). */
+    @Synchronized
+    fun stopCapture(): File? {
+        val f = captureFile
+        try { capture?.close() } catch (t: Throwable) { }
+        capture = null
+        captureFile = null
+        return f
+    }
+
+    fun isCapturing(): Boolean = capture != null
+
     fun ensure(sampleRateHz: Int) {
         if (track != null && sampleRate == sampleRateHz) {
             // A stopped/paused track rejects the first write; bring it back up.
@@ -126,6 +158,7 @@ class PcmPlayer {
             .build()
         t.setVolume(AudioTrack.getMaxVolume())
         t.play()
+        applyPlaybackParams(t)
         track = t
         writtenFrames = 0
         started = true
@@ -133,6 +166,18 @@ class PcmPlayer {
         playbackEpoch++
         startWriter()
         Log.i("NovelSpeak", "PcmPlayer ensure rate=$sampleRateHz buffer=$bufferBytes min=$minBytes")
+    }
+
+    /** Apply user pitch without changing speed (AudioTrack PlaybackParams, API 23+). */
+    private fun applyPlaybackParams(t: AudioTrack) {
+        try {
+            val pitch = NovelSpeakApp.instance.prefs.ttsPitch
+            t.playbackParams = android.media.PlaybackParams()
+                .setSpeed(1.0f)
+                .setPitch(pitch.coerceIn(0.8f, 1.2f))
+        } catch (t2: Throwable) {
+            Log.w("NovelSpeak", "playback params rejected", t2)
+        }
     }
 
     fun reset() {
@@ -174,7 +219,13 @@ class PcmPlayer {
             val a = if (s < 0f) -s else s
             if (a > peak) peak = a
         }
-        val target = if (peak > 0.001f) minOf(OUTPUT_GAIN, 0.98f / peak) else OUTPUT_GAIN
+        val boost = try {
+            NovelSpeakApp.instance.prefs.ttsVolumeBoost
+        } catch (t: Throwable) {
+            1.0f
+        }
+        val gain = OUTPUT_GAIN * boost
+        val target = if (peak > 0.001f) minOf(gain, 0.98f / peak) else gain
         if (gainNow <= 0f) gainNow = target
         val fade = if (fadeIn) fadeFrames() else 0
         var k = 0
@@ -322,11 +373,13 @@ class PcmPlayer {
                     tail[i * 2 + 1] = ((s shr 8) and 0xFF).toByte()
                 }
                 if (!writeAll(tail, t)) break
+                try { capture?.writePcm16(tail, tail.size) } catch (t2: Throwable) { }
                 lastWritten = 0f
                 continue
             }
             if (chunk.bytes.isEmpty()) continue
             if (!writeAll(chunk.bytes, t)) break
+            try { capture?.writePcm16(chunk.bytes, chunk.bytes.size) } catch (t2: Throwable) { }
             lastWritten = chunk.lastSample
         }
     }

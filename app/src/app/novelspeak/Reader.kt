@@ -43,6 +43,14 @@ class NovelSpeakApp : Application() {
         player = PcmPlayer()
         reader = Reader(this)
         AdBlocker.init(this)
+        // Pronunciation dictionary: parsed once at startup; Settings re-applies on save.
+        try {
+            TtsOverrides.set(
+                PronunciationRules.parse(prefs.pronunciationRules).map { it.from to it.to }
+            )
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "pronunciation rules load failed", t)
+        }
     }
 
     private fun dumpCrash(text: String) {
@@ -363,6 +371,67 @@ class Reader(private val app: NovelSpeakApp) {
                 pump()
             }
         })
+    }
+
+    /** Engine-reported ceiling; UI clamp uses this so 2.0-3.0x is not silently dropped. */
+    fun maxSpeed(): Float = engine?.maxSpeed ?: 2.0f
+
+    /** Index of the sentence currently being spoken (for progress persistence). */
+    fun currentIndex(): Int = cursor
+
+    /** Text of one queued sentence (bookmarks/stats); empty when out of range. */
+    fun sentenceText(index: Int): String = sentences.getOrNull(index)?.text ?: ""
+
+    /**
+     * Audio export v1: record what actually plays to a 24 kHz mono WAV.
+     * First call starts capture; the second stops, publishes to Downloads (API 29+) and
+     * returns a user-facing status string. Settings shows the return value as a Toast.
+     * (Full offline chapter rendering without playback is a later iteration.)
+     */
+    fun exportCurrentChapter(): String {
+        val player = app.player
+        if (player.isCapturing()) {
+            val file = player.stopCapture() ?: return "No recording in progress"
+            return publishCapture(file)
+        }
+        if (!hasContent()) return "Start reading a chapter first"
+        val dir = File(app.getExternalFilesDir(null) ?: app.filesDir, "exports")
+        if (!dir.exists()) dir.mkdirs()
+        val file = File(dir, "novelspeak-" + System.currentTimeMillis() + ".wav")
+        return if (player.startCapture(file)) {
+            "Recording… play the chapter, then tap Export again to save the WAV"
+        } else {
+            "Could not start audio export"
+        }
+    }
+
+    private fun publishCapture(file: File): String {
+        if (file.length() <= 44L) return "Export was empty — play some audio first"
+        if (Build.VERSION.SDK_INT >= 29) {
+            try {
+                val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+                val values = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, file.name)
+                    put(MediaStore.Downloads.MIME_TYPE, "audio/wav")
+                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
+                }
+                val uri = app.contentResolver.insert(collection, values)
+                if (uri != null) {
+                    app.contentResolver.openOutputStream(uri)?.use { out ->
+                        file.inputStream().use { it.copyTo(out) }
+                    }
+                    val done = ContentValues().apply {
+                        put(MediaStore.MediaColumns.IS_PENDING, 0)
+                    }
+                    app.contentResolver.update(uri, done, null, null)
+                    return "Saved " + file.name + " to Downloads"
+                }
+            } catch (t: Throwable) {
+                DiagLog.exception(app, "export publish failed", t)
+            }
+        }
+        return "Saved " + file.absolutePath
     }
 
     fun setSpeed(v: Float) {

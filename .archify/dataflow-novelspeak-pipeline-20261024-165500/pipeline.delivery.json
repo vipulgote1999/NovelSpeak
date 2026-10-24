@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "6e076294-10e2-4ec3-9b59-59dd900fdb13",
+  "status": "current",
+  "command": "deliver",
+  "type": "dataflow",
+  "input": "/home/vipul/Project/NovelSpeak/.archify/dataflow-novelspeak-pipeline-20261024-165500/candidate.json",
+  "output": "/home/vipul/Project/NovelSpeak/.archify/dataflow-novelspeak-pipeline-20261024-165500/pipeline.html",
+  "specification": {
+    "sha256": "fd1838b5d05bc6e2d0aaab85ce84d15b97becf8a94ec257f8149a61bfa3b6c88",
+    "bytes": 11938
+  },
+  "artifact": {
+    "sha256": "4f77edd93cfc477ad4f6529c38082ccfa02e370abef0d70352b5920663d3138f",
+    "bytes": 778025
+  }
+}

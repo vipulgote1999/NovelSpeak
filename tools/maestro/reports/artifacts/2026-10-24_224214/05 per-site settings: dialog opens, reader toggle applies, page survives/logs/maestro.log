@@ -1,0 +1,51 @@
+22:42:50.997 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+22:42:50.997 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+22:42:50.998 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+22:42:50.998 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+22:42:50.998 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "app.novelspeak" RUNNING
+22:42:51.395 [ INFO] maestro.Maestro.launchApp$lambda$5: Launching app app.novelspeak
+22:42:51.396 [ INFO] maestro.Maestro.launchApp$lambda$5: Stopping app.novelspeak app during launch
+22:42:51.554 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Launch app "app.novelspeak" COMPLETED
+22:42:51.554 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on "Edit address" RUNNING
+22:42:54.113 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={text=, accessibilityText=Edit address, hintText=, ignoreBoundsFiltering=false, resource-id=, clickable=true, bounds=[371,78][929,188], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.widget.LinearLayout, important-for-accessibility=true, error=}, children=[TreeNode(attributes={text=, accessibilityText=, hintText=, ignoreBoundsFiltering=false, resource-id=, clickable=false, bounds=[402,113][441,152], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.view.View, important-for-accessibility=false, error=}, children=[], clickable=false, enabled=true, focused=false, checked=false, selected=false), TreeNode(attributes={text=localhost/chapter1.html, accessibilityText=http://localhost:8765/chapter1.html, hintText=, ignoreBoundsFiltering=false, resource-id=, clickable=false, bounds=[462,109][903,157], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.widget.TextView, important-for-accessibility=true, error=}, children=[], clickable=false, enabled=true, focused=false, checked=false, selected=false)], clickable=true, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=371, y=78, width=558, height=110))
+22:42:55.355 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via settled hierarchy
+22:42:55.356 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Tapping at (650, 133) using hierarchy based logic for wait
+22:42:57.678 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Something has changed in the UI judging by view hierarchy. Proceed.
+22:42:57.679 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on "Edit address" COMPLETED
+22:42:57.679 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Erase 200 characters RUNNING
+22:42:57.679 [ INFO] maestro.Maestro.eraseText$lambda$52: Erasing 200 characters
+22:43:04.846 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Erase 200 characters COMPLETED
+22:43:04.847 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Input text http://localhost:8765/chapter1.html RUNNING
+22:43:04.847 [ INFO] maestro.Maestro.inputText: Inputting text: http://localhost:8765/chapter1.html
+22:43:09.478 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Input text http://localhost:8765/chapter1.html COMPLETED
+22:43:09.478 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Press Enter key RUNNING
+22:43:09.479 [ INFO] maestro.Maestro.pressKey: Pressing key ENTER
+22:43:10.389 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Press Enter key COMPLETED
+22:43:10.390 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Address bar, http://localhost:8765/chapter1.html" is visible RUNNING
+22:43:10.426 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Address bar, http://localhost:8765/chapter1.html" is visible COMPLETED
+22:43:10.426 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on "Ad blocking and site settings" RUNNING
+22:43:10.468 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={text=Ads blocked, accessibilityText=Ad blocking and site settings, hintText=, ignoreBoundsFiltering=false, resource-id=, clickable=true, bounds=[658,212][843,268], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.widget.TextView, important-for-accessibility=true, error=}, children=[], clickable=true, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=658, y=212, width=185, height=56))
+22:43:11.658 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via settled hierarchy
+22:43:11.658 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Tapping at (750, 240) using hierarchy based logic for wait
+22:43:12.497 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Something has changed in the UI judging by view hierarchy. Proceed.
+22:43:12.497 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on "Ad blocking and site settings" COMPLETED
+22:43:12.497 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Reader mode" is visible RUNNING
+22:43:12.524 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Reader mode" is visible COMPLETED
+22:43:12.524 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Block ads on this site" is visible RUNNING
+22:43:12.616 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Block ads on this site" is visible COMPLETED
+22:43:12.616 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on "Reader mode" RUNNING
+22:43:12.637 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={text=Reader mode, accessibilityText=, hintText=, ignoreBoundsFiltering=false, resource-id=android:id/text1, clickable=true, bounds=[70,853][1010,979], enabled=true, focused=false, checked=true, scrollable=false, selected=false, class=android.widget.CheckedTextView, important-for-accessibility=true, error=}, children=[], clickable=true, enabled=true, focused=false, checked=true, selected=false), bounds=Bounds(x=70, y=853, width=940, height=126))
+22:43:13.814 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via settled hierarchy
+22:43:13.814 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Tapping at (540, 916) using hierarchy based logic for wait
+22:43:14.631 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Something has changed in the UI judging by view hierarchy. Proceed.
+22:43:14.631 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on "Reader mode" COMPLETED
+22:43:14.631 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on "Done" RUNNING
+22:43:14.718 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={text=DONE, accessibilityText=, hintText=, ignoreBoundsFiltering=false, resource-id=android:id/button1, clickable=true, bounds=[810,1116][978,1242], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.widget.Button, important-for-accessibility=true, error=}, children=[], clickable=true, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=810, y=1116, width=168, height=126))
+22:43:15.926 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via settled hierarchy
+22:43:15.927 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Tapping at (894, 1179) using hierarchy based logic for wait
+22:43:17.024 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Something has changed in the UI judging by view hierarchy. Proceed.
+22:43:17.024 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on "Done" COMPLETED
+22:43:17.024 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Read" is visible RUNNING
+22:43:17.144 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Read" is visible COMPLETED
+22:43:17.144 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Next ch" is visible RUNNING
+22:43:17.268 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Next ch" is visible COMPLETED

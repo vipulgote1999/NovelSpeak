@@ -1,0 +1,12 @@
+22:43:56.507 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+22:43:56.508 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+22:43:56.508 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+22:43:56.508 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+22:43:56.508 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "app.novelspeak" RUNNING
+22:43:56.820 [ INFO] maestro.Maestro.launchApp$lambda$5: Launching app app.novelspeak
+22:43:56.820 [ INFO] maestro.Maestro.launchApp$lambda$5: Stopping app.novelspeak app during launch
+22:43:56.937 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Launch app "app.novelspeak" COMPLETED
+22:43:56.937 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on "Edit address" RUNNING
+22:43:58.588 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={text=, accessibilityText=Edit address, hintText=, ignoreBoundsFiltering=false, resource-id=, clickable=true, bounds=[371,78][929,188], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.widget.LinearLayout, important-for-accessibility=true, error=}, children=[TreeNode(attributes={text=, accessibilityText=, hintText=, ignoreBoundsFiltering=false, resource-id=, clickable=false, bounds=[402,113][441,152], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.view.View, important-for-accessibility=false, error=}, children=[], clickable=false, enabled=true, focused=false, checked=false, selected=false), TreeNode(attributes={text=localhost/chapter1.html, accessibilityText=http://localhost:8765/chapter1.html, hintText=, ignoreBoundsFiltering=false, resource-id=, clickable=false, bounds=[462,109][903,157], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.widget.TextView, important-for-accessibility=true, error=}, children=[], clickable=false, enabled=true, focused=false, checked=false, selected=false)], clickable=true, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=371, y=78, width=558, height=110))
+22:43:59.621 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via settled hierarchy
+22:43:59.621 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Tapping at (650, 133) using hierarchy based logic for wait

@@ -1,0 +1,13 @@
+appId: app.novelspeak
+name: "01 launch: address bar and player are visible"
+tags:
+  - baseline
+  - smoke
+---
+- launchApp
+# Address bar carries the current URL as contentDescription ("Address bar" when empty).
+- assertVisible: "Address bar.*"
+- assertVisible: "Read"
+- assertVisible: "Next ch"
+- assertVisible: "Play"
+- assertVisible: "More options"

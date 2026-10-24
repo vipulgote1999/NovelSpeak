@@ -1,0 +1,457 @@
+{
+  "generatedAt": "2026-10-24",
+  "stream": "apk-re (task-4)",
+  "tools": {
+    "apktool": "3.0.3 (~/.local/bin)",
+    "aapt2": "36.0.0 (~/Android/Sdk/build-tools/36.0.0)",
+    "jadx": "1.5.6 installed (~/.local/share/jadx); not required, apktool smali sufficed",
+    "apksigner": "36.0.0",
+    "unzip": "/usr/bin/unzip",
+    "sha256sum": "/usr/bin/sha256sum",
+    "git": "2.x",
+    "curl": "/usr/bin/curl",
+    "duckdb": "NOT installed (download stalled); DuckDB/garlic call-graph intentionally skipped",
+    "workingDirs": [
+      "/tmp/apks",
+      "/tmp/re-work",
+      "/tmp/competitive/apk-re"
+    ]
+  },
+  "legalBoundary": {
+    "allowedChannels": [
+      "developer official site",
+      "GitHub Releases",
+      "Aptoide public listing API"
+    ],
+    "notUsed": [
+      "APKPure-style mirrors",
+      "cracked/modded APKs",
+      "paywall/DRM/licence bypass",
+      "account creation",
+      "credential use",
+      "Play-store APK scraping"
+    ],
+    "notDownloadedDeliberately": "Moon+ Reader Pro (mrp_*.apk on moondownload.com) — paid product",
+    "codeCopiedIntoRepo": false
+  },
+  "apps": [
+    {
+      "name": "@Voice Aloud Reader",
+      "package": "com.hyperionics.avar",
+      "version": "40.9.1 (versionCode 1640090140)",
+      "sha256": "7f48c57afe3376013f028f4902a114fb73a075e193ee88faba598482f2f02cbb",
+      "sizeBytes": 73697675,
+      "sourceChannel": "https://hyperionics.com/downloads/atVoice/atVoice.apk (official developer site)",
+      "framework": "native Java/Kotlin + Jetpack Compose (Material3/expressive); AndroidX; 6 classes*.dex; largeHeap; allowAudioPlaybackCapture",
+      "minSdk": 26,
+      "targetSdk": 37,
+      "compileSdk": 37,
+      "httpStack": [
+        "OkHttp3 (321 classes)",
+        "Cronet provider declared (com.google.android.gms.net.PlayServicesCronetProvider)",
+        "jsoup 313 classes for HTML parsing"
+      ],
+      "nativeLibs": [
+        "libHyperionics_avar.so",
+        "libHyperionics_pdf.so",
+        "libEbookConv.so",
+        "liblame.so (MP3 encode)",
+        "liblcp.so (Readium LCP DRM)",
+        "libcrashlytics.so",
+        "libapplovin-native-crash-reporter.so",
+        "libunitycoherencenative.so",
+        "libvxwuyvyac.so (unidentified)",
+        "libc++_shared.so",
+        "libdatastore_shared_counter.so",
+        "libandroidx.graphics.path.so"
+      ],
+      "sdkSignals": [
+        "AppLovin MAX",
+        "Unity Ads",
+        "BidMachine",
+        "Vungle",
+        "AdMob (GMS Ads)",
+        "Firebase Crashlytics",
+        "Firebase Analytics (measurement)",
+        "Dropbox Sync SDK",
+        "Google Play Billing/LVL (CHECK_LICENSE)"
+      ],
+      "obfuscation": "partial: com.hyperionics.* names retained (107 classes in com.hyperionics.avar) while shared/UI code R8-flattened to a/b1/j69/qn-style names",
+      "permissions": [
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "FOREGROUND_SERVICE_DATA_SYNC",
+        "WAKE_LOCK",
+        "POST_NOTIFICATIONS",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_WIFI_STATE",
+        "MANAGE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "QUERY_ALL_PACKAGES",
+        "RECORD_AUDIO",
+        "BLUETOOTH",
+        "BLUETOOTH_CONNECT",
+        "VIBRATE",
+        "READ_BASIC_PHONE_STATE",
+        "ACCESS_LOCAL_NETWORK",
+        "com.android.vending.CHECK_LICENSE",
+        "com.google.android.gms.permission.AD_ID",
+        "ACCESS_ADSERVICES_AD_ID",
+        "ACCESS_ADSERVICES_ATTRIBUTION",
+        "ACCESS_ADSERVICES_TOPICS",
+        "com.amazon.privacypass.ATTEST"
+      ],
+      "services": [
+        "com.hyperionics.avar.SpeakService — exported=true, foregroundServiceType=mediaPlayback",
+        "com.hyperionics.PdfNativeLib.PdfExtractService — process=:pdfReader, foregroundServiceType=dataSync",
+        "com.hyperionics.avar.ReaderSearchRegexService — process=:readerSearch"
+      ],
+      "exported": [
+        "StartupActivity",
+        "StartupActivityShareAlias",
+        "SaveOnlyActivity (add-to-list share target)",
+        "SpeakReferenceActivity (launcher, singleTask)",
+        "com.hyperionics.DropboxSync.DropboxAuthCallbackActivity",
+        "DeskWidget.AvarWidget",
+        "BluetoothConnectReceiver",
+        "MediaButtonIntentReceiver (exported but enabled=false in manifest)"
+      ],
+      "ttsArchitecture": "System android.speech.tts TextToSpeech for on-device voices + dedicated CloudTts package (15 classes) with per-provider key screens: Google Cloud, Amazon Polly, Microsoft Azure Speech, OpenAI, OpenAI-compatible server URL, xAI Grok. Keys stored on-device only and excluded from backups. Plus optional AI (Anthropic/OpenAI) for PDF->EPUB conversion and external AI-assistant handoff via assets/assistants.json. No bundled neural voice weights found; in-app native neural synthesis Unknown.",
+      "extractionApproach": "Hidden/sandboxed WebView + injected JS bundle bridged into Java: ExtractBrowserActivity, ExtractBrowser$RlJavaCallback, ExtractBrowser$SandboxJavaCallback, ContentLoaderBrowser$RlJavaCallback, custom VsWebView, JavaCallback; assets/js/ExtractBrowser.min.js (13.7KB), GetDisplayedHTML.min.js (10.6KB), LoginWallDetect.min.js (18.5KB), PageTurnCapture.min.js (16.5KB), CaptureReader.min.js, CaptureBrowser.min.js, ReplaceIframes.min.js, UnicodeWords.min.js, FindRegEx.min.js, mark.min.js, jquery-3.6.3.min.js; jsoup for post-parse. Site filters are data-only: assets/Filters/{WhatsAppChat.json,WhatsAppChat-replace.txt}. Login/paywall DETECTED and warned, not bypassed.",
+      "playbackArchitecture": "Foreground mediaPlayback service (SpeakService) + MediaButtonIntentReceiver + BluetoothConnectReceiver + SleepTimerAlarmReceiver + auto-scroll follow-read + PDF line-box highlight-while-reading; MP3 export via liblame",
+      "monetizationSignals": "Ad-supported free build across 5 mediation networks (BidMachine 1663 + AppLovin 1360 + Unity Ads 1297 + Vungle 668 + GMS Ads 99 classes) with one-time '@Voice Premium License' ad removal ('Remove ads!', 'Support the developer and enjoy @Voice without ads. Buy @Voice Premium License!'); licence check via com.android.vending.CHECK_LICENSE + InvalidPremiumLicenseActivity. Cloud/AI features funded by the user's own provider accounts, not by subscription.",
+      "trackers": [
+        "AppLovin MAX",
+        "Unity Ads",
+        "BidMachine",
+        "Vungle",
+        "Google AdMob",
+        "Firebase Crashlytics",
+        "Firebase Analytics",
+        "Google Play Install Referrer"
+      ],
+      "notableStrings": [
+        "hts_vmgr_am_polly_cloud = 'Use Amazon Polly voices (paid service)'",
+        "hts_vmgr_ms_azure_cloud = 'Use Microsoft Azure voices (paid service)'",
+        "hts_vmgr_xai = 'Use xAI Grok voices (paid service)'",
+        "hts_openai_compat_key = 'Enter the address of your OpenAI-compatible TTS server. Only the server URL is required; the API key is optional'",
+        "ai_billing_reminder = 'Uses your AI account — billed by the provider.'",
+        "login_required_short = 'Login or subscription may be required'",
+        "follow_read = 'Auto-scroll the sentence read aloud into view'",
+        "ad_free = 'Support the developer and enjoy @Voice without ads. Buy @Voice Premium License!'",
+        "CloudTtsConfig.txt: '@Voice cloud TTS model catalog, schema 1. Official provider endpoints stay in app code.'",
+        "CloudTtsConfig.txt: 'Signing uses SHA1withRSA and avarcfg, over UTF-8 trimmed nonempty/non-comment lines + LF.'",
+        "res/raw ships 58 per-language *_js text-processing resources (en_js, en_gb_js, el_polyton_js, hi_js, ...)"
+      ],
+      "novelspeakComparison": "Closest architectural twin for extraction (NovelSpeak app/src/app/novelspeak/WebExtractor.kt:11-12 uses bundled Mozilla Readability + density fallback; @Voice uses WebView+injected JS+jsoup). Diff: @Voice has no bundled neural TTS (NovelSpeak has sherpa-onnx Kokoro/Pocket, README.md:11-12), @Voice has 6 BYO-key cloud TTS providers (NovelSpeak has none), @Voice has a signed OTA model catalog vs NovelSpeak's hashes pinned in ModelManager.kt (README.md:122), @Voice has 8-class process-exit diagnostics vs NovelSpeak's flat DiagLog.kt, and @Voice carries ~5k ad-mediation classes vs NovelSpeak's zero-SDK Apache-2.0 build. Both use a foreground mediaPlayback service; NovelSpeak correctly keeps it exported=false (app/AndroidManifest.xml:46-54) while @Voice exports it.",
+      "adopt": [
+        "signed OTA model/voice catalog with minAppVersion gates and retired-model recovery",
+        "paywall/login-wall DETECTION + warning (never bypass)",
+        "process-exit diagnostics taxonomy (ANR/low-memory/native-crash/signal)",
+        "separate :extract process + dataSync FGS for heavy WebView extraction",
+        "language-keyed res/raw normalisation data instead of code",
+        "share-target 'add to list' activity",
+        "BYO-API-key cloud TTS as optional tier with on-device key storage excluded from backup"
+      ],
+      "avoid": [
+        "ad-mediation SDK stack (5 networks, ~5k classes) for a one-time IAP",
+        "MANAGE_EXTERNAL_STORAGE + QUERY_ALL_PACKAGES",
+        "exported=true on the playback service",
+        "shipping DRM (LCP) coupling"
+      ],
+      "legalNotes": "Proprietary free/ad-supported APK; static analysis for interoperability only. No code/assets copied. liblcp.so is Readium LCP DRM — observed, not exercised. Regex/JS extraction logic is NOT reusable code.",
+      "evidenceIds": [
+        "ev-atvoice-hashes",
+        "ev-atvoice-manifest",
+        "ev-atvoice-packages",
+        "ev-atvoice-assets",
+        "ev-atvoice-strings",
+        "ev-atvoice-raw",
+        "ev-atvoice-classes"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "NekoSpeak",
+      "package": "com.nekospeak.tts",
+      "version": "1.5.0 (versionCode 17), released 2026-04-15",
+      "sha256": "0108360a8aafa07cbd769839a0436deda0d348ff7e5b9214261691febc2bbc64",
+      "sizeBytes": 94472186,
+      "sourceChannel": "https://github.com/siva-sub/NekoSpeak/releases/download/v1.5.0/app-arm64-v8a-release.apk (official GitHub Release; asset size matches GitHub API exactly)",
+      "framework": "native Kotlin + Jetpack Compose (navigation-compose, material3); 1 classes.dex (arm64 asset); no DI framework; Gson; no analytics/ads SDKs",
+      "minSdk": 26,
+      "targetSdk": 35,
+      "compileSdk": 35,
+      "httpStack": [
+        "no HTTP client library declared; model downloads via Android DownloadManager/workmanager-style code (VoiceDownloader.kt)"
+      ],
+      "nativeLibs": [
+        "libnekospeak.so",
+        "libttsespeak.so (eSpeak-NG JNI)",
+        "libonnxruntime.so (16,276,816 B)",
+        "libonnxruntime4j_jni.so"
+      ],
+      "sdkSignals": [
+        "onnxruntime-android 1.18.0",
+        "JTransforms 3.2",
+        "Gson 2.10.1",
+        "androidx compose/navigation",
+        "no Firebase/AdMob/analytics"
+      ],
+      "obfuscation": "none (open source, unobfuscated class names)",
+      "permissions": [
+        "FOREGROUND_SERVICE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "RECORD_AUDIO",
+        "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+      ],
+      "services": [
+        "com.nekospeak.tts.NekoTtsService — exported=true, intent-filter android.intent.action.TTS_SERVICE, meta-data android.speech.tts -> @xml/tts_engine"
+      ],
+      "exported": [
+        "NekoTtsService",
+        "CheckVoiceData (CHECK_TTS_DATA)",
+        "GetSampleText (GET_SAMPLE_TEXT)",
+        "InstallVoiceData (INSTALL_TTS_DATA)",
+        "ui.MainActivity"
+      ],
+      "ttsArchitecture": "It IS a system TTS engine: class NekoTtsService : TextToSpeechService() (NekoTtsService.kt:37). Engine strategy interface TtsEngine with PiperEngine (+EspeakWrapper -> libespeak-ng phonemes, 371 bundled espeak-ng-data assets), KokoroEngine (kokoro-v1.0.int8.onnx + voices-v1.0.bin), PocketTtsEngine (5 ONNX sessions: mimi_encoder 73MB, text_conditioner 16MB, flow_lm_main_int8 76MB, flow_lm_flow_int8 10MB, mimi_decoder_int8 23MB), Kitten TTS Nano. Kotlin Misaki G2P (engine/misaki/{G2P,Lexicon,Num2Words,TokenContext,MToken}.kt + piper/MisakiToPiperIPA.kt). Zero-shot cloning: cloneVoice() at PocketTtsEngine.kt:1526 with MimiCodec + GtcrnDenoiser + AudioRecorder/VoiceRecorderScreen.",
+      "extractionApproach": "none — it is a TTS engine, not a reader; there is no WebView, no article extraction, no book source",
+      "playbackArchitecture": "n/a (synthesis only, consumed by host apps through the system TTS binder); no MediaSession, no mediaPlayback FGS",
+      "monetizationSignals": "none — free open-source app, no billing code, no ad SDKs",
+      "trackers": [],
+      "notableStrings": [
+        "model bases: https://huggingface.co/spaces/KevinAHM/pocket-tts-web/resolve/main (HF_BASE)",
+        "https://huggingface.co/kyutai/tts-voices/resolve/main (celebrity/voice-donation reference clips)",
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/ (Piper community voices)",
+        "https://github.com/siva-sub/NekoSpeak/releases/download/v1.0.0/kokoro-v1.0.int8.onnx",
+        "RELEASE_NOTES.md newest heading = '# Release v1.4.2 - Clone Stability & In-App Diagnostics' while release v1.5.0 shipped 2026-04-15 -> v1.5.0 is undocumented in-repo",
+        "Support report = meta.json + prefs_snapshot.json + events.log + last_crash.txt; caps 10 archives / 20 MB / 14-day TTL / events.log 1 MB rolling"
+      ],
+      "novelspeakComparison": "Complementary rather than competing: NekoSpeak exposes itself as the device TTS engine via android.intent.action.TTS_SERVICE, whereas NovelSpeak bundles sherpa-onnx Kokoro/Pocket inside the app (README.md:11-12, SherpaEngine.kt). NovelSpeak could adopt the engine-export idea (become a system TTS provider) OR keep the in-app engine; NekoSpeak's model supply chain is split across GitHub releases, HF datasets and even an HF Space — the opposite of NovelSpeak's pinned-hash approach. NekoSpeak's support-report design is directly copyable.",
+      "adopt": [
+        "support-report bundle with hard retention caps + FileProvider share",
+        "architecture-aware model loading (byte-array load on 32-bit ARM to avoid SIGBUS/mmap alignment crashes) — docs/adr/ADR-005",
+        "denoiser preprocessing (GTCRN) before voice-clone embedding",
+        "consider exporting NovelSpeak's neural engine as a system TextToSpeechService for reuse by other readers"
+      ],
+      "avoid": [
+        "fragmented model supply chain (GitHub release + HF dataset + HF Space + third-party datasets)",
+        "undocumented releases (v1.5.0 has no changelog entry)"
+      ],
+      "legalNotes": "Open-source app under the MIT License (observed in repo LICENSE file: \"Copyright (c) 2026 NekoSpeak Team\"). Its ONNX models are third-party (Kyutai Pocket-TTS, HuggingFace Piper voices, Kokoro) with their own licences — do not copy weights. Architecture (TextToSpeechService + ONNX) is standard Android and freely re-implementable.",
+      "evidenceIds": [
+        "ev-neko-hashes",
+        "ev-neko-source"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Moon+ Reader (free)",
+      "package": "com.flyersoft.moonreader",
+      "version": "4.5.4 (versionCode 454001) — Aptoide mirror build; Play listing for same package shows 'Updated on Oct 17, 2026', so this build is stale",
+      "sha256": "e71fab6821ef8c8a497a668210a05ee44e5602e04b6a06165531dcd0ace6abeb",
+      "sizeBytes": 12812004,
+      "sourceChannel": "Aptoide public listing API ws75.aptoide.com/api/7/app/get/package_name=com.flyersoft.moonreader -> pool.apk.aptoide.com/appupdater/...apk",
+      "framework": "native Java (pre-Compose), 2 classes*.dex; old-school stack: Jackson (fasterxml), legacy Google Analytics, Facebook SDK, Dropbox SDK, Fresco image pipeline",
+      "minSdk": 14,
+      "targetSdk": 26,
+      "httpStack": [
+        "no Retrofit/OkHttp library packages observed at top level; legacy java.net/Apache-style usage with Jackson"
+      ],
+      "nativeLibs": [
+        "libimagepipeline.so (Fresco)",
+        "librdpdf.so (Radaee PDF, confirmed by com/radaee package)"
+      ],
+      "sdkSignals": [
+        "Radaee PDF SDK (commercial)",
+        "Fresco",
+        "Jackson",
+        "Facebook SDK",
+        "Dropbox SDK",
+        "legacy Google Analytics (AnalyticsReceiver)",
+        "legacy Play Billing v1 AIDL (IInAppBillingService)"
+      ],
+      "obfuscation": "light — com.flyersoft/* and third-party package names fully readable",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "GET_ACCOUNTS",
+        "com.android.vending.BILLING"
+      ],
+      "services": [
+        "com.flyersoft.moonreader.BookDownloadService (no foregroundServiceType — predates FGS typing)",
+        "com.google.android.gms.auth.api.signin.RevocationBoundService"
+      ],
+      "exported": [
+        "OpenFile_Receiver",
+        "Google Analytics AnalyticsReceiver"
+      ],
+      "ttsArchitecture": "No engine of its own; drives system android.speech.tts TextToSpeech from ActivityTxt (only 2 classes reference TextToSpeech), with inlined A$TtsLine helper. No MediaSession, no foreground playback service -> playback is activity-scoped. 'Shake the phone to speak (TTS engine support)' is advertised as a PRO benefit on the developer site.",
+      "extractionApproach": "none — file/local-library reader plus OPDS catalog support (com/flyersoft/opds); no WebView article extraction, no readability",
+      "playbackArchitecture": "activity-scoped TTS; no MediaSession; media/headset keys are a Pro feature; BookDownloadService for catalog downloads only",
+      "monetizationSignals": "legacy Play Billing v1 AIDL in the free package; Pro tier (com.flyersoft.moonreaderp, one-time payment per developer site) unlocks 'Ad-free', 'Shake the phone to speak', PDF annotations, themes, widget shelf",
+      "trackers": [
+        "legacy Google Analytics",
+        "Facebook SDK",
+        "Dropbox SDK"
+      ],
+      "notableStrings": [
+        "Play description: 'EBook reader with rich features.'",
+        "developer site Pro benefits: 'Ad-free', 'Shake the phone to speak ( TTS engine support)', 'It's a one time payment, all upgrades are free for life'",
+        "hardcoded third-party lookup hosts only: dictionary.com/browse/, search.yahoo.com, baike.baidu.com/search, pic.sogou.com/pics, app.qq.com; OPDS namespace opds-spec.org"
+      ],
+      "novelspeakComparison": "Incumbent that NekoSpeak was explicitly written to serve ('read books from my MoonReader app'). Its free build has no neural TTS, no foreground playback service and no MediaSession, and only 6 permissions — the exact gap NovelSpeak fills with sherpa-onnx + mediaPlayback FGS + MediaSession (README.md:11-13). Also note Moon+ free still ships targetSdk 26 on public mirrors, i.e. it has not adopted modern FGS/notification/permission models in that lineage.",
+      "adopt": [
+        "OPDS catalog support (open, standard, zero legal risk, real 'more content' win)",
+        "dictionary/image lookup on long-press (with user-visible hosts)"
+      ],
+      "avoid": [
+        "commercial PDF SDK (Radaee) — licence cost and complexity",
+        "legacy Play Billing v1 AIDL",
+        "targetSdk 26-era permission model",
+        "getting caught in 'stale mirror' territory: publish checksums and a canonical download page"
+      ],
+      "legalNotes": "Proprietary. Free package analysed only; Pro APK deliberately not downloaded even though moondownload.com exposes mrp_*.apk. Radaee PDF is a commercial SDK — do not adopt.",
+      "evidenceIds": [
+        "ev-moon-hashes",
+        "ev-moon-manifest",
+        "ev-moon-arch"
+      ],
+      "confidence": "medium",
+      "confidenceNote": "Build is stale (4.5.4 via Aptoide) vs Play 'Updated on Oct 17, 2026'; manifest/SDK conclusions describe the 4.5.x free line, not guaranteed today's Play build."
+    },
+    {
+      "name": "Legado (阅读 3.0)",
+      "package": "io.legado.app.release",
+      "version": "Unknown from artifact — Uptodown page title says 'Legado 3.25'",
+      "sha256": null,
+      "sizeBytes": null,
+      "sourceChannel": "NONE LAWFUL FOUND: GitHub releases empty/404, F-Droid NOT_FOUND, Aptoide 404; Uptodown listing exists but download is JS/token-gated and the upstream project was deleted after an infringement action",
+      "framework": "Unknown (APK not obtained)",
+      "httpStack": [],
+      "nativeLibs": [],
+      "sdkSignals": [],
+      "obfuscation": "Unknown",
+      "permissions": [],
+      "services": [],
+      "exported": [],
+      "ttsArchitecture": "Unknown from artifact. Publicly known as a TTS-capable novel reader, but that is not verified against a build here.",
+      "extractionApproach": "Unknown from artifact. Known reputation: JSON 'book source' rule DSL scraping arbitrary novel sites — the feature at the centre of the takedown.",
+      "playbackArchitecture": "Unknown from artifact.",
+      "monetizationSignals": "Unknown",
+      "trackers": [],
+      "notableStrings": [
+        "Upstream README (verbatim, 2026-10-24): '# 公告' / '本项目涉及侵权行为的违法，也为此承担了相应的法律责任，在此郑重发布公告，删除项目内容并规劝所有人：'",
+        "README continues: '请立刻停止一切侵权相关行为，不要再效仿、从事、传播各类侵权活动' (stop all infringement-related conduct; do not imitate, undertake or disseminate infringing activity)",
+        "Repo contents after last commit 9bb0569 (2026-05-27, message '公告'): only README.md + 公告链接.png",
+        "README links 阅文 (China Literature) IP-protection announcement: https://mp.weixin.qq.com/s/bcTbqBQA1T0YoRwq76xcWQ"
+      ],
+      "novelspeakComparison": "Negative reference. Legado was the feature king (book-source engine + TTS + offline cache) and is now legally removed upstream. NovelSpeak must NOT build a book-source/rule-DSL scraping engine or market 'read any novel site free' — keep extraction generic (Readability + density heuristics on a user-opened page) and add paywall/login DETECTION instead of bypass (the @Voice pattern).",
+      "adopt": [],
+      "avoid": [
+        "book-source / content-rule DSL scraping arbitrary novel sites",
+        "site-specific bypass rules",
+        "any marketing that implies scraping copyrighted serialized fiction"
+      ],
+      "legalNotes": "Upstream deleted by its author on 2026-05-27 amid an infringement action by 阅文 (China Literature). Do not redistribute, do not reuse rules. Recorded as a legal signal, not as a code source. APK analysis: Unknown.",
+      "evidenceIds": [
+        "ev-legado-upstream"
+      ],
+      "confidence": "high",
+      "confidenceNote": "High confidence for the upstream takedown (cloned repo + GitHub/F-Droid APIs). Zero confidence for APK internals (not obtained)."
+    },
+    {
+      "name": "Audify read aloud web browser",
+      "package": "com.tangerinesoftwarehouse.audify",
+      "version": "Unknown (Play listing only; 'Updated on Aug 29, 2026')",
+      "sha256": null,
+      "sizeBytes": null,
+      "sourceChannel": "NO LAWFUL APK CHANNEL FOUND: developer site https://www.tangerinesoftwarehouse.com/download/ has no APK link (Play-only); Aptoide API 404; Uptodown slug 404",
+      "framework": "Unknown",
+      "httpStack": [],
+      "nativeLibs": [],
+      "sdkSignals": [],
+      "obfuscation": "Unknown",
+      "permissions": [],
+      "services": [],
+      "exported": [],
+      "ttsArchitecture": "Unknown (no artifact). Play description only: 'Read aloud (text to speech, TTS) web pages, web novels, and ebooks.'",
+      "extractionApproach": "Unknown (no artifact).",
+      "playbackArchitecture": "Unknown (no artifact).",
+      "monetizationSignals": "Play page shows an 'In-app purchases' row (Observed label; tier contents/gating Unknown).",
+      "trackers": [],
+      "notableStrings": [
+        "Play title: 'Audify read aloud web browser'",
+        "Play description: 'Read aloud (text to speech, TTS) web pages, web novels, and ebooks.'",
+        "Play last-updated: 'Updated on Aug 29, 2026'"
+      ],
+      "novelspeakComparison": "Unknown — cannot be assessed from an artifact. Its Play description positions it as the same WebView+read-aloud shape as NovelSpeak, so the free-intel stream's behavioural research (not this teardown) should drive conclusions.",
+      "adopt": [],
+      "avoid": [],
+      "legalNotes": "Proprietary, Play-only. Nothing analysed; nothing obtained.",
+      "evidenceIds": [
+        "ev-audify-play"
+      ],
+      "confidence": "low"
+    }
+  ],
+  "rightToBeUnknown": [
+    "Speechify (com.cliffweitzman.speechify2)",
+    "ElevenReader (io.elevenlabs.readerapp)"
+  ],
+  "adopt": [
+    "Signed OTA model/voice catalog (schema + SHA1withRSA signature + minAppVersion gates + enabled:false/shutdownOn retirement + graceful 'saved model retired' recovery) — replaces NovelSpeak's hardcoded pinned-hash model list in ModelManager.kt",
+    "Paywall/login-wall DETECTION with a non-bypass warning ('Login or subscription may be required — open in NovelSpeak's browser and log in there')",
+    "Playback process-exit diagnostics taxonomy (ANR / native crash / low memory during playback / audio signal loss / resource anomaly) on top of DiagLog.kt",
+    "Move heavy WebView extraction into a separate :extract process with foregroundServiceType=dataSync so playback survives OOM",
+    "Language-keyed res/raw normalisation data (per-language rules as data, not code) as more languages are added",
+    "Support-report bundle with hard retention caps (10 archives / 20 MB / 14-day TTL / 1 MB rolling events.log) + FileProvider share",
+    "Share-target 'add to list' activity (silently queue a URL) for acquisition",
+    "OPDS catalog support — open standard, zero legal risk, real content win",
+    "Optional BYO-API-key cloud TTS tier (user's own key, stored on-device, excluded from backups) if cloud voices are ever added",
+    "Consider exporting NovelSpeak's neural engine as a system android.intent.action.TTS_SERVICE provider for reuse by other readers"
+  ],
+  "avoid": [
+    "Book-source / content-rule DSL scraping of arbitrary novel sites (Legado's takedown, 2026-05-27) — and any 'read any novel site free' marketing",
+    "Ad-mediation SDK stacks for a one-time IAP (@Voice carries ~5,000 ad classes across 5 networks)",
+    "MANAGE_EXTERNAL_STORAGE + QUERY_ALL_PACKAGES (use Queries snippets / SAF)",
+    "exported=true on the playback service (keep app/AndroidManifest.xml:48 exported=false)",
+    "Commercial PDF SDK dependency (Radaee)",
+    "Legacy Play Billing v1 AIDL",
+    "Fragmented model supply chain across GitHub releases + HF datasets + HF Spaces",
+    "Shipping DRM (LCP) coupling"
+  ],
+  "unknowns": [
+    "Legado APK internals — not obtained (upstream deleted; Uptodown JS/token-gated). Book-source DSL, TTS pipeline, cache design all Unknown from artifact.",
+    "Audify / Speechify / ElevenReader internals — no lawful APK channel identified; framework, extraction, TTS path Unknown.",
+    "@Voice in-app neural TTS — TtsNativeLib/{D2TWrapper,EbookConverter} and libHyperionics_avar.so exist but no voice weights were found; current read is system TTS + cloud TTS only (Inferred).",
+    "@Voice libvxwuyvyac.so — present in all 4 ABIs, no HTTP/TTS strings, random-looking name. Unidentified (likely ad-SDK helper or anti-tamper).",
+    "@Voice cloud request wire formats / provider endpoints — not extracted ('official provider endpoints stay in app code' per their own catalog comment).",
+    "Install counts / revenue / pricing for all apps — not extracted reliably; not estimated.",
+    "NekoSpeak v1.5.0 changelog — absent from RELEASE_NOTES.md (still tops out at v1.4.2); Unknown beyond APK-observed facts.",
+    "Moon+ free current Play build — analysed APK is Aptoide 4.5.4; Play build updated 2026-10-17 may differ.",
+    "NovelSpeak offline-cache capability — out of scope for this stream (owned by app-audit)."
+  ],
+  "evidenceIndex": {
+    "ev-atvoice-hashes": "docs/competitive-analysis/evidence/re/atvoice/hashes.txt",
+    "ev-atvoice-manifest": "docs/competitive-analysis/evidence/re/atvoice/manifest.txt",
+    "ev-atvoice-packages": "docs/competitive-analysis/evidence/re/atvoice/packages.txt",
+    "ev-atvoice-assets": "docs/competitive-analysis/evidence/re/atvoice/assets.txt",
+    "ev-atvoice-strings": "docs/competitive-analysis/evidence/re/atvoice/strings-excerpts.txt",
+    "ev-atvoice-raw": "docs/competitive-analysis/evidence/re/atvoice/raw-inventory.txt",
+    "ev-atvoice-classes": "docs/competitive-analysis/evidence/re/atvoice/classes.txt",
+    "ev-neko-hashes": "docs/competitive-analysis/evidence/re/nekospeak/hashes.txt",
+    "ev-neko-source": "docs/competitive-analysis/evidence/re/nekospeak/source-architecture.txt",
+    "ev-moon-hashes": "docs/competitive-analysis/evidence/re/moonreader/hashes.txt",
+    "ev-moon-manifest": "docs/competitive-analysis/evidence/re/moonreader/manifest.txt",
+    "ev-moon-arch": "docs/competitive-analysis/evidence/re/moonreader/architecture.txt",
+    "ev-legado-upstream": "docs/competitive-analysis/evidence/re/legado/upstream-status.txt",
+    "ev-audify-play": "docs/competitive-analysis/evidence/re/audify/play-metadata.txt"
+  }
+}

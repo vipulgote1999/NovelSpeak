@@ -39,47 +39,128 @@ import kotlin.math.sqrt
  */
 class AudioDsp(sampleRateHz: Int = 24000) {
 
-    private companion object {
+    companion object {
         // ---- STFT ----
-        const val FRAME = 512          // 21.3 ms @ 24 kHz
-        const val HOP = 256            // 50 % overlap
-        const val BINS = FRAME / 2 + 1 // 257
+        private const val FRAME = 512          // 21.3 ms @ 24 kHz
+        private const val HOP = 256            // 50 % overlap
+        private const val BINS = FRAME / 2 + 1 // 257
 
         // ---- noise estimate (minimum statistics) ----
-        const val NOISE_FRAMES = 96    // 96 * 10.67 ms = 1.02 s sliding minimum
-        const val PS_SMOOTH = 0.70f    // periodogram smoothing (per frame)
-        const val MIN_BIAS = 1.2f      // minimum < mean; compensates the downward bias
-        const val NOISE_EST_SMOOTH = 0.85f // smooths the min so it cannot jump frame to frame
+        private const val NOISE_FRAMES = 96    // 96 * 10.67 ms = 1.02 s sliding minimum
+        private const val PS_SMOOTH = 0.70f    // periodogram smoothing (per frame)
+        private const val MIN_BIAS = 1.2f      // minimum < mean; compensates the downward bias
+        private const val NOISE_EST_SMOOTH = 0.85f // smooths the min so it cannot jump frame to frame
 
         // ---- gain rule ----
-        const val OVER_SUB = 1.1f      // soft over-subtraction (further suppresses residual hiss)
-        const val DD_ALPHA = 0.96f     // decision-directed a priori SNR memory
-        const val GAIN_FLOOR = 0.15f   // -16.5 dB: maximum attenuation, kills musical noise
-        const val GAIN_TIME = 0.55f    // temporal gain smoothing
-        const val GAIN_FREQ = 0.35f    // 3-tap gain smoothing across bins
+        private const val OVER_SUB = 1.1f      // soft over-subtraction (further suppresses residual hiss)
+        private const val DD_ALPHA = 0.96f     // decision-directed a priori SNR memory
+        private const val GAIN_FLOOR = 0.15f   // -16.5 dB: maximum attenuation, kills musical noise
+        private const val GAIN_TIME = 0.55f    // temporal gain smoothing
+        private const val GAIN_FREQ = 0.35f    // 3-tap gain smoothing across bins
 
         // ---- filters ----
-        const val HPF_HZ = 75.0
-        const val LPF_HZ = 11000.0
-        const val LPF_ENABLED = false
+        private const val HPF_HZ = 75.0
+        private const val LPF_HZ = 11000.0
+        private const val LPF_ENABLED = false
 
         // ---- startup ----
         // The first frames have a provisional noise estimate; fade the wet signal in so no gain
         // step is audible if the first frame happens to be a loud syllable.
-        const val WET_RAMP_FRAMES = 24 // 0.26 s
+        private const val WET_RAMP_FRAMES = 24 // 0.26 s
 
         // ---- low-level noise gate ----
         // The vocoder occasionally emits short high-frequency bursts below speech level
         // (measured ~-48 dBFS between words on Pocket). Minimum-statistics denoising cannot
         // learn a non-stationary burst, so a slow downward expander removes it without
         // touching speech (narration sits above -30 dBFS).
-        const val GATE_OPEN_DB = -38.0
-        const val GATE_CLOSE_DB = -52.0
-        const val GATE_FLOOR = 0.03f
-        const val GATE_SMOOTH = 0.25f
+        private const val GATE_OPEN_DB = -38.0
+        private const val GATE_CLOSE_DB = -52.0
+        private const val GATE_FLOOR = 0.03f
+        private const val GATE_SMOOTH = 0.25f
 
         // Below this, biquad state is flushed to zero (denormal arithmetic is slow on ARM).
-        const val DENORMAL_EPS = 1e-25f
+        private const val DENORMAL_EPS = 1e-25f
+
+        // ---- skip-silence trimming (P1.5) ----
+        /** Default silence threshold: anything at or below this is not speech. */
+        const val TRIM_THRESHOLD_DB = -45f
+        /** Default minimum leading/trailing silent run that is worth removing. */
+        const val TRIM_MIN_SILENCE_MS = 120
+        /** Kept around the first/last speech sample so trimming cannot clip an onset/decay. */
+        private const val TRIM_PAD_MS = 10
+
+        /**
+         * Trims leading/trailing silence from one synthesized sentence (P1.5 "skip silence").
+         *
+         * The detector is amplitude based: a sample is speech when `|x| > 10^(thresholdDb/20)`
+         * (non-finite samples count as silence). A side is only trimmed when its silent run is at
+         * least [minSilenceMs] long, so a natural short breath/pause is never removed. About
+         * [TRIM_PAD_MS] ms of silence is kept on each side so the first/last speech sample still
+         * has a zero-valued neighbour (no click at the new buffer boundary).
+         *
+         * All-silent input returns an empty array ("nothing to play"); callers that must always
+         * write a buffer (system TTS) keep the original in that case. Non-silent input always
+         * returns a non-empty array.
+         *
+         * Allocation: returns [samples] itself when nothing is trimmed; otherwise one
+         * `copyOfRange`. No per-chunk scratch buffers.
+         *
+         * @param samples mono float PCM in [-1, 1]
+         * @param sampleRate engine sample rate (<=0 falls back to 24 kHz)
+         * @param thresholdDb silence threshold in dBFS; NaN/infinite falls back to -45
+         * @param minSilenceMs minimum silent run to trim; negative values are treated as 0
+         * @param trimStart set false to keep leading silence (Sherpa first chunk)
+         * @param trimEnd set false to keep trailing silence (Sherpa non-final chunks)
+         */
+        fun trimSilence(
+            samples: FloatArray,
+            sampleRate: Int,
+            thresholdDb: Float = TRIM_THRESHOLD_DB,
+            minSilenceMs: Int = TRIM_MIN_SILENCE_MS,
+            trimStart: Boolean = true,
+            trimEnd: Boolean = true
+        ): FloatArray {
+            val n = samples.size
+            if (n == 0 || (!trimStart && !trimEnd)) return samples
+            val rate = if (sampleRate > 0) sampleRate else 24000
+            val db = if (thresholdDb.isFinite()) thresholdDb.coerceIn(-120f, -1f) else TRIM_THRESHOLD_DB
+            val threshold = Math.pow(10.0, db / 20.0).toFloat()
+            if (!(threshold > 0f) || !threshold.isFinite()) return samples
+
+            // One scan for the first and last speech sample. A single sample above the threshold
+            // counts as speech: the purpose is removing digitally-silent padding, not gating.
+            var first = -1
+            var i = 0
+            while (i < n) {
+                val v = samples[i]
+                if (v.isFinite() && (if (v < 0f) -v else v) > threshold) {
+                    first = i
+                    break
+                }
+                i++
+            }
+            if (first < 0) return FloatArray(0) // entire buffer is silence
+            var last = first
+            i = n - 1
+            while (i > first) {
+                val v = samples[i]
+                if (v.isFinite() && (if (v < 0f) -v else v) > threshold) {
+                    last = i
+                    break
+                }
+                i--
+            }
+
+            val pad = (rate.toLong() * TRIM_PAD_MS / 1000L).toInt().coerceAtLeast(1)
+            val minSilence = (rate.toLong() * minSilenceMs.coerceAtLeast(0) / 1000L).toInt()
+            var start = 0
+            var end = n
+            if (trimStart && first >= minSilence) start = (first - pad).coerceAtLeast(0)
+            if (trimEnd && (n - 1 - last) >= minSilence) end = (last + 1 + pad).coerceAtMost(n)
+            if (start == 0 && end == n) return samples
+            if (end <= start) return FloatArray(0)
+            return samples.copyOfRange(start, end)
+        }
     }
 
     private val fs = if (sampleRateHz > 0) sampleRateHz else 24000

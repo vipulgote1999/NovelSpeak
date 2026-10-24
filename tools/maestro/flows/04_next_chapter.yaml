@@ -1,0 +1,25 @@
+appId: app.novelspeak
+name: "04 next chapter: Next ch follows rel=next to chapter2"
+tags:
+  - reading
+  - fixture
+---
+- launchApp
+- tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter1.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter1.html"
+    timeout: 15000
+- tapOn: "Read"
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+"
+    timeout: 30000
+- tapOn: "Next ch"
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter2.html"
+    timeout: 30000
+# The h1 of the fixture's chapter 2 is exposed through the WebView.
+- assertVisible: "Chapter Two.*"
+- assertVisible: "Sentence [0-9]+ of [0-9]+"

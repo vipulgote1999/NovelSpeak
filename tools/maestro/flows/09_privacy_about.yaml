@@ -1,0 +1,11 @@
+appId: app.novelspeak
+name: "09 privacy page: opens from overflow and states privacy posture"
+tags: [privacy]
+---
+- launchApp
+- tapOn: "More options"
+- tapOn: "About & privacy"
+- assertVisible: "Privacy & licences"
+- assertVisible: ".*offline.*"
+- tapOn: "←"
+- assertVisible: "More options"

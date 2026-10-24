@@ -1,0 +1,40 @@
+# Legado (io.legado.app.release / gedoor/legado) - upstream status, accessed 2026-10-24
+
+## git log -1 of cloned default branch (main)
+9bb0569269ed557753fc3866250970de6d454fcf 2026-05-27 16:30:57 +0800 公告
+
+## tracked files in upstream repo
+README.md
+"\345\205\254\345\221\212\351\223\276\346\216\245.png"
+
+## README.md (verbatim, full)
+# 公告
+
+本项目涉及侵权行为的违法，也为此承担了相应的法律责任，在此郑重发布公告，删除项目内容并规劝所有人：
+
+请立刻停止一切侵权相关行为，不要再效仿、从事、传播各类侵权活动，切勿触碰法律红线，不要抱有任何侥幸心理。
+
+法律底线不可逾越，违法违规必将付出代价，望大家恪守法律规定，自觉遵纪守法，远离所有侵权行为。
+
+特此公告
+
+## 相关链接
+
+- [阅文知识产权保护公告](https://mp.weixin.qq.com/s/bcTbqBQA1T0YoRwq76xcWQ?scene=1&click_id=8)
+
+
+[![相关公告详情](公告链接.png)](https://mp.weixin.qq.com/s/bcTbqBQA1T0YoRwq76xcWQ?scene=1&click_id=8)
+
+## GitHub API: releases
+gh api repos/gedoor/legado/releases -> empty (no release objects)
+gh api repos/gedoor/legado/releases/latest -> HTTP 404 Not Found
+
+## F-Droid API
+https://f-droid.org/api/v1/packages/io.legado.app.release -> {"error":"NOT_FOUND"}
+
+## Aptoide API
+https://ws75.aptoide.com/api/7/app/get/package_name=io.legado.app.release -> HTTP 404
+
+## Uptodown public listing (metadata only, APK not fetched)
+https://legado.en.uptodown.com/android -> HTTP 200
+https://legado.en.uptodown.com/android/versions -> <title> Download Legado 3.25 for Android | Uptodown.com

@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/candidate.json",
+    "sha256": "0252b41226387048cb483c1dfcff07b509e3ce06efda9c537a0aaa8b159ae47b",
+    "bytes": 7455
+  },
+  "artifact": {
+    "path": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/target.html",
+    "sha256": "17f60fcc0d9168675332fba84c7e9d3e703190bd3dc28332729fe7206a3e79f8",
+    "bytes": 777784
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/review-3/target.finalize.json",
+    "summaryReceipt": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/review-3/target.finalize-summary.json",
+    "browserCheckReceipt": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/review-3/target.browser-check.json"
+  },
+  "update": {
+    "status": "update_available",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.2.0",
+    "releaseNotes": "https://github.com/tt-a1i/archify/releases/tag/v3.2.0",
+    "severity": "normal",
+    "checkedAt": "2026-10-24T11:00:00.625Z",
+    "source": "cache",
+    "noticeRequired": true,
+    "noticeText": "Archify update: 3.0.1 → 3.2.0. A previous check at 2026-10-24T11:00:00.625Z found a newer release. Release notes: https://github.com/tt-a1i/archify/releases/tag/v3.2.0. The installed Skill has not changed; ask to snooze or ignore this reminder.",
+    "eventKey": "archify@sha256:70e210265c59f24dcbdf2a502ff671104b5454e7ee7d3554aecd86bad32384f5"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 1404,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 2,
+      "routesOverSuggestedBends": 1
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "c-reader-neural",
+            "from": "reader",
+            "to": "neural",
+            "label": "speak()",
+            "collectionIndex": 7,
+            "artifactIndex": 8
+          },
+          "right": {
+            "id": "c-reader-media",
+            "from": "reader",
+            "to": "media",
+            "label": "state + metadata",
+            "collectionIndex": 13,
+            "artifactIndex": 14
+          },
+          "point": [
+            766,
+            229
+          ],
+          "sharedNode": "reader"
+        },
+        {
+          "left": {
+            "id": "c-neural-player",
+            "from": "neural",
+            "to": "player",
+            "label": "streamed PCM",
+            "collectionIndex": 9,
+            "artifactIndex": 10
+          },
+          "right": {
+            "id": "c-reader-media",
+            "from": "reader",
+            "to": "media",
+            "label": "state + metadata",
+            "collectionIndex": 13,
+            "artifactIndex": 14
+          },
+          "point": [
+            966,
+            281.27272727272725
+          ]
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "c-reader-neural",
+            "from": "reader",
+            "to": "neural",
+            "label": "speak()",
+            "collectionIndex": 7,
+            "artifactIndex": 8
+          },
+          "bends": 3,
+          "stretch": 1.216
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "reader → neural and reader → media cross next to reader: move node neural or media so the two reach reader from different sides (for example one level with it, one directly above or below it).",
+      "neural → player crosses reader → media: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "reader → neural needs 3 bends: move node reader or neural so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

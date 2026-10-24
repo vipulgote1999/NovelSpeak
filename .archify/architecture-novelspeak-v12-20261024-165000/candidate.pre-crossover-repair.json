@@ -1,0 +1,364 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "NovelSpeak v1.2 target architecture",
+    "subtitle": "Design for the P0/P1 roadmap: existing on-device core, new persistence + ingestion, no cloud or account",
+    "output": ".archify/architecture-novelspeak-v12-20261024-165000/target.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Reader",
+      "sublabel": "phone / headphones",
+      "pos": [
+        30,
+        180
+      ],
+      "size": [
+        110,
+        64
+      ]
+    },
+    {
+      "id": "webview",
+      "type": "frontend",
+      "label": "WebView Browser",
+      "sublabel": "URL bar · reader view",
+      "tag": "shipped",
+      "pos": [
+        180,
+        180
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "extractor",
+      "type": "backend",
+      "label": "Extractor",
+      "sublabel": "Readability + density + next",
+      "tag": "shipped",
+      "pos": [
+        390,
+        180
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "reader",
+      "type": "backend",
+      "label": "Reader Core",
+      "sublabel": "queue · prefetch · auto-next",
+      "tag": "shipped",
+      "pos": [
+        590,
+        180
+      ],
+      "size": [
+        160,
+        70
+      ]
+    },
+    {
+      "id": "systemtts",
+      "type": "backend",
+      "label": "System TTS",
+      "sublabel": "synthesizeToFile → PCM",
+      "tag": "shipped",
+      "pos": [
+        790,
+        70
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "neural",
+      "type": "backend",
+      "label": "Neural TTS",
+      "sublabel": "Kokoro · Pocket · streaming",
+      "tag": "shipped",
+      "pos": [
+        790,
+        250
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "player",
+      "type": "backend",
+      "label": "PcmPlayer + DSP",
+      "sublabel": "AudioTrack · denoise · fades",
+      "tag": "shipped",
+      "pos": [
+        990,
+        160
+      ],
+      "size": [
+        160,
+        70
+      ]
+    },
+    {
+      "id": "speaker",
+      "type": "external",
+      "label": "Speaker / Headset",
+      "sublabel": "screen-off · BT keys",
+      "pos": [
+        1200,
+        160
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "share",
+      "type": "backend",
+      "label": "Share / Clipboard",
+      "sublabel": "ACTION_SEND · PROCESS_TEXT",
+      "tag": "new v1.2",
+      "pos": [
+        390,
+        50
+      ],
+      "size": [
+        160,
+        56
+      ]
+    },
+    {
+      "id": "adblock",
+      "type": "security",
+      "label": "Ad Blocker",
+      "sublabel": "EasyList · cosmetic · popups",
+      "tag": "shipped",
+      "pos": [
+        180,
+        320
+      ],
+      "size": [
+        160,
+        60
+      ]
+    },
+    {
+      "id": "library",
+      "type": "database",
+      "label": "Library + Position",
+      "sublabel": "resume · history · bookmarks",
+      "tag": "new v1.2",
+      "pos": [
+        560,
+        330
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "modelstore",
+      "type": "database",
+      "label": "Model Catalog",
+      "sublabel": "signed OTA · SHA-256",
+      "tag": "new v1.3",
+      "pos": [
+        790,
+        400
+      ],
+      "size": [
+        160,
+        60
+      ]
+    },
+    {
+      "id": "media",
+      "type": "backend",
+      "label": "Playback Service",
+      "sublabel": "FGS · MediaSession · wake",
+      "tag": "shipped",
+      "pos": [
+        990,
+        330
+      ],
+      "size": [
+        160,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "NovelSpeak app — on-device only (no account, no telemetry)",
+      "wraps": [
+        "webview",
+        "extractor",
+        "reader",
+        "systemtts",
+        "neural",
+        "player",
+        "share",
+        "adblock",
+        "library",
+        "modelstore",
+        "media"
+      ],
+      "pad": 18
+    }
+  ],
+  "connections": [
+    {
+      "id": "c-user-web",
+      "from": "user",
+      "to": "webview",
+      "label": "tap"
+    },
+    {
+      "id": "c-web-extract",
+      "from": "webview",
+      "to": "extractor",
+      "label": "page DOM"
+    },
+    {
+      "id": "c-share-web",
+      "from": "share",
+      "to": "webview",
+      "label": "shared URL",
+      "variant": "dashed"
+    },
+    {
+      "id": "c-share-reader",
+      "from": "share",
+      "to": "reader",
+      "label": "shared text",
+      "variant": "dashed"
+    },
+    {
+      "id": "c-extract-reader",
+      "from": "extractor",
+      "to": "reader",
+      "label": "text blocks",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-web-adblock",
+      "from": "webview",
+      "to": "adblock",
+      "label": "subresources",
+      "variant": "security"
+    },
+    {
+      "id": "c-reader-system",
+      "from": "reader",
+      "to": "systemtts",
+      "label": "speak()",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-reader-neural",
+      "from": "reader",
+      "to": "neural",
+      "label": "speak()",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-system-player",
+      "from": "systemtts",
+      "to": "player",
+      "label": "PCM 24 kHz"
+    },
+    {
+      "id": "c-neural-player",
+      "from": "neural",
+      "to": "player",
+      "label": "streamed PCM"
+    },
+    {
+      "id": "c-player-speaker",
+      "from": "player",
+      "to": "speaker",
+      "label": "audio out",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-reader-library",
+      "from": "reader",
+      "to": "library",
+      "label": "position writes"
+    },
+    {
+      "id": "c-models-neural",
+      "from": "modelstore",
+      "to": "neural",
+      "label": "int8 weights",
+      "variant": "dashed"
+    },
+    {
+      "id": "c-reader-media",
+      "from": "reader",
+      "to": "media",
+      "label": "state + metadata"
+    },
+    {
+      "id": "c-media-player",
+      "from": "media",
+      "to": "player",
+      "label": "transport",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Shipped and proven",
+      "items": [
+        "Generic extraction + 4 next-chapter strategies already work on arbitrary sites",
+        "Dual TTS behind one interface, streaming with 12 s generation-ahead",
+        "Ad-block engine, in-process audio and screen-off MediaSession are live"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "v1.2 closes the loop",
+      "items": [
+        "Persist position and build a local library (biggest competitor gap)",
+        "Share/Clipboard intake turns NovelSpeak into a reader for any text",
+        "Sleep timer, true per-site settings, diagnostics; positioning rewrite"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "v1.3 parity plus",
+      "items": [
+        "Chapter prefetch removes the next-chapter stall",
+        "Pronunciation rules, typography, word-level highlight",
+        "Signed OTA model catalog and audio export"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Deliberately absent",
+      "items": [
+        "No account, no cloud TTS subscription, no credit meter",
+        "No book-source rule DSL and no content storage (Legado precedent)",
+        "No ad SDKs, no analytics, no store catalogue"
+      ]
+    }
+  ]
+}

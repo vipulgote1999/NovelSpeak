@@ -1,0 +1,1372 @@
+{
+  "generatedAt": "2026-10-24",
+  "stream": "paid",
+  "competitors": [
+    {
+      "name": "Speechify",
+      "package": "com.cliffweitzman.speechify2",
+      "developer": "Speechify - Voice AI Assistant",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.cliffweitzman.speechify2",
+      "tier": "freemium",
+      "businessModel": "subscription",
+      "pricing": {
+        "freeTier": "Free plan: max 1.5x speed, 10 robotic sounding voices, text-to-speech features only; 3-day trial for Premium reported by users (credit card required).",
+        "monthly": "$29 (Premium)",
+        "annual": "$139 (Premium; 'SAVE 60%' label on pricing page)",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Rendered speechify.com/pricing shows $29/Month; page data lists yearly $139. Google Play IAP range observed: $0.49-$139.99 per item. Reviewers report an extra library add-on (~$25) and per-book purchases (Inferred)."
+      },
+      "popularity": {
+        "installs": "10M+",
+        "rating": "4.0",
+        "ratingsCount": "284K",
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS/iPadOS",
+        "Chrome extension",
+        "Edge extension",
+        "Web app",
+        "macOS",
+        "Windows"
+      ],
+      "tts": {
+        "engineType": "cloud",
+        "engines": [
+          "Speechify AI voices (proprietary cloud)"
+        ],
+        "voices": "1,000+ (Premium); 10 free robotic voices",
+        "languages": "60+",
+        "offline": "unknown",
+        "cloning": "unknown",
+        "speedControl": "up to 4.5x-5x (Premium), 1.5x (Free)",
+        "streaming": "unknown",
+        "notes": "Voices include celebrity-licensed voices (Gwyneth Paltrow, Snoop Dogg) per Play description. Premium gate covers natural voices, Scan & Listen, AI features."
+      },
+      "sourcesSupported": [
+        "PDF",
+        "Documents",
+        "Web pages/URLs",
+        "Emails",
+        "Google Drive/Dropbox/OneDrive files",
+        "Camera OCR (page-by-page)",
+        "Screenshots",
+        "Paste",
+        "Speechify library audiobooks"
+      ],
+      "extraction": {
+        "engine": "OCR scan (camera/screenshot) + cloud TTS; text highlighting during playback",
+        "readAlongHighlight": "yes",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "Reviewers say the OCR reads only the pages photographed, not a whole book from a cover photo."
+      },
+      "library": {
+        "library": "yes (free tier capped at ~5 saved files per reviews)",
+        "bookmarks": "yes",
+        "progressSync": "yes (syncs across desktop/mobile)",
+        "notes": "AI summaries/chat on documents (Premium)"
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "Play page does not document background/media-session behavior; users describe listening while doing other things."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "AI summarize/chat/quiz/translate (Premium)",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Voice AI Assistant chat, AI podcasts, voice-typing keyboard, Scan & Listen."
+      },
+      "privacy": {
+        "ads": "no (subscription)",
+        "trackers": "unknown",
+        "accountRequired": "yes",
+        "dataCollection": "Play Data safety: data encrypted in transit; no data shared with third parties; deletion requests supported (self-reported)."
+      },
+      "strengths": [
+        "Largest brand and cross-platform footprint (10M+ Android installs; claims 50M+ users)",
+        "1,000+ voices, 60+ languages, celebrity voices",
+        "OCR camera input plus AI assistant/dictation beyond TTS",
+        "Cross-device library sync and integrations with Drive/Dropbox/OneDrive"
+      ],
+      "weaknesses": [
+        "Aggressive upselling and cancellation friction",
+        "Per-page OCR sold as scan-a-cover in ads",
+        "Paragraph skipping and wrong highlight position",
+        "No one-time purchase option; premium features removed from lower tiers"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "Natural voices at high speed",
+          "Useful for study/reading assistance"
+        ],
+        "complaints": [
+          "Misleading OCR marketing: 'you have to scan each individual page of my book' (1-star, 2026-09-12)",
+          "Skipped text: 'it skips lines and as it reads its supposed to highlight... the highlight is well over a paragraph... further down' (1-star, 2026-07-20)",
+          "Cancellation friction: 'This app makes it nearly impossible to cancel your subscription!' (1-star, 2026-09-12)",
+          "Paywall creep: 'They locked every single normal sounding voice behind a pay wall' (1-star, 2026-07-23)",
+          "Extra costs: 'Pay for a subscription. Pay for library access. Pay for books, too.' (1-star, 2026-07-10)",
+          "Voice/playback bugs: 'It defaults to the robot voice instead of the voice I selected, and it randomly stops reading' (1-star, 2026-08-24)"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.cliffweitzman.speechify2",
+          "supports": "Installs 10M+, rating 4.0 / 284K, last update 2026-10-20, IAP range, description features"
+        },
+        {
+          "url": "https://speechify.com/pricing/",
+          "supports": "Free vs Premium $29/month, $139/year, 1.5x free speed, 10 free voices, Premium feature list"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.cliffweitzman.speechify2&showAllReviews=true",
+          "supports": "40 recent 1-star reviews (Aug 2025 - Sep 2026) used for complaint quotes"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "NaturalReader",
+      "package": "com.naturalsoft.personalweb",
+      "developer": "Naturalsoft Limited",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.naturalsoft.personalweb",
+      "tier": "freemium",
+      "businessModel": "subscription",
+      "pricing": {
+        "freeTier": "Advertised 'Get Started for Free'; official pricing article lists only Lite/Plus/Pro. User reviews report a ~5 minute/day free cap and no free premium voices (Inferred, not vendor-confirmed).",
+        "monthly": "Lite $13.90 / Plus $20.90 / Pro $25.90",
+        "annual": "Lite $79 / Plus $119 / Pro $159",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Official help-center article updated 2026-08-13. Google Play IAP range observed: $9.99-$159.99 per item. All plans include web app + mobile app + Chrome extension; personal use only."
+      },
+      "popularity": {
+        "installs": "5M+",
+        "rating": "4.3",
+        "ratingsCount": "60.3K",
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Web app",
+        "Chrome extension"
+      ],
+      "tts": {
+        "engineType": "hybrid",
+        "engines": [
+          "NaturalReader AI voices (cloud; page states Gemini, ChatGPT and Azure voices)",
+          "device/system voices (fallback)"
+        ],
+        "voices": "1,000+ AI voices (Plus/Pro voices gated)",
+        "languages": "90-100+",
+        "offline": "partial (MP3 export; cloud voice streaming needs network)",
+        "cloning": "yes (up to 2 voices on Plus/Pro)",
+        "speedControl": "yes",
+        "streaming": "yes",
+        "notes": "Plus/Pro include 500,000 shared characters/day for Plus/Cloned/Pro voices; Lite has unlimited Lite voices but 1M MP3 characters/month."
+      },
+      "sourcesSupported": [
+        "PDF",
+        "EPUB",
+        "DOC(X)",
+        "PPT(X)",
+        "Apple Numbers/Pages",
+        "Web pages via extension",
+        "Camera OCR / images",
+        "Clipboard",
+        "Cloud documents"
+      ],
+      "extraction": {
+        "engine": "Cloud TTS + OCR; word highlighting/captions",
+        "readAlongHighlight": "yes",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "Dyslexia-friendly font for captions; AI Smart Filter skips page numbers/tables."
+      },
+      "library": {
+        "library": "yes (account-based)",
+        "bookmarks": "unknown",
+        "progressSync": "yes (account sync across apps)",
+        "notes": "Annotations and pronunciation editor included"
+      },
+      "playback": {
+        "screenOff": "partial (reviewers report playback stops when leaving app or locking screen)",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "Background playback reliability is a recurring complaint."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "yes (dyslexia-friendly font, size/spacing)",
+        "translation": "yes (AI translate)",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "AI Podcast, Recap, Quizzes, Chat, Text File conversion, MP3 export."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "yes (reviews complain about forced login)",
+        "dataCollection": "Play Data safety: encrypted in transit; deletion requests supported (self-reported)."
+      },
+      "strengths": [
+        "Broad format coverage incl. Office formats and OCR",
+        "90-100+ languages and 1,000+ voices",
+        "AI study tools (podcast, recap, quizzes) on same subscription",
+        "Web + mobile + extension bundle"
+      ],
+      "weaknesses": [
+        "Tiered upsell confusion and bait-and-switch complaints",
+        "Free tier perceived as unusable (~5 min/day)",
+        "Forced account/login",
+        "Background playback stops; PDF parsing errors"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "Voice quality and pronunciation editor",
+          "Useful for students with dyslexia"
+        ],
+        "complaints": [
+          "Free cap: 'you've reached the five minute limit for today' (1-star)",
+          "Tier bait-and-switch: 'They tell you to pay $10 for a plus subscription. I paid for it and then still couldn't use the voices. Now it wants another $19' (1-star, 2023-09-01)",
+          "Price: '20 dollars a month is insane' (1-star, 2024-01-05)",
+          "Login required: 'you literally can't use it without logging in' (1-star, 2025-04-02)",
+          "Background playback: 'Playback keeps stopping as soon as I leave the app (also when screen is locked)' (1-star, 2024-07-30)",
+          "MP3 upsell: 'PRO version shows that I can download to MP3... then it tells me I need to upgrade once more' (1-star, 2026-07-30)"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.naturalsoft.personalweb",
+          "supports": "Installs 5M+, rating 4.3 / 60.3K, last update 2026-10-14, IAP range, feature description"
+        },
+        {
+          "url": "https://help.naturalreaders.com/en/articles/8854700-plans-pricing-personal-version",
+          "supports": "Official Lite/Plus/Pro monthly and annual prices, feature limits, personal-use licensing"
+        },
+        {
+          "url": "https://www.naturalreaders.com/webapp.html",
+          "supports": "Gemini/ChatGPT/Azure voice sourcing, 90+ languages, 3 included apps, MP3 download"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.naturalsoft.personalweb&showAllReviews=true",
+          "supports": "40 recent 1-star reviews (2022-2026) used for complaint quotes"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "ElevenReader",
+      "package": "io.elevenlabs.readerapp",
+      "developer": "Eleven Labs Inc",
+      "storeUrl": "https://play.google.com/store/apps/details?id=io.elevenlabs.readerapp",
+      "tier": "freemium",
+      "businessModel": "subscription",
+      "pricing": {
+        "freeTier": "Free: 10 hours of text-to-audio per month (~a 400-page book), 1,000+ voices, thousands of free audiobooks, 4.0x speed, sleep timer, bookmarks, sync.",
+        "monthly": "$11 (Ultra)",
+        "annual": "$99 (Ultra; $8.25/month billed annually)",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "ElevenReader FAQ on elevenreader.io states Ultra $11/month or $99/year. Play IAP range observed: $0.30-$330.00 per item. Ultra adds unlimited import listening, 200K+ premium audiobooks, custom voices, offline downloads. Audio cannot be exported from the app."
+      },
+      "popularity": {
+        "installs": "1M+",
+        "rating": "4.5",
+        "ratingsCount": "70.2K",
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Web",
+        "Chrome extension"
+      ],
+      "tts": {
+        "engineType": "cloud",
+        "engines": [
+          "ElevenLabs AI voices (cloud)"
+        ],
+        "voices": "1,000+; custom voice design",
+        "languages": "30+",
+        "offline": "partial (Ultra offline downloads; generated audio is not exportable)",
+        "cloning": "custom/designed voices (Ultra); no user voice cloning stated",
+        "speedControl": "0.25x-4x",
+        "streaming": "yes",
+        "notes": "Iconic licensed voices (Michael Caine, Judy Garland, Maya Angelou, etc.) used for classics."
+      },
+      "sourcesSupported": [
+        "Audiobooks/eBooks store",
+        "PDF",
+        "DOCX",
+        "EPUB",
+        "Markdown",
+        "TXT",
+        "Article/newsletter links",
+        "Paste text"
+      ],
+      "extraction": {
+        "engine": "Cloud TTS; on-screen text highlighting",
+        "readAlongHighlight": "yes",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "Pronunciation dictionary and bookmarks; sleep timer."
+      },
+      "library": {
+        "library": "yes (imports + audiobook library)",
+        "bookmarks": "yes",
+        "progressSync": "yes (syncs web & mobile)",
+        "notes": "Bookmarks with notes"
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "yes",
+        "androidAuto": "unknown",
+        "notes": "Speed 0.25x-4x; offline downloads on Ultra."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "partial (reader layout)",
+        "translation": "unknown",
+        "dictionary": "pronunciation dictionary",
+        "widgets": "unknown",
+        "notes": "Premium audiobook/eBook store is the differentiator vs pure TTS readers."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "yes",
+        "dataCollection": "Play Data safety: encrypted in transit; deletion requests supported (self-reported)."
+      },
+      "strengths": [
+        "Best-in-class natural voice quality (ElevenLabs core tech)",
+        "Large free tier: 10 hours/month at no cost",
+        "Bundled audiobook/eBook catalog (200K+ premium titles on Ultra)",
+        "Simple pricing: $11/mo or $99/yr"
+      ],
+      "weaknesses": [
+        "Backend/playback reliability complaints (crashes, unknown errors)",
+        "Refund policy criticized",
+        "Free tier can be flagged as suspicious mid-use",
+        "'Unlimited' still caps at 24h/day measured at 1x speed",
+        "No audio export from app"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "Most realistic TTS voices for stories",
+          "Generous 10 free hours vs Speechify",
+          "Fast PDF-to-audio"
+        ],
+        "complaints": [
+          "Refunds: 'if you cancel, they bill you for the time and won't issue a refund' (1-star, 2026-09-15)",
+          "Abuse flags: '2 hours into use (out of 10), I was flagged as suspicious and told I would need to upgrade' (1-star, 2026-05-14)",
+          "Crashes: 'it started crashing every time I tried to play anything' (1-star, 2026-07-08)",
+          "Hidden cap: 'even with the unlimited version, it caps at 24 hours a day... it calculates by 1x speed' (1-star, 2026-04-19)",
+          "Paywall change: 'putting a pay wall up has absolutely killed any enthusiasm I had' (1-star, 2025-06-13)",
+          "PDF parsing: 'uploads change the layout of the sentences. A sentence will be broken in the middle' (1-star, 2026-08-04)",
+          "Battery: 'drains my battery life so fast it's insane' (1-star, 2025-06-15)"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=io.elevenlabs.readerapp",
+          "supports": "Installs 1M+, rating 4.5 / 70.2K, last update 2026-10-21, IAP range, feature description"
+        },
+        {
+          "url": "https://elevenreader.io/",
+          "supports": "Free 10 hours/month, Ultra $11/month or $99/year, formats, offline downloads, no audio export, FAQ"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=io.elevenlabs.readerapp&showAllReviews=true",
+          "supports": "40 recent 1-star reviews (2024-2026) used for complaint quotes"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Legere Reader (Voice Dream Reader heritage)",
+      "package": "voicedream.reader",
+      "developer": "Legere Technologies LLC",
+      "storeUrl": "https://play.google.com/store/apps/details?id=voicedream.reader",
+      "tier": "paid",
+      "businessModel": "one-time",
+      "pricing": {
+        "freeTier": "none (paid app; no free tier advertised)",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "$7.49",
+        "currency": "USD",
+        "notes": "Play buy button observed: $7.49. Google Play IAP range observed: $3.99-$4.99 per item, which the description ties to Acapela premium voice purchases (24 languages)."
+      },
+      "popularity": {
+        "installs": "10K+",
+        "rating": "3.3",
+        "ratingsCount": "987",
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "hybrid",
+        "engines": [
+          "Android built-in TTS",
+          "Acapela premium voices (in-app purchase)"
+        ],
+        "voices": "1 included premium voice + Acapela voice packs (24 languages) + device voices",
+        "languages": "up to 24 for Acapela packs; device languages",
+        "offline": "yes",
+        "cloning": "no",
+        "speedControl": "50-700 words per minute",
+        "streaming": "unknown",
+        "notes": "Android port of the Voice Dream Reader concept; iOS/macOS Voice Dream Reader is a separate product sold by subscription."
+      },
+      "sourcesSupported": [
+        "PDF",
+        "DRM-free EPUB",
+        "DAISY",
+        "Word .doc (converted to PDF)",
+        ".docx/RTF/.mobi (converted to ePub)",
+        "Plain text/HTML",
+        "Dropbox/Box/OneDrive",
+        "Bookshare",
+        "Gutenberg",
+        "Built-in browser"
+      ],
+      "extraction": {
+        "engine": "Text extraction from PDFs/ePubs + synchronized TTS; original-layout or text-only view",
+        "readAlongHighlight": "yes (synchronized word and line highlighting; word-level not supported for built-in voices)",
+        "autoScroll": "yes",
+        "autoNextChapter": "unknown",
+        "notes": "OpenDyslexic font; reduced text area to improve focus; notes/highlights export."
+      },
+      "library": {
+        "library": "yes (folders, full-text search)",
+        "bookmarks": "yes",
+        "progressSync": "partial (remembers speech and visual position per document; no cloud sync claimed)",
+        "notes": "Highlighting, notes, export of full text/highlights"
+      },
+      "playback": {
+        "screenOff": "yes ('Continues reading when you lock the screen')",
+        "mediaSession": "partial (remote control/gesture control)",
+        "notification": "unknown",
+        "headsetKeys": "yes (remote control/gestures)",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "Play-pause by button, gestures or remote control; per-document voice/speed memory."
+      },
+      "ux": {
+        "themes": "yes (3 customizable color themes)",
+        "typography": "yes (font up to 80pt, margins/spacing, OpenDyslexic)",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Accessibility-first: screen-reader support, braille, voice control, Dynamic Type."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "Play Data safety: encrypted in transit; no data shared with third parties (self-reported)."
+      },
+      "strengths": [
+        "Deep accessibility (screen reader, braille, dyslexia, low vision)",
+        "Wide document formats incl. DAISY and Bookshare",
+        "Offline premium Acapela voices via one-time voice IAPs",
+        "Affordable one-time app price"
+      ],
+      "weaknesses": [
+        "Low 3.3 rating and 10K+ installs only",
+        "Last update Jun 2026 but reviews show long history of update breakage",
+        "Only one included premium voice; extra voices cost extra",
+        "No word-level highlighting with built-in voices",
+        "Voice purchases reported lost after reinstall"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "Accessibility features and configurable layout",
+          "Useful for school accommodations"
+        ],
+        "complaints": [
+          "Voice quality: 'Terrible mechanical sounding voices... they sound good in preview but after you download you find they are terrible' (1-star, 2025-12-16)",
+          "Only one voice: 'it only comes with ONE voice, in addition to the built-in voices' (1-star, 2023-01-16)",
+          "Lost purchases: 'I had purchased several voices and now need to pay for them again because I re-installed' (1-star, 2020-06-28)",
+          "Update breakage: 'After updating app does not work at all' (1-star, 2020-07-30)",
+          "Bookshare search: 'the book share search is not working' (1-star, 2025-07-29)"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=voicedream.reader",
+          "supports": "Price $7.49, installs 10K+, rating 3.3 / 987, last update 2026-06-02, IAP range, formats/voices/accessibility description"
+        },
+        {
+          "url": "https://www.voicedream.com/",
+          "supports": "Voice Dream Reader brand/positioning (iOS/Mac); accessibility origin; 14K+ App Store reviews"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=voicedream.reader&showAllReviews=true",
+          "supports": "40 recent 1-star reviews (2018-2025) used for complaint quotes"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Readwise Reader",
+      "package": "com.readermobile",
+      "developer": "Readwise",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.readermobile",
+      "tier": "paid",
+      "businessModel": "subscription",
+      "pricing": {
+        "freeTier": "30-day free trial, no credit card upfront; no permanent free tier stated.",
+        "monthly": "$12.99 (Full Readwise) / $8.99 (Reader only)",
+        "annual": "$119.88 ($9.99/mo billed yearly, Full Readwise) / $95.88 ($7.99/mo billed yearly, Reader only)",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Official pricing page: Full Readwise $9.99/mo billed yearly; Reader only $7.99/mo billed yearly; Highlights $7.99/mo, Highlights Lite $5.59/mo (all billed yearly); monthly prices from embedded page data ($12.99 / $8.99). Play IAP range observed: $12.99-$119.99 per item."
+      },
+      "popularity": {
+        "installs": "100K+",
+        "rating": "4.3",
+        "ratingsCount": "583",
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Web",
+        "Desktop web app",
+        "Browser extensions"
+      ],
+      "tts": {
+        "engineType": "cloud",
+        "engines": [
+          "Readwise AI voices (cloud)"
+        ],
+        "voices": "unknown (natural AI voices; no voice count published)",
+        "languages": "dozens",
+        "offline": "partial (reading works offline; TTS offline not documented)",
+        "cloning": "no",
+        "speedControl": "yes",
+        "streaming": "unknown",
+        "notes": "TTS is included in Reader subscription: 'Reader turns any article, PDF, or ebook into audio with natural AI voices, adjustable speed, and support for dozens of languages, on every platform.'"
+      },
+      "sourcesSupported": [
+        "Web articles",
+        "Email newsletters",
+        "RSS feeds",
+        "YouTube",
+        "X/Twitter threads",
+        "PDFs",
+        "EPUBs",
+        "Read-it-later imports (Pocket/Instapaper)"
+      ],
+      "extraction": {
+        "engine": "Readability-style article extraction + cloud TTS",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "Highlighting is first-class; Ghostreader AI for summarize/define/translate."
+      },
+      "library": {
+        "library": "yes (read-it-later library)",
+        "bookmarks": "yes (highlights/bookmarks)",
+        "progressSync": "yes (continuously syncs across devices)",
+        "notes": "Highlights sync out to Obsidian, Notion, Roam, Evernote, Logseq"
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "Play page markets TTS but not playback specifics."
+      },
+      "ux": {
+        "themes": "yes",
+        "typography": "yes",
+        "translation": "yes (Ghostreader AI)",
+        "dictionary": "yes (define terms)",
+        "widgets": "unknown",
+        "notes": "Power-reader workflow: highlights, tags, full-text search, daily review."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "yes",
+        "dataCollection": "Play Data safety: encrypted in transit; no data shared with third parties; deletion supported (self-reported)."
+      },
+      "strengths": [
+        "Integrated read-it-later + highlights + TTS in one subscription",
+        "Best highlight export ecosystem (Obsidian/Notion etc.)",
+        "30-day trial with no credit card",
+        "Works offline for reading and syncs across platforms"
+      ],
+      "weaknesses": [
+        "Most expensive core subscription for TTS-only use ($119.88/yr)",
+        "Android app has only 583 ratings and 100K+ installs (small footprint)",
+        "TTS is a feature of a broader product, not a specialist reader",
+        "No free tier after trial"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "Workflow/highlighting depth",
+          "Reliable sync and offline reading"
+        ],
+        "complaints": [
+          "Not sampled for this stream (no 1-star review pull); Play rating 4.3 on small base suggests fewer systemic complaints"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.readermobile",
+          "supports": "Installs 100K+, rating 4.3 / 583, last update 2026-10-08, IAP range, feature description"
+        },
+        {
+          "url": "https://readwise.io/pricing",
+          "supports": "Full Readwise $9.99/mo billed yearly, Reader only $7.99/mo billed yearly, 30-day trial"
+        },
+        {
+          "url": "https://readwise.io/reader",
+          "supports": "TTS on every platform, offline reading, supported sources, sync"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Moon+ Reader Pro",
+      "package": "com.flyersoft.moonreaderp",
+      "developer": "Moon+",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.flyersoft.moonreaderp",
+      "tier": "paid",
+      "businessModel": "one-time",
+      "pricing": {
+        "freeTier": "none for Pro (separate free ad-supported Moon+ Reader app); 30-day money-back guarantee stated on Play",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "$11.99",
+        "currency": "USD",
+        "notes": "Play buy button observed: $11.99. No IAP badge observed. Reviews mention buying at 50% discount promotions."
+      },
+      "popularity": {
+        "installs": "1M+",
+        "rating": "4.2",
+        "ratingsCount": "107K",
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "system",
+        "engines": [
+          "Android system TTS engines"
+        ],
+        "voices": "depends on installed TTS engines",
+        "languages": "device languages",
+        "offline": "yes (system voices)",
+        "cloning": "no",
+        "speedControl": "yes",
+        "streaming": "not applicable",
+        "notes": "Pro adds 'Shake the phone to speak (Text-to-speech, TTS engine support)'; TTS is system-engine based, no cloud voices."
+      },
+      "sourcesSupported": [
+        "EPUB",
+        "PDF",
+        "DJVU",
+        "AZW3",
+        "MOBI",
+        "FB2",
+        "PRC",
+        "CHM",
+        "CBZ",
+        "CBR",
+        "UMD",
+        "DOCX",
+        "ODT",
+        "RTF",
+        "TXT",
+        "HTML",
+        "MHT",
+        "Markdown",
+        "OPDS/Calibre server"
+      ],
+      "extraction": {
+        "engine": "Native ebook parsing (no web-page extraction; TTS on document text)",
+        "readAlongHighlight": "partial (TTS highlight/speech-compatible annotations; no dedicated read-along claim)",
+        "autoScroll": "yes (5 modes: rolling blind, by pixel, line or page)",
+        "autoNextChapter": "unknown",
+        "notes": "PDF annotations, dual-page mode, night mode; TTS highlight follows document text."
+      },
+      "library": {
+        "library": "yes (bookshelf, favorites, tags, authors)",
+        "bookmarks": "yes",
+        "progressSync": "yes (Dropbox/WebDAV; sync reading positions between devices)",
+        "notes": "Highlights, annotations, dictionary/translation, share"
+      },
+      "playback": {
+        "screenOff": "partial (TTS runs in background per reviews; Play license checks break offline use)",
+        "mediaSession": "partial (headset/Bluetooth key control)",
+        "notification": "yes (system TTS notification)",
+        "headsetKeys": "yes",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "Auto-scroll modes for reading; TTS does not reliably auto-scroll PDFs (review complaint)."
+      },
+      "ux": {
+        "themes": "yes (10+ themes, background images)",
+        "typography": "yes (font scale, spacing, shadow, alpha, hyphenation)",
+        "translation": "yes (built-in)",
+        "dictionary": "yes (offline/online, ColorDict, GoldenDict, ABBYY Lingvo)",
+        "widgets": "yes (bookshelf widget)"
+      },
+      "privacy": {
+        "ads": "no (Pro)",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "Play Data safety: no data collected; no data shared (self-reported)."
+      },
+      "strengths": [
+        "Best-in-class format support and rendering options",
+        "True one-time price with no subscription",
+        "System TTS offline by design",
+        "Cloud position sync via Dropbox/WebDAV"
+      ],
+      "weaknesses": [
+        "No cloud AI voices; system voices only",
+        "Recent Google Drive sync breakage and license-check complaints",
+        "Cluttered settings; TTS/auto-scroll bugs in PDFs",
+        "Android-only, active development slower than 2023"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "Format support and customization",
+          "No subscription"
+        ],
+        "complaints": [
+          "Offline license check: 'if I'm offline, moon reader launches play store and won't let me access my reading material' (1-star, 2026-08-15)",
+          "Sync broken: 'since the latest update I can no longer sync to drive' (1-star, 2026-04-12)",
+          "TTS bug: 'the only reason I paid for the pro version was Text to speech... it freezes the app' (1-star, 2024-09-22)",
+          "TTS scroll: 'when the sentence goes below the screen, the pdf doesn't scroll down with it' (1-star, 2026-03-05)",
+          "UI: 'settings are spread out through a LABYRINTHINE MESS of a dozen different menus' (1-star, 2026-07-20)"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.flyersoft.moonreaderp",
+          "supports": "Price $11.99, installs 1M+, rating 4.2 / 107K, last update 2026-10-17, features/formats description"
+        },
+        {
+          "url": "https://www.moondownload.com/",
+          "supports": "Developer site: '#1 best selling ebook reader', Pro positioning"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.flyersoft.moonreaderp&showAllReviews=true",
+          "supports": "40 recent 1-star reviews (2019-2026) used for complaint quotes"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Speech Central",
+      "package": "com.labsiisoftware.speechcentral",
+      "developer": "Labsii Ltd.",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.labsiisoftware.speechcentral",
+      "tier": "freemium",
+      "businessModel": "one-time",
+      "pricing": {
+        "freeTier": "Free version limits number of articles/books added daily/monthly; free for blind users using TalkBack and for managed school deployments",
+        "monthly": "none",
+        "annual": "none",
+        "oneTime": "$8.99",
+        "currency": "USD",
+        "notes": "Official site: 'One-time purchase. No ads. No data collection.' Google Play IAP single item observed: $8.99 per item. License valid only for Android."
+      },
+      "popularity": {
+        "installs": "100K+",
+        "rating": "4.4",
+        "ratingsCount": "1.63K",
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iPhone/iPad",
+        "macOS",
+        "Windows"
+      ],
+      "tts": {
+        "engineType": "hybrid",
+        "engines": [
+          "Android system + third-party offline voices",
+          "Speech Central Pack: Kokoro offline voices (free companion app)",
+          "Bring-your-own cloud keys: OpenAI-compatible/self-hosted, Microsoft Azure Speech, Google Cloud TTS, xAI TTS"
+        ],
+        "voices": "depends on chosen engine; Kokoro pack adds offline neural voices",
+        "languages": "depends on engine",
+        "offline": "yes (system voices and Kokoro pack)",
+        "cloning": "no",
+        "speedControl": "yes ('Read Fast' customization)",
+        "streaming": "yes (vendor claims streaming reliability improvements)",
+        "notes": "No bundled paid cloud voices; user supplies API keys for AI voices."
+      },
+      "sourcesSupported": [
+        "PDF (reading-order optimized)",
+        "EPUB/eBooks",
+        "Web pages/headlines",
+        "RSS",
+        "Share-to app from browser",
+        "Instapaper integration",
+        "Documents"
+      ],
+      "extraction": {
+        "engine": "PDF/content extraction with navigation; share-sheet ingestion",
+        "readAlongHighlight": "partial (sentence-level after 2025 redesign; word-level was removed per reviews)",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "80+ settings; ADHD/dyslexia/TalkBack accessibility modes; export annotated text .docx and optional audio."
+      },
+      "library": {
+        "library": "yes (articles/books with folders)",
+        "bookmarks": "yes",
+        "progressSync": "unknown (platform apps independent; license Android-only)",
+        "notes": "Bookmarks, comments, text highlights, docx export"
+      },
+      "playback": {
+        "screenOff": "yes (background listening; voice fallback issue reported after screen lock)",
+        "mediaSession": "unknown",
+        "notification": "yes (pull-down playback controls)",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "Instant Mode 'tap and listen'; automatic archiving optional."
+      },
+      "ux": {
+        "themes": "yes (full UI color control)",
+        "typography": "yes (custom layouts for phones/tablets/foldables/Chromebooks)",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "More than 80 settings and customization options (vendor claim)."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "no (vendor: 'does not track you or collect your data')",
+        "accountRequired": "no",
+        "dataCollection": "Play Data safety: no data collected; no data shared (self-reported)."
+      },
+      "strengths": [
+        "One-time $8.99 with no subscription and no data collection",
+        "Offline-first with free Kokoro offline voices + BYO cloud keys",
+        "Cross-platform (Android/iOS/Mac/Windows) and 80+ settings",
+        "Strong accessibility modes (ADHD/dyslexia/blind)"
+      ],
+      "weaknesses": [
+        "AI voices require user-supplied API keys (setup burden, extra cost)",
+        "Recent major redesign broke existing workflows (reviews)",
+        "Sentence-level highlighting regression",
+        "Free tier caps number of articles/books",
+        "Support tone criticized in reviews"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "One-time purchase and privacy",
+          "Flexibility/settings depth",
+          "Useful for long PDF reading"
+        ],
+        "complaints": [
+          "Redesign regression: 'after the latest major update, it's useless... the reading will stop half way' (1-star, 2025-08-28)",
+          "Highlight regression: 'words do not highlight individually anymore. it highlights in a complete sentence' (1-star, 2025-09-18)",
+          "System voice surprise: 'you download a text to speech app you expect it to get use its own system to text to speech, not the android system' (1-star, 2025-08-01)",
+          "Cloud extra cost: 'Voices are terrible, you need to pay extra for AI voices services' (1-star, 2025-09-10)",
+          "Free tier: 'Only 2 free readings a day' (1-star, 2025-08-20)"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.labsiisoftware.speechcentral",
+          "supports": "Installs 100K+, rating 4.4 / 1.63K, last update 2026-10-17, $8.99 IAP, feature description"
+        },
+        {
+          "url": "https://www.speechcentral.net/",
+          "supports": "One-time purchase, no ads, no data collection, platforms, 80+ settings, free for blind users/schools"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.labsiisoftware.speechcentral&showAllReviews=true",
+          "supports": "40 recent 1-star reviews (2019-2026) used for complaint quotes"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "TTS Reader Pro Read Text Aloud",
+      "package": "voice.reader.ai",
+      "developer": "Cee68",
+      "storeUrl": "https://play.google.com/store/apps/details?id=voice.reader.ai",
+      "tier": "freemium",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "unknown (ad-supported free install; description promises 'unlimited hours' with premium AI voices)",
+        "monthly": "unknown",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Google Play IAP range observed: $2.99-$99.99 per item; 'Contains ads' badge present. Subscription tiers not published on the Play page (Unknown)."
+      },
+      "popularity": {
+        "installs": "10K+",
+        "rating": "4.6",
+        "ratingsCount": "796",
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "cloud",
+        "engines": [
+          "premium AI voices (provider unnamed)"
+        ],
+        "voices": "unknown count; 50+ languages claimed",
+        "languages": "50+",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Marketing claims 'Unlimited hours and real premium AI voice'; no engine details published."
+      },
+      "sourcesSupported": [
+        "PDF",
+        "EPUB",
+        "TXT",
+        "Web pages",
+        "Camera scan (Scan & Listen)"
+      ],
+      "extraction": {
+        "engine": "unknown",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "No extraction details on Play page."
+      },
+      "library": {
+        "library": "unknown",
+        "bookmarks": "unknown",
+        "progressSync": "unknown",
+        "notes": "No details published."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "No playback details published."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Thin public documentation; low confidence card."
+      },
+      "privacy": {
+        "ads": "yes ('Contains ads' badge)",
+        "trackers": "unknown",
+        "accountRequired": "unknown",
+        "dataCollection": "Play Data safety: encrypted in transit; no data shared with third parties; deletion supported (self-reported)."
+      },
+      "strengths": [
+        "High 4.6 rating on small base",
+        "50+ languages and OCR scan claimed",
+        "Low entry price points via IAP"
+      ],
+      "weaknesses": [
+        "Ads in a paid TTS product",
+        "No published pricing tiers or engine details",
+        "Tiny install base (10K+)",
+        "No accessibility/privacy positioning"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "Not sampled"
+        ],
+        "complaints": [
+          "Not sampled for this stream; 'Contains ads' is the only observed friction signal"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=voice.reader.ai",
+          "supports": "Installs 10K+, rating 4.6 / 796, last update 2026-09-26, IAP range, 'Contains ads', description"
+        }
+      ],
+      "confidence": "low"
+    },
+    {
+      "name": "Listening: Text to Speech",
+      "package": "io.listening.main",
+      "developer": "James Pankaew",
+      "storeUrl": "https://play.google.com/store/apps/details?id=io.listening.main",
+      "tier": "freemium",
+      "businessModel": "subscription",
+      "pricing": {
+        "freeTier": "Free plan: 2 'ultra-realistic' voices, 1.2x speed cap, up to 3 papers/week, PDF/URL only (no Word/MOBI/EPUB).",
+        "monthly": "$12.99",
+        "annual": "$59 ($4.92/month billed yearly; 'SAVE 62%')",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "listening.io/pricing: yearly $59 after a 3-day free trial (card required); monthly $12.99. Yearly plan lists Zotero integration, browser extension, mobile/desktop/web apps."
+      },
+      "popularity": {
+        "installs": "100K+",
+        "rating": "4.0",
+        "ratingsCount": "7.31K",
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Web app",
+        "Desktop app",
+        "Chrome extension"
+      ],
+      "tts": {
+        "engineType": "cloud",
+        "engines": [
+          "Listening AI voices (provider unnamed)"
+        ],
+        "voices": "2 free; more on paid (count unnamed)",
+        "languages": "unknown",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "0.5x-4x (free capped at 1.2x)",
+        "streaming": "unknown",
+        "notes": "Positioned for academic papers: skips citations/references/footnotes with classifiers."
+      },
+      "sourcesSupported": [
+        "PDF",
+        "Word documents",
+        "MOBI",
+        "EPUB",
+        "Paste text",
+        "Website URL",
+        "Camera scan of physical pages",
+        "Zotero integration"
+      ],
+      "extraction": {
+        "engine": "Academic PDF parser with section selection; auto-skips citations/references/footnotes",
+        "readAlongHighlight": "yes ('Read along and take notes')",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "Section-level selection (abstract/results only); one-click notes while listening."
+      },
+      "library": {
+        "library": "yes (saved articles/papers)",
+        "bookmarks": "yes (notes)",
+        "progressSync": "yes (mobile/desktop/web apps)",
+        "notes": "Zotero integration, browser extension capture"
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "No playback details published."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Academic workflow focus (papers, citations, Zotero)."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "yes (Dashboard/Login)",
+        "dataCollection": "Play Data safety: encrypted in transit; deletion supported (self-reported)."
+      },
+      "strengths": [
+        "Best niche fit for academic papers (section selection, citation skipping, Zotero)",
+        "Cheap annual ($59) with 3-day trial",
+        "Multi-platform (mobile + desktop + extension)"
+      ],
+      "weaknesses": [
+        "Free plan very limited (3 papers/week, 1.2x, 2 voices)",
+        "No offline/engine details published",
+        "4.0 rating suggests support/quality gaps",
+        "No one-time option"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "Academic-paper listening workflow",
+          "Value annual price"
+        ],
+        "complaints": [
+          "Not sampled for this stream (no 1-star pull)"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=io.listening.main",
+          "supports": "Installs 100K+, rating 4.0 / 7.31K, last update 2026-10-14, IAP range, description"
+        },
+        {
+          "url": "https://listening.io/pricing",
+          "supports": "Free plan limits, monthly $12.99, annual $59, 3-day trial, supported formats"
+        },
+        {
+          "url": "https://listening.io/",
+          "supports": "Positioning: academic papers, section selection, citation skipping, formats list"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Evie - The eVoice book reader",
+      "package": "com.lenntt.evoicereader",
+      "developer": "Alfred Faltiska",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.lenntt.evoicereader",
+      "tier": "freemium",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "Fully free with any installed Android TTS engine; no ads ('Evie is free. Really free, without any ads.').",
+        "monthly": "unknown (pay-as-you-go credit model for Polly voices/translation)",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Google Play IAP range observed: $0.99-$33.99 per item for paid Amazon Polly voices and translation credits ('simple in-app purchases in a pay-as-you-go model'). Exact credit prices Unknown."
+      },
+      "popularity": {
+        "installs": "100K+",
+        "rating": "4.3",
+        "ratingsCount": "4.28K",
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "Wear OS"
+      ],
+      "tts": {
+        "engineType": "hybrid",
+        "engines": [
+          "Android TTS engines (free)",
+          "Amazon Polly (paid cloud voices)"
+        ],
+        "voices": "device voices (free) + Amazon Polly voice set (paid)",
+        "languages": "device languages; Polly/translation 70+ languages",
+        "offline": "yes (system TTS path)",
+        "cloning": "no",
+        "speedControl": "yes (speed + pause length customization)",
+        "streaming": "unknown",
+        "notes": "Per-language voice memory; sentence repeat mode for language learning; Amazon Neural translation on the fly (paid)."
+      },
+      "sourcesSupported": [
+        "EPUB (DRM-free)",
+        "PDF (unencrypted)",
+        "MOBI",
+        "AZW/AZW3",
+        "FB2/FB2.zip",
+        "DOCX",
+        "RTF",
+        "HTML",
+        "TXT",
+        "local files or internet"
+      ],
+      "extraction": {
+        "engine": "Native ebook parsing + text reflow for PDFs",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "Advanced text reflow for PDFs on small screens; remaining chapter/book time estimate."
+      },
+      "library": {
+        "library": "yes (strong library management)",
+        "bookmarks": "unknown",
+        "progressSync": "unknown (per-book position remembered)",
+        "notes": "Remaining listening time per chapter/book."
+      },
+      "playback": {
+        "screenOff": "yes ('Evie can read out loud even in background or with the screen turned off')",
+        "mediaSession": "partial (lock screen/notification drawer controls)",
+        "notification": "yes",
+        "headsetKeys": "yes (Bluetooth and wired)",
+        "sleepTimer": "yes",
+        "androidAuto": "partial (Bluetooth car-stereo controls)",
+        "notes": "Equalizer, per-language voice switching, earphone-button resume after sleep timer."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "yes (PDF text reflow)",
+        "translation": "yes (Amazon Neural translation, 70+ languages, paid)",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Wear OS companion (requires internet + Evie account)."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "optional (only for Polly/Wear OS)",
+        "dataCollection": "Play Data safety: encrypted in transit; no data shared with third parties; deletion supported (self-reported). Vendor claims no permissions needed."
+      },
+      "strengths": [
+        "Free, ad-free core with system TTS",
+        "Strong playback: screen-off, car stereo, headset keys, sleep timer, equalizer",
+        "Wide ebook format support incl. AZW/MOBI/FB2",
+        "Pay-as-you-go cloud voices instead of subscription"
+      ],
+      "weaknesses": [
+        "Paid cloud voices/translation use a credit model that is hard to price",
+        "No highlighting/read-along claims",
+        "Wear OS requires account",
+        "Solo-developer scale; small review base"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "Free and ad-free",
+          "Playback controls and sleep timer"
+        ],
+        "complaints": [
+          "Not sampled for this stream (no 1-star pull)"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.lenntt.evoicereader",
+          "supports": "Installs 100K+, rating 4.3 / 4.28K, last update 2026-10-05, IAP range, description (free tier, Polly/translation pay-as-you-go, playback, formats)"
+        }
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.cliffweitzman.speechify2",
+      "accessed": "2026-10-24",
+      "supports": "Speechify store stats, update date, IAP range, description"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.naturalsoft.personalweb",
+      "accessed": "2026-10-24",
+      "supports": "NaturalReader store stats, update date, IAP range, description"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=io.elevenlabs.readerapp",
+      "accessed": "2026-10-24",
+      "supports": "ElevenReader store stats, update date, IAP range, description"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=voicedream.reader",
+      "accessed": "2026-10-24",
+      "supports": "Legere Reader price/installs/rating/update, IAP range, feature description"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.readermobile",
+      "accessed": "2026-10-24",
+      "supports": "Readwise Reader store stats, update date, IAP range, description"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.flyersoft.moonreaderp",
+      "accessed": "2026-10-24",
+      "supports": "Moon+ Reader Pro price/installs/rating/update, features"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.labsiisoftware.speechcentral",
+      "accessed": "2026-10-24",
+      "supports": "Speech Central store stats, $8.99 IAP, description"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=voice.reader.ai",
+      "accessed": "2026-10-24",
+      "supports": "TTS Reader Pro store stats, IAP range, Contains ads badge"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=io.listening.main",
+      "accessed": "2026-10-24",
+      "supports": "Listening store stats, update date, IAP range, description"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.lenntt.evoicereader",
+      "accessed": "2026-10-24",
+      "supports": "Evie store stats, IAP range, description"
+    },
+    {
+      "url": "https://speechify.com/pricing/",
+      "accessed": "2026-10-24",
+      "supports": "Speechify Free vs Premium pricing and feature split"
+    },
+    {
+      "url": "https://help.naturalreaders.com/en/articles/8854700-plans-pricing-personal-version",
+      "accessed": "2026-10-24",
+      "supports": "NaturalReader official Lite/Plus/Pro pricing and limits"
+    },
+    {
+      "url": "https://elevenreader.io/",
+      "accessed": "2026-10-24",
+      "supports": "ElevenReader free 10 h/month, Ultra $11/$99, formats, offline, no export"
+    },
+    {
+      "url": "https://readwise.io/pricing",
+      "accessed": "2026-10-24",
+      "supports": "Readwise/Reader subscription pricing and 30-day trial"
+    },
+    {
+      "url": "https://readwise.io/reader",
+      "accessed": "2026-10-24",
+      "supports": "Readwise Reader TTS, offline reading, sources, platforms"
+    },
+    {
+      "url": "https://www.speechcentral.net/",
+      "accessed": "2026-10-24",
+      "supports": "Speech Central one-time purchase, privacy claim, platforms"
+    },
+    {
+      "url": "https://listening.io/pricing",
+      "accessed": "2026-10-24",
+      "supports": "Listening free/monthly/yearly pricing and limits"
+    },
+    {
+      "url": "https://listening.io/",
+      "accessed": "2026-10-24",
+      "supports": "Listening formats, citation skipping, academic positioning"
+    },
+    {
+      "url": "https://www.naturalreaders.com/webapp.html",
+      "accessed": "2026-10-24",
+      "supports": "NaturalReader Gemini/ChatGPT/Azure voices, 90+ languages, 3 apps"
+    },
+    {
+      "url": "https://www.voicedream.com/",
+      "accessed": "2026-10-24",
+      "supports": "Voice Dream Reader heritage/accessibility positioning"
+    },
+    {
+      "url": "https://www.moondownload.com/",
+      "accessed": "2026-10-24",
+      "supports": "Moon+ Reader Pro developer site positioning"
+    }
+  ]
+}

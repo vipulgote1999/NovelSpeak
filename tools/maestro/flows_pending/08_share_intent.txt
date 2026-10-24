@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# 08_share_intent - adb ACTION_SEND smoke test for the share-sheet ingestion gate.
+#
+# Not a Maestro YAML flow: Android's ACTION_SEND cannot be delivered by
+# `launchApp`, so this script drives the intent with adb and asserts on the
+# resulting hierarchy (same assertions a Maestro flow would make).
+#
+# PENDING BUILD: the installed 1.0.0 manifest has no ACTION_SEND filter and
+# MainActivity has no intent handler, so this script is expected to FAIL until
+# the share-target build is installed.
+#
+# Usage: tools/maestro/flows_pending/08_share_intent.txt [text]
+# Exit:  0 PASS, 1 FAIL, 2 environment error.
+set -uo pipefail
+ADB="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"
+DEVICE="${DEVICE:-emulator-5554}"
+TEXT="${1:-The harbour town of Wick put itself to bed early, and the lamplighter's daughter walked her round with a brass taper in her hand.}"
+
+echo "== 08 share intent =="
+if ! "$ADB" devices | awk -v d="$DEVICE" '$1==d && $2=="device"{f=1} END{exit(f?0:1)}'; then
+  echo "FAIL: $DEVICE is not connected" >&2
+  exit 2
+fi
+
+"$ADB" -s "$DEVICE" shell am force-stop app.novelspeak
+echo "-- sending ACTION_SEND text/plain"
+"$ADB" -s "$DEVICE" shell am start -W -a android.intent.action.SEND -t text/plain \
+  --es android.intent.extra.TEXT "$TEXT" \
+  -n app.novelspeak/.MainActivity | tail -3
+sleep 4
+
+"$ADB" -s "$DEVICE" shell uiautomator dump /sdcard/share_ui.xml >/dev/null 2>&1
+"$ADB" -s "$DEVICE" pull /sdcard/share_ui.xml /tmp/share_ui.xml >/dev/null 2>&1
+
+python3 - <<'PY'
+import sys, xml.etree.ElementTree as ET
+try:
+    root = ET.parse('/tmp/share_ui.xml').getroot()
+except Exception as e:
+    print(f"FAIL: could not read hierarchy: {e}")
+    sys.exit(1)
+texts = []
+for n in root.iter('node'):
+    for attr in ('text', 'content-desc'):
+        v = (n.get(attr) or '').strip()
+        if v:
+            texts.append(v)
+blob = '\n'.join(texts)
+extracted = any(t.startswith('Extracted ') or t.startswith('Ready · ') for t in texts)
+player = any(t == 'Read' for t in texts)
+shared = ('Wick' in blob) or ('lamplighter' in blob)
+print(f"  status line extracted: {extracted}")
+print(f"  player Read visible:   {player}")
+print(f"  shared prose visible:  {shared}")
+if extracted and player and shared:
+    print("PASS: shared text was ingested into the reader")
+    sys.exit(0)
+print("FAIL: share intent did not reach the reader (expected until the share-target build is installed)")
+sys.exit(1)
+PY

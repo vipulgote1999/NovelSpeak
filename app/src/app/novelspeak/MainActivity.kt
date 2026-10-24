@@ -60,6 +60,10 @@ import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
 import app.novelspeak.adblock.UrlTools
+import android.os.SystemClock
+import app.novelspeak.library.LibraryStore
+import app.novelspeak.library.PrefsLibraryStorage
+import app.novelspeak.library.ReadingStats
 import kotlin.math.min
 
 /**
@@ -114,6 +118,18 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private var autoPlayRunnable: Runnable? = null
     private val uiHandler = Handler(Looper.getMainLooper())
 
+    private lateinit var library: LibraryStore
+    private lateinit var readingStats: ReadingStats
+    private var lastSentenceTickMs = 0L
+    private var lastStatsCursor = -1
+    private lateinit var wallBanner: TextView
+    private lateinit var sleepTimerView: TextView
+    private var pendingResumeIndex = -1
+    private var sleepTimerEndsAt = 0L
+    private var sleepTimerChapter = false
+    private var lastPersistedCursor = -1
+    private var lastPersistAt = 0L
+
     /** Releases a stuck drag flag if a gesture ends without onStopTrackingTouch. */
     private val seekingTimeout = Runnable {
         seeking = false
@@ -132,9 +148,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         configureWebView()
         reader.addListener(this)
         AdBlocker.addListener(this)
+        val storage = PrefsLibraryStorage(this)
+        library = LibraryStore(storage)
+        readingStats = ReadingStats(storage)
         onReaderState(reader.state())
-        val last = getSharedPreferences("novelspeak", MODE_PRIVATE).getString("last_url", null)
-        web.loadUrl(last ?: DEFAULT_URL)
+        handleShareIntent(intent)
     }
 
     private fun applyWindowTheme() {
@@ -387,6 +405,21 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         titleRow.addView(readerBtn)
         root.addView(titleRow)
 
+        wallBanner = TextView(this).apply {
+            textSize = 12f
+            setTextColor(Palette.BG)
+            background = rounded(Palette.AMBER, 10)
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setOnClickListener { showSiteDialog() }
+            visibility = View.GONE
+        }
+        root.addView(
+            wallBanner,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(dp(10), dp(2), dp(10), dp(4)) }
+        )
+
         // ---- page ----
         web = WebView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -489,6 +522,15 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             }
         }
         card.addView(notificationHint)
+
+        sleepTimerView = TextView(this).apply {
+            textSize = 11f
+            setTextColor(Palette.ACCENT)
+            setPadding(dp(4), dp(2), dp(4), 0)
+            visibility = View.GONE
+            contentDescription = "Sleep timer"
+        }
+        card.addView(sleepTimerView)
 
         val actionsRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -989,7 +1031,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         popup.menu.add(0, MENU_SHARE, 3, "Share link")
         popup.menu.add(0, MENU_EXTERNAL, 4, "Open in browser")
         popup.menu.add(0, MENU_SITE, 5, "Site settings")
-        popup.menu.add(0, MENU_SETTINGS, 6, "NovelSpeak settings")
+        popup.menu.add(0, MENU_SLEEP, 6, "Sleep timer")
+        popup.menu.add(0, MENU_LIBRARY, 7, "Library")
+        popup.menu.add(0, MENU_CONTINUE, 8, "Continue reading")
+        popup.menu.add(0, MENU_SETTINGS, 9, "NovelSpeak settings")
+        popup.menu.add(0, MENU_PRIVACY, 10, "About & privacy")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 MENU_HOME -> web.loadUrl(DEFAULT_URL)
@@ -998,8 +1044,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 MENU_SHARE -> shareLink()
                 MENU_EXTERNAL -> openExternal()
                 MENU_SITE -> showSiteDialog()
+                MENU_LIBRARY -> startActivity(Intent(this, LibraryActivity::class.java))
+                MENU_CONTINUE -> continueReading()
+                MENU_SLEEP -> showSleepTimerDialog()
                 MENU_SETTINGS -> startActivity(
                     Intent(this, SettingsActivity::class.java)
+                )
+                MENU_PRIVACY -> startActivity(
+                    Intent(this, AboutPrivacyActivity::class.java)
                 )
             }
             true
@@ -1019,7 +1071,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             .registrableDomain(host).ifEmpty { host }
         var adblockChanged = false
         val checked = booleanArrayOf(
-            prefs.readerMode,
+            prefs.readerModeForSite(site),
             prefs.adblockEnabled && !AdBlocker.isSiteAllowed(host)
         )
         val dialog = AlertDialog.Builder(this)
@@ -1031,8 +1083,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 checked
             ) { _, which, isChecked ->
                 if (which == 0) {
-                    prefs.readerMode = isChecked
-                    WebExtractor.setReader(web, prefs.readerMode)
+                    prefs.setReaderModeForSite(site, isChecked)
+                    WebExtractor.setReader(web, prefs.readerModeForSite(site))
                     updateReaderButton()
                 } else {
                     adblockChanged = true
@@ -1177,7 +1229,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (!auto) autoAdvanceCount = 0
         // install() is async; extract only once the page-side scripts have actually run.
         WebExtractor.install(web) {
-            WebExtractor.extract(web) { title, blocks ->
+            WebExtractor.extract(web) { title, blocks, wall ->
                 DiagLog.line(
                     this,
                     "extract url=${web.url} append=$append auto=$auto title=\"${title.take(60)}\" blocks=${blocks.size}"
@@ -1214,7 +1266,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                             autoAppendStart = 0
                             reader.setContent(title.ifEmpty { web.title ?: "" }, blocks)
                         }
-                        statusView.text = "Extracted ${blocks.size} sentences"
+                        statusView.text = "Extracted " + blocks.size + " sentences"
+                        onExtracted(title, wall)
+
                         // Do not hide a Cloudflare challenge: it must stay interactive
                         // until the site finishes verification. Reader mode resumes on
                         // the real page automatically.
@@ -1256,9 +1310,258 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         autoPlayRunnable = null
     }
 
+    /** Post-extraction wiring: paywall banner, continue-reading resume, library record. */
+    private fun onExtracted(title: String, wall: String) {
+        val url = web.url ?: lastDisplayedUrl
+        if (wall.isNotEmpty()) {
+            showWallBanner(wall)
+        } else {
+            hideWallBanner()
+        }
+        if (wall.isEmpty() && url.isNotEmpty()) {
+            NovelSpeakApp.instance.prefs.lastUrl = url
+            val site = UrlTools.host(url) ?: ""
+            val total = reader.state().total
+            if (total > 0) {
+                library.recordProgress(
+                    url, title.ifEmpty { web.title ?: "" }, site, 0, total
+                )
+            }
+        }
+        applyReaderPrefs()
+        if (wall.isEmpty() && pendingResumeIndex > 0 && reader.hasContent()) {
+            val total = reader.state().total
+            val idx = pendingResumeIndex.coerceIn(0, (total - 1).coerceAtLeast(0))
+            pendingResumeIndex = -1
+            reader.seek(idx)
+            statusView.text = "Resumed at sentence " + (idx + 1) + " / " + total
+        }
+    }
+
+    private fun showWallBanner(wall: String) {
+        if (!::wallBanner.isInitialized) return
+        wallBanner.text = when (wall) {
+            "login" -> "Login may be required — open this page in NovelSpeak's browser and sign in, then tap Read."
+            "subscribe" -> "This chapter may be subscriber-only — the readable text looks partial. No bypass attempted."
+            else -> "This page looks like a verification wall — complete it in the browser, then tap Read."
+        }
+        wallBanner.visibility = View.VISIBLE
+    }
+
+    private fun hideWallBanner() {
+        if (::wallBanner.isInitialized) wallBanner.visibility = View.GONE
+    }
+
+    /** Inject the user's reader typography (font, size, line height, width, theme). */
+    private fun applyReaderPrefs() {
+        try {
+            val p = NovelSpeakApp.instance.prefs
+            val style = ReaderStyle.of(
+                p.readerFontScale, p.readerFontFamily, p.readerTheme,
+                p.readerLineHeight, p.readerWidthPx
+            )
+            WebExtractor.applyReaderStyle(web, ReaderStyle.buildCss(style))
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "apply reader style failed", t)
+        }
+    }
+
+    /** Accumulate reading time locally (no telemetry) for the stats screen. */
+    private fun recordReadingTime(state: Reader.State) {
+        if (!state.playing || state.total <= 0) return
+        val now = SystemClock.elapsedRealtime()
+        if (state.cursor != lastStatsCursor) {
+            if (lastSentenceTickMs > 0L) {
+                val secs = ((now - lastSentenceTickMs) / 1000L).toInt().coerceIn(0, 120)
+                if (secs > 0) readingStats.addReading(secs, 1, UrlTools.host(web.url ?: "") ?: "")
+            }
+            lastStatsCursor = state.cursor
+            lastSentenceTickMs = now
+        }
+    }
+
+    private fun persistProgressThrottled(state: Reader.State) {
+        if (!::library.isInitialized || state.total <= 0) return
+        val now = System.currentTimeMillis()
+        if (state.cursor == lastPersistedCursor || now - lastPersistAt < 2000L) return
+        val url = web.url ?: lastDisplayedUrl
+        if (url.isEmpty()) return
+        val title = state.title.ifEmpty { web.title ?: "" }
+        library.recordProgress(
+            url, title, UrlTools.host(url) ?: "", state.cursor, state.total
+        )
+        lastPersistedCursor = state.cursor
+        lastPersistAt = now
+    }
+
+    // ---- continue reading / library / sharing ---------------------------------
+
+    private fun continueReading() {
+        val entry = if (::library.isInitialized) library.resumeEntry() else null
+        if (entry == null) {
+            Toast.makeText(this, "Nothing to continue yet", Toast.LENGTH_SHORT).show()
+            return
+        }
+        pendingResumeIndex = entry.sentenceIndex
+        web.loadUrl(entry.url)
+    }
+
+    private fun openLastPosition() {
+        if (web.url == null || web.url == "about:blank") {
+            val resume = if (::library.isInitialized) library.resumeEntry() else null
+            if (resume != null && resume.sentenceIndex > 0) {
+                pendingResumeIndex = resume.sentenceIndex
+                web.loadUrl(resume.url)
+                return
+            }
+            web.loadUrl(NovelSpeakApp.instance.prefs.lastUrl ?: DEFAULT_URL)
+        }
+    }
+
+    private fun handleShareIntent(intent: Intent?) {
+        if (intent == null) { openLastPosition(); return }
+        val action = intent.action
+        // Library row tap: launchMode=singleTask delivers ACTION_VIEW to this instance.
+        if (action == Intent.ACTION_VIEW && intent.data != null) {
+            pendingResumeIndex = intent.getIntExtra(
+                LibraryActivity.EXTRA_RESUME_SENTENCE, -1
+            )
+            web.loadUrl(intent.data.toString())
+            return
+        }
+        if (action == Intent.ACTION_SEND || action == Intent.ACTION_PROCESS_TEXT) {
+            val text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
+                ?: intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+            if (!text.isNullOrBlank()) {
+                val trimmed = text.trim()
+                if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                    web.loadUrl(trimmed)
+                } else {
+                    renderSharedText(trimmed)
+                }
+                return
+            }
+        }
+        openLastPosition()
+    }
+
+    /** Read text shared from another app / selected via ACTION_PROCESS_TEXT. */
+    private fun renderSharedText(text: String) {
+        val max = NovelSpeakApp.instance.prefs.maxSentenceChars
+        val parts = SentenceSplitter.split(text, max)
+        if (parts.isEmpty()) {
+            statusView.text = "Shared text had nothing to read"
+            return
+        }
+        val blocks = ArrayList<Reader.Block>(parts.size)
+        for (i in parts.indices) blocks.add(Reader.Block(parts[i], i))
+        reader.setContent("Shared text", blocks)
+        hideWallBanner()
+        statusView.text = "Shared text · " + blocks.size + " sentences"
+        WebExtractor.setReader(web, false)
+        AppPermissions.requestNotificationsOnce(this)
+        reader.play()
+    }
+
+    // ---- sleep timer ----------------------------------------------------------
+
+    private fun showSleepTimerDialog() {
+        val options = arrayOf(
+            "Off", "15 minutes", "30 minutes", "45 minutes", "60 minutes", "End of chapter"
+        )
+        val current = NovelSpeakApp.instance.prefs.sleepTimerMinutes
+        val selected = when (current) {
+            15 -> 1; 30 -> 2; 45 -> 3; 60 -> 4; -1 -> 5; else -> 0
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Sleep timer")
+            .setSingleChoiceItems(options, selected) { dialog, which ->
+                dialog.dismiss()
+                applySleepTimer(
+                    when (which) {
+                        1 -> 15; 2 -> 30; 3 -> 45; 4 -> 60; 5 -> -1; else -> 0
+                    }
+                )
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun applySleepTimer(minutes: Int) {
+        NovelSpeakApp.instance.prefs.sleepTimerMinutes = minutes
+        uiHandler.removeCallbacks(sleepTick)
+        sleepTimerChapter = minutes == -1
+        sleepTimerEndsAt = if (minutes > 0) {
+            System.currentTimeMillis() + minutes * 60_000L
+        } else {
+            0L
+        }
+        if (minutes > 0) {
+            uiHandler.post(sleepTick)
+            Toast.makeText(this, "Sleep timer: " + minutes + " minutes", Toast.LENGTH_SHORT).show()
+        } else if (minutes == -1) {
+            Toast.makeText(this, "Will pause at the end of this chapter", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Sleep timer off", Toast.LENGTH_SHORT).show()
+        }
+        updateSleepTimerView()
+    }
+
+    private val sleepTick = object : Runnable {
+        override fun run() {
+            if (sleepTimerEndsAt <= 0L) return
+            if (System.currentTimeMillis() >= sleepTimerEndsAt) {
+                sleepTimerEndsAt = 0L
+                reader.pause()
+                updateSleepTimerView()
+                Toast.makeText(this@MainActivity, "Sleep timer: paused", Toast.LENGTH_SHORT).show()
+            } else {
+                updateSleepTimerView()
+                uiHandler.postDelayed(this, 1000L)
+            }
+        }
+    }
+
+    private fun updateSleepTimerView() {
+        if (!::sleepTimerView.isInitialized) return
+        val remaining = sleepTimerEndsAt - System.currentTimeMillis()
+        when {
+            remaining > 0L -> {
+                val secs = (remaining / 1000L).toInt()
+                sleepTimerView.text = String.format("Sleep timer · %d:%02d", secs / 60, secs % 60)
+                sleepTimerView.visibility = View.VISIBLE
+            }
+            sleepTimerChapter -> {
+                sleepTimerView.text = "Sleep timer · end of chapter"
+                sleepTimerView.visibility = View.VISIBLE
+            }
+            else -> sleepTimerView.visibility = View.GONE
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleShareIntent(intent)
+    }
+
     override fun onQueueFinished() {
+        if (sleepTimerChapter) {
+            sleepTimerChapter = false
+            sleepTimerEndsAt = 0L
+            updateSleepTimerView()
+            cancelAutoAdvance()
+            Toast.makeText(this, "Sleep timer: chapter finished, stopped", Toast.LENGTH_SHORT).show()
+            return
+        }
         val p = NovelSpeakApp.instance.prefs
-        DiagLog.line(this, "queue finished auto=${p.autoMode} count=$autoAdvanceCount")
+        if (!p.autoMode) {
+            val url = web.url ?: lastDisplayedUrl
+            if (url.isNotEmpty()) {
+                try { library.markFinished(url) } catch (t: Throwable) { }
+            }
+        }
+        DiagLog.line(this, "queue finished auto=" + p.autoMode + " count=" + autoAdvanceCount)
         if (!p.autoMode) return
         if (autoAdvanceCount >= MAX_AUTO_CHAPTERS) {
             Toast.makeText(this, "Auto mode stopped after $MAX_AUTO_CHAPTERS chapters",
@@ -1275,6 +1578,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     private fun loadNextChapter() {
+        pendingResumeIndex = -1
         WebExtractor.nextLink(web) { link ->
             DiagLog.line(this, "next chapter link=${link.ifEmpty { "(none)" }}")
             runOnUiThread {
@@ -1290,7 +1594,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     private fun bumpSpeed(delta: Float) {
-        val v = (NovelSpeakApp.instance.prefs.speed + delta).coerceIn(0.5f, 2.5f)
+        val max = reader.maxSpeed().coerceAtLeast(2.0f)
+        val v = (NovelSpeakApp.instance.prefs.speed + delta).coerceIn(0.5f, max)
         reader.setSpeed(v)
         speedView.text = "%.2f×".format(v)
         speedView.contentDescription = "Playback speed ${"%.2f".format(v)} times"
@@ -1304,7 +1609,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     private fun updateReaderButton() {
-        val on = NovelSpeakApp.instance.prefs.readerMode
+        val prefs = NovelSpeakApp.instance.prefs
+        val host = UrlTools.host(web.url ?: lastDisplayedUrl) ?: ""
+        val site = app.novelspeak.adblock.PublicSuffixList.registrableDomain(host).ifEmpty { host }
+        val on = prefs.readerModeForSite(site)
         readerBtn.text = if (on) "Reader on" else "Reader"
         readerBtn.setTextColor(if (on) Palette.ACCENT else Palette.TEXT)
         readerBtn.background = ripple(Palette.SURFACE_HIGH, 16)
@@ -1315,6 +1623,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     override fun onReaderState(state: Reader.State) {
         val total = state.total.coerceAtLeast(0)
         sentenceTotal = total
+        persistProgressThrottled(state)
+        updateSleepTimerView()
+        recordReadingTime(state)
         titleView.text = state.title.ifEmpty { web.title ?: "" }
         statusView.text = state.status
         engineChip.text = state.engine
@@ -1442,17 +1753,38 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     override fun onResume() {
         super.onResume()
+        try { web.onResume() } catch (t: Throwable) { }
         updateReaderButton()
-        WebExtractor.setReader(web, NovelSpeakApp.instance.prefs.readerMode)
+        val prefs = NovelSpeakApp.instance.prefs
+        val host = UrlTools.host(web.url ?: "") ?: ""
+        val site = app.novelspeak.adblock.PublicSuffixList.registrableDomain(host).ifEmpty { host }
+        WebExtractor.setReader(web, prefs.readerModeForSite(site))
+        applyReaderPrefs()
         updateShield()
         updateNotificationHint()
         AdBlocker.inject(web, web.url ?: "")
     }
 
+    override fun onPause() {
+        super.onPause()
+        // Stop page timers while reading with the screen off; the reader and media
+        // service are independent of the WebView, so playback continues.
+        if (!reader.state().playing) {
+            try { web.onPause() } catch (t: Throwable) { }
+        }
+    }
+
     override fun onDestroy() {
         dismissSuggestions()
+        uiHandler.removeCallbacks(sleepTick)
         reader.removeListener(this)
         AdBlocker.removeListener(this)
+        if (isFinishing) {
+            try {
+                web.loadUrl("about:blank")
+                web.destroy()
+            } catch (t: Throwable) { }
+        }
         super.onDestroy()
     }
 
@@ -1553,7 +1885,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         private const val MENU_SHARE = 4
         private const val MENU_EXTERNAL = 5
         private const val MENU_SITE = 6
-        private const val MENU_SETTINGS = 7
+        private const val MENU_LIBRARY = 7
+        private const val MENU_CONTINUE = 8
+        private const val MENU_SLEEP = 9
+        private const val MENU_SETTINGS = 10
+        private const val MENU_PRIVACY = 11
 
         /** Pause between a chapter's extraction and its first spoken sentence. */
         private const val AUTO_PLAY_DELAY_MS = 2500L

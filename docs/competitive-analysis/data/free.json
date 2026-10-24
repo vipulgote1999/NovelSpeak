@@ -1,0 +1,2191 @@
+{
+  "generatedAt": "2026-10-24",
+  "stream": "free",
+  "competitors": [
+    {
+      "name": "@Voice Aloud Reader",
+      "package": "com.hyperionics.avar",
+      "developer": "Hyperionics Technology",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.hyperionics.avar",
+      "tier": "freemium",
+      "businessModel": "free+ads",
+      "pricing": {
+        "freeTier": "full app with ads",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "$15 USD Premium (ad removal + continuous recording)",
+        "currency": "USD",
+        "notes": "Premium sold by Hyperionics directly; page says 'Permanent license ... One purchase. No monthly or yearly bill.' Play IAP listing not shown in the ds:5 card."
+      },
+      "popularity": {
+        "installs": "10,000,000+",
+        "rating": "4.28",
+        "ratingsCount": 137634,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "hybrid",
+        "engines": [
+          "Android system TTS (e.g. Google TTS, Samsung TTS)",
+          "user-supplied cloud keys: Google Cloud, Microsoft, Amazon"
+        ],
+        "voices": "device-dependent; cloud voices paid by user's own API key",
+        "languages": "dozens (device/cloud dependent)",
+        "offline": "partial",
+        "cloning": "unknown",
+        "speedControl": "yes",
+        "streaming": "unknown",
+        "notes": "Dialog/character voice assignment wizard; recording to MP3/OGG/WAV; custom pronunciation rules."
+      },
+      "sourcesSupported": [
+        "web pages (built-in reader)",
+        "PDF",
+        "EPUB",
+        "AZW3",
+        "Word/HTML/TXT",
+        "LCP-DRM ebooks (ebooks.com)",
+        "text shared from other apps"
+      ],
+      "extraction": {
+        "engine": "built-in reader mode (ads/clutter removed) + @Voice Connector browser extension",
+        "readAlongHighlight": "yes (sentence/word)",
+        "autoScroll": "unknown",
+        "autoNextChapter": "yes (auto-advance to next article; follow multi-part web fiction)",
+        "notes": "Share-sheet intake is the main path; PDF text extraction plus OCR-aware reading claimed in description."
+      },
+      "library": {
+        "library": "reading lists for news/books/study/work",
+        "bookmarks": "yes",
+        "progressSync": "Dropbox sync via @Voice Connector",
+        "notes": "Progress tracked per item; Android Auto plugin browses lists."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "yes",
+        "sleepTimer": "yes (shake to restart)",
+        "androidAuto": "yes (separate plugin)",
+        "notes": "Description promises headset/Bluetooth control without looking at the screen; a user review refers to a 'read in background after share' setting."
+      },
+      "ux": {
+        "themes": "high-contrast + custom colors",
+        "typography": "OpenDyslexic, adjustable font size",
+        "translation": "Google Translate, bilingual view with per-language voices",
+        "dictionary": "dictionary/Google Translate/Wikipedia/web search",
+        "widgets": "home-screen widget (Premium)",
+        "notes": "AI assistant hand-off (ChatGPT/Claude/Gemini) and TalkBack support claimed."
+      },
+      "privacy": {
+        "ads": "yes (removed by Premium)",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "Play Data safety: 'No data collected'"
+      },
+      "strengths": [
+        "Broadest format intake of the free readers (web/PDF/EPUB/Word + share sheet)",
+        "One-time $15 unlock instead of a subscription",
+        "Read-along highlighting and per-character voices",
+        "Sleep timer + headset keys + Android Auto plugin",
+        "No account and no data collection per Play Data safety"
+      ],
+      "weaknesses": [
+        "UI/learning curve; users say tutorials are needed",
+        "PDF parsing quality is uneven",
+        "Share-to-app regression reported in reviews",
+        "Natural voices depend on the user bringing paid cloud API keys"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "reliable background listening",
+          "highly customizable",
+          "useful for proofreading essays by ear"
+        ],
+        "complaints": [
+          "share intent stopped auto-starting read",
+          "PDF parsing imperfect",
+          "UI takes time to understand"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.hyperionics.avar",
+          "supports": "installs/rating/version/update date, description quotes (no data collection, BYO cloud keys, headset buttons), user reviews"
+        },
+        {
+          "url": "https://www.hyperionics.com/atVoice/",
+          "supports": "'Free with ads. An optional Premium license removes them.' and $15 USD permanent license, Android Auto plugin, Connector"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "ReadEra",
+      "package": "org.readera",
+      "developer": "READERA LLC",
+      "storeUrl": "https://play.google.com/store/apps/details?id=org.readera",
+      "tier": "free",
+      "businessModel": "free",
+      "pricing": {
+        "freeTier": "entire app, no ads, no in-app purchases",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "",
+        "currency": "",
+        "notes": "Read-aloud described by users on readera.org; background TTS is listed as a Premium-only feature on the Premium page, so free read-aloud appears foreground-only (Inferred)."
+      },
+      "popularity": {
+        "installs": "50,000,000+",
+        "rating": "4.86",
+        "ratingsCount": 1597738,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Huawei AppGallery"
+      ],
+      "tts": {
+        "engineType": "system",
+        "engines": [
+          "Android system TTS"
+        ],
+        "voices": "device voices",
+        "languages": "device-dependent",
+        "offline": "yes",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Free page does not advertise read-aloud; a readera.org user testimonial says 'reading the text aloud - you can listen to your books'. No web-page reading (file library only)."
+      },
+      "sourcesSupported": [
+        "PDF",
+        "EPUB",
+        "MOBI/AZW3",
+        "FB2",
+        "DJVU",
+        "DOC/DOCX/RTF/ODT",
+        "TXT",
+        "CHM",
+        "CBZ/CBR",
+        "ZIP/RAR archives"
+      ],
+      "extraction": {
+        "engine": "n/a - local file library, no URL/browser reading",
+        "readAlongHighlight": "no (quotes/bookmarks only)",
+        "autoScroll": "n/a",
+        "autoNextChapter": "n/a",
+        "notes": "Auto-detects books on device; tested against a 500,000-book library per site."
+      },
+      "library": {
+        "library": "auto-detect library, collections, Favorites/To Read/Have Read",
+        "bookmarks": "yes + quotes/notes",
+        "progressSync": "no on free; Drive sync is Premium",
+        "notes": "Best-in-class free library management: grouping by author/series, dedupe, folders."
+      },
+      "playback": {
+        "screenOff": "no (Premium feature per Premium description)",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": ""
+      },
+      "ux": {
+        "themes": "day/night/sepia/twilight/console",
+        "typography": "size/type/bold/line-spacing, own fonts, RTL",
+        "translation": "device translators/dictionaries",
+        "dictionary": "yes (integrated app picker)",
+        "widgets": "unknown",
+        "notes": "Page-turn modes horizontal/vertical; footnotes at page bottom."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "Play Data safety: no data shared with third parties"
+      },
+      "strengths": [
+        "Completely free: 'neither contains ads nor imposes internal purchases'",
+        "50M+ installs and 4.86 rating - the free-reader benchmark",
+        "Widest office/ebook format support in one free app",
+        "Offline library with strong organization and quotes/notes"
+      ],
+      "weaknesses": [
+        "No web page / URL reading at all - not a direct competitor for novel sites",
+        "Background read-aloud is gated behind Premium",
+        "Read-aloud voices are plain system TTS"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "free with no ads",
+          "format coverage",
+          "customization and page memory",
+          "dictionary on long-press"
+        ],
+        "complaints": [
+          "AI audio mispronounces words/fancy fonts",
+          "premium upsell for listening in background"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=org.readera",
+          "supports": "installs 50M+, rating 4.86/1,597,738, version 26.05.20+2300, update May 22 2026, no ads/no purchases claim"
+        },
+        {
+          "url": "https://readera.org/",
+          "supports": "free/no ads/no registration, format list, user testimonial about listening to books aloud"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "ReadEra Premium",
+      "package": "org.readera.premium",
+      "developer": "READERA LLC",
+      "storeUrl": "https://play.google.com/store/apps/details?id=org.readera.premium",
+      "tier": "paid",
+      "businessModel": "one-time",
+      "pricing": {
+        "freeTier": "no (separate paid app; 30-day money-back guarantee)",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "$14.99 USD",
+        "currency": "USD",
+        "notes": "Price observed in the Play page structured offer data on 2026-10-24."
+      },
+      "popularity": {
+        "installs": "100,000+",
+        "rating": "4.81",
+        "ratingsCount": 66770,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "system",
+        "engines": [
+          "Android system TTS"
+        ],
+        "voices": "device voices",
+        "languages": "device-dependent",
+        "offline": "yes",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Premium description: 'Read aloud in the background TTS. You can listen to books and documents in the background and even with the screen locked.' Reddit users report no special voices, just Android TTS."
+      },
+      "sourcesSupported": [
+        "PDF",
+        "EPUB",
+        "MOBI/AZW3",
+        "CBZ/CBR",
+        "DJVU",
+        "FB2",
+        "TXT",
+        "ODT",
+        "CHM",
+        "DOC/DOCX/RTF"
+      ],
+      "extraction": {
+        "engine": "n/a - file library only",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "n/a",
+        "autoNextChapter": "n/a",
+        "notes": ""
+      },
+      "library": {
+        "library": "library views, duplicate detection, collections, folder management",
+        "bookmarks": "quotes/notes/dictionary sections",
+        "progressSync": "Google Drive sync (premium)",
+        "notes": "Premium adds cross-device sync of books, progress, bookmarks, quotes."
+      },
+      "playback": {
+        "screenOff": "yes ('even with the screen locked')",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": ""
+      },
+      "ux": {
+        "themes": "same as free + extra quote colors",
+        "typography": "own font upload",
+        "translation": "device translators",
+        "dictionary": "unified dictionary section",
+        "widgets": "unknown",
+        "notes": ""
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "Play Data safety: no data shared with third parties"
+      },
+      "strengths": [
+        "One-time $14.99 with 30-day money-back guarantee",
+        "Background TTS with screen locked (free ReadEra cannot)",
+        "Google Drive sync of library/progress/quotes",
+        "Very high satisfaction (4.81/66,770)"
+      ],
+      "weaknesses": [
+        "Paid, and TTS voices are still the device voices (no neural voices)",
+        "No web-page reading",
+        "Two-app split confuses users (reviews show people running both)"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "background listening while doing other things",
+          "one-time purchase value",
+          "file management"
+        ],
+        "complaints": [
+          "TTS 'gets lots of words and fancy fonts wrong'",
+          "asking for a clock in the ribbon"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=org.readera.premium",
+          "supports": "price $14.99, installs 100K+, rating, 'Read aloud in the background TTS ... even with the screen locked'"
+        },
+        {
+          "url": "https://www.reddit.com/r/ReadEra/comments/1ouf0x7/text_to_speech/",
+          "supports": "community claim that Premium provides no special voices, only Android TTS"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Librera Reader",
+      "package": "com.foobnix.pdf.reader",
+      "developer": "Librera",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.foobnix.pdf.reader",
+      "tier": "open-source",
+      "businessModel": "free+ads",
+      "pricing": {
+        "freeTier": "full reader with ads",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "PRO app $5.99 USD (com.foobnix.pro.pdf.reader)",
+        "currency": "USD",
+        "notes": "PRO sold as a separate paid Play app (50K+ installs, 4.43/7,081) and also on F-Droid as 10.0.0-fdroid."
+      },
+      "popularity": {
+        "installs": "10,000,000+",
+        "rating": "3.98",
+        "ratingsCount": 137891,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "system",
+        "engines": [
+          "any installed Android TTS engine"
+        ],
+        "voices": "engine-dependent",
+        "languages": "engine-dependent",
+        "offline": "partial",
+        "cloning": "no",
+        "speedControl": "yes (engine controls)",
+        "streaming": "unknown",
+        "notes": "Play description: 'It also supports reading out loud, using whatever TTS engine installed on your device.'"
+      },
+      "sourcesSupported": [
+        "PDF",
+        "EPUB/EPUB3",
+        "MOBI",
+        "DJVU",
+        "FB2/FB2.ZIP",
+        "TXT",
+        "RTF",
+        "AZW/AZW3",
+        "HTML",
+        "ODT",
+        "XPS",
+        "CBZ/CBR",
+        "TIFF",
+        "PDB",
+        "MHT",
+        "OPDS catalogs"
+      ],
+      "extraction": {
+        "engine": "n/a - file library only (OPDS catalogs)",
+        "readAlongHighlight": "no",
+        "autoScroll": "yes (Musician's mode / autoscroll)",
+        "autoNextChapter": "n/a",
+        "notes": "Custom CSS input, vertical-scroll lock, single-page view of spreads."
+      },
+      "library": {
+        "library": "auto-scan folders, browse, recent, filters",
+        "bookmarks": "bookmarks/annotations",
+        "progressSync": "Google Drive sync",
+        "notes": "Import/export settings, session auto-backup."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "volume keys configurable",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": "Built-in media player for TTS."
+      },
+      "ux": {
+        "themes": "day/night, custom backgrounds/fonts",
+        "typography": "custom fonts/CSS, RTL support",
+        "translation": "online translators, dictionaries",
+        "dictionary": "online + offline dictionaries",
+        "widgets": "unknown",
+        "notes": "Musician's mode with configurable scroll speed."
+      },
+      "privacy": {
+        "ads": "yes in free build",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "Play Data safety declares possible sharing with third parties"
+      },
+      "strengths": [
+        "GPL-3.0 open source: architecture is readable and license-safe to study",
+        "Huge format list with OPDS catalogs",
+        "Free with a cheap one-time PRO ($5.99)",
+        "Ships on F-Droid as well as Play"
+      ],
+      "weaknesses": [
+        "Project is frozen: README says development/support stopped",
+        "3.98 rating - UX complaints (phantom progress bar loses place)",
+        "Ads in the free build"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "format coverage",
+          "customization",
+          "dictionary/translation"
+        ],
+        "complaints": [
+          "progress bar swipe loses the page",
+          "bookmark/highlight visibility",
+          "ads"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.foobnix.pdf.reader",
+          "supports": "installs 10M+, rating 3.98/137,891, format list, TTS wording, ads badge"
+        },
+        {
+          "url": "https://github.com/foobnix/LibreraReader",
+          "supports": "GPL-3.0 LICENSE.txt, 4,952 stars, README 'development and support of Librera is frozen'"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.foobnix.pro.pdf.reader",
+          "supports": "Librera PRO price $5.99, 50K+ installs, 4.43 rating"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "TTS Reader by Librera",
+      "package": "tts.reader",
+      "developer": "Librera",
+      "storeUrl": "https://play.google.com/store/apps/details?id=tts.reader",
+      "tier": "freemium",
+      "businessModel": "free+ads",
+      "pricing": {
+        "freeTier": "full TTS reader with ads",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "unknown (no IAP range on page)",
+        "currency": "",
+        "notes": "Ad-supported; description does not list a paid unlock."
+      },
+      "popularity": {
+        "installs": "1,000,000+",
+        "rating": "3.57",
+        "ratingsCount": 12405,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "system",
+        "engines": [
+          "any installed Android TTS engine"
+        ],
+        "voices": "engine-dependent",
+        "languages": "engine-dependent",
+        "offline": "partial",
+        "cloning": "no",
+        "speedControl": "yes",
+        "streaming": "unknown",
+        "notes": "Adds punctuation pauses, sentence resume, skip-symbol rules, WAV export, @Voice RegEx .txt compatibility."
+      },
+      "sourcesSupported": [
+        "EPUB",
+        "MOBI",
+        "TXT",
+        "FB2",
+        "PDF",
+        "DJVU",
+        "RTF",
+        "AZW",
+        "HTML",
+        "ODT",
+        "web pages shared from other apps"
+      ],
+      "extraction": {
+        "engine": "file library + share-sheet intake of web pages (no browser)",
+        "readAlongHighlight": "no",
+        "autoScroll": "unknown",
+        "autoNextChapter": "n/a",
+        "notes": "Based on Librera Book Reader Professional."
+      },
+      "library": {
+        "library": "search library, favorites, recent, file manager",
+        "bookmarks": "yes",
+        "progressSync": "no",
+        "notes": "Remote bookmarks via headset start/stop button."
+      },
+      "playback": {
+        "screenOff": "yes ('Listen to books in the background with your screen turned off')",
+        "mediaSession": "yes ('Status-bar and lock-screen notification w/ controls')",
+        "notification": "yes",
+        "headsetKeys": "yes",
+        "sleepTimer": "yes",
+        "androidAuto": "no",
+        "notes": "Bluetooth headset compatible."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "customizable fonts",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Skip unwanted symbols; expressive breaks at punctuation."
+      },
+      "privacy": {
+        "ads": "yes",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "Play Data safety declares possible sharing with third parties"
+      },
+      "strengths": [
+        "Purpose-built TTS reader: screen-off, lock-screen controls, sleep timer, WAV export",
+        "Reads almost any file format out loud",
+        "Headset remote bookmarks",
+        "Free with ads"
+      ],
+      "weaknesses": [
+        "3.57 rating - weakest of the Librera family",
+        "PDF zoom/pan and highlight persistence complaints",
+        "No browser/URL extraction",
+        "No neural voices"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "reads any format",
+          "voice/speed adjustment"
+        ],
+        "complaints": [
+          "highlighting not saved",
+          "zooming breaks the page view",
+          "tags don't stick"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=tts.reader",
+          "supports": "installs 1M+, rating 3.57/12,405, quoted TTS feature list incl. background/screen-off, lockscreen controls, WAV export"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "AlReader",
+      "package": "com.neverland.alreader",
+      "developer": "Alan.AlReaderX",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.neverland.alreader",
+      "tier": "free",
+      "businessModel": "free",
+      "pricing": {
+        "freeTier": "entire app, no ads, no in-app purchases",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "",
+        "currency": "",
+        "notes": "Freeware; official site offers direct APK downloads."
+      },
+      "popularity": {
+        "installs": "5,000,000+",
+        "rating": "4.34",
+        "ratingsCount": 105236,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "Windows"
+      ],
+      "tts": {
+        "engineType": "system",
+        "engines": [
+          "Android system TTS"
+        ],
+        "voices": "device voices",
+        "languages": "device-dependent",
+        "offline": "yes",
+        "cloning": "no",
+        "speedControl": "engine-dependent",
+        "streaming": "unknown",
+        "notes": "Description: 'Support Text-To-Speech (TTS) (permission to the calls need to stop tts while calling)'. Reviewers praise uncommon-word pronunciation."
+      },
+      "sourcesSupported": [
+        "FB2/FB3/FBZ",
+        "TXT",
+        "EPUB (no DRM)",
+        "HTML",
+        "DOC/DOCX",
+        "ODT",
+        "RTF",
+        "MOBI (no DRM)",
+        "PRC",
+        "TCR",
+        "ZIP/GZ archives",
+        "OPDS network libraries"
+      ],
+      "extraction": {
+        "engine": "n/a - local files + OPDS",
+        "readAlongHighlight": "no",
+        "autoScroll": "yes (autoscroll 'wave' and 'slide')",
+        "autoNextChapter": "n/a",
+        "notes": "Four independent display profiles; footnotes on page; 20-language hyphenation."
+      },
+      "library": {
+        "library": "local library sorted by author/series/year/genre",
+        "bookmarks": "yes",
+        "progressSync": "no",
+        "notes": "External dictionaries; FB2/TXT editing."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": "TTS pauses for incoming calls (per description)."
+      },
+      "ux": {
+        "themes": "4 profiles with independent font/color/brightness/gamma",
+        "typography": "per-style configuration",
+        "translation": "external dictionaries",
+        "dictionary": "external dictionaries",
+        "widgets": "unknown",
+        "notes": "3D paging animation, initial letters."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "Play Data safety: 'No data collected', no data shared"
+      },
+      "strengths": [
+        "Completely free, no ads, no IAP",
+        "Free and open-ish ecosystem: direct APK downloads from alreader.com",
+        "Excellent text rendering controls and dictionaries",
+        "TTS quality praised for names/made-up words"
+      ],
+      "weaknesses": [
+        "Last Play update 2021-02-24 - effectively unmaintained",
+        "Dated UI and English manual gaps",
+        "No web extraction",
+        "No background/notification TTS guarantees documented"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "stability over a decade",
+          "TTS pronunciation/prosody",
+          "autoscroll for transcripts"
+        ],
+        "complaints": [
+          "steep learning curve",
+          "scroll smoothness",
+          "no English manual"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.neverland.alreader",
+          "supports": "installs 5M+, rating 4.34/105,236, last update Feb 24 2021, TTS support line, format list"
+        },
+        {
+          "url": "https://alreader.com/",
+          "supports": "official site with direct APK download"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "PocketBook reader",
+      "package": "com.obreey.reader",
+      "developer": "Pocketbook International SA",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.obreey.reader",
+      "tier": "free",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "free reader, no ads, no registration",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Play page shows an in-app purchase range of $0.49 - $354.99 per item (store/audiobook purchases), not a reader subscription."
+      },
+      "popularity": {
+        "installs": "10,000,000+",
+        "rating": "4.23",
+        "ratingsCount": 102304,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS"
+      ],
+      "tts": {
+        "engineType": "system",
+        "engines": [
+          "Android system TTS"
+        ],
+        "voices": "device voices",
+        "languages": "device-dependent",
+        "offline": "yes",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Description lists TTS (text-to-speech) among adjustable reading settings; audiobook support separate."
+      },
+      "sourcesSupported": [
+        "26 formats incl. EPUB",
+        "PDF",
+        "FB2",
+        "MOBI",
+        "DJVU",
+        "DRM/LCP-protected books",
+        "audiobooks",
+        "comics/manga"
+      ],
+      "extraction": {
+        "engine": "n/a - local files + built-in free-book store",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "n/a",
+        "autoNextChapter": "n/a",
+        "notes": "Free cloud storage and cross-device sync claimed in description."
+      },
+      "library": {
+        "library": "library, collections by author/topic, store",
+        "bookmarks": "yes + notes",
+        "progressSync": "yes (automatic sync across devices)",
+        "notes": "LCP/DRM support for purchased books."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": "Audiobook player included."
+      },
+      "ux": {
+        "themes": "themes, night mode",
+        "typography": "fonts/spacing/margins",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Comics/manga mode."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "no ('without ads and registration')",
+        "dataCollection": "Play Data safety: no data shared with third parties"
+      },
+      "strengths": [
+        "Free, no ads, no registration; 10M+ installs",
+        "26 formats plus DRM/LCP and audiobooks",
+        "Free cloud storage + automatic cross-device sync",
+        "TTS included at no cost"
+      ],
+      "weaknesses": [
+        "Store/DRM ecosystem focus, not a web reader",
+        "Search lacks result preview (review)",
+        "No dyslexia-friendly font (review)",
+        "No web page extraction"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "handles very large files",
+          "simple import",
+          "sync"
+        ],
+        "complaints": [
+          "search doesn't preview results",
+          "missing OpenDyslexic-style font",
+          "cannot open multiple books in one window"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.obreey.reader",
+          "supports": "installs 10M+, rating 4.23/102,304, version 5.65.0.39561, update Jul 28 2026, 26 formats/DRM/LCP/TTS quotes"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "eReader Prestigio",
+      "package": "com.prestigio.ereader",
+      "developer": "Prestigio development team",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.prestigio.ereader",
+      "tier": "freemium",
+      "businessModel": "free+ads",
+      "pricing": {
+        "freeTier": "reader + store with ads",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Play page shows ads badge and an in-app purchase range $0.99 - $99.99 per item."
+      },
+      "popularity": {
+        "installs": "10,000,000+",
+        "rating": "4.63",
+        "ratingsCount": 556687,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "hybrid",
+        "engines": [
+          "Android system TTS",
+          "in-app purchasable voices (per reviews)"
+        ],
+        "voices": "system voices + optional purchased voices",
+        "languages": "multiple (per description)",
+        "offline": "partial",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Description: 'Text-To-Speech (read along) functionality'; reviews mention buying special voices or using Google voice."
+      },
+      "sourcesSupported": [
+        "EPUB",
+        "FB2",
+        "PDF",
+        "TXT",
+        "in-app store of 50,000+ books",
+        "cloud import (Drive/OneDrive/Dropbox)"
+      ],
+      "extraction": {
+        "engine": "n/a - local files + store",
+        "readAlongHighlight": "yes (read along)",
+        "autoScroll": "n/a",
+        "autoNextChapter": "n/a",
+        "notes": "Multi-language UI in 25+ languages."
+      },
+      "library": {
+        "library": "shelves, collections, file manager, recent books",
+        "bookmarks": "yes",
+        "progressSync": "yes via My Prestigio account (text files)",
+        "notes": "Home-screen widget for library."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": "Audio book player; users report audio stopping at random."
+      },
+      "ux": {
+        "themes": "shelf themes/custom backgrounds",
+        "typography": "multiple fonts/sizes",
+        "translation": "Google Translate integration",
+        "dictionary": "ColorDict + others",
+        "widgets": "yes (home-screen widget)",
+        "notes": "Night mode, in-book menu."
+      },
+      "privacy": {
+        "ads": "yes",
+        "trackers": "unknown",
+        "accountRequired": "optional (My Prestigio account for sync)",
+        "dataCollection": "Play Data safety declares possible sharing with third parties"
+      },
+      "strengths": [
+        "4.63 rating at 10M+ installs - highest satisfaction among the free multi-format readers with TTS",
+        "Read-along TTS across 25+ UI languages",
+        "Built-in 50,000-book store",
+        "Widgets and cloud import"
+      ],
+      "weaknesses": [
+        "Ads + paid voices",
+        "Random audio shutdown reported by users",
+        "Some TTS voices broken (English male)",
+        "Account needed for cross-device sync"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "beautiful library UI",
+          "works with many formats",
+          "multi-language dictionary/translate"
+        ],
+        "complaints": [
+          "audio stops randomly",
+          "English male voices broken",
+          "account/sync friction"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.prestigio.ereader",
+          "supports": "installs 10M+, rating 4.63/556,687, ads+$0.99-$99.99 IAP badges, TTS/read-along wording, user complaints"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Audify read aloud web browser",
+      "package": "com.tangerinesoftwarehouse.audify",
+      "developer": "Tangerine Software House",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.tangerinesoftwarehouse.audify",
+      "tier": "freemium",
+      "businessModel": "free+ads",
+      "pricing": {
+        "freeTier": "all listed features usable with ads (reviewer: 'Even free all the features work')",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "ad-free version via in-app purchase (exact price unknown; Play IAP range $0.99 - $104.99)",
+        "currency": "USD",
+        "notes": "Description asks users to 'Buy ad-free version'; reviews describe a one-time purchase."
+      },
+      "popularity": {
+        "installs": "500,000+",
+        "rating": "4.45",
+        "ratingsCount": 4734,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS"
+      ],
+      "tts": {
+        "engineType": "system",
+        "engines": [
+          "Android system voices (inferred - no cloud engine named)"
+        ],
+        "voices": "various system voices",
+        "languages": "system + page translation",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "yes",
+        "streaming": "unknown",
+        "notes": "Pronunciation correction and skip words/headers/footers; converts text to WAV audio."
+      },
+      "sourcesSupported": [
+        "web pages (HTML) e.g. news, web novels",
+        "EPUB",
+        "PDF",
+        "TXT",
+        "FB2",
+        "RTF",
+        "DOCX",
+        "downloaded/imported files",
+        "cloud-server imports"
+      ],
+      "extraction": {
+        "engine": "in-app browser + reader mode (own HTML extraction; no reader-mode visibility)",
+        "readAlongHighlight": "yes ('Highlight words one by one while reading aloud')",
+        "autoScroll": "unknown",
+        "autoNextChapter": "yes ('automatic page navigation ... next page button of a web novel automatically')",
+        "notes": "Multi-tab; skip header/footer and specific words; hide images; repeat sentence/paragraph."
+      },
+      "library": {
+        "library": "playlist, downloads, bookmark categories",
+        "bookmarks": "yes (user-defined categories)",
+        "progressSync": "unknown",
+        "notes": "Import from folders and cloud server."
+      },
+      "playback": {
+        "screenOff": "unknown (no claim in description/site)",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "yes",
+        "androidAuto": "no",
+        "notes": "Own FAQ troubleshooting entry 'Q: It cannot read aloud suddenly' suggests restart - reliability gap."
+      },
+      "ux": {
+        "themes": "night mode, blue-light filter, brightness",
+        "typography": "font size/bold, full screen, hide images",
+        "translation": "translate web pages (multiple languages)",
+        "dictionary": "unknown",
+        "widgets": "no",
+        "notes": "Search in page, custom search engines, double-tap-to-read from position."
+      },
+      "privacy": {
+        "ads": "yes",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "Play Data safety declares possible sharing with third parties; data encrypted in transit"
+      },
+      "strengths": [
+        "Closest architectural match: browser + read-aloud + auto-next-page for web novels",
+        "Word-by-word highlighting while reading",
+        "Pronunciation correction + skip rules for serialized fiction",
+        "Multi-tab and WAV export; also on iOS/desktop"
+      ],
+      "weaknesses": [
+        "Reliability: own FAQ admits read-aloud stops suddenly",
+        "Skip words/headers support reported flaky; reader mode leaks ad hyperlinks",
+        "No screen-off/foreground-service claim",
+        "Only 500K+ installs; ads unless paid"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "all features in free build",
+          "non-intrusive ads",
+          "one-time purchase",
+          "multi-tab"
+        ],
+        "complaints": [
+          "skip words feature stopped working",
+          "skip header/paragraph needed",
+          "reader mode includes hyperlinks from ads"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.tangerinesoftwarehouse.audify",
+          "supports": "installs 500K+, rating 4.45/4,734, version 11.5.88, Aug 29 2026 update, feature list, FAQ 'cannot read aloud suddenly', reviews"
+        },
+        {
+          "url": "https://www.tangerinesoftwarehouse.com/",
+          "supports": "official feature list: auto next page, WAV conversion, translate, auto-read from touch position"
+        },
+        {
+          "url": "https://www.tangerinesoftwarehouse.com/download/",
+          "supports": "direct APK downloads incl. audify11.5.88 (2026-09-08)"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Listening: Text to Speech",
+      "package": "io.listening.main",
+      "developer": "James Pankaew (Listening.com)",
+      "storeUrl": "https://play.google.com/store/apps/details?id=io.listening.main",
+      "tier": "freemium",
+      "businessModel": "subscription",
+      "pricing": {
+        "freeTier": "3-day free trial only (new subscribers)",
+        "monthly": "$12.99 USD/month",
+        "annual": "$59.00 USD/year ($4.92/month, 'SAVE 62%')",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Web pricing page shows the same two plans; Play IAP range $6.99 - $139.99 per item suggests store pricing differs."
+      },
+      "popularity": {
+        "installs": "100,000+",
+        "rating": "4.03",
+        "ratingsCount": 7312,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Web",
+        "Chrome extension",
+        "Desktop"
+      ],
+      "tts": {
+        "engineType": "cloud",
+        "engines": [
+          "Listening.com cloud voices"
+        ],
+        "voices": "selectable natural voices",
+        "languages": "unknown",
+        "offline": "no",
+        "cloning": "unknown",
+        "speedControl": "yes (0.5x-4x)",
+        "streaming": "unknown",
+        "notes": "Cloud service also does PDF/papers extraction, Zotero integration, read-along notes."
+      },
+      "sourcesSupported": [
+        "articles/web pages",
+        "PDFs",
+        "Word documents",
+        "research papers",
+        "eBooks",
+        "Zotero library"
+      ],
+      "extraction": {
+        "engine": "server-side conversion of pasted URLs/PDFs into audio",
+        "readAlongHighlight": "yes ('Read along and take notes')",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "One-click note-taking while listening."
+      },
+      "library": {
+        "library": "saved articles + Zotero",
+        "bookmarks": "notes",
+        "progressSync": "cross-device account",
+        "notes": ""
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": "Native mobile + web apps."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Optimized for students/researchers."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "yes (subscription account)",
+        "dataCollection": "Play Data safety declares possible sharing with third parties"
+      },
+      "strengths": [
+        "Cloud natural voices with paper/PDF handling",
+        "Cross-platform (Android/iOS/web/extension/desktop)",
+        "Zotero + note-taking workflow",
+        "0.5x-4x speed"
+      ],
+      "weaknesses": [
+        "Only a 3-day trial - no lasting free tier",
+        "Reliability complaints: freezes, mispronunciations, random spell-outs",
+        "Requires account and cloud upload",
+        "Expensive relative to one-time free competitors"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "helps ADHD/focus users finish readings",
+          "natural voices"
+        ],
+        "complaints": [
+          "freezes every few minutes",
+          "randomly spells words",
+          "forced sign-out",
+          "footnote handling wrong",
+          "not worth the price"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=io.listening.main",
+          "supports": "installs 100K+, rating 4.03/7,312, version 6.0.4, Oct 14 2026 update, subscription wording, user complaints"
+        },
+        {
+          "url": "https://listening.com/pricing",
+          "supports": "$12.99/month, $59/year ($4.92/month), 3-day free trial for new subscribers only"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Google Reading mode",
+      "package": "com.google.android.accessibility.reader",
+      "developer": "Google LLC",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.google.android.accessibility.reader",
+      "tier": "free",
+      "businessModel": "free",
+      "pricing": {
+        "freeTier": "entire app, Google accessibility app, no ads, no purchases",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "",
+        "currency": "",
+        "notes": ""
+      },
+      "popularity": {
+        "installs": "1,000,000+",
+        "rating": "2.76",
+        "ratingsCount": 6129,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [
+          "Google long-form voices (implementation not documented)"
+        ],
+        "voices": "selection of 'high quality long-form voices'",
+        "languages": "unknown",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "yes",
+        "streaming": "unknown",
+        "notes": "Description: 'Choose from a selection of high quality long-form voices. Easily accessible audio control options to rewind, fast forward, and change reading speed.'"
+      },
+      "sourcesSupported": [
+        "text in other apps (accessibility reading view)",
+        "web pages"
+      ],
+      "extraction": {
+        "engine": "accessibility service re-renders page text into a clean reading view",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "no",
+        "notes": "Integrates via Quick Settings shortcut; designed with blind/low-vision and dyslexic users."
+      },
+      "library": {
+        "library": "no",
+        "bookmarks": "no",
+        "progressSync": "no",
+        "notes": ""
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": "Audio controls (rewind/FF/speed) in the reading view."
+      },
+      "ux": {
+        "themes": "customizable contrast",
+        "typography": "text size, font types",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "Quick Settings tile",
+        "notes": "Removes page clutter; 'focused reading view'."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "Play Data safety: app may collect App activity, App info and performance, and Device or other IDs"
+      },
+      "strengths": [
+        "Free Google accessibility app, no ads",
+        "Works across apps and web pages via accessibility APIs",
+        "Designed for low-vision/dyslexic users",
+        "Long-form TTS voices built in"
+      ],
+      "weaknesses": [
+        "2.76 rating - the worst in this set",
+        "Reliability: stops working after hours, needs reset",
+        "Floating icon missing on newer Pixels (Quick Settings workaround)",
+        "Long pauses at sentence ends reported",
+        "Collects app activity/device IDs"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "no ads",
+          "just reads stories at adjustable speed",
+          "decent voice options"
+        ],
+        "complaints": [
+          "breaks after a few hours and must be reset",
+          "no floating icon on Pixel 9a",
+          "5-10s (sometimes 30s) pause at every period",
+          "voices degrade over time"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.google.android.accessibility.reader",
+          "supports": "installs 1M+, rating 2.76/6,129, version 1.3.1, Sep 21 2026 update, TTS/voices wording, user reviews, Data safety"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Microsoft Edge Read aloud",
+      "package": "",
+      "developer": "Microsoft",
+      "storeUrl": "https://www.microsoft.com/en-us/edge/features/read-aloud",
+      "tier": "browser-native",
+      "businessModel": "free",
+      "pricing": {
+        "freeTier": "free browser feature",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "",
+        "currency": "",
+        "notes": "Bundled with Edge; no separate purchase."
+      },
+      "popularity": {
+        "installs": "unknown (bundled with Edge; Play listing exists)",
+        "rating": "unknown",
+        "ratingsCount": 0,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Windows",
+        "macOS",
+        "Linux"
+      ],
+      "tts": {
+        "engineType": "hybrid",
+        "engines": [
+          "Microsoft natural cloud voices",
+          "offline voices (fewer options)"
+        ],
+        "voices": "natural-sounding voices and accents (cloud); reduced set offline",
+        "languages": "multiple languages/accents per Microsoft",
+        "offline": "partial",
+        "cloning": "no",
+        "speedControl": "yes",
+        "streaming": "unknown",
+        "notes": "Official page: 'Read aloud is available in both online and offline modes, however, only a few voice options are available while offline.'"
+      },
+      "sourcesSupported": [
+        "any web page rendered in Edge",
+        "selected text ('Read aloud selection')",
+        "Immersive Reader content"
+      ],
+      "extraction": {
+        "engine": "browser DOM / Immersive Reader extraction",
+        "readAlongHighlight": "yes (Edge highlights the spoken sentence)",
+        "autoScroll": "unknown",
+        "autoNextChapter": "no",
+        "notes": "Launch via More tools > Read aloud; works outside Immersive Reader too."
+      },
+      "library": {
+        "library": "no",
+        "bookmarks": "browser favorites only",
+        "progressSync": "browser sync",
+        "notes": ""
+      },
+      "playback": {
+        "screenOff": "unknown (OS-level media controls; not documented on the page)",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": "Available on Edge mobile (iOS/Android) per FAQ."
+      },
+      "ux": {
+        "themes": "browser + Immersive Reader themes",
+        "typography": "Immersive Reader text controls",
+        "translation": "Edge translate",
+        "dictionary": "Edge dictionary (browser feature)",
+        "widgets": "no",
+        "notes": "Page says feature availability varies by device/market/version."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "not documented on the feature page"
+      },
+      "strengths": [
+        "Free, no install, excellent natural voices",
+        "Online + offline modes",
+        "Sentence highlighting while reading",
+        "Available on mobile Edge"
+      ],
+      "weaknesses": [
+        "Offline voice set is limited",
+        "Per-page only: no auto-next-chapter for serialized novels",
+        "No sleep timer or book-style library",
+        "Feature availability varies by market/device"
+      ],
+      "reviewThemes": {
+        "praise": [],
+        "complaints": []
+      },
+      "sources": [
+        {
+          "url": "https://www.microsoft.com/en-us/edge/features/read-aloud",
+          "supports": "official feature page quotes on online/offline modes, natural voices, mobile availability, selection read aloud"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Chrome 'Listen to this page'",
+      "package": "",
+      "developer": "Google",
+      "storeUrl": "https://support.google.com/chrome/answer/14768725?hl=en",
+      "tier": "browser-native",
+      "businessModel": "free",
+      "pricing": {
+        "freeTier": "free Chrome feature",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "",
+        "currency": "",
+        "notes": "Requires 'Make searches and browsing better' to be on (data-sharing setting)."
+      },
+      "popularity": {
+        "installs": "unknown (bundled with Chrome for Android)",
+        "rating": "unknown",
+        "ratingsCount": 0,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "cloud",
+        "engines": [
+          "Google playback voices (Standard)",
+          "AI playback (podcast-like, English only)"
+        ],
+        "voices": "selectable voices with preview",
+        "languages": "25 languages listed for Standard playback (Arabic, Bengali, Chinese, English, French, German, Greek, Hebrew, Hindi, Indonesian, Italian, Japanese, Malayalam, Marathi, Polish, Portuguese, Romanian, Russian, Spanish, Tamil, Telugu, Thai, Turkish, Ukrainian, Vietnamese)",
+        "offline": "unknown (no offline mode documented)",
+        "cloning": "no",
+        "speedControl": "yes",
+        "streaming": "unknown",
+        "notes": "AI playback generates 'podcast-like conversations from the page' and is default when available; English-only requirement for AI playback."
+      },
+      "sourcesSupported": [
+        "web pages in Chrome (Standard: 'Reads all the words on the page')"
+      ],
+      "extraction": {
+        "engine": "Chrome server-side extraction; help doc: feature 'isn't available yet on all websites'",
+        "readAlongHighlight": "yes ('Turn on or off text highlighting & auto scroll')",
+        "autoScroll": "yes (same toggle)",
+        "autoNextChapter": "unknown",
+        "notes": "Users report the menu item is missing on some builds/sites (community threads)."
+      },
+      "library": {
+        "library": "no",
+        "bookmarks": "browser bookmarks only",
+        "progressSync": "browser sync",
+        "notes": ""
+      },
+      "playback": {
+        "screenOff": "yes ('You can continue to listen to text even if your screen is locked')",
+        "mediaSession": "unknown (in-browser player)",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": "Keep browsing/switching tabs while listening."
+      },
+      "ux": {
+        "themes": "browser themes",
+        "typography": "browser text scaling",
+        "translation": "Chrome translate",
+        "dictionary": "Chrome touch-to-search",
+        "widgets": "no",
+        "notes": "Playback modes: Standard vs AI (podcast-like)."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "feature requires 'Make searches and browsing better' (page content sent to Google)"
+      },
+      "strengths": [
+        "Free, zero install",
+        "Natural cloud voices with 25 languages",
+        "Locked-screen playback explicitly documented",
+        "Auto-scroll + highlighting, voice preview, speed control",
+        "AI podcast-style playback mode"
+      ],
+      "weaknesses": [
+        "'Not available yet on all websites' - extraction coverage is the gap",
+        "No auto-next-chapter for serialized novel sites",
+        "Requires Google data-sharing setting",
+        "AI playback English-only",
+        "No sleep timer/library"
+      ],
+      "reviewThemes": {
+        "praise": [],
+        "complaints": [
+          "feature/menu missing for months on some builds (community thread)",
+          "not available on many sites"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://support.google.com/chrome/answer/14768725?hl=en",
+          "supports": "official help doc: Standard vs AI playback, 25-language list, locked-screen playback, highlighting & auto scroll, not all websites, data-sharing setting"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Legado (开源阅读 / 阅读3.0)",
+      "package": "io.legado.app.release",
+      "developer": "gedoor (community)",
+      "storeUrl": "https://github.com/gedoor/legado",
+      "tier": "open-source",
+      "businessModel": "free",
+      "pricing": {
+        "freeTier": "free and open source, no ads (per README)",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "",
+        "currency": "",
+        "notes": "No app-store listing found: both io.legado.app.release and io.legado.play.release return Not Found on Google Play (2026-10-24)."
+      },
+      "popularity": {
+        "installs": "unknown (not on Google Play)",
+        "rating": "unknown",
+        "ratingsCount": 0,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "hybrid",
+        "engines": [
+          "Android system TTS",
+          "user-imported online TTS engines ('在线朗读引擎')"
+        ],
+        "voices": "engine-dependent",
+        "languages": "engine-dependent",
+        "offline": "partial",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Feature list from an active fork's README; upstream docs unreachable (repo emptied)."
+      },
+      "sourcesSupported": [
+        "user-defined book sources that scrape web pages",
+        "local TXT",
+        "local EPUB",
+        "RSS/subscriptions"
+      ],
+      "extraction": {
+        "engine": "user-authored book-source rules (regex/XPath) scrape and clean site HTML",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "yes (multiple page-turn modes incl. scroll)",
+        "autoNextChapter": "yes (book-source pipeline fetches next chapter)",
+        "notes": "Book-source rule engine is the defining feature - and the reason for the takedown."
+      },
+      "library": {
+        "library": "bookshelf (list/grid) + book sources",
+        "bookmarks": "yes",
+        "progressSync": "unknown (plugins/web API)",
+        "notes": "Replace/clean rules; subscription feeds; custom themes/fonts; simplified/traditional toggle."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": "TTS engine import path implies read-aloud support."
+      },
+      "ux": {
+        "themes": "highly customizable (font/color/background/spacing)",
+        "typography": "yes",
+        "translation": "unknown",
+        "dictionary": "dictionary rules",
+        "widgets": "unknown",
+        "notes": ""
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "47,154 GitHub stars - the most popular open-source novel reader",
+        "Extremely powerful user-defined source/scraping engine and TTS engine import",
+        "No ads, Kotlin codebase"
+      ],
+      "weaknesses": [
+        "Upstream repo emptied: only a Chinese legal notice + image remain",
+        "Notice says the project involved infringement and content was deleted (taken down)",
+        "No Play Store distribution; forks only",
+        "No license file observed - 'all rights reserved' by default: not safe to reuse code",
+        "Scraping copyrighted serialized fiction is exactly the legal risk to avoid"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "unmatched source/rule customization (community)"
+        ],
+        "complaints": []
+      },
+      "sources": [
+        {
+          "url": "https://api.github.com/repos/gedoor/legado",
+          "supports": "47,154 stars, Kotlin, license null, last push 2026-05-27"
+        },
+        {
+          "url": "https://api.github.com/repos/gedoor/legado/contents/",
+          "supports": "repo root now contains only README.md and 公告链接.png (source deleted)"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/gedoor/legado/main/README.md",
+          "supports": "Chinese legal notice about infringement and deletion of project content (2026)"
+        },
+        {
+          "url": "https://github.com/huajideshutiao/legado",
+          "supports": "active fork (310 stars) whose README carries the original feature list incl. custom book sources and online TTS engine import"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=io.legado.play.release",
+          "supports": "HTTP 404 - no Play Store listing observed 2026-10-24"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "KOReader",
+      "package": "org.koreader.launcher",
+      "developer": "KOReader community",
+      "storeUrl": "https://github.com/koreader/koreader/releases",
+      "tier": "open-source",
+      "businessModel": "free",
+      "pricing": {
+        "freeTier": "free (AGPL-3.0)",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "",
+        "currency": "",
+        "notes": "Not on Google Play; APKs on GitHub releases; F-Droid main repo returns NOT_FOUND for org.koreader.launcher."
+      },
+      "popularity": {
+        "installs": "unknown (sideload only)",
+        "rating": "unknown",
+        "ratingsCount": 0,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "Linux",
+        "Kindle",
+        "Kobo",
+        "PocketBook",
+        "Cervantes",
+        "reMarkable"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [],
+        "voices": "",
+        "languages": "",
+        "offline": "",
+        "cloning": "no",
+        "speedControl": "",
+        "streaming": "",
+        "notes": "No built-in TTS found: no tts plugin in plugins/, no TTS mention in README/user guide, none in the last 60 release notes (searched 2026-10-24). Third-party TTS not investigated."
+      },
+      "sourcesSupported": [
+        "PDF",
+        "DjVu",
+        "CBT/CBZ",
+        "EPUB",
+        "FB2",
+        "MOBI",
+        "DOC",
+        "RTF",
+        "HTML",
+        "CHM",
+        "TXT",
+        "ZIP archives"
+      ],
+      "extraction": {
+        "engine": "n/a - local files, OPDS, calibre integration",
+        "readAlongHighlight": "no",
+        "autoScroll": "n/a",
+        "autoNextChapter": "n/a",
+        "notes": "E-ink optimized UI, plugins for dictionaries/Wikipedia/translate/OPDS/RSS."
+      },
+      "library": {
+        "library": "file browser + history/collections",
+        "bookmarks": "yes (highlights/notes)",
+        "progressSync": "yes (kosync plugin / KOReader Sync)",
+        "notes": "FTP client, SSH server, OTA updates."
+      },
+      "playback": {
+        "screenOff": "n/a",
+        "mediaSession": "n/a",
+        "notification": "n/a",
+        "headsetKeys": "n/a",
+        "sleepTimer": "n/a",
+        "androidAuto": "no",
+        "notes": "No audio subsystem in the Android build that we could find."
+      },
+      "ux": {
+        "themes": "e-ink tuned themes, adjustable contrast",
+        "typography": "margins/line spacing/fonts/hyphenation",
+        "translation": "Google Translate integration",
+        "dictionary": "StarDict + Wikipedia",
+        "widgets": "no",
+        "notes": "K2pdfopt reflow for scanned PDFs."
+      },
+      "privacy": {
+        "ads": "no",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "AGPL-3.0 open source with 30,557 stars",
+        "Best-in-class document/typesetting engine + K2pdfopt reflow",
+        "Runs on e-ink devices and Android; portable Lua codebase",
+        "E-ink optimized, plugin architecture (OPDS, dictionaries, sync)"
+      ],
+      "weaknesses": [
+        "No built-in read-aloud (TTS) - it is a reading app, not a listening app",
+        "Not on Google Play; sideload only (install friction)",
+        "E-ink-first UI feels dated on phones",
+        "AGPL-3.0: code reuse would force copyleft"
+      ],
+      "reviewThemes": {
+        "praise": [],
+        "complaints": []
+      },
+      "sources": [
+        {
+          "url": "https://github.com/koreader/koreader",
+          "supports": "AGPL-3.0, 30,557 stars, README format list and features"
+        },
+        {
+          "url": "https://github.com/koreader/koreader/wiki/Installation-on-Android-devices",
+          "supports": "'KOReader isn't currently available on the Google Playstore.'"
+        },
+        {
+          "url": "https://api.github.com/repos/koreader/koreader/releases/latest",
+          "supports": "v2026.07.1 (2026-08-01), android-arm64 APK 30,084,751 bytes"
+        },
+        {
+          "url": "https://api.github.com/repos/koreader/koreader/contents/plugins",
+          "supports": "plugin list has no tts plugin (37 plugins observed)"
+        },
+        {
+          "url": "https://f-droid.org/api/v1/packages/org.koreader.launcher",
+          "supports": "NOT_FOUND in main F-Droid repo"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "NekoSpeak (reference app, from repo docs)",
+      "package": "com.nekospeak.tts",
+      "developer": "siva-sub",
+      "storeUrl": "https://github.com/siva-sub/NekoSpeak",
+      "tier": "open-source",
+      "businessModel": "free",
+      "pricing": {
+        "freeTier": "free open-source APK",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "",
+        "currency": "",
+        "notes": "Facts here come from this repo's own RE docs (docs/re-natural-ai-voices.md), not from a fresh APK teardown (owned by another teammate)."
+      },
+      "popularity": {
+        "installs": "unknown",
+        "rating": "unknown",
+        "ratingsCount": 0,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "on-device",
+        "engines": [
+          "Kokoro",
+          "Kitten",
+          "Piper",
+          "Pocket",
+          "ONNX Runtime",
+          "Mimi codec"
+        ],
+        "voices": "model voices + zero-shot clone",
+        "languages": "English (Kokoro bundle)",
+        "offline": "yes",
+        "cloning": "yes (Pocket zero-shot from reference audio)",
+        "speedControl": "yes",
+        "streaming": "yes (per-batch callbacks)",
+        "notes": "MIT-licensed, ~88 MB arm64; direct ONNX Runtime integration; GTCRN denoiser bundled but repo docs say no call site applies it."
+      },
+      "sourcesSupported": [
+        "text shared/pasted from other apps",
+        "reference audio for cloning"
+      ],
+      "extraction": {
+        "engine": "none - reads text handed to it by other apps",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "n/a",
+        "autoNextChapter": "n/a",
+        "notes": "Repo docs: these apps 'never solve page extraction' - NovelSpeak's gap to win."
+      },
+      "library": {
+        "library": "unknown",
+        "bookmarks": "n/a",
+        "progressSync": "n/a",
+        "notes": ""
+      },
+      "playback": {
+        "screenOff": "yes (repo docs: TTS process/foreground service keeps audio alive)",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": ""
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "n/a",
+        "translation": "n/a",
+        "dictionary": "n/a",
+        "widgets": "no",
+        "notes": ""
+      },
+      "privacy": {
+        "ads": "unknown",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "MIT license: architecture is safe to learn from",
+        "On-device Kokoro + Pocket zero-shot cloning",
+        "Reference-clip preprocessing constants documented and reusable"
+      ],
+      "weaknesses": [
+        "No page extraction at all",
+        "No library/browser UX",
+        "Bundled celebrity voice packs are a legal problem the README itself flags"
+      ],
+      "reviewThemes": {
+        "praise": [],
+        "complaints": []
+      },
+      "sources": [
+        {
+          "url": "docs/re-natural-ai-voices.md",
+          "supports": "apps, versions, licenses (NekoSpeak MIT, HayaiTTS GPL-3.0), engines, architecture; accessed 2026-10-24"
+        },
+        {
+          "url": "OPTIMIZATIONS.md",
+          "supports": "verified numeric constants reused and the statement that no GPL code was copied"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "HayaiTTS (reference app, from repo docs)",
+      "package": "dev.ahmedmohamed.hayaitts",
+      "developer": "HayaiApp",
+      "storeUrl": "https://github.com/",
+      "tier": "open-source",
+      "businessModel": "free",
+      "pricing": {
+        "freeTier": "free open-source APK",
+        "monthly": "",
+        "annual": "",
+        "oneTime": "",
+        "currency": "",
+        "notes": "Facts from this repo's RE docs; version v2.5.1 (2026-06-15), 38 MB arm64."
+      },
+      "popularity": {
+        "installs": "unknown",
+        "rating": "unknown",
+        "ratingsCount": 0,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "on-device",
+        "engines": [
+          "sherpa-onnx wrapper: Piper, VITS, Matcha, Kokoro, Kitten, Supertonic, ZipVoice, Pocket"
+        ],
+        "voices": "model catalog + cloning",
+        "languages": "model-dependent",
+        "offline": "yes",
+        "cloning": "yes (sherpa GenerationConfig with reference audio)",
+        "speedControl": "yes",
+        "streaming": "unknown (repo docs: 2.5.1 calls blocking generate())",
+        "notes": "GPL-3.0: architecture/constants only, no code reuse."
+      },
+      "sourcesSupported": [
+        "text shared/pasted from other apps",
+        "reference audio for cloning"
+      ],
+      "extraction": {
+        "engine": "none - no page extraction",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "n/a",
+        "autoNextChapter": "n/a",
+        "notes": ""
+      },
+      "library": {
+        "library": "model/voice catalog with downloads + SHA-256",
+        "bookmarks": "n/a",
+        "progressSync": "n/a",
+        "notes": ""
+      },
+      "playback": {
+        "screenOff": "yes (repo docs: lives in TTS process/foreground service)",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "no",
+        "notes": ""
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "n/a",
+        "translation": "n/a",
+        "dictionary": "n/a",
+        "widgets": "no",
+        "notes": "Exposes synthesis threads and NNAPI hardware acceleration settings."
+      },
+      "privacy": {
+        "ads": "unknown",
+        "trackers": "unknown",
+        "accountRequired": "no",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "Model catalog + verified downloads UX worth emulating",
+        "sherpa-onnx route covers the most engines per MB",
+        "NNAPI/threads settings exposed to users"
+      ],
+      "weaknesses": [
+        "GPL-3.0 blocks code reuse",
+        "No streaming synthesis (blocking generate in 2.5.1)",
+        "2,000-char input cap (per repo re-analysis)"
+      ],
+      "reviewThemes": {
+        "praise": [],
+        "complaints": []
+      },
+      "sources": [
+        {
+          "url": "docs/re-natural-ai-voices.md",
+          "supports": "HayaiTTS version/package/license, sherpa-onnx engines, GenerationConfig, streaming correction; accessed 2026-10-24"
+        },
+        {
+          "url": "OPTIMIZATIONS.md",
+          "supports": "which constants came from HayaiTTS and the no-GPL-code-copy rule"
+        }
+      ],
+      "confidence": "high"
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.hyperionics.avar",
+      "accessed": "2026-10-24",
+      "supports": "@Voice installs 10M+, rating 4.28/137,634, v40.9.1, description/reviews"
+    },
+    {
+      "url": "https://www.hyperionics.com/atVoice/",
+      "accessed": "2026-10-24",
+      "supports": "@Voice Premium $15 one-time, free-with-ads, Android Auto plugin"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=org.readera",
+      "accessed": "2026-10-24",
+      "supports": "ReadEra installs 50M+, rating 4.86/1,597,738, no ads/no purchases"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=org.readera.premium",
+      "accessed": "2026-10-24",
+      "supports": "ReadEra Premium $14.99, background TTS, 100K+/4.81"
+    },
+    {
+      "url": "https://readera.org/",
+      "accessed": "2026-10-24",
+      "supports": "ReadEra free/no-ads claims, formats, user testimonial about listening aloud"
+    },
+    {
+      "url": "https://www.reddit.com/r/ReadEra/comments/1ouf0x7/text_to_speech/",
+      "accessed": "2026-10-24",
+      "supports": "community claim: ReadEra Premium uses plain Android TTS"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.foobnix.pdf.reader",
+      "accessed": "2026-10-24",
+      "supports": "Librera installs 10M+, rating 3.98/137,891, formats, TTS wording, ads"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.foobnix.pro.pdf.reader",
+      "accessed": "2026-10-24",
+      "supports": "Librera PRO $5.99 one-time, 50K+/4.43"
+    },
+    {
+      "url": "https://github.com/foobnix/LibreraReader",
+      "accessed": "2026-10-24",
+      "supports": "Librera GPL-3.0, 4,952 stars, 'development and support ... frozen' README note"
+    },
+    {
+      "url": "https://f-droid.org/api/v1/packages/com.foobnix.pro.pdf.reader",
+      "accessed": "2026-10-24",
+      "supports": "Librera PRO on F-Droid, version 10.0.0-fdroid"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=tts.reader",
+      "accessed": "2026-10-24",
+      "supports": "TTS Reader 1M+/3.57, screen-off + lockscreen controls + WAV export quotes"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.neverland.alreader",
+      "accessed": "2026-10-24",
+      "supports": "AlReader 5M+/4.34, last update Feb 24 2021, TTS support, formats"
+    },
+    {
+      "url": "https://alreader.com/",
+      "accessed": "2026-10-24",
+      "supports": "AlReader official site with direct APK download"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.obreey.reader",
+      "accessed": "2026-10-24",
+      "supports": "PocketBook 10M+/4.23, 26 formats, DRM/LCP, TTS, sync, no ads"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.prestigio.ereader",
+      "accessed": "2026-10-24",
+      "supports": "Prestigio 10M+/4.63, ads + IAP, read-along TTS, user complaints"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.tangerinesoftwarehouse.audify",
+      "accessed": "2026-10-24",
+      "supports": "Audify 500K+/4.45, v11.5.88, feature list, FAQ, reviews"
+    },
+    {
+      "url": "https://www.tangerinesoftwarehouse.com/",
+      "accessed": "2026-10-24",
+      "supports": "Audify official feature list (auto next page, WAV, translate, Multi-tab)"
+    },
+    {
+      "url": "https://www.tangerinesoftwarehouse.com/download/",
+      "accessed": "2026-10-24",
+      "supports": "Audify direct APK download history"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=io.listening.main",
+      "accessed": "2026-10-24",
+      "supports": "Listening 100K+/4.03, v6.0.4, subscription wording, complaints"
+    },
+    {
+      "url": "https://listening.com/pricing",
+      "accessed": "2026-10-24",
+      "supports": "Listening $12.99/month, $59/year ($4.92/mo), 3-day free trial"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.google.android.accessibility.reader",
+      "accessed": "2026-10-24",
+      "supports": "Reading mode 1M+/2.76, v1.3.1, TTS voices wording, reviews, data safety"
+    },
+    {
+      "url": "https://www.microsoft.com/en-us/edge/features/read-aloud",
+      "accessed": "2026-10-24",
+      "supports": "Edge Read aloud: online+offline modes, few offline voices, natural voices, mobile"
+    },
+    {
+      "url": "https://support.google.com/chrome/answer/14768725?hl=en",
+      "accessed": "2026-10-24",
+      "supports": "Chrome Listen to this page: Standard/AI playback, 25 languages, locked-screen playback, highlight/auto-scroll, not all websites, data-sharing requirement"
+    },
+    {
+      "url": "https://api.github.com/repos/gedoor/legado",
+      "accessed": "2026-10-24",
+      "supports": "Legado 47,154 stars, Kotlin, license null, last push 2026-05-27"
+    },
+    {
+      "url": "https://api.github.com/repos/gedoor/legado/contents/",
+      "accessed": "2026-10-24",
+      "supports": "Legado repo root reduced to README.md + 公告链接.png"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/gedoor/legado/main/README.md",
+      "accessed": "2026-10-24",
+      "supports": "Legado Chinese legal notice: infringement, deletion of project content"
+    },
+    {
+      "url": "https://github.com/huajideshutiao/legado",
+      "accessed": "2026-10-24",
+      "supports": "active Legado fork carrying the original feature list (book sources, online TTS engine import)"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=io.legado.play.release",
+      "accessed": "2026-10-24",
+      "supports": "HTTP 404 - Legado has no Play listing"
+    },
+    {
+      "url": "https://github.com/koreader/koreader",
+      "accessed": "2026-10-24",
+      "supports": "KOReader AGPL-3.0, 30,557 stars, formats/features"
+    },
+    {
+      "url": "https://github.com/koreader/koreader/wiki/Installation-on-Android-devices",
+      "accessed": "2026-10-24",
+      "supports": "'KOReader isn't currently available on the Google Playstore.'"
+    },
+    {
+      "url": "https://api.github.com/repos/koreader/koreader/releases/latest",
+      "accessed": "2026-10-24",
+      "supports": "KOReader v2026.07.1 and Android APK sizes"
+    },
+    {
+      "url": "https://api.github.com/repos/koreader/koreader/contents/plugins",
+      "accessed": "2026-10-24",
+      "supports": "KOReader plugin list has no TTS plugin"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/koreader/koreader/master/frontend/device/android/device.lua",
+      "accessed": "2026-10-24",
+      "supports": "KOReader Android device layer has no TTS/audio references"
+    },
+    {
+      "url": "https://f-droid.org/api/v1/packages/org.koreader.launcher",
+      "accessed": "2026-10-24",
+      "supports": "NOT_FOUND: KOReader is not in the main F-Droid repo"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/koreader/koreader/master/README.md",
+      "accessed": "2026-10-24",
+      "supports": "KOReader README feature list (no TTS)"
+    },
+    {
+      "url": "docs/re-natural-ai-voices.md",
+      "accessed": "2026-10-24",
+      "supports": "HayaiTTS/NekoSpeak versions, licenses, engines, architecture (repo-local RE analysis)"
+    },
+    {
+      "url": "OPTIMIZATIONS.md",
+      "accessed": "2026-10-24",
+      "supports": "reused constants, GPL/MIT handling, 'No GPL code was copied'"
+    }
+  ]
+}

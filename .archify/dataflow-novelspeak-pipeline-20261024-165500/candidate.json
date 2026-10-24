@@ -1,0 +1,492 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "NovelSpeak v1.1 — Read-Aloud Pipeline",
+    "subtitle": "Repo-evidenced data flow: WebView page → generic extraction → sentence queue → dual TTS engines → in-process audio",
+    "output": ".archify/dataflow-novelspeak-pipeline-20261024-165500/pipeline.html",
+    "viewBox": [
+      1068,
+      640
+    ],
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/vipulgote1999/NovelSpeak.git",
+      "revision": "89e48095c1522cd827d4d702ae3b91d827f6df1d",
+      "provider": "github",
+      "link_mode": "web"
+    }
+  },
+  "stages": [
+    {
+      "label": "Browse"
+    },
+    {
+      "label": "Extract"
+    },
+    {
+      "label": "Read"
+    },
+    {
+      "label": "Synthesize"
+    },
+    {
+      "label": "Play"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "webview",
+      "type": "frontend",
+      "label": "WebView Browser",
+      "sublabel": "address bar · reader",
+      "tag": "any URL",
+      "stage": 0,
+      "row": 0,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/MainActivity.kt",
+          "line": 597,
+          "end_line": 627,
+          "label": "configureWebView"
+        }
+      ]
+    },
+    {
+      "id": "adblock",
+      "type": "security",
+      "label": "Ad Blocker",
+      "sublabel": "network + cosmetic",
+      "tag": "122,884 rules",
+      "stage": 0,
+      "row": 1,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/AdBlocker.kt",
+          "line": 136,
+          "end_line": 196,
+          "label": "intercept + inject"
+        },
+        {
+          "path": "app/src/app/novelspeak/AdBlocker.kt",
+          "line": 261,
+          "end_line": 316,
+          "label": "popup guard"
+        }
+      ]
+    },
+    {
+      "id": "extractjs",
+      "type": "backend",
+      "label": "Readability + Density",
+      "sublabel": "injected extract.js",
+      "tag": "generic pages",
+      "stage": 1,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        {
+          "path": "app/assets/extract.js",
+          "line": 71,
+          "end_line": 160,
+          "label": "density fallback + Readability"
+        }
+      ]
+    },
+    {
+      "id": "nextlink",
+      "type": "backend",
+      "label": "Next-Chapter Finder",
+      "sublabel": "rel=next · text · +1",
+      "tag": "4 strategies",
+      "stage": 1,
+      "row": 1,
+      "sources": [
+        {
+          "path": "app/assets/extract.js",
+          "line": 167,
+          "end_line": 200,
+          "label": "next-link detection"
+        }
+      ]
+    },
+    {
+      "id": "splitter",
+      "type": "backend",
+      "label": "Sentence Splitter",
+      "sublabel": "180 chars · abbrev",
+      "tag": "CJK + dialogue",
+      "stage": 2,
+      "row": 0,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/SentenceSplitter.kt",
+          "line": 28,
+          "end_line": 119,
+          "label": "split + boundary rules"
+        }
+      ],
+      "width": 120
+    },
+    {
+      "id": "reader",
+      "type": "backend",
+      "label": "Reader Queue",
+      "sublabel": "prefetch · 12 s",
+      "tag": "epoch cancel",
+      "stage": 2,
+      "row": 1,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/Reader.kt",
+          "line": 305,
+          "end_line": 339,
+          "label": "pump + prefetch"
+        },
+        {
+          "path": "app/src/app/novelspeak/Reader.kt",
+          "line": 158,
+          "end_line": 176,
+          "label": "queue / cursor"
+        }
+      ]
+    },
+    {
+      "id": "systemtts",
+      "type": "backend",
+      "label": "System TTS",
+      "sublabel": "to PCM file",
+      "tag": "zero download",
+      "stage": 3,
+      "row": 0,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/SystemTtsEngine.kt",
+          "line": 190,
+          "end_line": 257,
+          "label": "render to WAV → PCM"
+        }
+      ]
+    },
+    {
+      "id": "cleaner",
+      "type": "backend",
+      "label": "Neural Text Cleaner",
+      "sublabel": "quotes · glyphs",
+      "tag": "pre-synthesis",
+      "stage": 3,
+      "row": 1,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/TtsTextCleaner.kt",
+          "line": 69,
+          "end_line": 190,
+          "label": "sanitiser"
+        }
+      ]
+    },
+    {
+      "id": "sherpa",
+      "type": "backend",
+      "label": "Kokoro / Pocket",
+      "sublabel": "sherpa-onnx int8",
+      "tag": "on-device",
+      "stage": 3,
+      "row": 2,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/SherpaEngine.kt",
+          "line": 262,
+          "end_line": 349,
+          "label": "generation loop"
+        },
+        {
+          "path": "app/src/app/novelspeak/SherpaEngine.kt",
+          "line": 86,
+          "end_line": 123,
+          "label": "stream callback"
+        }
+      ]
+    },
+    {
+      "id": "models",
+      "type": "database",
+      "label": "Model Store",
+      "sublabel": "filesDir · SHA-256",
+      "tag": "103 / 98 MB",
+      "stage": 3,
+      "row": 3,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/ModelManager.kt",
+          "line": 107,
+          "end_line": 173,
+          "label": "download + verify"
+        },
+        {
+          "path": "app/src/app/novelspeak/ModelManager.kt",
+          "line": 38,
+          "end_line": 59,
+          "label": "model manifest"
+        }
+      ]
+    },
+    {
+      "id": "pcm",
+      "type": "backend",
+      "label": "PcmPlayer",
+      "sublabel": "AudioTrack 24 kHz",
+      "tag": "low-latency",
+      "stage": 4,
+      "row": 0,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/PcmPlayer.kt",
+          "line": 277,
+          "end_line": 331,
+          "label": "writer thread"
+        },
+        {
+          "path": "app/src/app/novelspeak/PcmPlayer.kt",
+          "line": 109,
+          "end_line": 136,
+          "label": "AudioTrack setup"
+        }
+      ]
+    },
+    {
+      "id": "dsp",
+      "type": "backend",
+      "label": "Audio DSP",
+      "sublabel": "denoise · limiter",
+      "tag": "−80 dBFS floor",
+      "stage": 4,
+      "row": 1,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/AudioDsp.kt",
+          "line": 222,
+          "end_line": 359,
+          "label": "spectral denoiser + gate"
+        }
+      ]
+    },
+    {
+      "id": "speaker",
+      "type": "external",
+      "label": "AudioTrack Out",
+      "sublabel": "device / headset",
+      "tag": "24 kHz",
+      "stage": 4,
+      "row": 2,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/PcmPlayer.kt",
+          "line": 277,
+          "end_line": 331,
+          "label": "AudioTrack sink"
+        }
+      ]
+    },
+    {
+      "id": "media",
+      "type": "backend",
+      "label": "Playback Service",
+      "sublabel": "FGS · MediaSession",
+      "tag": "screen-off",
+      "stage": 4,
+      "row": 3,
+      "sources": [
+        {
+          "path": "app/src/app/novelspeak/PlaybackService.kt",
+          "line": 59,
+          "end_line": 127,
+          "label": "MediaSession + metadata"
+        },
+        {
+          "path": "app/src/app/novelspeak/PlaybackService.kt",
+          "line": 454,
+          "end_line": 527,
+          "label": "notification + wake lock"
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "f-web-adblock",
+      "from": "webview",
+      "to": "adblock",
+      "label": "subresources",
+      "classification": "network filter",
+      "variant": "security",
+      "route": "straight",
+      "labelDy": 30
+    },
+    {
+      "id": "f-web-extract",
+      "from": "webview",
+      "to": "extractjs",
+      "label": "page DOM",
+      "classification": "onPageFinished",
+      "variant": "emphasis",
+      "route": "straight"
+    },
+    {
+      "id": "f-extract-next",
+      "from": "extractjs",
+      "to": "nextlink",
+      "label": "anchors",
+      "classification": "navigation",
+      "variant": "dashed",
+      "route": "straight",
+      "labelDy": 30
+    },
+    {
+      "id": "f-extract-split",
+      "from": "extractjs",
+      "to": "splitter",
+      "label": "blocks",
+      "classification": "structured text",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelAt": [
+        430,
+        108
+      ]
+    },
+    {
+      "id": "f-split-reader",
+      "from": "splitter",
+      "to": "reader",
+      "label": "sentences",
+      "classification": "queue input",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": 30
+    },
+    {
+      "id": "f-reader-sys",
+      "from": "reader",
+      "to": "systemtts",
+      "label": "speak()",
+      "classification": "TTS request",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f-reader-sherpa",
+      "from": "reader",
+      "to": "sherpa",
+      "label": "speak()",
+      "classification": "TTS request",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f-clean-sherpa",
+      "from": "cleaner",
+      "to": "sherpa",
+      "label": "clean text",
+      "classification": "text safety",
+      "variant": "default",
+      "route": "straight",
+      "labelDy": 32
+    },
+    {
+      "id": "f-models-sherpa",
+      "from": "models",
+      "to": "sherpa",
+      "label": "weights",
+      "classification": "local model",
+      "variant": "dashed",
+      "route": "straight",
+      "labelDy": -12
+    },
+    {
+      "id": "f-sys-pcm",
+      "from": "systemtts",
+      "to": "pcm",
+      "label": "PCM 24 kHz",
+      "classification": "audio stream",
+      "variant": "default",
+      "route": "straight",
+      "labelDy": -70
+    },
+    {
+      "id": "f-sherpa-pcm",
+      "from": "sherpa",
+      "to": "pcm",
+      "label": "streamed PCM",
+      "classification": "audio stream",
+      "variant": "default"
+    },
+    {
+      "id": "f-pcm-dsp",
+      "from": "pcm",
+      "to": "dsp",
+      "label": "PCM frames",
+      "classification": "signal path",
+      "variant": "default",
+      "route": "straight",
+      "labelDy": 30
+    },
+    {
+      "id": "f-dsp-speaker",
+      "from": "dsp",
+      "to": "speaker",
+      "label": "audio out",
+      "classification": "output",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": 30
+    },
+    {
+      "id": "f-reader-media",
+      "from": "reader",
+      "to": "media",
+      "label": "state + metadata",
+      "classification": "media session",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "route": "bottom-channel"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Streaming is load-bearing",
+      "items": [
+        "Reader keeps 12 s or 8 sentences synthesised ahead (500 ms pump)",
+        "Neural throughput on the reference phone is ~0.8–1.14× real time",
+        "One writer thread owns AudioTrack; epoch cancels stale drain waits"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Two engines, one player",
+      "items": [
+        "System TTS renders through synthesizeToFile → WavReader → PcmPlayer",
+        "Kokoro/Pocket stream callback PCM with the 1=continue contract",
+        "Same MediaSession, seek bar and headset keys on both paths"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "What the user feels",
+      "items": [
+        "Read-along highlight uses data-ns block tags on the live page",
+        "Auto-next-chapter tries rel=next, link text (incl. CJK), href and numeric +1",
+        "Screen-off playback via foreground service, wake lock and MediaStyle notification"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Measured, not asserted",
+      "items": [
+        "Noise floor improved −51.6 → −80.3 dBFS with speech level unchanged",
+        "Ad-block engine: 122,884 network / 32,403 cosmetic / 4,612 scriptlet rules, 22/22 self-test",
+        "Signed arm64 APK 15.25 MB; onnxruntime is 22.2 MB of the native payload"
+      ]
+    }
+  ]
+}

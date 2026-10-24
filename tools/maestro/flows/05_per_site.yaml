@@ -1,0 +1,19 @@
+appId: app.novelspeak
+name: "05 per-site settings: dialog opens, reader toggle applies, page survives"
+tags: [per-site]
+---
+- launchApp
+- tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter1.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter1.html"
+    timeout: 15000
+- tapOn: "Ad blocking and site settings"
+- assertVisible: "Reader mode"
+- assertVisible: "Block ads on this site"
+- tapOn: "Reader mode"
+- tapOn: "Done"
+- assertVisible: "Read"
+- assertVisible: "Next ch"

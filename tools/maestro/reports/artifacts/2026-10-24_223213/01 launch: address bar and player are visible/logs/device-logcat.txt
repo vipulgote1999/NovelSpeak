@@ -1,0 +1,525 @@
+--------- beginning of system
+10-24 22:32:18.715 I/ActivityManager(  565): Force stopping app.novelspeak appid=10228 user=0: from pid 3304
+10-24 22:32:18.729 I/AppsFilter(  565): interaction: PackageSetting{9ee07dc com.navora.navora/10209} -> PackageSetting{2cee383 app.novelspeak/10228} BLOCKED
+10-24 22:32:18.730 I/AppsFilter(  565): interaction: PackageSetting{86fa7ba com.android.microdroid.empty_payload/10204} -> PackageSetting{2cee383 app.novelspeak/10228} BLOCKED
+10-24 22:32:18.730 I/AppsFilter(  565): interaction: PackageSetting{81466b com.vipul.medtrail.dev/10211} -> PackageSetting{2cee383 app.novelspeak/10228} BLOCKED
+10-24 22:32:18.730 I/AppsFilter(  565): interaction: PackageSetting{c41c5c8 com.vipul.medtrail.test/10210} -> PackageSetting{2cee383 app.novelspeak/10228} BLOCKED
+10-24 22:32:18.738 I/AppWidgetServiceImpl(  565): Received broadcast: android.intent.action.PACKAGE_RESTARTED on user 0
+10-24 22:32:18.739 I/AppWidgetServiceImpl(  565): Updating package stopped masked state for uid 10228 package app.novelspeak isStopped true
+--------- beginning of main
+10-24 22:32:18.774 D/CarrierSvcBindHelper(  901): onHandleForceStop: [app.novelspeak]
+10-24 22:32:18.779 D/CarrierSvcBindHelper(  901): No carrier app for: 0
+10-24 22:32:18.818 W/OptProp (  565): Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE
+10-24 22:32:18.818 W/OptProp (  565): Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE
+10-24 22:32:18.818 W/OptProp (  565): Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_ORIENTATION_OVERRIDE
+10-24 22:32:18.821 I/incfs-mounts(  565): [incfs] Loaded incremental-fs mount info: 1 instances, 2 mount points
+10-24 22:32:18.826 V/GrammaticalInflectionUtils(  565): AttributionSource: AttributionSource { uid = 10228, packageName = null, attributionTag = null, token = android.os.Binder@a7a9bdb, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-24 22:32:18.826 W/OptProp (  565): Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES
+10-24 22:32:18.827 W/OptProp (  565): Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE
+10-24 22:32:18.841 V/SplashScreenExceptionList(  565): SplashScreen checking exception for package app.novelspeak (target sdk:34) -> false
+10-24 22:32:18.850 I/incfs   (  792): Initial API level of the device: 35
+10-24 22:32:18.851 W/libc    (  792): Access denied finding property "ro.incremental.enable"
+10-24 22:32:18.851 I/incfs   (  792): ro.incremental.enable: on
+10-24 22:32:18.851 I/incfs   (  792): IncFs_Features: v2
+10-24 22:32:18.851 I/incfs-mounts(  792): [incfs] Loaded incremental-fs mount info: 1 instances, 2 mount points
+10-24 22:32:18.848 W/ll.splashscreen(  792): type=1400 audit(0.0:34): avc:  denied  { read } for  name="u:object_r:incremental_prop:s0" dev="tmpfs" ino=218 scontext=u:r:platform_app:s0:c512,c768 tcontext=u:object_r:incremental_prop:s0 tclass=file permissive=0 app=com.android.systemui
+10-24 22:32:18.848 W/ll.splashscreen(  792): type=1400 audit(0.0:35): avc:  denied  { read } for  name="filesystems" dev="proc" ino=4026532076 scontext=u:r:platform_app:s0:c512,c768 tcontext=u:object_r:proc_filesystems:s0 tclass=file permissive=0 app=com.android.systemui
+10-24 22:32:18.859 V/WindowManagerShell(  792): Transition requested (#7): android.os.BinderProxy@ce082c8 TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=272 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=app.novelspeak cmp=app.novelspeak/.MainActivity } baseActivity=ComponentInfo{app.novelspeak/app.novelspeak.MainActivity} topActivity=ComponentInfo{app.novelspeak/app.novelspeak.MainActivity} origActivity=null realActivity=ComponentInfo{app.novelspeak/app.novelspeak.MainActivity} numActivities=1 lastActiveTime=110941 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@220cf61} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{d2e0a86 app.novelspeak.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= falseisLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false topActivityEligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=1080 topActivityLetterboxHeight=1920 isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false cameraCompatTaskInfo=CameraCompatTaskInfo { cameraCompatControlState=hidden freeformCameraCompatMode=inactive}}}, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 7 }
+10-24 22:32:18.859 I/ActivityTaskManager(  565): START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=app.novelspeak cmp=app.novelspeak/.MainActivity} with LAUNCH_SINGLE_TASK from uid 10212 (BAL_ALLOW_PERMISSION) result code=0
+10-24 22:32:18.862 W/SplitSelectStateCtor( 1163): Missing session instanceIds
+10-24 22:32:18.862 D/StatsLog( 1163): LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+10-24 22:32:18.866 V/GrammaticalInflectionUtils(  565): AttributionSource: AttributionSource { uid = 10228, packageName = null, attributionTag = null, token = android.os.Binder@a7a9bdb, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-24 22:32:18.870 D/WindowManagerShell(  792): setLauncherKeepClearAreaHeight: visible=false, height=459
+10-24 22:32:18.874 I/AppsFilter(  565): interaction: PackageSetting{9ee07dc com.navora.navora/10209} -> PackageSetting{762cff4 app.novelspeak/10228} BLOCKED
+10-24 22:32:18.875 I/AppsFilter(  565): interaction: PackageSetting{86fa7ba com.android.microdroid.empty_payload/10204} -> PackageSetting{762cff4 app.novelspeak/10228} BLOCKED
+10-24 22:32:18.875 I/AppsFilter(  565): interaction: PackageSetting{81466b com.vipul.medtrail.dev/10211} -> PackageSetting{762cff4 app.novelspeak/10228} BLOCKED
+10-24 22:32:18.875 I/AppsFilter(  565): interaction: PackageSetting{c41c5c8 com.vipul.medtrail.test/10210} -> PackageSetting{762cff4 app.novelspeak/10228} BLOCKED
+10-24 22:32:18.876 I/BpBinder(  435): onLastStrongRef automatically unlinking death recipients: 
+10-24 22:32:18.883 I/TopTaskTracker( 1163): onTaskMovedToFront: (moved taskInfo to front) taskId=272, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=app.novelspeak cmp=app.novelspeak/.MainActivity }
+10-24 22:32:18.903 D/Zygote  (  371): Forked child process 3312
+10-24 22:32:18.914 D/SplashScreenView(  792): Build android.window.SplashScreenView{2df0374 V.E...... ......ID 0,0-0,0}
+10-24 22:32:18.914 D/SplashScreenView(  792): Icon: view: null drawable: null size: 0
+10-24 22:32:18.914 D/SplashScreenView(  792): Branding: view: android.view.View{bba009d G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+10-24 22:32:18.915 I/ActivityManager(  565): Start proc 3312:app.novelspeak/u0a228 for next-top-activity {app.novelspeak/app.novelspeak.MainActivity}
+10-24 22:32:18.925 I/AppWidgetServiceImpl(  565): Received broadcast: android.intent.action.PACKAGE_UNSTOPPED on user 0
+10-24 22:32:18.925 I/AppWidgetServiceImpl(  565): Updating package stopped masked state for uid 10228 package app.novelspeak isStopped false
+10-24 22:32:18.937 I/app.novelspeak( 3312): Using CollectorTypeCMC GC.
+10-24 22:32:18.939 W/app.novelspeak( 3312): Unexpected CPU variant for x86: x86_64.
+10-24 22:32:18.939 W/app.novelspeak( 3312): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, default
+10-24 22:32:18.948 D/CoreBackPreview(  565): Window{68b8ebf u0 Splash Screen app.novelspeak}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@d33e753, mPriority=0, mIsAnimationCallback=false}
+10-24 22:32:18.954 E/app.novelspeak( 3312): Not starting debugger since process cannot load the jdwp agent.
+10-24 22:32:18.959 I/netd    (  370): tetherGetStats() -> {[]} <2.63ms>
+10-24 22:32:19.013 D/EGL_emulation( 1163): app_time_stats: avg=92217.79ms min=92217.79ms max=92217.79ms count=1
+10-24 22:32:19.017 D/nativeloader( 3312): Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+10-24 22:32:19.028 W/ActivityTaskManager(  565): takeTaskSnapshot: taskId=265 not found or not visible
+10-24 22:32:19.031 V/WindowManagerShell(  792): onTransitionReady(transaction=2426656522571)
+10-24 22:32:19.032 V/WindowManagerShell(  792): onTransitionReady (#7) android.os.BinderProxy@ce082c8: {id=7 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@b34c837} m=OPEN f=NONE leash=Surface(name=Task=272)/@0x71e2df8 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0 taskParent=-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@c0431a4} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0xfab52d1 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0 taskParent=-1}]}
+10-24 22:32:19.032 V/WindowManagerShell(  792): Playing animation for (#7) android.os.BinderProxy@ce082c8@0
+10-24 22:32:19.033 V/WindowManagerShell(  792):  try handler com.android.wm.shell.transition.DefaultMixedHandler@89f640f
+10-24 22:32:19.033 V/WindowManagerShell(  792):  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@ef45c9c
+10-24 22:32:19.033 V/WindowManagerShell(  792):  try handler com.android.wm.shell.pip.PipTransition@eeb26a5
+10-24 22:32:19.033 V/WindowManagerShell(  792):  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@883ea7a
+10-24 22:32:19.033 V/WindowManagerShell(  792):  try handler com.android.wm.shell.recents.RecentsTransitionHandler@5f8322b
+10-24 22:32:19.033 V/ShellRecents(  792): RecentsTransitionHandler.startAnimation: no controller found
+10-24 22:32:19.033 V/WindowManagerShell(  792):  try handler com.android.wm.shell.splitscreen.StageCoordinator@238a688
+10-24 22:32:19.033 V/WindowManagerShell(  792):  try handler com.android.wm.shell.transition.RemoteTransitionHandler@a0c8821
+10-24 22:32:19.034 V/WindowManagerShell(  792): Transition doesn't have explicit remote, search filters for match for {id=7 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@b34c837} m=OPEN f=NONE leash=Surface(name=Task=272)/@0x71e2df8 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0 taskParent=-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@c0431a4} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0xfab52d1 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0 taskParent=-1}]}
+10-24 22:32:19.034 V/WindowManagerShell(  792):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=undefined independent=true modes=[OPEN,TO_FRONT] flags=IN_TASK_WITH_EMBEDDED_ACTIVITY mustBeTask=false order=ANY topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity} launchCookie=null},{atype=undefined independent=true modes=[CLOSE,TO_BACK] flags=IN_TASK_WITH_EMBEDDED_ACTIVITY mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@3563446, appThread = android.app.IApplicationThread$Stub$Proxy@3c5c607, debugName = OverlaySwipeBack }}
+10-24 22:32:19.034 V/WindowManagerShell(  792):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@df5a334, appThread = android.app.IApplicationThread$Stub$Proxy@788855d, debugName = LauncherToDream }}
+10-24 22:32:19.034 V/WindowManagerShell(  792):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity} launchCookie=null},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@b14ed2, appThread = android.app.IApplicationThread$Stub$Proxy@9eebba3, debugName = QuickstepLaunchHome }}
+10-24 22:32:19.035 V/WindowManager(  565): Sent Transition (#7) createdAt=10-24 22:32:18.828 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=272 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=app.novelspeak cmp=app.novelspeak/.MainActivity } baseActivity=ComponentInfo{app.novelspeak/app.novelspeak.MainActivity} topActivity=ComponentInfo{app.novelspeak/app.novelspeak.MainActivity} origActivity=null realActivity=ComponentInfo{app.novelspeak/app.novelspeak.MainActivity} numActivities=1 lastActiveTime=110941 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{9dfd09a Task{b66a4ad #272 type=standard A=10228:app.novelspeak}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{6f6edcb app.novelspeak.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= falseisLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false topActivityEligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=1080 topActivityLetterboxHeight=1920 isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false cameraCompatTaskInfo=CameraCompatTaskInfo { cameraCompatControlState=hidden freeformCameraCompatMode=inactive}}}, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 7 }
+10-24 22:32:19.035 V/WindowManager(  565):     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+10-24 22:32:19.035 V/WindowManager(  565):     info={id=7 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[
+10-24 22:32:19.035 V/WindowManager(  565):         {WCT{RemoteToken{9dfd09a Task{b66a4ad #272 type=standard A=10228:app.novelspeak}}} m=OPEN f=NONE leash=Surface(name=Task=272)/@0xcc6f890 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0 taskParent=-1},
+10-24 22:32:19.035 V/WindowManager(  565):         {WCT{RemoteToken{99949a8 Task{1e5ed63 #1 type=home}}} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x8b34283 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0 taskParent=-1}
+10-24 22:32:19.035 V/WindowManager(  565):     ]}
+10-24 22:32:19.039 W/ActivityTaskManager(  565): takeTaskSnapshot: taskId=270 not found or not visible
+10-24 22:32:19.041 V/WindowManagerShell(  792):  Delegate animation for (#7) to null
+10-24 22:32:19.041 V/WindowManagerShell(  792):  try handler com.android.wm.shell.transition.DefaultTransitionHandler@ae3bea0
+10-24 22:32:19.042 V/WindowManagerShell(  792): start default transition animation, info = {id=7 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@b34c837} m=OPEN f=NONE leash=Surface(name=Task=272)/@0x71e2df8 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0 taskParent=-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@c0431a4} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0xfab52d1 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0 taskParent=-1}]}
+10-24 22:32:19.051 W/UserManagerService(  565): Requested status bar icon for non-badged user 0
+10-24 22:32:19.053 D/EGL_emulation( 1163): app_time_stats: avg=93591.47ms min=93591.47ms max=93591.47ms count=1
+10-24 22:32:19.056 V/WindowManagerShell(  792): loadAnimation: anim=android.view.animation.AnimationSet@924c410 animAttr=0x13 type=OPEN isEntrance=false
+10-24 22:32:19.059 V/WindowManagerShell(  792): loadAnimation: anim=android.view.animation.AnimationSet@77a113c animAttr=0x12 type=OPEN isEntrance=true
+10-24 22:32:19.061 V/WindowManagerShell(  792):  animated by com.android.wm.shell.transition.DefaultTransitionHandler@ae3bea0
+10-24 22:32:19.064 W/Looper  (  792): Slow dispatch took 32ms wmshell.main h=android.os.Handler c=com.android.wm.shell.transition.Transitions$TransitionPlayerImpl$$ExternalSyntheticLambda0@343401a m=0
+10-24 22:32:19.079 V/WindowManagerShell(  792): Transition animation finished (aborted=false), notifying core (#7) android.os.BinderProxy@ce082c8@0
+10-24 22:32:19.080 V/WindowManagerShell(  792): Track 0 became idle
+10-24 22:32:19.080 V/WindowManagerShell(  792): All active transition animations finished
+10-24 22:32:19.081 V/WindowManager(  565): Finish Transition (#7): created at 10-24 22:32:18.828 collect-started=0.045ms request-sent=27.912ms started=32.901ms ready=194.16ms sent=196.21ms finished=251.552ms
+10-24 22:32:19.083 D/VRI[NexusLauncherActivity]( 1163): visibilityChanged oldVisibility=true newVisibility=false
+10-24 22:32:19.087 W/UserManagerService(  565): Requested status bar icon for non-badged user 0
+10-24 22:32:19.088 W/UserManagerService(  565): Requested status bar icon for non-badged user 0
+10-24 22:32:19.098 D/NexusLauncherModelDelegate( 1163): notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+10-24 22:32:19.100 D/CompatChangeReporter( 3312): Compat change id reported: 242716250; UID 10228; state: ENABLED
+10-24 22:32:19.137 W/ziparchive( 3312): Unable to open '/data/app/~~siLaVFE5UW1YuMSu8W4G5w==/app.novelspeak-Iujly61iWhADIPQAoPMw3g==/base.dm': No such file or directory
+10-24 22:32:19.137 W/ziparchive( 3312): Unable to open '/data/app/~~siLaVFE5UW1YuMSu8W4G5w==/app.novelspeak-Iujly61iWhADIPQAoPMw3g==/base.dm': No such file or directory
+10-24 22:32:19.172 D/nativeloader( 3312): Configuring clns-7 for other apk /data/app/~~siLaVFE5UW1YuMSu8W4G5w==/app.novelspeak-Iujly61iWhADIPQAoPMw3g==/base.apk. target_sdk_version=34, uses_libraries=, library_path=/data/app/~~siLaVFE5UW1YuMSu8W4G5w==/app.novelspeak-Iujly61iWhADIPQAoPMw3g==/lib/x86_64:/data/app/~~siLaVFE5UW1YuMSu8W4G5w==/app.novelspeak-Iujly61iWhADIPQAoPMw3g==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/app.novelspeak
+10-24 22:32:19.182 V/GraphicsEnvironment( 3312): Currently set values for:
+10-24 22:32:19.182 V/GraphicsEnvironment( 3312):   angle_gl_driver_selection_pkgs=[]
+10-24 22:32:19.182 V/GraphicsEnvironment( 3312):   angle_gl_driver_selection_values=[]
+10-24 22:32:19.182 V/GraphicsEnvironment( 3312): Global.Settings values are invalid: number of packages: 0, number of values: 0
+10-24 22:32:19.182 V/GraphicsEnvironment( 3312): Neither updatable production driver nor prerelease driver is supported.
+10-24 22:32:19.226 W/MediaProvider( 1271): Ignoring mutation of date_expires from app.novelspeak
+10-24 22:32:19.230 D/MediaProvider( 1271): Identical paths /storage/emulated/0/Download/novelspeak-log (23).txt; not moving
+10-24 22:32:19.251 W/MediaProvider( 1271): Ignoring mutation of date_expires from app.novelspeak
+10-24 22:32:19.252 D/MediaProvider( 1271): Identical paths /storage/emulated/0/Download/novelspeak-log (24).txt; not moving
+10-24 22:32:19.260 W/MediaProvider( 1271): Ignoring mutation of date_expires from app.novelspeak
+10-24 22:32:19.261 D/MediaProvider( 1271): Identical paths /storage/emulated/0/Download/novelspeak-log (25).txt; not moving
+10-24 22:32:19.268 W/MediaProvider( 1271): Ignoring mutation of date_expires from app.novelspeak
+10-24 22:32:19.269 D/MediaProvider( 1271): Identical paths /storage/emulated/0/Download/novelspeak-log (26).txt; not moving
+10-24 22:32:19.277 W/MediaProvider( 1271): Ignoring mutation of date_expires from app.novelspeak
+10-24 22:32:19.277 D/MediaProvider( 1271): Identical paths /storage/emulated/0/Download/novelspeak-log (27).txt; not moving
+10-24 22:32:19.289 W/MediaProvider( 1271): Ignoring mutation of date_expires from app.novelspeak
+10-24 22:32:19.290 D/MediaProvider( 1271): Identical paths /storage/emulated/0/Download/novelspeak-log (28).txt; not moving
+10-24 22:32:19.296 W/MediaProvider( 1271): Ignoring mutation of date_expires from app.novelspeak
+10-24 22:32:19.297 D/MediaProvider( 1271): Identical paths /storage/emulated/0/Download/novelspeak-log (29).txt; not moving
+10-24 22:32:19.304 W/MediaProvider( 1271): Ignoring mutation of date_expires from app.novelspeak
+10-24 22:32:19.304 D/MediaProvider( 1271): Identical paths /storage/emulated/0/Download/novelspeak-log (30).txt; not moving
+10-24 22:32:19.315 W/MediaProvider( 1271): Ignoring mutation of date_expires from app.novelspeak
+10-24 22:32:19.317 D/MediaProvider( 1271): Identical paths /storage/emulated/0/Download/novelspeak-log (31).txt; not moving
+10-24 22:32:19.325 I/NovelSpeak( 3312): unpended 9 stale diagnostic files
+10-24 22:32:19.329 I/NetworkScheduler.Stats( 1002): Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService started execution. cause:9 exec_start_elapsed_seconds: 111 [CONTEXT service_id=218 ]
+10-24 22:32:19.333 W/MediaProvider( 1271): isAppCloneUserPair for user 0: false
+10-24 22:32:19.345 I/MediaProvider( 1271): Open with lower FS for /storage/emulated/0/Download/.pending-1793466139-novelspeak-log.txt. Uid: 10228
+10-24 22:32:19.362 I/NetworkScheduler.Stats( 1002): Task com.google.android.gms/com.google.android.gms.ipa.base.IpaGcmTaskService finished executing. cause:9 result: 1 elapsed_millis: 73 uptime_millis: 73 exec_start_elapsed_seconds: 111 [CONTEXT service_id=218 ]
+10-24 22:32:19.372 W/MediaProvider( 1271): Ignoring mutation of date_expires from app.novelspeak
+10-24 22:32:19.375 E/DatabaseUtils( 1271): Writing exception to parcel
+10-24 22:32:19.375 E/DatabaseUtils( 1271): java.lang.IllegalStateException: Failed to build unique file: /storage/emulated/0/Download/novelspeak-log.txt bucket_display_name=Download volume_name=external_primary date_modified=null date_expires=null _display_name=novelspeak-log.txt mime_type=text/plain _data=/storage/emulated/0/Download/novelspeak-log.txt _size=null is_trashed=0 is_pending=0 bucket_id=540528482 relative_path=Download/
+10-24 22:32:19.375 E/DatabaseUtils( 1271): 	at com.android.providers.media.MediaProvider.ensureFileColumns(MediaProvider.java:4541)
+10-24 22:32:19.375 E/DatabaseUtils( 1271): 	at com.android.providers.media.MediaProvider.ensureUniqueFileColumns(MediaProvider.java:4243)
+10-24 22:32:19.375 E/DatabaseUtils( 1271): 	at com.android.providers.media.MediaProvider.updateInternal(MediaProvider.java:8270)
+10-24 22:32:19.375 E/DatabaseUtils( 1271): 	at com.android.providers.media.MediaProvider.update(MediaProvider.java:7937)
+10-24 22:32:19.375 E/DatabaseUtils( 1271): 	at android.content.ContentProvider$Transport.update(ContentProvider.java:573)
+10-24 22:32:19.375 E/DatabaseUtils( 1271): 	at android.content.ContentProviderNative.onTransact(ContentProviderNative.java:243)
+10-24 22:32:19.375 E/DatabaseUtils( 1271): 	at android.os.Binder.execTransactInternal(Binder.java:1500)
+10-24 22:32:19.375 E/DatabaseUtils( 1271): 	at android.os.Binder.execTransact(Binder.java:1444)
+10-24 22:32:19.379 W/NovelSpeak( 3312): publish failed
+10-24 22:32:19.379 W/NovelSpeak( 3312): java.lang.IllegalStateException: Failed to build unique file: /storage/emulated/0/Download/novelspeak-log.txt bucket_display_name=Download volume_name=external_primary date_modified=null date_expires=null _display_name=novelspeak-log.txt mime_type=text/plain _data=/storage/emulated/0/Download/novelspeak-log.txt _size=null is_trashed=0 is_pending=0 bucket_id=540528482 relative_path=Download/
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3250)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.os.Parcel.createException(Parcel.java:3226)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.os.Parcel.readException(Parcel.java:3209)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:203)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:155)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.content.ContentProviderProxy.update(ContentProviderNative.java:685)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.content.ContentResolver.update(ContentResolver.java:2416)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.content.ContentResolver.update(ContentResolver.java:2378)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at app.novelspeak.DiagLog.publish(DiagLog.kt:219)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at app.novelspeak.DiagLog.init(DiagLog.kt:59)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at app.novelspeak.NovelSpeakApp.onCreate(Reader.kt:27)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.app.Instrumentation.callApplicationOnCreate(Instrumentation.java:1386)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.app.ActivityThread.handleBindApplication(ActivityThread.java:7504)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.app.ActivityThread.-$$Nest$mhandleBindApplication(Unknown Source:0)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2416)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.os.Handler.dispatchMessage(Handler.java:107)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.os.Looper.loopOnce(Looper.java:232)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.os.Looper.loop(Looper.java:317)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at java.lang.reflect.Method.invoke(Native Method)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+10-24 22:32:19.379 W/NovelSpeak( 3312): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+10-24 22:32:19.382 I/NovelSpeak( 3312): app start
+10-24 22:32:19.385 I/MediaProvider( 1271): Open with lower FS for /storage/emulated/0/Download/.pending-1793466139-novelspeak-log.txt. Uid: 10228
+10-24 22:32:19.401 W/OptProp (  565): Cannot read opt property android.window.PROPERTY_COMPAT_ENABLE_FAKE_FOCUS
+10-24 22:32:19.408 I/NetworkScheduler.Stats( 1002): Task com.google.android.gms/com.google.android.gms.auth.account.be.legacy.AuthCronService started execution. cause:5 exec_start_elapsed_seconds: 111 [CONTEXT service_id=218 ]
+10-24 22:32:19.429 D/Maestro ( 3268): Requesting view hierarchy
+10-24 22:32:19.447 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:19.447 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:19.452 W/UiDevice( 3268): Active window root not found.
+10-24 22:32:19.458 I/NetworkScheduler.Stats( 1002): Task com.google.android.gms/com.google.android.gms.ads.jams.NegotiationService started execution. cause:5 exec_start_elapsed_seconds: 111 [CONTEXT service_id=218 ]
+10-24 22:32:19.490 W/AccessibilityManagerService(  565):  wait for adding window timeout: 9
+10-24 22:32:19.496 I/NetworkScheduler.Stats( 1002): Task com.google.android.gms/com.google.android.gms.ads.jams.NegotiationService finished executing. cause:5 result: 1 elapsed_millis: 73 uptime_millis: 73 exec_start_elapsed_seconds: 111 [CONTEXT service_id=218 ]
+10-24 22:32:19.524 I/WebViewFactory( 3312): Loading com.google.android.webview version 124.0.6367.219 (code 636771938)
+10-24 22:32:19.525 V/ResourcesManager( 3312): The following library key has been added: ResourcesKey{ mHash=9a15f257 mResDir=null mSplitDirs=[] mOverlayDirs=[/product/overlay/NavigationBarModeGestural/NavigationBarModeGesturalOverlay.apk,/data/resource-cache/com.android.systemui-neutral-e14M.frro,/data/resource-cache/com.android.systemui-accent-3UKC.frro,/data/resource-cache/com.android.systemui-dynamic-PKaV.frro] mLibDirs=[/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.apk,/data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.apk,/system_ext/framework/androidx.window.extensions.jar] mDisplayId=0 mOverrideConfig=v35 mCompatInfo={420dpi always-compat} mLoaders=[]}
+10-24 22:32:19.537 W/ziparchive( 3312): Unable to open '/data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.dm': No such file or directory
+10-24 22:32:19.537 W/ziparchive( 3312): Unable to open '/data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.dm': No such file or directory
+10-24 22:32:19.537 W/app.novelspeak( 3312): Entry not found
+10-24 22:32:19.538 D/nativeloader( 3312): Configuring clns-8 for other apk /data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.apk. target_sdk_version=34, uses_libraries=ALL, library_path=/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/lib/x86_64:/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand
+10-24 22:32:19.539 D/ApplicationLoaders( 3312): Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+10-24 22:32:19.539 W/ziparchive( 3312): Unable to open '/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.dm': No such file or directory
+10-24 22:32:19.539 W/ziparchive( 3312): Unable to open '/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.dm': No such file or directory
+10-24 22:32:19.543 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@61205; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(884, 31 - 884, 31); boundsInWindow: Rect(884, 31 - 884, 31); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:19.544 D/Maestro ( 3268): View hierarchy received in 116 ms
+10-24 22:32:19.558 D/nativeloader( 3312): Configuring clns-9 for other apk /data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.apk. target_sdk_version=34, uses_libraries=, library_path=/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/lib/x86_64:/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand
+10-24 22:32:19.577 I/NetworkScheduler.Stats( 1002): Task com.google.android.gms/com.google.android.gms.clearcut.uploader.QosUploaderService started execution. cause:5 exec_start_elapsed_seconds: 111 [CONTEXT service_id=218 ]
+10-24 22:32:19.595 I/cr_WVCFactoryProvider( 3312): Loaded version=124.0.6367.219 minSdkVersion=29 isBundle=false multiprocess=true packageId=2
+10-24 22:32:19.599 D/nativeloader( 3312): Load /data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.apk!/lib/x86_64/libmonochrome_64.so using ns clns-9 from class loader (caller=/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.apk): ok
+10-24 22:32:19.603 D/ActivityManager(  565): sync unfroze 2409 com.google.android.gms.unstable for 6
+10-24 22:32:19.609 D/nativeloader( 3312): Load /system/lib64/libwebviewchromium_plat_support.so using ns clns-9 from class loader (caller=/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.apk): ok
+10-24 22:32:19.624 I/chromium( 3312): [1024/223219.619890:INFO:variations_seed_loader.cc(66)] Failed to open file for reading.: No such file or directory (2)
+10-24 22:32:19.632 I/cr_VariationsUtils( 3312): Failed reading seed file "/data/user/0/app.novelspeak/app_webview/variations_seed_new"
+10-24 22:32:19.645 I/cr_LibraryLoader( 3312): Successfully loaded native library
+10-24 22:32:19.646 I/cr_CachingUmaRecorder( 3312): Flushed 6 samples from 6 histograms, 0 samples were dropped.
+10-24 22:32:19.655 I/cr_VariationsUtils( 3312): Loaded seed with age 3719s
+10-24 22:32:19.661 I/cr_CombinedPProvider( 3312): #registerProvider() provider:WV.V7@aa751bb isPolicyCacheEnabled:false policyProvidersSize:0
+10-24 22:32:19.663 D/CompatChangeReporter(  565): Compat change id reported: 161145287; UID 10228; state: ENABLED
+10-24 22:32:19.663 I/cr_PolicyProvider( 3312): #setManagerAndSource() 0
+10-24 22:32:19.682 D/Maestro ( 3268): Requesting view hierarchy
+10-24 22:32:19.692 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:19.694 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:19.698 W/UiDevice( 3268): Active window root not found.
+10-24 22:32:19.713 V/GrammaticalInflectionUtils(  565): AttributionSource: AttributionSource { uid = 99000, packageName = null, attributionTag = null, token = android.os.Binder@a7a9bdb, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-24 22:32:19.719 W/webview_zygote(  832): Waiting for a thread to finish unregistering
+10-24 22:32:19.722 I/Zygote  (  832): Entering forkRepeatedly native zygote loop
+10-24 22:32:19.730 D/Zygote  (  832): Forked child process 3339
+10-24 22:32:19.736 I/ocessService0:0( 3339): Using CollectorTypeCMC GC.
+10-24 22:32:19.737 W/ocessService0:0( 3339): Unexpected CPU variant for x86: x86_64.
+10-24 22:32:19.737 W/ocessService0:0( 3339): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, default
+10-24 22:32:19.741 E/ocessService0:0( 3339): Not starting debugger since process cannot load the jdwp agent.
+10-24 22:32:19.741 I/cr_CombinedPProvider( 3312): #linkNativeInternal() 1
+10-24 22:32:19.748 D/nativeloader( 3339): Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+10-24 22:32:19.749 I/cr_AppResProvider( 3312): #getApplicationRestrictionsFromUserManager() Bundle[EMPTY_PARCEL]
+10-24 22:32:19.749 I/cr_PolicyProvider( 3312): #notifySettingsAvailable() 0
+10-24 22:32:19.749 I/cr_CombinedPProvider( 3312): #onSettingsAvailable() 0
+10-24 22:32:19.749 I/cr_CombinedPProvider( 3312): #flushPolicies()
+10-24 22:32:19.775 W/ActivityManager(  565): Slow operation: 63ms so far, now at startProcess: returned from zygote!
+10-24 22:32:19.776 W/ActivityManager(  565): Slow operation: 63ms so far, now at startProcess: done updating battery stats
+10-24 22:32:19.776 W/ActivityManager(  565): Slow operation: 63ms so far, now at startProcess: building log message
+10-24 22:32:19.776 I/ActivityManager(  565): Start proc 3339:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0ai9000 for  {app.novelspeak/org.chromium.content.app.SandboxedProcessService0:0}
+10-24 22:32:19.776 W/ActivityManager(  565): Slow operation: 63ms so far, now at startProcess: starting to update pids map
+10-24 22:32:19.780 I/lowmemorykiller(  165): Kill 'com.google.android.federatedcompute' (2430), uid 10186, oom_score_adj 999 to free 36936kB rss, 38544kB swap; reason: low watermark is breached
+10-24 22:32:19.783 E/lowmemorykiller(  165): process_mrelease 2430 failed: No such process
+10-24 22:32:19.786 W/ActivityManager(  565): Slow operation: 74ms so far, now at startProcess: done updating pids map
+10-24 22:32:19.789 I/lowmemorykiller(  165): Kill 'com.android.imsserviceentitlement' (2161), uid 10138, oom_score_adj 999 to free 36084kB rss, 38368kB swap; reason: low watermark is breached
+10-24 22:32:19.789 I/Zygote  (  371): Process 2430 exited due to signal 9 (Killed)
+10-24 22:32:19.795 I/ActivityManager(  565): Process com.google.android.federatedcompute (pid 2430) has died: cch+99 CEM 
+10-24 22:32:19.799 D/DisplayManagerService(  565): Drop pending events for gone uid 10186
+10-24 22:32:19.800 D/CompatChangeReporter( 3339): Compat change id reported: 242716250; UID 99000; state: ENABLED
+--------- beginning of kernel
+10-24 22:32:19.855 W/servicemanager(    0): Isolated app with UID 99000 requested 'network_management', but the service is not allowed for isolated apps.
+10-24 22:32:19.819 D/ApplicationLoaders( 3339): Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+10-24 22:32:19.820 I/libprocessgroup(  565): Removed cgroup /sys/fs/cgroup/uid_10186/pid_2430
+10-24 22:32:19.863 W/servicemanager(    0): Isolated app with UID 99000 requested 'connectivity', but the service is not allowed for isolated apps.
+10-24 22:32:19.827 I/LoadedApk( 3339): No resource references to update in package com.google.android.trichromelibrary
+10-24 22:32:19.834 I/lowmemorykiller(  165): Kill 'com.google.android.configupdater' (2375), uid 10136, oom_score_adj 999 to free 36784kB rss, 38436kB swap; reason: low watermark is breached
+10-24 22:32:19.834 I/ActivityManager(  565): Process com.android.imsserviceentitlement (pid 2161) has died: cch+99 CEM 
+10-24 22:32:19.835 D/DisplayManagerService(  565): Drop pending events for gone uid 10138
+10-24 22:32:19.837 I/cr_WebViewApkApp( 3339): Launched version=124.0.6367.219 minSdkVersion=29 isBundle=false processName=com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0
+10-24 22:32:19.838 I/libprocessgroup(  565): Removed cgroup /sys/fs/cgroup/uid_10138/pid_2161
+10-24 22:32:19.851 I/Zygote  (  371): Process 2161 exited due to signal 9 (Killed)
+10-24 22:32:19.853 D/CompatChangeReporter(  565): Compat change id reported: 261072174; UID 10228; state: ENABLED
+10-24 22:32:19.856 E/lowmemorykiller(  165): process_mrelease 2375 failed: No such process
+10-24 22:32:19.895 W/servicemanager(    0): Isolated app with UID 99000 requested 'content_capture', but the service is not allowed for isolated apps.
+10-24 22:32:19.860 I/cr_ChildProcessService( 3339): Creating new ChildProcessService pid=3339
+10-24 22:32:19.862 I/Zygote  (  371): Process 2375 exited due to signal 9 (Killed)
+10-24 22:32:19.871 I/ActivityManager(  565): Process com.google.android.configupdater (pid 2375) has died: cch+99 CEM 
+10-24 22:32:19.873 D/DisplayManagerService(  565): Drop pending events for gone uid 10136
+10-24 22:32:19.898 D/BoundBrokerSvc( 1412): onBind: Intent { act=com.google.android.gms.safetynet.service.START pkg=com.google.android.gms }
+10-24 22:32:19.898 D/BoundBrokerSvc( 1412): Loading bound service for intent: Intent { act=com.google.android.gms.safetynet.service.START pkg=com.google.android.gms }
+10-24 22:32:19.908 W/binder:2409_7( 2409): type=1400 audit(0.0:36): avc:  denied  { read } for  name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=318 scontext=u:r:gmscore_app:s0:c512,c768 tcontext=u:object_r:system_adbd_prop:s0 tclass=file permissive=0 app=com.google.android.gms
+10-24 22:32:19.917 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@61205; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(884, 31 - 884, 31); boundsInWindow: Rect(884, 31 - 884, 31); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:19.919 W/libc    ( 2409): Access denied finding property "persist.adb.tls_server.enable"
+10-24 22:32:19.919 I/libprocessgroup(  565): Removed cgroup /sys/fs/cgroup/uid_10136/pid_2375
+10-24 22:32:19.920 W/libc    ( 2409): Access denied finding property "service.adb.tls.port"
+10-24 22:32:19.916 W/binder:2409_7( 2409): type=1400 audit(0.0:37): avc:  denied  { read } for  name="u:object_r:adbd_prop:s0" dev="tmpfs" ino=63 scontext=u:r:gmscore_app:s0:c512,c768 tcontext=u:object_r:adbd_prop:s0 tclass=file permissive=0 app=com.google.android.gms
+10-24 22:32:19.923 D/Maestro ( 3268): View hierarchy received in 241 ms
+10-24 22:32:19.938 D/FileUtils(  565): Rounded bytes from 1539383296 to 2000000000
+10-24 22:32:19.945 I/resolv  (  370): GetAddrInfoHandler::run: {101 786533 101 983141 10143 0}
+10-24 22:32:19.947 D/TrafficStats( 2409): tagSocket(97) with statsTag=0x1809, statsUid=-1
+10-24 22:32:19.989 E/chromium( 3312): [ERROR:simple_file_enumerator.cc(21)] opendir /data/user/0/app.novelspeak/cache/WebView/Default/HTTP Cache/Code Cache/wasm: No such file or directory (2)
+10-24 22:32:19.990 E/chromium( 3312): [ERROR:simple_index_file.cc(614)] Could not reconstruct index from disk
+10-24 22:32:20.011 V/GrammaticalInflectionUtils(  565): AttributionSource: AttributionSource { uid = 10151, packageName = null, attributionTag = null, token = android.os.Binder@a7a9bdb, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-24 22:32:20.030 D/Zygote  (  371): Forked child process 3368
+10-24 22:32:20.033 I/ActivityManager(  565): Start proc 3368:com.google.android.webview:webview_service/u0a151 for service {com.google.android.webview/org.chromium.android_webview.services.ComponentsProviderService}
+10-24 22:32:20.034 D/Maestro ( 3268): Requesting view hierarchy
+10-24 22:32:20.036 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:20.038 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:20.040 I/netd    (  370): tetherGetStats() -> {[]} <0.32ms>
+10-24 22:32:20.041 W/UiDevice( 3268): Active window root not found.
+10-24 22:32:20.060 I/webview_service( 3368): Using CollectorTypeCMC GC.
+10-24 22:32:20.063 W/webview_service( 3368): Unexpected CPU variant for x86: x86_64.
+10-24 22:32:20.063 W/webview_service( 3368): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, default
+10-24 22:32:20.064 E/webview_service( 3368): Not starting debugger since process cannot load the jdwp agent.
+10-24 22:32:20.066 D/nativeloader( 3368): Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+10-24 22:32:20.131 D/CompatChangeReporter( 3368): Compat change id reported: 242716250; UID 10151; state: ENABLED
+10-24 22:32:20.145 W/ziparchive( 3368): Unable to open '/data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.dm': No such file or directory
+10-24 22:32:20.145 W/ziparchive( 3368): Unable to open '/data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.dm': No such file or directory
+10-24 22:32:20.145 W/webview_service( 3368): Entry not found
+10-24 22:32:20.145 D/nativeloader( 3368): Configuring clns-7 for other apk /data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.apk. target_sdk_version=34, uses_libraries=ALL, library_path=/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/lib/x86_64:/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.webview
+10-24 22:32:20.146 D/ApplicationLoaders( 3368): Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+10-24 22:32:20.146 W/ziparchive( 3368): Unable to open '/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.dm': No such file or directory
+10-24 22:32:20.146 W/ziparchive( 3368): Unable to open '/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.dm': No such file or directory
+10-24 22:32:20.153 D/nativeloader( 3368): Configuring clns-8 for other apk /data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.apk. target_sdk_version=34, uses_libraries=, library_path=/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/lib/x86_64:/data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.apk!/lib/x86_64:/data/app/~~kBot3YSB2wfIm-EcC0wodQ==/com.google.android.trichromelibrary_636771938-6YRSUe8hOCniwUHEOL96Ew==/TrichromeLibrary.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.webview
+10-24 22:32:20.164 V/GraphicsEnvironment( 3368): Currently set values for:
+10-24 22:32:20.164 V/GraphicsEnvironment( 3368):   angle_gl_driver_selection_pkgs=[]
+10-24 22:32:20.164 V/GraphicsEnvironment( 3368):   angle_gl_driver_selection_values=[]
+10-24 22:32:20.164 V/GraphicsEnvironment( 3368): Global.Settings values are invalid: number of packages: 0, number of values: 0
+10-24 22:32:20.164 V/GraphicsEnvironment( 3368): Neither updatable production driver nor prerelease driver is supported.
+10-24 22:32:20.165 I/LoadedApk( 3368): No resource references to update in package com.google.android.trichromelibrary
+10-24 22:32:20.169 I/cr_WebViewApkApp( 3368): Launched version=124.0.6367.219 minSdkVersion=29 isBundle=false processName=com.google.android.webview:webview_service
+10-24 22:32:20.191 D/ConnectivityService(  565): requestNetwork for uid/pid:10228/3312 activeRequest: null callbackRequest: 124 [NetworkRequest [ REQUEST id=125, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10228 RequestorUid: 10228 RequestorPkg: app.novelspeak UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647 isUidTracked: false
+10-24 22:32:20.227 D/ConnectivityService(  565): NetReassign [125 : null → 101] [c 3] [a 10] [i 15]
+10-24 22:32:20.231 D/ConnectivityService(  565): NetReassign [no changes] [c 0] [a 4] [i 0]
+10-24 22:32:20.235 D/WifiNetworkFactory(  565): got request NetworkRequest [ REQUEST id=125, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10228 RequestorUid: 10228 RequestorPkg: app.novelspeak UnderlyingNetworks: Null] ]
+10-24 22:32:20.240 D/UntrustedWifiNetworkFactory(  565): got request NetworkRequest [ REQUEST id=125, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10228 RequestorUid: 10228 RequestorPkg: app.novelspeak UnderlyingNetworks: Null] ]
+10-24 22:32:20.240 D/OemPaidWifiNetworkFactory(  565): got request NetworkRequest [ REQUEST id=125, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10228 RequestorUid: 10228 RequestorPkg: app.novelspeak UnderlyingNetworks: Null] ]
+10-24 22:32:20.255 D/MultiInternetWifiNetworkFactory(  565): got request NetworkRequest [ REQUEST id=125, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10228 RequestorUid: 10228 RequestorPkg: app.novelspeak UnderlyingNetworks: Null] ]
+10-24 22:32:20.257 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@61205; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(884, 31 - 884, 31); boundsInWindow: Rect(884, 31 - 884, 31); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:20.266 I/NovelSpeak( 3312): adblock ready network=122884 cosmetic=32403 scriptlets=4612 build=105ms skipped=527
+10-24 22:32:20.271 D/CompatChangeReporter(  565): Compat change id reported: 261072174; UID 10151; state: ENABLED
+10-24 22:32:20.272 W/GmsUrlRequestImpl( 1002): Content-Type header is overwritten.
+10-24 22:32:20.276 D/Maestro ( 3268): View hierarchy received in 242 ms
+10-24 22:32:20.284 I/MediaProvider( 1271): Open with lower FS for /storage/emulated/0/Download/.pending-1793466139-novelspeak-log.txt. Uid: 10228
+10-24 22:32:20.285 I/resolv  (  370): GetAddrInfoHandler::run: {101 786533 101 983141 10143 0}
+10-24 22:32:20.286 I/resolv  (  370): res_nmkquery: (QUERY, IN, AAAA)
+10-24 22:32:20.286 I/resolv  (  370): res_nmkquery: (QUERY, IN, A)
+10-24 22:32:20.287 I/resolv  (  370): resolv_cache_lookup: FOUND IN CACHE entry=0x7fa149088ed0
+10-24 22:32:20.287 I/resolv  (  370): doQuery: rcode=0, ancount=8, return value=168
+10-24 22:32:20.287 I/resolv  (  370): resolv_cache_lookup: FOUND IN CACHE entry=0x7fa059089690
+10-24 22:32:20.287 I/resolv  (  370): doQuery: rcode=0, ancount=8, return value=264
+10-24 22:32:20.288 D/TrafficStats( 1002): tagSocket(121) with statsTag=0x401, statsUid=10143
+10-24 22:32:20.323 D/Maestro ( 3268): Requesting view hierarchy
+10-24 22:32:20.323 W/cr_media( 3312): BLUETOOTH_CONNECT permission is missing.
+10-24 22:32:20.323 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:20.324 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:20.331 W/UiDevice( 3268): Active window root not found.
+10-24 22:32:20.338 I/cr_LibraryLoader( 3339): Successfully loaded native library
+10-24 22:32:20.338 W/cr_media( 3312): registerBluetoothIntentsIfNeeded: Requires BLUETOOTH permission
+10-24 22:32:20.349 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@61205; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(884, 31 - 884, 31); boundsInWindow: Rect(884, 31 - 884, 31); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:20.353 I/cr_CachingUmaRecorder( 3339): Flushed 2 samples from 2 histograms, 0 samples were dropped.
+10-24 22:32:20.355 I/EGL_emulation( 3312): Opening libGLESv1_CM_emulation.so
+10-24 22:32:20.357 I/EGL_emulation( 3312): Opening libGLESv2_emulation.so
+10-24 22:32:20.363 D/Maestro ( 3268): View hierarchy received in 40 ms
+10-24 22:32:20.367 W/SystemServiceRegistry( 3339): No service published for: uimode
+10-24 22:32:20.403 W/servicemanager(    0): Isolated app with UID 99000 requested 'uimode', but the service is not allowed for isolated apps.
+10-24 22:32:20.380 W/HWUI    ( 3312): Unknown dataspace 0
+10-24 22:32:20.392 W/chromium( 3339): [WARNING:runtime_features.cc(694)] SharedStorage for M118+ cannot be enabled in this configuration. Use --enable-features=SharedStorageAPI,SharedStorageAPIM118 in addition.
+10-24 22:32:20.437 D/OomAdjuster(  565): Not killing cached processes
+10-24 22:32:20.480 D/Maestro ( 3268): Requesting view hierarchy
+10-24 22:32:20.481 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:20.481 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:20.482 W/UiDevice( 3268): Active window root not found.
+10-24 22:32:20.508 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@61205; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(884, 31 - 884, 31); boundsInWindow: Rect(884, 31 - 884, 31); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:20.513 D/Maestro ( 3268): View hierarchy received in 33 ms
+10-24 22:32:20.516 D/CoreBackPreview(  565): Window{ad15234 u0 app.novelspeak/app.novelspeak.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@b8340b8, mPriority=0, mIsAnimationCallback=false}
+10-24 22:32:20.544 I/FontLog ( 1002): Received query name=Google Sans&weight=700&besteffort=false, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+10-24 22:32:20.545 I/FontLog ( 1002): Query [name=Google Sans&weight=700&besteffort=false] resolved to {Google Sans, wdth 100.0, wght 700, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+10-24 22:32:20.550 I/FontLog ( 1002): Font PFD returned from cache for {Google Sans, wdth 100.0, wght 700, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+10-24 22:32:20.550 I/FontLog ( 1002): Fetch {Google Sans, wdth 100.0, wght 700, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+10-24 22:32:20.553 D/Maestro ( 3268): Requesting view hierarchy
+10-24 22:32:20.555 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:20.558 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:20.570 W/ServiceManagerCppClient(  435): Permission failure: android.permission.ACCESS_SURFACE_FLINGER from uid=10228 pid=0
+10-24 22:32:20.570 D/PermissionCache(  435): checking android.permission.ACCESS_SURFACE_FLINGER for uid=10228 => denied (11235 us)
+10-24 22:32:20.571 W/ServiceManagerCppClient(  435): Permission failure: android.permission.ROTATE_SURFACE_FLINGER from uid=10228 pid=0
+10-24 22:32:20.571 D/PermissionCache(  435): checking android.permission.ROTATE_SURFACE_FLINGER for uid=10228 => denied (485 us)
+10-24 22:32:20.571 W/ServiceManagerCppClient(  435): Permission failure: android.permission.INTERNAL_SYSTEM_WINDOW from uid=10228 pid=0
+10-24 22:32:20.571 D/PermissionCache(  435): checking android.permission.INTERNAL_SYSTEM_WINDOW for uid=10228 => denied (277 us)
+10-24 22:32:20.571 W/ServiceManagerCppClient(  435): Permission failure: android.permission.ROTATE_SURFACE_FLINGER from uid=10228 pid=3312
+10-24 22:32:20.571 D/PermissionCache(  435): checking android.permission.ROTATE_SURFACE_FLINGER for uid=10228 => denied (470 us)
+10-24 22:32:20.576 I/FontLog ( 1002): Pulling font file for id = 13, cache size = 10 [CONTEXT service_id=132 ]
+10-24 22:32:20.592 W/HWUI    ( 3312): Failed to initialize 101010-2 format, error = EGL_SUCCESS
+10-24 22:32:20.601 I/FontLog ( 1002): Received query name=Noto Color Emoji Compat&weight=400&besteffort=false, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+10-24 22:32:20.601 I/FontLog ( 1002): Query [name=Noto Color Emoji Compat&weight=400&besteffort=false] resolved to {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+10-24 22:32:20.606 I/FontLog ( 1002): Fetch {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+10-24 22:32:20.607 I/FontLog ( 1002): Pulling font file for id = 14, cache size = 8 [CONTEXT service_id=132 ]
+10-24 22:32:20.609 I/FontLog ( 1002): Received query name=Google Sans&weight=400&besteffort=false, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+10-24 22:32:20.610 I/FontLog ( 1002): Query [name=Google Sans&weight=400&besteffort=false] resolved to {Google Sans, wdth 100.0, wght 400, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+10-24 22:32:20.610 I/FontLog ( 1002): Font PFD returned from cache for {Google Sans, wdth 100.0, wght 400, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+10-24 22:32:20.611 I/FontLog ( 1002): Fetch {Google Sans, wdth 100.0, wght 400, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+10-24 22:32:20.612 I/FontLog ( 1002): Pulling font file for id = 15, cache size = 5 [CONTEXT service_id=132 ]
+10-24 22:32:20.613 I/FontLog ( 1002): Received query name=Google Sans&weight=500&besteffort=false, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+10-24 22:32:20.613 I/FontLog ( 1002): Query [name=Google Sans&weight=500&besteffort=false] resolved to {Google Sans, wdth 100.0, wght 500, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+10-24 22:32:20.614 I/FontLog ( 1002): Font PFD returned from cache for {Google Sans, wdth 100.0, wght 500, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+10-24 22:32:20.614 I/FontLog ( 1002): Fetch {Google Sans, wdth 100.0, wght 500, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+10-24 22:32:20.618 I/FontLog ( 1002): Pulling font file for id = 16, cache size = 6 [CONTEXT service_id=132 ]
+10-24 22:32:20.660 I/servicemanager(    0): Caller(pid=3312,uid=10228,sid=u:r:untrusted_app:s0:c228,c256,c512,c768) Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest. No alternative instances declared in VINTF.
+10-24 22:32:20.633 I/hwservicemanager(  168): getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+10-24 22:32:20.633 I/Gralloc4( 3312): mapper 4.x is not supported
+10-24 22:32:20.680 I/resolv  (  370): GetAddrInfoHandler::run: {101 786533 101 983141 10143 0}
+10-24 22:32:20.681 I/resolv  (  370): res_nmkquery: (QUERY, IN, AAAA)
+10-24 22:32:20.681 I/resolv  (  370): res_nmkquery: (QUERY, IN, A)
+10-24 22:32:20.773 I/resolv  (  370): res_nsend: used send_dg 165 terrno: 0
+10-24 22:32:20.773 I/resolv  (  370): doQuery: rcode=0, ancount=8, return value=165
+10-24 22:32:20.773 I/resolv  (  370): res_nsend: used send_dg 261 terrno: 0
+10-24 22:32:20.773 I/resolv  (  370): doQuery: rcode=0, ancount=8, return value=261
+10-24 22:32:20.781 D/TrafficStats( 1002): tagSocket(132) with statsTag=0x1065fff, statsUid=-1
+10-24 22:32:20.844 W/GLSUser ( 1002): [AppCertManager] Exception while requesting key: 
+10-24 22:32:20.844 W/GLSUser ( 1002): java.util.concurrent.ExecutionException: bpcw: Parse Proto Exception with response code 400
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at etvr.s(:com.google.android.gms@242335041@24.23.35 (190800-646585959):21)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at etvr.get(:com.google.android.gms@242335041@24.23.35 (190800-646585959):10)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at yfw.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):477)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at yfu.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):31)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at yfp.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at yfs.a(:com.google.android.gms@242335041@24.23.35 (190800-646585959):58)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at uou.call(:com.google.android.gms@242335041@24.23.35 (190800-646585959):56)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at angs.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):50)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at angs.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):76)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at anmg.run(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at java.lang.Thread.run(Thread.java:1012)
+10-24 22:32:20.844 W/GLSUser ( 1002): Caused by: bpcw: Parse Proto Exception with response code 400
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at bpdw.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):80)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at bpgb.e(:com.google.android.gms@242335041@24.23.35 (190800-646585959):17)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at bpgp.onSucceeded(:com.google.android.gms@242335041@24.23.35 (190800-646585959):7)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at m.mw.onSucceeded(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):3)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at m.lt.run(:com.google.android.gms.dynamite_cronetdynamite@242335041@24.23.35 (190800-0):25)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	... 6 more
+10-24 22:32:20.844 W/GLSUser ( 1002): Caused by: fkhe: Protocol message contained an invalid tag (zero).
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at fkea.k(:com.google.android.gms@242335041@24.23.35 (190800-646585959):39)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at fkid.c(:com.google.android.gms@242335041@24.23.35 (190800-646585959):309)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at fkid.i(:com.google.android.gms@242335041@24.23.35 (190800-646585959):8)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at fkgi.fe(:com.google.android.gms@242335041@24.23.35 (190800-646585959):25)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at fkgc.g(:com.google.android.gms@242335041@24.23.35 (190800-646585959):3)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at fkdw.e(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at fkdw.d(:com.google.android.gms@242335041@24.23.35 (190800-646585959):3)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at fkdw.p(:com.google.android.gms@242335041@24.23.35 (190800-646585959):1)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at bpdw.g(:com.google.android.gms@242335041@24.23.35 (190800-646585959):68)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	at bpdw.b(:com.google.android.gms@242335041@24.23.35 (190800-646585959):11)
+10-24 22:32:20.844 W/GLSUser ( 1002): 	... 10 more
+10-24 22:32:20.851 I/NetworkScheduler.Stats( 1002): Task com.google.android.gms/com.google.android.gms.auth.account.be.legacy.AuthCronService finished executing. cause:5 result: 3 elapsed_millis: 1456 uptime_millis: 1456 exec_start_elapsed_seconds: 111 [CONTEXT service_id=218 ]
+10-24 22:32:20.865 I/BugleRcsEngine( 1318): delay time out, reset attempts 2 and process SIM event [CONTEXT thread_id=62 ]
+10-24 22:32:20.873 I/BugleRcsEngine( 1318): process intent: android.intent.action.SIM_STATE_CHANGED [CONTEXT log_prefix="(Sim)" thread_id=62 ]
+10-24 22:32:20.907 I/BugleRcsEngine( 1318): Processing an intent [CONTEXT log_prefix="(Sim)" thread_id=62 ]
+10-24 22:32:20.915 I/BugleRcsEngine( 1318): Ignoring duplicate SIM state: LOADED [CONTEXT log_prefix="(Sim)" thread_id=62 ]
+10-24 22:32:20.916 I/NetworkScheduler.Stats( 1002): Task com.google.android.gms/com.google.android.gms.telephonyspam.sync.SpamListSyncTaskService started execution. cause:5 exec_start_elapsed_seconds: 112 [CONTEXT service_id=218 ]
+10-24 22:32:20.918 I/TelephonySpamChimeraSer( 1412): Running Telephony Spam Chimera Service [CONTEXT service_id=150 ]
+10-24 22:32:20.924 I/TelephonySpamChimeraSer( 1412): Cleaning SIP Header local table of old entries [CONTEXT service_id=150 ]
+10-24 22:32:20.927 I/SpamListSync( 1412): Call spam module disabled. Skipping cleaning cache sip header table. [CONTEXT service_id=150 ]
+10-24 22:32:20.927 I/TelephonySpamChimeraSer( 1412): Syncing Call Spam List [CONTEXT service_id=150 ]
+10-24 22:32:20.927 I/SpamListSync( 1412): SpamListSyncChimeraService.syncSpamList called with tag: telephonyspam.SpamListSyncOneOffTask, extras: Bundle[{SpamList Type=0, Action=1.0}] [CONTEXT service_id=150 ]
+10-24 22:32:20.928 I/SpamListSync( 1412): Call spam module disabled. Skipping spam list syncing. [CONTEXT service_id=150 ]
+10-24 22:32:20.933 I/NetworkScheduler.Stats( 1002): Task com.google.android.gms/com.google.android.gms.telephonyspam.sync.SpamListSyncTaskService finished executing. cause:5 result: 1 elapsed_millis: 44 uptime_millis: 44 exec_start_elapsed_seconds: 112 [CONTEXT service_id=218 ]
+10-24 22:32:20.965 I/NetworkScheduler.Stats( 1002): Task com.google.android.gms/com.google.android.gms.tapandpay.gcmtask.TapAndPayGcmTaskService started execution. cause:5 exec_start_elapsed_seconds: 113 [CONTEXT service_id=218 ]
+10-24 22:32:20.982 I/NetworkScheduler.Stats( 1002): Task com.google.android.gms/com.google.android.gms.tapandpay.gcmtask.TapAndPayGcmTaskService finished executing. cause:5 result: 1 elapsed_millis: 26 uptime_millis: 26 exec_start_elapsed_seconds: 113 [CONTEXT service_id=218 ]
+10-24 22:32:21.085 W/AccessibilityManagerService(  565):  wait for adding window timeout: 10
+10-24 22:32:21.583 W/ServiceManagerCppClient(  565): Permission failure: android.permission.ACCESS_SURFACE_FLINGER from uid=10228 pid=0
+10-24 22:32:21.583 D/PermissionCache(  565): checking android.permission.ACCESS_SURFACE_FLINGER for uid=10228 => denied (139 us)
+10-24 22:32:21.583 W/ServiceManagerCppClient(  565): Permission failure: android.permission.ROTATE_SURFACE_FLINGER from uid=10228 pid=0
+10-24 22:32:21.583 D/PermissionCache(  565): checking android.permission.ROTATE_SURFACE_FLINGER for uid=10228 => denied (39 us)
+10-24 22:32:21.583 W/ServiceManagerCppClient(  565): Permission failure: android.permission.INTERNAL_SYSTEM_WINDOW from uid=10228 pid=0
+10-24 22:32:21.583 D/PermissionCache(  565): checking android.permission.INTERNAL_SYSTEM_WINDOW for uid=10228 => denied (29 us)
+10-24 22:32:21.584 I/Choreographer( 3312): Skipped 66 frames!  The application may be doing too much work on its main thread.
+10-24 22:32:21.613 I/netd    (  370): tetherGetStats() -> {[]} <0.52ms>
+10-24 22:32:21.621 W/ziparchive(  565): Unable to open '/data/app/~~siLaVFE5UW1YuMSu8W4G5w==/app.novelspeak-Iujly61iWhADIPQAoPMw3g==/base.dm': No such file or directory
+10-24 22:32:21.618 I/HWUI    ( 3312): Davey! duration=1245ms; Flags=1, FrameTimelineVsyncId=1928, IntendedVsync=112428228276, Vsync=112544894938, InputEventId=0, HandleInputStart=112560791985, AnimationStart=112560792919, PerformTraversalsStart=112567086032, DrawStart=112732630461, FrameDeadline=112444894942, FrameInterval=112558136451, FrameStartTime=16666666, SyncQueued=112747059911, SyncStart=112752349300, IssueDrawCommandsStart=112753180205, SwapBuffers=113534793053, FrameCompleted=113678619842, DequeueBufferDuration=4702, QueueBufferDuration=928395, GpuCompleted=113678619842, SwapBuffersCompleted=113661995921, DisplayPresentTime=0, CommandSubmissionCompleted=113534793053, 
+10-24 22:32:21.709 W/WindowOnBackDispatcher(  792): sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@6a2e2e0
+10-24 22:32:21.717 D/CoreBackPreview(  565): Window{68b8ebf u0 Splash Screen app.novelspeak EXITING}: Setting back callback null
+10-24 22:32:21.719 I/cr_A11yState( 3312): Enabled accessibility services list updated.
+10-24 22:32:21.720 D/AutofillManager( 3312): Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+10-24 22:32:21.723 I/cr_A11yState( 3312): Informing listeners of changes.
+10-24 22:32:21.723 I/cr_A11yState( 3312): New AccessibilityState: State{isScreenReaderEnabled=false, isTouchExplorationEnabled=false, isPerformGesturesEnabled=false, isAnyAccessibilityServiceEnabled=false, isAccessibilityToolPresent=false, isSpokenFeedbackServicePresent=false, isTextShowPasswordEnabled=true, isOnlyPasswordManagersEnabled=false}
+10-24 22:32:21.723 W/InputManager-JNI(  565): Input channel object '68b8ebf Splash Screen app.novelspeak (client)' was disposed without first being removed with the input manager!
+10-24 22:32:21.736 I/ActivityTaskManager(  565): Displayed app.novelspeak/.MainActivity for user 0: +2s809ms
+10-24 22:32:21.736 W/Looper  (  565): Slow dispatch took 119ms android.fg h=android.os.Handler c=com.android.server.wm.ActivityMetricsLogger$$ExternalSyntheticLambda0@de7aa60 m=0
+10-24 22:32:21.741 D/BaseDepthController( 1163): setSurface:
+10-24 22:32:21.741 D/BaseDepthController( 1163): 	mWaitingOnSurfaceValidity: false
+10-24 22:32:21.741 D/BaseDepthController( 1163): 	mSurface: null
+10-24 22:32:21.750 D/BaseDepthController( 1163): mSurface is null and mCurrentBlur is: 0
+10-24 22:32:21.759 D/StateManager( 1163): goToState - fromState: Normal, toState: Normal, partial trace:
+10-24 22:32:21.759 D/StateManager( 1163): 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:4)
+10-24 22:32:21.759 D/StateManager( 1163): 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:1)
+10-24 22:32:21.759 D/StateManager( 1163): 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:34)
+10-24 22:32:21.786 D/StatsLog( 1163): LAUNCHER_ONSTOP
+10-24 22:32:21.788 I/AppWidgetServiceImpl(  565): setAppWidgetHidden() 0
+10-24 22:32:21.791 I/ImeTracker(  565): app.novelspeak:89b44da3: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-24 22:32:21.793 I/ImeTracker(  565): app.novelspeak:89b44da3: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-24 22:32:21.809 D/OneSearchSuggestProvider( 1163): Shut down the binder channel
+10-24 22:32:21.825 D/StatsLog( 1163): LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+10-24 22:32:21.861 I/app.novelspeak( 3312): Background concurrent mark compact GC freed 58MB AllocSpace bytes, 28(3136KB) LOS objects, 36% free, 41MB/65MB, paused 116us,785us total 250.392ms
+10-24 22:32:21.865 I/GoogleInputMethodService( 1224): GoogleInputMethodService.onFinishInput():3157 
+10-24 22:32:21.875 I/GoogleInputMethodService( 1224): GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+10-24 22:32:21.875 W/app.novelspeak( 3312): ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~HTKCco7rOW_3wFJ81gOD-Q==/com.google.android.webview-W5j0teMx79VHGrCQSsHSJg==/WebViewGoogle.apk' with 2 weak references
+10-24 22:32:21.878 D/TrafficStats( 1002): tagSocket(137) with statsTag=0x1065fff, statsUid=10135
+10-24 22:32:21.882 I/GoogleInputMethodService( 1224): GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=app.novelspeak, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+10-24 22:32:21.883 I/GoogleInputMethodService( 1224): GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+10-24 22:32:21.886 I/AndroidIME( 1224): InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+10-24 22:32:21.890 W/PackageConfigPersister(  565): App-specific configuration not found for packageName: app.novelspeak and userId: 0
+10-24 22:32:21.892 I/resolv  (  370): GetAddrInfoHandler::run: {101 101 101 983141 10228 0}
+10-24 22:32:21.896 I/resolv  (  370): res_nmkquery: (QUERY, IN, AAAA)
+10-24 22:32:21.896 I/resolv  (  370): res_nmkquery: (QUERY, IN, A)
+10-24 22:32:21.913 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@14682; boundsInParent: Rect(0, 0 - 1080, 63); boundsInScreen: Rect(0, 0 - 1080, 63); boundsInWindow: Rect(0, 0 - 1080, 63); packageName: app.novelspeak; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: android:id/statusBarBackground; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:21.920 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@61205; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(884, 31 - 884, 31); boundsInWindow: Rect(884, 31 - 884, 31); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:21.920 D/Maestro ( 3268): View hierarchy received in 1367 ms
+10-24 22:32:22.252 I/resolv  (  370): res_nsend: used send_dg 69 terrno: 0
+10-24 22:32:22.252 I/resolv  (  370): doQuery: rcode=0, ancount=2, return value=69
+10-24 22:32:22.252 I/resolv  (  370): res_nsend: used send_dg 93 terrno: 0
+10-24 22:32:22.252 I/resolv  (  370): doQuery: rcode=0, ancount=2, return value=93
+10-24 22:32:22.341 D/Maestro ( 3268): Requesting view hierarchy
+10-24 22:32:22.341 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:22.342 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:22.357 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@14682; boundsInParent: Rect(0, 0 - 1080, 63); boundsInScreen: Rect(0, 0 - 1080, 63); boundsInWindow: Rect(0, 0 - 1080, 63); packageName: app.novelspeak; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: android:id/statusBarBackground; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:22.373 E/TaskPersister(  565): File error accessing recents directory (directory doesn't exist?).
+10-24 22:32:22.374 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@61205; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(884, 31 - 884, 31); boundsInWindow: Rect(884, 31 - 884, 31); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:22.375 D/Maestro ( 3268): View hierarchy received in 34 ms
+10-24 22:32:22.438 D/Maestro ( 3268): Requesting view hierarchy
+10-24 22:32:22.439 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:22.439 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:22.447 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@14682; boundsInParent: Rect(0, 0 - 1080, 63); boundsInScreen: Rect(0, 0 - 1080, 63); boundsInWindow: Rect(0, 0 - 1080, 63); packageName: app.novelspeak; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: android:id/statusBarBackground; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:22.457 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@61205; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(884, 31 - 884, 31); boundsInWindow: Rect(884, 31 - 884, 31); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:22.458 D/Maestro ( 3268): View hierarchy received in 20 ms
+10-24 22:32:22.554 D/Maestro ( 3268): Requesting view hierarchy
+10-24 22:32:22.554 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:22.554 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:22.562 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@14682; boundsInParent: Rect(0, 0 - 1080, 63); boundsInScreen: Rect(0, 0 - 1080, 63); boundsInWindow: Rect(0, 0 - 1080, 63); packageName: app.novelspeak; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: android:id/statusBarBackground; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:22.574 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@61205; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(884, 31 - 884, 31); boundsInWindow: Rect(884, 31 - 884, 31); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:22.576 D/Maestro ( 3268): View hierarchy received in 22 ms
+10-24 22:32:22.640 W/.gms.persistent( 1002): Missing inline cache for java.lang.Object algi.next()
+10-24 22:32:22.640 W/.gms.persistent( 1002): Missing inline cache for java.lang.Object algi.next()
+10-24 22:32:22.640 W/.gms.persistent( 1002): Missing inline cache for java.lang.Object algi.next()
+10-24 22:32:22.640 W/.gms.persistent( 1002): Missing inline cache for java.lang.Object algi.next()
+10-24 22:32:22.640 W/.gms.persistent( 1002): Missing inline cache for java.lang.Object algi.next()
+10-24 22:32:22.640 W/.gms.persistent( 1002): Missing inline cache for java.lang.Object algi.next()
+10-24 22:32:22.641 W/.gms.persistent( 1002): Missing inline cache for java.lang.Object algi.next()
+10-24 22:32:22.641 W/.gms.persistent( 1002): Missing inline cache for java.lang.Object algi.next()
+10-24 22:32:22.672 D/TrafficStats( 1002): tagSocket(106) with statsTag=0x1065fff, statsUid=10144
+10-24 22:32:22.677 D/Maestro ( 3268): Requesting view hierarchy
+10-24 22:32:22.677 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:22.678 W/QueryController( 3268): Could not detect idle state.
+10-24 22:32:22.686 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@14682; boundsInParent: Rect(0, 0 - 1080, 63); boundsInScreen: Rect(0, 0 - 1080, 63); boundsInWindow: Rect(0, 0 - 1080, 63); packageName: app.novelspeak; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: android:id/statusBarBackground; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:22.700 I/Maestro ( 3268): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@61205; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(884, 31 - 884, 31); boundsInWindow: Rect(884, 31 - 884, 31); packageName: com.android.systemui; className: android.widget.FrameLayout; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+10-24 22:32:22.703 D/Maestro ( 3268): View hierarchy received in 26 ms
+10-24 22:32:22.835 I/chromium( 3312): [INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'hid'.", source:  (0)
+10-24 22:32:22.835 I/chromium( 3312): [INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'payment'.", source:  (0)
+10-24 22:32:22.835 I/chromium( 3312): [INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'serial'.", source:  (0)
+10-24 22:32:22.835 I/chromium( 3312): [INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'usb'.", source:  (0)
+10-24 22:32:22.835 I/chromium( 3312): [INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'xr-spatial-tracking'.", source:  (0)
+10-24 22:32:22.841 I/chromium( 3312): [INFO:CONSOLE(0)] "Refused to load the script 'https://www.empirenovel.com/cdn-cgi/speculation' because it violates the following Content Security Policy directive: "script-src 'nonce-loVdOaeU60zDOlpxPgEbJ3' 'unsafe-eval' https://challenges.cloudflare.com".
+10-24 22:32:22.841 I/chromium( 3312): ", source: https://www.empirenovel.com/novel/my-werewolf-system/84 (0)
+10-24 22:32:22.848 I/chromium( 3312): [INFO:CONSOLE(1)] "Load failed or canceled (net::ERR_ABORTED) for rule set requested from "https://www.empirenovel.com/cdn-cgi/speculation" found in Speculation-Rules header.", source: https://www.empirenovel.com/novel/my-werewolf-system/84 (1)
+10-24 22:32:22.895 D/TrafficStats( 1002): tagSocket(118) with statsTag=0x1065fff, statsUid=10168
+10-24 22:32:22.999 D/EGL_emulation( 3312): app_time_stats: avg=62.93ms min=2.74ms max=646.38ms count=20
+10-24 22:32:23.263 I/netd    (  370): tetherGetStats() -> {[]} <0.45ms>
+10-24 22:32:23.338 I/logd    (    0): logdr: UID=2000 GID=2000 PID=3421 n tail=0 logMask=99 pid=0 start=0ns deadline=0ns

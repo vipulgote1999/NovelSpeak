@@ -43,6 +43,13 @@ import java.util.concurrent.atomic.AtomicLong
 class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsEngine {
 
     override val id = "system"
+
+    /**
+     * System TTS engines accept rates up to ~4x; 3.0 is the same ceiling the neural engine
+     * advertises so the two backends agree in the UI (P0.6).
+     */
+    override val maxSpeed: Float get() = MAX_SPEED
+
     override var isReady = false
         private set
 
@@ -202,8 +209,17 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
             }
             try {
                 applyVoiceAndRate()
-                val pcm = try {
-                    renderToPcm(task.text)
+                // P1.2: the pronunciation dictionary must work on the default (system) backend
+                // too. Rules only - system TTS keeps quotes/casing/punctuation as extracted.
+                val speechText = TtsTextCleaner.applyPronunciation(task.text)
+                if (speechText.isBlank()) {
+                    // A pronunciation rule deleted the whole sentence: skip it (success, no
+                    // audio) instead of asking the provider to synthesize "".
+                    main.post { task.onDone(true) }
+                    continue
+                }
+                var pcm = try {
+                    renderToPcm(speechText)
                 } catch (e: UnsupportedOperationException) {
                     null
                 }
@@ -230,6 +246,19 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
                 // Ramp both edges of the rendered sentence so it neither clicks against
                 // the previous tail nor cuts off abruptly.
                 applyEdgeFade(pcm, SAMPLE_RATE)
+                // Skip-silence (P1.5): providers pad every utterance with 100-600 ms of silence,
+                // which makes sentence navigation feel laggy. Trim after the fades (the 10 ms pad
+                // keeps the boundary at zero) and before the single PcmPlayer.write. Off by
+                // default; when the render was pure silence the untrimmed buffer is kept so the
+                // feature can never turn a rendered sentence into a dropped one.
+                if (prefs.ttsSkipSilence) {
+                    val trimmed = try {
+                        AudioDsp.trimSilence(pcm, SAMPLE_RATE)
+                    } catch (e: Throwable) {
+                        pcm
+                    }
+                    if (trimmed.isNotEmpty()) pcm = trimmed
+                }
                 novelSpeakPlayer().ensure(sampleRate)
                 // Epoch captured before writing: a seek flushes the track and makes this
                 // target unreachable, so the waiter must abort on the flush too.
@@ -314,9 +343,13 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
         if (t == null || !isReady) { main.post { task.onDone(false) }; return }
         try {
             applyVoiceAndRate()
+            // Same rule pass as the file-synthesis path (never double-applied: the direct path
+            // only runs when no render was written).
+            val speechText = TtsTextCleaner.applyPronunciation(task.text)
+            if (speechText.isBlank()) { main.post { task.onDone(true) }; return }
             val utt = "ns-" + counter.incrementAndGet()
             synchronized(pending) { pending[utt] = task.onDone }
-            val res = t.speak(task.text, TextToSpeech.QUEUE_ADD, null, utt)
+            val res = t.speak(speechText, TextToSpeech.QUEUE_ADD, null, utt)
             if (res != TextToSpeech.SUCCESS) {
                 synchronized(pending) { pending.remove(utt) }
                 main.post { task.onDone(false) }
@@ -327,16 +360,31 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
         }
     }
 
+    /**
+     * Applies voice + rate before every synthesize/speak call, so the rate is always clamped on
+     * the speak path.
+     *
+     * Android's `setSpeechRate` scale is already a multiplier with 1.0 = normal (0.5 = half,
+     * 2.0 = double), which is the same scale as the app-wide speed pref — the mapping is
+     * therefore 1:1 inside `0.5..[maxSpeed]`. Clamping here is what makes P0.6 honest: a UI
+     * value of 3.0 is actually requested instead of being silently rounded to 2.0.
+     */
     private fun applyVoiceAndRate() {
         val t = tts ?: return
         try {
-            t.setSpeechRate(prefs.speed.coerceIn(0.5f, 2.0f))
+            t.setSpeechRate(effectiveSpeed())
             voiceId?.let { vid ->
                 val v = t.voices?.firstOrNull { it.name == vid }
                 if (v != null) t.voice = v
             }
         } catch (e: Throwable) {
         }
+    }
+
+    /** Player-control speed clamped to this engine's contract; NaN/corrupt pref -> 1.0. */
+    private fun effectiveSpeed(): Float {
+        val s = prefs.speed
+        return if (s.isFinite()) s.coerceIn(MIN_SPEED, MAX_SPEED) else 1.0f
     }
 
     private fun novelSpeakPlayer() = NovelSpeakApp.instance.player
@@ -413,5 +461,9 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
     private companion object {
         const val SAMPLE_RATE = 24000
         const val FILE_PREFIX = "nsf-"
+
+        /** Same 0.5..3.0 contract as the neural engine so the UI can use one range. */
+        const val MIN_SPEED = 0.5f
+        const val MAX_SPEED = 3.0f
     }
 }
