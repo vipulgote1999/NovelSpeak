@@ -13,8 +13,12 @@
     return (s || '')
       .replace(/\u00a0/g, ' ')
       // Some novel sites obfuscate words with interior dots ("cla.s.sroom",
-      // "b.a.s.t.a.r.d") to evade text filters. Collapse only tokens made of
-      // three or more letter/dot segments; leave e.g./i.e./U.S.A. alone.
+      // "b.a.s.t.a.r.d") to evade text filters, including single-letter runs
+      // with "+" or "-" separators ("s.h.i.+ning"). Collapse only tokens made
+      // of three or more letter/dot segments; leave e.g./i.e./U.S.A. alone.
+      .replace(/\b[A-Za-z][A-Za-z]*(?:[.\-+]+[A-Za-z]+){2,}\b/g, function (m) {
+        return m === m.toUpperCase() ? m : m.replace(/[.\-+]/g, '');
+      })
       .replace(/\b[A-Za-z]+(?:\.[A-Za-z]+){2,}\b/g, function (m) {
         return m === m.toUpperCase() ? m : m.replace(/\./g, '');
       })
@@ -252,7 +256,11 @@
     html.ns-reader [class*="chapter-header"], html.ns-reader [class*="breadcrumb"],
     html.ns-reader [class*="pagination"], html.ns-reader [class*="navbar"],
     html.ns-reader [class*="menu"], html.ns-reader [class*="logo"],
-    html.ns-reader [id*="logo"], html.ns-reader [id*="header"] {
+    html.ns-reader [id*="logo"], html.ns-reader [id*="header"],
+    html.ns-reader #centralNotice, html.ns-reader [id*="centralNotice"],
+    html.ns-reader [class*="cbnnr"], html.ns-reader [class*="fundraising"],
+    html.ns-reader [id*="fundraising"], html.ns-reader .hatnote,
+    html.ns-reader .mw-editsection, html.ns-reader [class*="editsection"] {
       display:none !important;
     }
     html.ns-reader .ns-reader-hidden { display:none !important; }
@@ -268,6 +276,67 @@
       background:transparent !important;
       box-shadow:inset 3px 0 0 #F6C453 !important;
     }
+
+    /* ---- surface reset -------------------------------------------------
+       Sites ship their own light panels (Wikipedia's .mw-body/hatnote/
+       infobox, news walls, banner wrappers). Only recoloring body/p/li left
+       those surfaces light while the text turned near-white: unreadable.
+       Clear every background, then re-add a dark card for code/quote blocks. */
+    html.ns-reader { overflow-x:hidden !important; }
+    html.ns-reader body * {
+      background-color:transparent !important;
+      background-image:none !important;
+      box-shadow:none !important;
+      border-color:rgba(255,255,255,.14) !important;
+    }
+    html.ns-reader body div, html.ns-reader body span,
+    html.ns-reader body section, html.ns-reader body article, html.ns-reader body main,
+    html.ns-reader body table, html.ns-reader body caption,
+    html.ns-reader body thead, html.ns-reader body tbody, html.ns-reader body tfoot,
+    html.ns-reader body tr, html.ns-reader body td, html.ns-reader body th,
+    html.ns-reader body ul, html.ns-reader body ol, html.ns-reader body li,
+    html.ns-reader body dl, html.ns-reader body dt, html.ns-reader body dd,
+    html.ns-reader body figure, html.ns-reader body figcaption,
+    html.ns-reader body pre, html.ns-reader body code, html.ns-reader body center {
+      color:#E9EDF2 !important;
+    }
+    html.ns-reader a, html.ns-reader a:visited { color:#6EE7B7 !important; }
+    html.ns-reader pre {
+      background:rgba(255,255,255,.06) !important;
+      padding:10px !important; border-radius:6px !important;
+      white-space:pre-wrap !important; overflow-x:auto !important;
+    }
+    html.ns-reader code {
+      background:rgba(255,255,255,.08) !important;
+      padding:1px 4px !important; border-radius:4px !important;
+    }
+
+    /* ---- layout reset -------------------------------------------------
+       Minerva (and several novel themes) switch tables to flex, which
+       scatters infobox cells across the viewport and clips the edges. */
+    html.ns-reader table {
+      display:table !important; width:100% !important; max-width:100% !important;
+      table-layout:auto !important; border-collapse:collapse !important;
+    }
+    html.ns-reader caption { display:table-caption !important; text-align:left !important; }
+    html.ns-reader thead { display:table-header-group !important; }
+    html.ns-reader tbody { display:table-row-group !important; }
+    html.ns-reader tfoot { display:table-footer-group !important; }
+    html.ns-reader tr { display:table-row !important; }
+    html.ns-reader td, html.ns-reader th {
+      display:table-cell !important; white-space:normal !important;
+      word-break:break-word !important; padding:4px 6px !important;
+      border-bottom:1px solid rgba(255,255,255,.12) !important;
+    }
+    html.ns-reader table.infobox, html.ns-reader .infobox { margin:0 0 1em !important; }
+
+    /* ---- media -------------------------------------------------------- */
+    html.ns-reader img, html.ns-reader video, html.ns-reader canvas,
+    html.ns-reader svg, html.ns-reader figure, html.ns-reader table,
+    html.ns-reader pre, html.ns-reader .mwe-math-element {
+      max-width:100% !important; height:auto !important;
+    }
+    html.ns-reader .mwe-math-element { overflow-x:auto !important; }
   `;
   (document.head || document.documentElement).appendChild(readerStyle);
 
@@ -341,7 +410,7 @@
     el.classList.add('ns-active');
     if (/^H[1-6]$/.test(el.tagName || '')) el.classList.add('ns-active-heading');
     if (scroll !== false) {
-      try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { el.scrollIntoView(); }
+      try { el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' }); } catch (e) { el.scrollIntoView(); }
     }
     return true;
   };

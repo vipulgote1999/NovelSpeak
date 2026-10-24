@@ -17,10 +17,18 @@ import org.json.JSONObject
  */
 object WebExtractor {
 
-    fun install(web: WebView) {
+    /**
+     * Injects the page-side libraries. [onReady] runs after `extract.js` has executed, so
+     * callers that immediately call [extract] cannot race the async script evaluation
+     * (which previously produced 0 blocks on freshly loaded documents).
+     */
+    fun install(web: WebView, onReady: (() -> Unit)? = null) {
         val ctx = web.context
-        web.evaluateJavascript(readAsset(ctx, "readability.js"), null)
-        web.evaluateJavascript(readAsset(ctx, "extract.js"), null)
+        web.evaluateJavascript(readAsset(ctx, "readability.js")) {
+            web.evaluateJavascript(readAsset(ctx, "extract.js")) {
+                onReady?.invoke()
+            }
+        }
     }
 
     fun extract(web: WebView, onResult: (String, List<Reader.Block>) -> Unit) {
@@ -32,21 +40,46 @@ object WebExtractor {
                 val title = obj.optString("title", "")
                 val arr = obj.optJSONArray("blocks") ?: return@evaluateJavascript onResult(title, emptyList())
                 val max = NovelSpeakApp.instance.prefs.maxSentenceChars
-                val blocks = ArrayList<Reader.Block>()
+                val raw = ArrayList<Reader.Block>()
                 for (i in 0 until arr.length()) {
                     val b = arr.getJSONObject(i)
                     val text = b.optString("text", "")
                     val blockIndex = b.optInt("i", i)
                     if (text.isBlank()) continue
                     for (s in SentenceSplitter.split(text, max)) {
-                        blocks.add(Reader.Block(s, blockIndex))
+                        raw.add(Reader.Block(s, blockIndex))
                     }
                 }
-                onResult(title, blocks)
+                onResult(title, mergeShortFragments(raw, max))
             } catch (e: Throwable) {
                 onResult("", emptyList())
             }
         }
+    }
+
+    /**
+     * Merge short / speech-less fragments before they reach a neural engine.
+     * See [SentenceSplitter.mergeGroups] for the rationale; the merged block keeps
+     * the first fragment's `data-ns` index so read-along highlight still works.
+     */
+    private fun mergeShortFragments(
+        blocks: List<Reader.Block>,
+        maxChars: Int
+    ): List<Reader.Block> {
+        val groups = SentenceSplitter.mergeGroups(blocks.map { it.text }, maxChars)
+        val out = ArrayList<Reader.Block>(groups.size)
+        for (g in groups) {
+            val text = StringBuilder()
+            for (idx in g) {
+                val t = blocks[idx].text
+                if (t.none { it.isLetterOrDigit() }) continue
+                if (text.isNotEmpty()) text.append(' ')
+                text.append(t)
+            }
+            if (text.isEmpty()) continue
+            out.add(Reader.Block(text.toString(), blocks[g.first].blockIndex))
+        }
+        return out
     }
 
     fun highlight(web: WebView, blockIndex: Int) {

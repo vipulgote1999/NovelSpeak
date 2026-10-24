@@ -1,6 +1,7 @@
 package app.novelspeak
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -81,7 +82,6 @@ class SettingsActivity : Activity() {
         applyInsets(root)
 
         build()
-        maybeAskNotifications()
     }
 
     /** Keep the top bar below the status bar and the footer above the nav bar. */
@@ -269,10 +269,26 @@ class SettingsActivity : Activity() {
             "Center the active paragraph as playback advances", prefs.autoScroll
         ) { prefs.autoScroll = it }
         toggleRow(
+            readingCard, "Auto mode",
+            "Read pages automatically and continue to the next chapter", prefs.autoMode
+        ) { prefs.autoMode = it }
+        toggleRow(
             readingCard, "Reader mode",
             "Hide site chrome, ads and verification dialogs", prefs.readerMode
         ) { prefs.readerMode = it }
         container.addView(readingCard)
+
+        section("PERMISSIONS & BACKGROUND")
+        val permissionsCard = card()
+        notificationPermissionRow(permissionsCard)
+        permissionsCard.addView(divider())
+        backgroundPolicyRow(permissionsCard)
+        permissionsCard.addView(note(
+            "NovelSpeak requests notifications only. It does not use the microphone, camera, " +
+                "location or contacts, and it does not read your files. Network, wake-lock and " +
+                "media-playback permissions are normal permissions granted at install time."
+        ))
+        container.addView(permissionsCard)
 
         section("AD BLOCKING")
         val adblockCard = card()
@@ -382,9 +398,19 @@ class SettingsActivity : Activity() {
                 })
             }
             actions.addView(pillButton("Delete", danger = true) {
-                ModelManager.delete(this, m.id)
-                status.text = "Deleted ${m.label}"
-                build()
+                AlertDialog.Builder(this)
+                    .setTitle("Delete ${m.label}?")
+                    .setMessage(
+                        "The model files (${m.sizeMb} MB) will be removed. " +
+                            "Nothing else is affected; you can install it again later."
+                    )
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Delete") { _, _ ->
+                        ModelManager.delete(this, m.id)
+                        status.text = "Deleted ${m.label}"
+                        build()
+                    }
+                    .show()
             })
         } else {
             actions.addView(pillButton("Install", primary = true) {
@@ -724,15 +750,136 @@ class SettingsActivity : Activity() {
         super.onDestroy()
     }
 
-    private fun maybeAskNotifications() {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
-            android.content.pm.PackageManager.PERMISSION_GRANTED
-        ) {
-            try {
-                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 10)
-            } catch (e: Throwable) {
+    private fun notificationPermissionRow(parent: LinearLayout) {
+        val granted = AppPermissions.notificationsGranted(this)
+        val channelOn = PlaybackService.channelEnabled(this)
+        val wasAsked = AppPermissions.wasNotificationAsked(this)
+
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(4), dp(10), dp(4), dp(10))
+        }
+        row.addView(TextView(this).apply {
+            text = "Playback notification"
+            textSize = 13f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(SPalette.TEXT)
+        })
+        row.addView(TextView(this).apply {
+            text = AppPermissions.notificationStatus(this@SettingsActivity)
+            textSize = 11f
+            setTextColor(
+                when {
+                    !granted -> SPalette.AMBER
+                    !channelOn -> SPalette.AMBER
+                    else -> SPalette.MUTED
+                }
+            )
+            setPadding(0, dp(2), 0, 0)
+        })
+        row.addView(TextView(this).apply {
+            text = "Channel: ${AppPermissions.notificationChannelStatus(this@SettingsActivity)}"
+            textSize = 11f
+            setTextColor(SPalette.MUTED)
+            setPadding(0, dp(2), 0, 0)
+        })
+
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(8), 0, 0)
+        }
+        when {
+            !granted && !wasAsked -> actions.addView(pillButton(
+                "Allow notifications",
+                primary = true
+            ) {
+                AppPermissions.requestNotifications(this)
+            })
+            !granted -> actions.addView(pillButton(
+                "Open notification settings",
+                primary = true
+            ) {
+                AppPermissions.openNotificationSettings(this)
+            })
+            !channelOn -> actions.addView(pillButton(
+                "Open channel settings",
+                primary = true
+            ) {
+                AppPermissions.openPlaybackChannelSettings(this)
+            })
+            else -> actions.addView(pillButton("Manage notifications") {
+                AppPermissions.openNotificationSettings(this)
+            })
+        }
+        row.addView(actions)
+        parent.addView(row)
+    }
+
+    private fun backgroundPolicyRow(parent: LinearLayout) {
+        val playing = NovelSpeakApp.instance.reader.state().playing
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(4), dp(10), dp(4), dp(10))
+        }
+        row.addView(TextView(this).apply {
+            text = "Background playback"
+            textSize = 13f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(SPalette.TEXT)
+        })
+        row.addView(TextView(this).apply {
+            text = if (playing) {
+                "Active · foreground media service is running"
+            } else {
+                "Ready · starts automatically when you tap Read"
             }
+            textSize = 11f
+            setTextColor(if (playing) SPalette.ACCENT else SPalette.MUTED)
+            setPadding(0, dp(2), 0, 0)
+        })
+        row.addView(TextView(this).apply {
+            text = "Media playback stays active with the screen off and exposes transport " +
+                "controls on the lock screen and in the notification shade."
+            textSize = 11f
+            setTextColor(SPalette.MUTED)
+            setPadding(0, dp(2), 0, 0)
+        })
+        row.addView(TextView(this).apply {
+            text = "If your device stops playback with the screen off, allow NovelSpeak in " +
+                "system battery settings."
+            textSize = 11f
+            setTextColor(SPalette.MUTED)
+            setPadding(0, dp(4), 0, 0)
+        })
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(8), 0, 0)
+        }
+        actions.addView(pillButton("Battery settings") {
+            AppPermissions.openBatterySettings(this)
+        })
+        row.addView(actions)
+        parent.addView(row)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == AppPermissions.REQ_NOTIFICATIONS) {
+            if (AppPermissions.notificationsGranted(this)) {
+                PlaybackService.refresh(this)
+            }
+            build()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!installing && !adblockUpdating && ::container.isInitialized) {
+            build()
         }
     }
 
@@ -834,5 +981,6 @@ private object SPalette {
     val TEXT = 0xFFF3F6F9.toInt()
     val MUTED = 0xFF9AA6B6.toInt()
     val ACCENT = 0xFF6EE7B7.toInt()
+    val AMBER = 0xFFF6C453.toInt()
     val RED = 0xFFF87171.toInt()
 }

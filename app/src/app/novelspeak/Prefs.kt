@@ -84,6 +84,14 @@ class Prefs(ctx: Context) {
         get() = sp.getInt(K_PREFETCH, 4)
         set(v) = sp.edit().putInt(K_PREFETCH, v).apply()
 
+    /**
+     * Continuous listening: extract and start reading on page load, and advance to the
+     * next chapter when the queue finishes. Off by default; manual Read/Next-ch otherwise.
+     */
+    var autoMode: Boolean
+        get() = sp.getBoolean(K_AUTO_MODE, false)
+        set(v) = sp.edit().putBoolean(K_AUTO_MODE, v).apply()
+
     var highlight: Boolean
         get() = sp.getBoolean(K_HIGHLIGHT, true)
         set(v) = sp.edit().putBoolean(K_HIGHLIGHT, v).apply()
@@ -123,6 +131,32 @@ class Prefs(ctx: Context) {
         sp.edit().putStringSet(K_ADBLOCK_ALLOW, current).apply()
     }
 
+    /**
+     * True after the one contextual POST_NOTIFICATIONS request has been shown. The flag stops
+     * the app from reopening the system dialog on every Play tap or Settings visit. If the user
+     * later changes their mind, Settings links to the system notification controls instead.
+     */
+    var notificationsAsked: Boolean
+        get() = sp.getBoolean(K_NOTIFICATIONS_ASKED, false)
+        set(v) = sp.edit().putBoolean(K_NOTIFICATIONS_ASKED, v).apply()
+
+    /** Recent address-bar destinations, newest first. Used by the edit-mode suggestion list. */
+    fun recentUrls(): List<String> =
+        (sp.getString(K_RECENT_URLS, "") ?: "")
+            .split('\n')
+            .map { it.trim() }
+            .filter { it.startsWith("http://") || it.startsWith("https://") }
+            .distinct()
+            .take(8)
+
+    fun rememberUrl(url: String) {
+        if (!url.startsWith("http://") && !url.startsWith("https://")) return
+        val current = recentUrls().toMutableList()
+        current.remove(url)
+        current.add(0, url)
+        sp.edit().putString(K_RECENT_URLS, current.take(8).joinToString("\n")).apply()
+    }
+
     companion object {
         const val ENGINE_SYSTEM = "system"
         const val ENGINE_SHERPA = "sherpa"
@@ -141,6 +175,7 @@ class Prefs(ctx: Context) {
         private const val K_THREADS = "threads"
         private const val K_NNAPI = "nnapi"
         private const val K_PREFETCH = "prefetch"
+        private const val K_AUTO_MODE = "auto_mode"
         private const val K_HIGHLIGHT = "highlight"
         private const val K_READER = "reader_mode"
         private const val K_AUTOSCROLL = "autoscroll"
@@ -152,6 +187,8 @@ class Prefs(ctx: Context) {
         private const val K_ADBLOCK_COSMETIC = "adblock_cosmetic"
         private const val K_ADBLOCK_POPUPS = "adblock_popups"
         private const val K_ADBLOCK_ALLOW = "adblock_allow_sites"
+        private const val K_NOTIFICATIONS_ASKED = "notifications_asked"
+        private const val K_RECENT_URLS = "recent_urls"
 
         /** Kokoro en-v0_19 speakers, in the order stored in voices.bin. */
         val KOKORO_VOICES = listOf(

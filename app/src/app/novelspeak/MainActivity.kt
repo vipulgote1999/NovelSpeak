@@ -1,10 +1,11 @@
 package app.novelspeak
 
-import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -16,11 +17,22 @@ import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.Message
+import android.os.PowerManager
+import android.text.Editable
 import android.text.InputType
+import android.text.SpannableStringBuilder
+import android.text.Spanned
 import android.text.TextUtils
+import android.text.TextWatcher
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
+import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -31,6 +43,7 @@ import android.webkit.CookieManager
 import android.webkit.JsPromptResult
 import android.webkit.JsResult
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
@@ -39,6 +52,9 @@ import android.webkit.WebViewClient
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.PopupMenu
+import android.widget.PopupWindow
+import android.widget.ProgressBar
 import android.widget.SeekBar
 import android.widget.Space
 import android.widget.TextView
@@ -56,10 +72,24 @@ import kotlin.math.min
 class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private lateinit var web: WebView
+    private lateinit var topBar: LinearLayout
+    private lateinit var navCluster: LinearLayout
+    private lateinit var addressBox: FrameLayout
+    private lateinit var urlDisplayRow: LinearLayout
+    private lateinit var urlDisplay: TextView
     private lateinit var urlBar: EditText
+    private lateinit var addressClear: FrameLayout
+    private lateinit var cancelEdit: TextView
+    private lateinit var overflowButton: FrameLayout
+    private lateinit var reloadButton: FrameLayout
+    private lateinit var reloadGlyph: GlyphView
+    private lateinit var siteGlyph: GlyphView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var suggestionsPopup: PopupWindow
+    private lateinit var suggestionsPanel: LinearLayout
+    private lateinit var notificationHint: TextView
     private lateinit var titleView: TextView
     private lateinit var adblockView: TextView
-    private lateinit var adButton: TextView
     private lateinit var statusView: TextView
     private lateinit var progressView: TextView
     private lateinit var speedView: TextView
@@ -77,6 +107,21 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private var sentenceTotal = 0
     private var lastExtractedUrl: String? = null
     private var lastExtractedBlocks = -1
+    private var extractionInFlight = false
+    private var autoAdvance = false
+    private var autoAdvanceCount = 0
+    private var autoAppendStart = -1
+    private var autoPlayRunnable: Runnable? = null
+    private val uiHandler = Handler(Looper.getMainLooper())
+
+    /** Releases a stuck drag flag if a gesture ends without onStopTrackingTouch. */
+    private val seekingTimeout = Runnable {
+        seeking = false
+        onReaderState(reader.state())
+    }
+    private var editingUrl = false
+    private var pageLoading = false
+    private var lastDisplayedUrl = ""
 
     private val reader: Reader get() = NovelSpeakApp.instance.reader
 
@@ -107,52 +152,205 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
 
         // ---- top browser bar ----
-        val top = LinearLayout(this).apply {
+        topBar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(8), dp(6), dp(8), dp(4))
+            setBackgroundColor(Palette.BG)
+        }
+        navCluster = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
         }
         backButton = iconButton(Glyph.BACK, "Back", 40) { navigateBack() }
         forwardButton = iconButton(Glyph.FORWARD, "Forward", 40) { navigateForward() }
-        top.addView(backButton)
-        top.addView(forwardButton)
-        top.addView(iconButton(Glyph.RELOAD, "Reload", 40) { web.reload() })
+        reloadButton = iconButton(Glyph.RELOAD, "Reload", 40) {
+            if (pageLoading) stopLoading() else web.reload()
+        }
+        reloadGlyph = reloadButton.getChildAt(0) as GlyphView
+        navCluster.addView(backButton)
+        navCluster.addView(forwardButton)
+        navCluster.addView(reloadButton)
+        topBar.addView(navCluster)
 
-        urlBar = EditText(this).apply {
-            inputType = InputType.TYPE_TEXT_VARIATION_URI
-            imeOptions = EditorInfo.IME_ACTION_GO
-            setSingleLine(true)
-            hint = "Paste a chapter URL"
-            textSize = 12f
-            setTextColor(Palette.TEXT)
-            setHintTextColor(Palette.MUTED)
-            background = rounded(Palette.SURFACE_HIGH, 20)
-            setPadding(dp(14), 0, dp(14), 0)
-            layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f).apply {
+        addressBox = FrameLayout(this).apply {
+            background = rounded(Palette.SURFACE_HIGH, 21)
+            layoutParams = LinearLayout.LayoutParams(0, dp(42), 1f).apply {
                 marginStart = dp(2)
                 marginEnd = dp(6)
             }
-            setOnEditorActionListener { _, _, _ ->
-                loadFromBar()
-                true
+            isClickable = true
+            isFocusable = false
+            isFocusableInTouchMode = false
+            contentDescription = "Address bar"
+            setOnClickListener { enterEditMode() }
+        }
+        urlDisplayRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), 0, dp(10), 0)
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            isClickable = true
+            isFocusable = false
+            isFocusableInTouchMode = false
+            contentDescription = "Edit address"
+            setOnClickListener { enterEditMode() }
+            setOnLongClickListener { showSiteDialog(); true }
+        }
+        siteGlyph = GlyphView(this, Glyph.LOCK, Palette.ACCENT)
+        urlDisplayRow.addView(
+            siteGlyph,
+            LinearLayout.LayoutParams(dp(15), dp(15)).apply { marginEnd = dp(8) }
+        )
+        urlDisplay = TextView(this).apply {
+            text = "Search or enter address"
+            textSize = 13.5f
+            setTextColor(Palette.TEXT)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        urlDisplayRow.addView(urlDisplay)
+        addressBox.addView(urlDisplayRow)
+
+        urlBar = EditText(this).apply {
+            inputType = InputType.TYPE_TEXT_VARIATION_URI or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            imeOptions = EditorInfo.IME_ACTION_GO
+            setSingleLine(true)
+            hint = "Search or type URL"
+            textSize = 14.5f
+            setTextColor(Palette.TEXT)
+            setHintTextColor(Palette.MUTED)
+            background = null
+            includeFontPadding = false
+            gravity = Gravity.CENTER_VERTICAL
+            minHeight = 0
+            setSelectAllOnFocus(true)
+            setPadding(dp(12), 0, dp(38), 0)
+            visibility = View.GONE
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_GO ||
+                    actionId == EditorInfo.IME_ACTION_DONE
+                ) {
+                    loadFromBar()
+                    true
+                } else {
+                    false
+                }
+            }
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(
+                    s: CharSequence?,
+                    start: Int,
+                    count: Int,
+                    after: Int
+                ) {}
+
+                override fun onTextChanged(
+                    s: CharSequence?,
+                    start: Int,
+                    before: Int,
+                    count: Int
+                ) {}
+
+                override fun afterTextChanged(s: Editable?) {
+                    if (!editingUrl) return
+                    addressClear.visibility =
+                        if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
+                    showSuggestions(s?.toString() ?: "")
+                }
+            })
+        }
+        addressBox.addView(urlBar)
+
+        addressClear = FrameLayout(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                dp(30),
+                dp(30),
+                Gravity.END or Gravity.CENTER_VERTICAL
+            ).apply { marginEnd = dp(5) }
+            background = ripple(Palette.SURFACE, 15, oval = true)
+            contentDescription = "Clear address"
+            isClickable = true
+            isFocusable = true
+            visibility = View.GONE
+            setOnClickListener {
+                urlBar.setText("")
+                urlBar.requestFocus()
+                showSuggestions("")
             }
         }
-        top.addView(urlBar)
-        top.addView(
-            textButton("Go", primary = false, widthDp = 42, heightDp = 40) { loadFromBar() }
-                .apply { setTextColor(Palette.ACCENT) }
+        addressClear.addView(
+            GlyphView(this, Glyph.CLOSE, Palette.MUTED),
+            FrameLayout.LayoutParams(dp(14), dp(14), Gravity.CENTER)
         )
-        adButton = textButton("Ad", primary = false, widthDp = 42, heightDp = 40) {
-            toggleAdblock()
-        }.apply {
-            textSize = 11f
+        addressBox.addView(addressClear)
+        topBar.addView(addressBox)
+
+        cancelEdit = TextView(this).apply {
+            text = "Cancel"
+            textSize = 13f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.ACCENT)
+            gravity = Gravity.CENTER
+            setPadding(dp(10), 0, dp(10), 0)
+            minHeight = dp(42)
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Cancel address editing"
+            visibility = View.GONE
+            setOnClickListener { exitEditMode() }
         }
-        top.addView(adButton)
-        top.addView(iconButton(Glyph.GEAR, "Settings", 40) {
-            startActivity(Intent(this, SettingsActivity::class.java))
-        })
-        root.addView(top)
+        topBar.addView(cancelEdit)
+
+        overflowButton = iconButton(Glyph.MORE, "More options", 40) {
+            showOverflowMenu()
+        }
+        topBar.addView(overflowButton)
+        root.addView(topBar)
+
+        progressBar = ProgressBar(
+            this,
+            null,
+            android.R.attr.progressBarStyleHorizontal
+        ).apply {
+            max = 100
+            progress = 0
+            isIndeterminate = false
+            progressTintList = ColorStateList.valueOf(Palette.ACCENT)
+            progressBackgroundTintList = ColorStateList.valueOf(Color.TRANSPARENT)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(2)
+            )
+            visibility = View.GONE
+        }
+        root.addView(progressBar)
+
+        suggestionsPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(Palette.SURFACE, 16)
+            setPadding(dp(6), dp(6), dp(6), dp(6))
+            elevation = dp(8).toFloat()
+        }
+        suggestionsPopup = PopupWindow(
+            suggestionsPanel,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            false
+        ).apply {
+            isOutsideTouchable = true
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            elevation = dp(8).toFloat()
+            setOnDismissListener { suggestionsPanel.removeAllViews() }
+        }
 
         // ---- chapter title + reader toggle ----
         val titleRow = LinearLayout(this).apply {
@@ -173,7 +371,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         adblockView = TextView(this).apply {
             textSize = 10f
             setTextColor(Palette.MUTED)
-            setPadding(dp(8), 0, dp(8), 0)
+            setPadding(dp(8), dp(4), dp(8), dp(4))
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Ad blocking and site settings"
+            setOnClickListener { showSiteDialog() }
         }
         titleRow.addView(adblockView)
         readerBtn = textButton("Reader", primary = false, widthDp = 0, heightDp = 32) {
@@ -193,6 +395,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             setBackgroundColor(Palette.BG)
         }
         root.addView(web)
+        web.setOnTouchListener { _, _ ->
+            if (editingUrl) exitEditMode()
+            false
+        }
 
         // ---- now-playing card ----
         val card = LinearLayout(this).apply {
@@ -266,6 +472,24 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         progressRow.addView(progressView)
         card.addView(progressRow)
 
+        notificationHint = TextView(this).apply {
+            textSize = 11f
+            setTextColor(Palette.AMBER)
+            setPadding(dp(4), dp(4), dp(4), 0)
+            maxLines = 2
+            isClickable = true
+            isFocusable = true
+            visibility = View.GONE
+            setOnClickListener {
+                if (!AppPermissions.notificationsGranted(this@MainActivity)) {
+                    AppPermissions.openNotificationSettings(this@MainActivity)
+                } else {
+                    AppPermissions.openPlaybackChannelSettings(this@MainActivity)
+                }
+            }
+        }
+        card.addView(notificationHint)
+
         val actionsRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -302,7 +526,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         playButton = iconButton(
             Glyph.PLAY, "Play", 56, Palette.ACCENT, Palette.BG, oval = true
         ) {
-            maybeAskNotifications()
+            if (reader.hasContent()) {
+                AppPermissions.requestNotificationsOnce(this)
+            }
             reader.toggle()
         }
         playGlyph = playButton.getChildAt(0) as GlyphView
@@ -311,6 +537,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             reader.nextSentence()
         })
         transportRow.addView(iconButton(Glyph.STOP, "Stop", 40) {
+            cancelAutoAdvance()
             reader.stop()
         })
         card.addView(transportRow)
@@ -320,14 +547,21 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser && sentenceTotal > 0) {
                     progressView.text = "${progress + 1} / $sentenceTotal"
+                    seekBar.contentDescription = "Sentence ${progress + 1} of $sentenceTotal"
                 }
             }
 
             override fun onStartTrackingTouch(sb: SeekBar?) {
                 seeking = true
+                // A gesture can be interrupted (system navigation, auto chapter advance,
+                // notification shade) without onStopTrackingTouch. Do not let the thumb
+                // freeze forever.
+                uiHandler.removeCallbacks(seekingTimeout)
+                uiHandler.postDelayed(seekingTimeout, 4000)
             }
 
             override fun onStopTrackingTouch(sb: SeekBar?) {
+                uiHandler.removeCallbacks(seekingTimeout)
                 seeking = false
                 if (sentenceTotal > 0) reader.seek(sb?.progress ?: 0)
             }
@@ -336,6 +570,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         setContentView(root)
         applyInsets(root)
         updateReaderButton()
+        updateNotificationHint()
     }
 
     /** Keep the browser bar below the status bar and the player card above the nav bar. */
@@ -397,9 +632,15 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 favicon: Bitmap?
             ) {
                 super.onPageStarted(view, url, favicon)
+                pageLoading = true
+                progressBar.visibility = View.VISIBLE
+                progressBar.progress = 0
+                setReloadGlyph(true)
+                if (!editingUrl) updateAddressDisplay(url)
                 updateNavButtons()
                 AdBlocker.onPageStarted(url ?: "")
                 updateShield()
+                dismissSuggestions()
             }
 
             override fun onPageCommitVisible(view: WebView?, url: String?) {
@@ -421,9 +662,28 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 return super.shouldOverrideUrlLoading(view, request)
             }
 
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+                if (request?.isForMainFrame == true) {
+                    pageLoading = false
+                    progressBar.visibility = View.GONE
+                    setReloadGlyph(false)
+                }
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                urlBar.setText(url ?: "")
+                pageLoading = false
+                progressBar.visibility = View.GONE
+                setReloadGlyph(false)
+                if (url != null) {
+                    NovelSpeakApp.instance.prefs.rememberUrl(url)
+                    if (!editingUrl) updateAddressDisplay(url)
+                }
                 titleView.text = view?.title ?: ""
                 getSharedPreferences("novelspeak", MODE_PRIVATE).edit()
                     .putString("last_url", url ?: "").apply()
@@ -440,12 +700,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     lastExtractedBlocks = -1
                     extractNow(append = appendNext)
                 } else {
-                    // Same document reloaded (ad reload or manual reload): keep the
-                    // native reader position, but reinstall the page-side extractor
-                    // and refresh data-ns marks so highlight/next-link keep working.
+                    // Same document reloaded (ad reload or manual reload): keep the native
+                    // reader position and refresh the page-side scripts/theme. Do not run a
+                    // discarded full extract + sentence split here (that was the second
+                    // chunking pass on every duplicate onPageFinished).
                     try {
                         WebExtractor.install(web)
-                        WebExtractor.extract(web) { _, _ -> }
                         WebExtractor.setReader(web, NovelSpeakApp.instance.prefs.readerMode)
                     } catch (t: Throwable) {
                     }
@@ -454,6 +714,20 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             }
         }
         web.webChromeClient = object : WebChromeClient() {
+            override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                super.onProgressChanged(view, newProgress)
+                if (newProgress >= 100) {
+                    pageLoading = false
+                    progressBar.visibility = View.GONE
+                    setReloadGlyph(false)
+                } else {
+                    pageLoading = true
+                    progressBar.visibility = View.VISIBLE
+                    progressBar.progress = newProgress
+                    setReloadGlyph(true)
+                }
+            }
+
             override fun onCreateWindow(
                 view: WebView?,
                 isDialog: Boolean,
@@ -530,12 +804,75 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     private fun loadFromBar() {
-        var u = urlBar.text.toString().trim()
-        if (u.isEmpty()) return
-        if (!u.startsWith("http")) u = "https://$u"
+        val target = UrlInput.normalize(urlBar.text.toString()) ?: return
         hideKeyboard()
         urlBar.clearFocus()
-        web.loadUrl(u)
+        setEditingUi(false)
+        dismissSuggestions()
+        try {
+            web.loadUrl(target)
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "loadUrl failed target=$target", t)
+            Toast.makeText(this, "Could not open that address", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun enterEditMode() {
+        if (editingUrl) return
+        val current = web.url ?: lastDisplayedUrl
+        setEditingUi(true)
+        urlBar.setText(current)
+        urlBar.requestFocus()
+        // Select all, but put the active end at offset 0 so the editor shows the start of
+        // the URL (the domain) instead of scrolling to the path.
+        try {
+            urlBar.setSelection(urlBar.text.length, 0)
+        } catch (t: Throwable) {
+            urlBar.setSelection(0, urlBar.text.length)
+        }
+        addressClear.visibility =
+            if (urlBar.text.isNullOrEmpty()) View.GONE else View.VISIBLE
+        showKeyboard()
+        showSuggestions("")
+    }
+
+    private fun exitEditMode() {
+        if (!editingUrl) return
+        hideKeyboard()
+        urlBar.clearFocus()
+        setEditingUi(false)
+        dismissSuggestions()
+        updateAddressDisplay(web.url ?: lastDisplayedUrl)
+    }
+
+    private fun setEditingUi(editing: Boolean) {
+        editingUrl = editing
+        navCluster.visibility = if (editing) View.GONE else View.VISIBLE
+        overflowButton.visibility = if (editing) View.GONE else View.VISIBLE
+        cancelEdit.visibility = if (editing) View.VISIBLE else View.GONE
+        urlDisplayRow.visibility = if (editing) View.GONE else View.VISIBLE
+        urlBar.visibility = if (editing) View.VISIBLE else View.GONE
+        addressBox.background = if (editing) {
+            roundedStroke(Palette.SURFACE, 16, Palette.ACCENT, 1)
+        } else {
+            rounded(Palette.SURFACE_HIGH, 21)
+        }
+        if (!editing) {
+            addressClear.visibility = View.GONE
+        }
+    }
+
+    private fun showKeyboard() {
+        try {
+            urlBar.postDelayed({
+                try {
+                    val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.showSoftInput(urlBar, InputMethodManager.SHOW_IMPLICIT)
+                } catch (t: Throwable) {
+                }
+            }, 100)
+        } catch (t: Throwable) {
+        }
     }
 
     private fun hideKeyboard() {
@@ -546,48 +883,395 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
     }
 
-    private fun extractNow(append: Boolean) {
-        WebExtractor.install(web)
-        WebExtractor.extract(web) { title, blocks ->
-            DiagLog.line(
-                this,
-                "extract url=${web.url} append=$append title=\"${title.take(60)}\" blocks=${blocks.size}"
+    private fun stopLoading() {
+        try {
+            web.stopLoading()
+        } catch (t: Throwable) {
+        }
+        pageLoading = false
+        progressBar.visibility = View.GONE
+        setReloadGlyph(false)
+    }
+
+    private fun setReloadGlyph(loading: Boolean) {
+        if (!::reloadGlyph.isInitialized) return
+        reloadGlyph.setGlyph(
+            if (loading) Glyph.CLOSE else Glyph.RELOAD,
+            Palette.TEXT
+        )
+        reloadButton.contentDescription = if (loading) "Stop loading" else "Reload"
+    }
+
+    /**
+     * Shows the domain in bold and the path/query in a quieter style, like a mobile browser.
+     * The full URL is always available when the bar is tapped for editing.
+     */
+    private fun updateAddressDisplay(url: String?) {
+        if (!::urlDisplay.isInitialized) return
+        val value = url ?: ""
+        lastDisplayedUrl = value
+        if (value.isEmpty() || value == "about:blank") {
+            urlDisplay.text = "Search or enter address"
+            urlDisplay.setTextColor(Palette.MUTED)
+            siteGlyph.setGlyph(Glyph.GLOBE, Palette.MUTED)
+            addressBox.contentDescription = "Address bar"
+            return
+        }
+        val uri = try {
+            Uri.parse(value)
+        } catch (t: Throwable) {
+            null
+        }
+        val scheme = uri?.scheme?.lowercase() ?: ""
+        val host = uri?.host ?: ""
+        if (host.isEmpty()) {
+            urlDisplay.text = value
+            urlDisplay.setTextColor(Palette.TEXT)
+            siteGlyph.setGlyph(
+                if (scheme == "https") Glyph.LOCK else Glyph.GLOBE,
+                if (scheme == "https") Palette.ACCENT else Palette.MUTED
             )
-            runOnUiThread {
-                lastExtractedUrl = web.url
-                lastExtractedBlocks = blocks.size
-                val badPage = title.contains("not found", true) ||
-                    title.contains("404", true)
-                val blocked = badPage ||
-                    title.contains("just a moment", true) ||
-                    title.contains("security verification", true) ||
-                    title.contains("cloudflare", true) ||
-                    title.contains("attention required", true)
-                if (append && (blocked || blocks.size < 2)) {
-                    // Never append a 404/Cloudflare interstitial to the reading queue.
-                    appendNext = false
-                    Toast.makeText(this, "Next chapter not found", Toast.LENGTH_SHORT).show()
-                    WebExtractor.setReader(web, false)
-                } else if (blocks.isEmpty()) {
-                    statusView.text = "No readable text found on this page"
-                    WebExtractor.setReader(web, false)
+            addressBox.contentDescription = "Address bar, $value"
+            return
+        }
+
+        val path = buildString {
+            append(uri?.encodedPath ?: "")
+            uri?.encodedQuery?.let { append("?").append(it) }
+        }.let { if (it == "/") "" else it }
+
+        val display = SpannableStringBuilder()
+        display.append(host)
+        display.setSpan(
+            StyleSpan(Typeface.BOLD),
+            0,
+            display.length,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        display.setSpan(
+            ForegroundColorSpan(Palette.TEXT),
+            0,
+            display.length,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        if (path.isNotEmpty()) {
+            val start = display.length
+            display.append(path)
+            display.setSpan(
+                ForegroundColorSpan(Palette.MUTED),
+                start,
+                display.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            display.setSpan(
+                RelativeSizeSpan(0.92f),
+                start,
+                display.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+        urlDisplay.text = display
+        urlDisplay.setTextColor(Palette.TEXT)
+        val secure = scheme == "https"
+        siteGlyph.setGlyph(
+            if (secure) Glyph.LOCK else if (scheme == "http") Glyph.ALERT else Glyph.GLOBE,
+            if (secure) Palette.ACCENT else if (scheme == "http") Palette.AMBER else Palette.MUTED
+        )
+        urlDisplay.contentDescription = value
+        addressBox.contentDescription = "Address bar, $value"
+    }
+
+    private fun showOverflowMenu() {
+        val popup = PopupMenu(this, overflowButton)
+        popup.menu.add(0, MENU_HOME, 0, "Home")
+        popup.menu.add(0, MENU_RELOAD, 1, "Reload")
+        popup.menu.add(0, MENU_COPY, 2, "Copy link")
+        popup.menu.add(0, MENU_SHARE, 3, "Share link")
+        popup.menu.add(0, MENU_EXTERNAL, 4, "Open in browser")
+        popup.menu.add(0, MENU_SITE, 5, "Site settings")
+        popup.menu.add(0, MENU_SETTINGS, 6, "NovelSpeak settings")
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                MENU_HOME -> web.loadUrl(DEFAULT_URL)
+                MENU_RELOAD -> web.reload()
+                MENU_COPY -> copyLink()
+                MENU_SHARE -> shareLink()
+                MENU_EXTERNAL -> openExternal()
+                MENU_SITE -> showSiteDialog()
+                MENU_SETTINGS -> startActivity(
+                    Intent(this, SettingsActivity::class.java)
+                )
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun showSiteDialog() {
+        val url = web.url ?: lastDisplayedUrl
+        val host = UrlTools.host(url) ?: run {
+            Toast.makeText(this, "No site loaded", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val prefs = NovelSpeakApp.instance.prefs
+        val secure = url.startsWith("https://")
+        val site = app.novelspeak.adblock.PublicSuffixList
+            .registrableDomain(host).ifEmpty { host }
+        var adblockChanged = false
+        val checked = booleanArrayOf(
+            prefs.readerMode,
+            prefs.adblockEnabled && !AdBlocker.isSiteAllowed(host)
+        )
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(
+                "$host\n${if (secure) "Secure HTTPS connection" else "Not a secure connection"}"
+            )
+            .setMultiChoiceItems(
+                arrayOf("Reader mode", "Block ads on this site"),
+                checked
+            ) { _, which, isChecked ->
+                if (which == 0) {
+                    prefs.readerMode = isChecked
+                    WebExtractor.setReader(web, prefs.readerMode)
+                    updateReaderButton()
                 } else {
-                    if (append && reader.hasContent()) {
-                        reader.appendContent(blocks)
-                    } else {
-                        reader.setContent(title.ifEmpty { web.title ?: "" }, blocks)
-                    }
-                    statusView.text = "Extracted ${blocks.size} sentences"
-                    // Do not hide a Cloudflare challenge: it must stay interactive
-                    // until the site finishes verification. Reader mode resumes on
-                    // the real page automatically.
-                    WebExtractor.setReader(
-                        web,
-                        if (blocked) false else NovelSpeakApp.instance.prefs.readerMode
-                    )
+                    adblockChanged = true
+                    prefs.setAdblockSiteAllowed(site, !isChecked)
+                    updateShield()
+                }
+            }
+            .setPositiveButton("Done") { d, _ -> d.dismiss() }
+            .setNeutralButton("App settings") { d, _ ->
+                d.dismiss()
+                AppPermissions.openAppSettings(this)
+            }
+            .create()
+        dialog.setOnDismissListener {
+            if (adblockChanged) {
+                try {
+                    web.reload()
+                } catch (t: Throwable) {
                 }
             }
         }
+        dialog.show()
+    }
+
+    private fun copyLink() {
+        val url = web.url ?: lastDisplayedUrl
+        if (url.isEmpty()) return
+        try {
+            val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            cm.setPrimaryClip(ClipData.newPlainText("URL", url))
+            Toast.makeText(this, "Link copied", Toast.LENGTH_SHORT).show()
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "copy link failed", t)
+        }
+    }
+
+    private fun shareLink() {
+        val url = web.url ?: lastDisplayedUrl
+        if (url.isEmpty()) return
+        try {
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, url)
+            }
+            startActivity(Intent.createChooser(send, "Share link"))
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "share link failed", t)
+        }
+    }
+
+    private fun openExternal() {
+        val url = web.url ?: lastDisplayedUrl
+        if (url.isEmpty()) return
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (t: Throwable) {
+            Toast.makeText(this, "No app can open this link", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showSuggestions(query: String) {
+        if (!editingUrl || isFinishing) return
+        val q = query.trim()
+        val matches = NovelSpeakApp.instance.prefs.recentUrls()
+            .filter { q.isEmpty() || it.contains(q, true) }
+            .take(5)
+        if (matches.isEmpty()) {
+            dismissSuggestions()
+            return
+        }
+        suggestionsPanel.removeAllViews()
+        if (q.isEmpty()) {
+            suggestionsPanel.addView(TextView(this).apply {
+                text = "RECENT"
+                textSize = 10f
+                letterSpacing = 0.1f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                setTextColor(Palette.MUTED)
+                setPadding(dp(10), dp(6), dp(10), dp(4))
+            })
+        }
+        for (url in matches) suggestionsPanel.addView(suggestionRow(url))
+        suggestionsPopup.width = resources.displayMetrics.widthPixels - dp(16)
+        if (!suggestionsPopup.isShowing) {
+            try {
+                suggestionsPopup.showAsDropDown(topBar, dp(8), dp(2))
+            } catch (t: Throwable) {
+                DiagLog.exception(this, "suggestions popup failed", t)
+            }
+        }
+    }
+
+    private fun suggestionRow(url: String): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(10), dp(9), dp(10), dp(9))
+            background = ripple(Palette.SURFACE_HIGH, 12)
+            isClickable = true
+            isFocusable = true
+            addView(
+                GlyphView(this@MainActivity, Glyph.GLOBE, Palette.MUTED),
+                LinearLayout.LayoutParams(dp(15), dp(15)).apply { marginEnd = dp(10) }
+            )
+            addView(TextView(this@MainActivity).apply {
+                text = url
+                textSize = 12.5f
+                setTextColor(Palette.TEXT)
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    1f
+                )
+            })
+            setOnClickListener {
+                urlBar.setText(url)
+                urlBar.setSelection(url.length)
+                hideKeyboard()
+                loadFromBar()
+            }
+        }
+
+    private fun dismissSuggestions() {
+        if (::suggestionsPopup.isInitialized && suggestionsPopup.isShowing) {
+            try {
+                suggestionsPopup.dismiss()
+            } catch (t: Throwable) {
+            }
+        }
+        if (::suggestionsPanel.isInitialized) suggestionsPanel.removeAllViews()
+    }
+
+    private fun extractNow(append: Boolean) {
+        if (extractionInFlight) {
+            DiagLog.line(this, "extract skipped (already running) url=${web.url}")
+            return
+        }
+        extractionInFlight = true
+        val auto = autoAdvance
+        if (!auto) autoAdvanceCount = 0
+        // install() is async; extract only once the page-side scripts have actually run.
+        WebExtractor.install(web) {
+            WebExtractor.extract(web) { title, blocks ->
+                DiagLog.line(
+                    this,
+                    "extract url=${web.url} append=$append auto=$auto title=\"${title.take(60)}\" blocks=${blocks.size}"
+                )
+                runOnUiThread {
+                    extractionInFlight = false
+                    lastExtractedUrl = web.url
+                    lastExtractedBlocks = blocks.size
+                    val badPage = title.contains("not found", true) ||
+                        title.contains("404", true)
+                    val blocked = badPage ||
+                        title.contains("just a moment", true) ||
+                        title.contains("security verification", true) ||
+                        title.contains("cloudflare", true) ||
+                        title.contains("attention required", true)
+                    val p = NovelSpeakApp.instance.prefs
+                    if (append && (blocked || blocks.size < 2)) {
+                        // Never append a 404/Cloudflare interstitial to the reading queue.
+                        appendNext = false
+                        autoAdvance = false
+                        Toast.makeText(this, "Next chapter not found", Toast.LENGTH_SHORT).show()
+                        WebExtractor.setReader(web, false)
+                    } else if (blocks.isEmpty()) {
+                        statusView.text = "No readable text found on this page"
+                        autoAdvance = false
+                        // Keep the user's reader preference: an empty extraction is not a
+                        // reason to throw away the readable theme.
+                        WebExtractor.setReader(web, p.readerMode)
+                    } else {
+                        if (append && reader.hasContent()) {
+                            autoAppendStart = reader.state().total
+                            reader.appendContent(blocks, title.ifEmpty { web.title ?: "" })
+                        } else {
+                            autoAppendStart = 0
+                            reader.setContent(title.ifEmpty { web.title ?: "" }, blocks)
+                        }
+                        statusView.text = "Extracted ${blocks.size} sentences"
+                        // Do not hide a Cloudflare challenge: it must stay interactive
+                        // until the site finishes verification. Reader mode resumes on
+                        // the real page automatically.
+                        WebExtractor.setReader(web, if (blocked) false else p.readerMode)
+                        if (p.autoMode && !blocked) {
+                            if (auto) {
+                                // New chapter: give the page a moment, then start at its
+                                // first sentence instead of continuing the old cursor.
+                                val start = autoAppendStart
+                                autoAdvance = false
+                                val run = Runnable {
+                                    autoPlayRunnable = null
+                                    if (!isFinishing && reader.hasContent()) {
+                                        if (start > 0) reader.seek(start)
+                                        AppPermissions.requestNotificationsOnce(this)
+                                        reader.play()
+                                    }
+                                }
+                                autoPlayRunnable = run
+                                uiHandler.postDelayed(run, AUTO_PLAY_DELAY_MS)
+                            } else {
+                                AppPermissions.requestNotificationsOnce(this)
+                                reader.play()
+                            }
+                        } else if (!p.autoMode) {
+                            autoAdvance = false
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun cancelAutoAdvance() {
+        autoAdvance = false
+        autoAdvanceCount = 0
+        autoAppendStart = -1
+        autoPlayRunnable?.let { uiHandler.removeCallbacks(it) }
+        autoPlayRunnable = null
+    }
+
+    override fun onQueueFinished() {
+        val p = NovelSpeakApp.instance.prefs
+        DiagLog.line(this, "queue finished auto=${p.autoMode} count=$autoAdvanceCount")
+        if (!p.autoMode) return
+        if (autoAdvanceCount >= MAX_AUTO_CHAPTERS) {
+            Toast.makeText(this, "Auto mode stopped after $MAX_AUTO_CHAPTERS chapters",
+                Toast.LENGTH_LONG).show()
+            return
+        }
+        val pm = getSystemService(POWER_SERVICE) as PowerManager
+        if (pm.isInteractive) {
+            Toast.makeText(this, "Chapter finished — next page in 3 s", Toast.LENGTH_SHORT).show()
+        }
+        autoAdvanceCount++
+        autoAdvance = true
+        loadNextChapter()
     }
 
     private fun loadNextChapter() {
@@ -595,6 +1279,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             DiagLog.line(this, "next chapter link=${link.ifEmpty { "(none)" }}")
             runOnUiThread {
                 if (link.isNullOrEmpty()) {
+                    autoAdvance = false
                     Toast.makeText(this, "No next-chapter link found", Toast.LENGTH_SHORT).show()
                 } else {
                     appendNext = true
@@ -638,15 +1323,29 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         speedView.text = "%.2f×".format(NovelSpeakApp.instance.prefs.speed)
         speedView.contentDescription =
             "Playback speed ${"%.2f".format(NovelSpeakApp.instance.prefs.speed)} times"
-        if (!seeking) {
+        // isPressed is true only while the user is actually holding the thumb; the
+        // tracking flag alone can stick if a gesture is interrupted (system nav,
+        // auto chapter advance), which froze the thumb while the label kept moving.
+        val dragging = seeking && seekBar.isPressed
+        if (!dragging) {
             seekBar.max = (total - 1).coerceAtLeast(0)
             seekBar.progress = state.cursor.coerceIn(0, (total - 1).coerceAtLeast(0))
         }
+        val newMax = (total - 1).coerceAtLeast(0)
+        if (seekBar.max != newMax) {
+            seeking = false
+            uiHandler.removeCallbacks(seekingTimeout)
+            seekBar.max = newMax
+            seekBar.progress = state.cursor.coerceIn(0, newMax)
+        }
+        seekBar.contentDescription =
+            if (total > 0) "Sentence ${state.cursor + 1} of $total" else "Sentence progress"
         playGlyph.glyph = if (state.playing) Glyph.PAUSE else Glyph.PLAY
         playGlyph.invalidate()
         playButton.contentDescription = if (state.playing) "Pause" else "Play"
         dotView.background = oval(statusColor(state))
         updateReaderButton()
+        updateNotificationHint()
     }
 
     private fun statusColor(state: Reader.State): Int {
@@ -665,63 +1364,74 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
     }
 
-    private fun maybeAskNotifications() {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            try {
-                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 10)
-            } catch (e: Throwable) {
-            }
-        }
-    }
-
-    private fun toggleAdblock() {
-        val p = NovelSpeakApp.instance.prefs
-        if (!p.adblockEnabled) {
-            Toast.makeText(this, "Enable ad blocking in Settings first", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val host = UrlTools.host(web.url ?: "") ?: return
-        val nowAllowed = AdBlocker.toggleSite(host)
-        Toast.makeText(
-            this,
-            if (nowAllowed) "Ad blocking disabled on $host" else "Ad blocking enabled on $host",
-            Toast.LENGTH_SHORT
-        ).show()
-        updateShield()
-        web.reload()
-    }
-
     private fun updateShield() {
-        if (!::adButton.isInitialized) return
+        if (!::adblockView.isInitialized) return
         val p = NovelSpeakApp.instance.prefs
         val host = UrlTools.host(web.url ?: "") ?: ""
         val allowed = host.isNotEmpty() && AdBlocker.isSiteAllowed(host)
-        adButton.text = if (!p.adblockEnabled || allowed) "Ad✕" else "Ad✓"
-        adButton.alpha = if (!p.adblockEnabled) 0.4f else 1f
-        if (!p.adblockEnabled || allowed) adblockView.text = ""
+        adblockView.text = when {
+            !p.adblockEnabled -> "Ads off"
+            allowed -> "Ads allowed"
+            else -> "Ads blocked"
+        }
     }
 
     override fun onAdBlockStats(blocked: Int, hidden: Int) {
         runOnUiThread {
             if (isFinishing || isDestroyed) return@runOnUiThread
-            if (!::adButton.isInitialized) return@runOnUiThread
+            if (!::adblockView.isInitialized) return@runOnUiThread
             val p = NovelSpeakApp.instance.prefs
             val host = UrlTools.host(web.url ?: "") ?: ""
             val allowed = host.isNotEmpty() && AdBlocker.isSiteAllowed(host)
-            adButton.text = if (!p.adblockEnabled || allowed) "Ad✕" else "Ad✓"
-            adButton.alpha = if (!p.adblockEnabled) 0.4f else 1f
-            adblockView.text = if (p.adblockEnabled && !allowed && (blocked > 0 || hidden > 0)) {
-                if (hidden > 0) "Ad $blocked/$hidden" else "Ad $blocked"
-            } else {
-                ""
+            adblockView.text = when {
+                !p.adblockEnabled -> "Ads off"
+                allowed -> "Ads allowed"
+                blocked > 0 || hidden > 0 ->
+                    if (hidden > 0) "Ad $blocked/$hidden" else "Ad $blocked"
+                else -> "Ads blocked"
+            }
+        }
+    }
+
+    private fun updateNotificationHint() {
+        if (!::notificationHint.isInitialized) return
+        val state = reader.state()
+        val granted = AppPermissions.notificationsGranted(this)
+        val channelOn = PlaybackService.channelEnabled(this)
+        val show = (!granted || !channelOn) && (state.total > 0 || state.playing)
+        notificationHint.visibility = if (show) View.VISIBLE else View.GONE
+        if (!show) return
+        notificationHint.text = if (!granted) {
+            "Playback controls hidden · Allow notifications"
+        } else {
+            "Playback controls muted · Open notification settings"
+        }
+        notificationHint.contentDescription = notificationHint.text
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == AppPermissions.REQ_NOTIFICATIONS) {
+            updateNotificationHint()
+            if (AppPermissions.notificationsGranted(this)) {
+                PlaybackService.refresh(this)
             }
         }
     }
 
     override fun onBackPressed() {
+        if (editingUrl) {
+            exitEditMode()
+            return
+        }
+        if (::suggestionsPopup.isInitialized && suggestionsPopup.isShowing) {
+            suggestionsPopup.dismiss()
+            return
+        }
         if (web.canGoBack()) {
             web.goBack()
             updateNavButtons()
@@ -735,10 +1445,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         updateReaderButton()
         WebExtractor.setReader(web, NovelSpeakApp.instance.prefs.readerMode)
         updateShield()
+        updateNotificationHint()
         AdBlocker.inject(web, web.url ?: "")
     }
 
     override fun onDestroy() {
+        dismissSuggestions()
         reader.removeListener(this)
         AdBlocker.removeListener(this)
         super.onDestroy()
@@ -753,6 +1465,15 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             setColor(color)
             cornerRadius = dp(radiusDp).toFloat()
         }
+
+    private fun roundedStroke(
+        color: Int,
+        radiusDp: Int,
+        strokeColor: Int,
+        strokeDp: Int
+    ): GradientDrawable = rounded(color, radiusDp).apply {
+        setStroke(dp(strokeDp), strokeColor)
+    }
 
     private fun oval(color: Int): GradientDrawable =
         GradientDrawable().apply {
@@ -826,6 +1547,19 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     companion object {
         private const val DEFAULT_URL = "https://www.empirenovel.com/"
+        private const val MENU_HOME = 1
+        private const val MENU_RELOAD = 2
+        private const val MENU_COPY = 3
+        private const val MENU_SHARE = 4
+        private const val MENU_EXTERNAL = 5
+        private const val MENU_SITE = 6
+        private const val MENU_SETTINGS = 7
+
+        /** Pause between a chapter's extraction and its first spoken sentence. */
+        private const val AUTO_PLAY_DELAY_MS = 2500L
+
+        /** Stop a runaway auto-advance loop (wrong next-links, redirect chains). */
+        private const val MAX_AUTO_CHAPTERS = 40
     }
 }
 
@@ -845,7 +1579,8 @@ private object Palette {
 }
 
 private enum class Glyph {
-    PLAY, PAUSE, STOP, PREV, NEXT, BACK, FORWARD, RELOAD, GEAR, MENU, PLUS, MINUS
+    PLAY, PAUSE, STOP, PREV, NEXT, BACK, FORWARD, RELOAD, GEAR, MENU, MORE,
+    CLOSE, LOCK, GLOBE, ALERT, PLUS, MINUS
 }
 
 private class GlyphView(
@@ -865,6 +1600,13 @@ private class GlyphView(
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         this.color = color
         style = Paint.Style.FILL
+    }
+
+    fun setGlyph(g: Glyph, color: Int) {
+        glyph = g
+        stroke.color = color
+        fill.color = color
+        invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -961,6 +1703,64 @@ private class GlyphView(
                     val y2 = cy + (r * 1.18f * Math.sin(a)).toFloat()
                     canvas.drawLine(x1, y1, x2, y2, stroke)
                 }
+            }
+            Glyph.MORE -> {
+                for (i in -1..1) {
+                    canvas.drawCircle(cx, cy + i * s * 0.58f, s * 0.14f, fill)
+                }
+            }
+            Glyph.CLOSE -> {
+                canvas.drawLine(
+                    cx - s * 0.62f, cy - s * 0.62f,
+                    cx + s * 0.62f, cy + s * 0.62f,
+                    stroke
+                )
+                canvas.drawLine(
+                    cx + s * 0.62f, cy - s * 0.62f,
+                    cx - s * 0.62f, cy + s * 0.62f,
+                    stroke
+                )
+            }
+            Glyph.LOCK -> {
+                val shackle = RectF(
+                    cx - s * 0.44f,
+                    cy - s * 0.88f,
+                    cx + s * 0.44f,
+                    cy + s * 0.38f
+                )
+                canvas.drawArc(shackle, 180f, 180f, false, stroke)
+                canvas.drawRoundRect(
+                    cx - s * 0.64f,
+                    cy - s * 0.08f,
+                    cx + s * 0.64f,
+                    cy + s * 0.86f,
+                    s * 0.16f,
+                    s * 0.16f,
+                    fill
+                )
+            }
+            Glyph.GLOBE -> {
+                canvas.drawCircle(cx, cy, s * 0.86f, stroke)
+                canvas.drawLine(cx - s * 0.86f, cy, cx + s * 0.86f, cy, stroke)
+                canvas.drawOval(
+                    RectF(
+                        cx - s * 0.38f,
+                        cy - s * 0.86f,
+                        cx + s * 0.38f,
+                        cy + s * 0.86f
+                    ),
+                    stroke
+                )
+            }
+            Glyph.ALERT -> {
+                val p = Path()
+                p.moveTo(cx, cy - s * 0.92f)
+                p.lineTo(cx + s * 0.92f, cy + s * 0.76f)
+                p.lineTo(cx - s * 0.92f, cy + s * 0.76f)
+                p.close()
+                canvas.drawPath(p, stroke)
+                canvas.drawLine(cx, cy - s * 0.34f, cx, cy + s * 0.22f, stroke)
+                canvas.drawCircle(cx, cy + s * 0.49f, s * 0.11f, fill)
             }
             Glyph.PLUS -> {
                 canvas.drawLine(cx - s * 0.7f, cy, cx + s * 0.7f, cy, stroke)

@@ -12,6 +12,14 @@ package app.novelspeak
  */
 object SentenceSplitter {
 
+    /**
+     * Fragments shorter than this are joined with a neighbour before synthesis.
+     * Above the isolated-word range where Kokoro/Pocket misbehave (Kokoro "six" ->
+     * "ah-six-ah"; Pocket "weird sounds" on short input, sherpa-onnx#3176) and
+     * still below a normal clause, so dialogue keeps its natural flow.
+     */
+    const val MIN_FRAGMENT_CHARS = 24
+
     private val ABBREV = setOf(
         "mr", "mrs", "ms", "dr", "prof", "sr", "jr", "st", "vs", "etc", "e.g", "i.e",
         "vol", "ch", "pt", "fig", "approx", "dept", "est", "min", "max", "sec"
@@ -108,6 +116,56 @@ object SentenceSplitter {
             }
         }
         return result
+    }
+
+    /**
+     * Groups adjacent fragments that must be synthesized together.
+     *
+     * Neural models degrade on very short inputs (an isolated `“Gary!”` is the
+     * pathological case in novel dialogue) and fragments with no letters/digits
+     * carry no speech at all. Groups are contiguous index ranges into [texts];
+     * the caller merges them and attributes the result to the first fragment's
+     * block so highlight stays correct. Never exceeds [maxChars].
+     */
+    fun mergeGroups(
+        texts: List<String>,
+        maxChars: Int,
+        minChars: Int = MIN_FRAGMENT_CHARS
+    ): List<IntRange> {
+        val groups = ArrayList<IntRange>(texts.size)
+        val lengths = ArrayList<Int>(texts.size)
+        var i = 0
+        while (i < texts.size) {
+            if (texts[i].none { it.isLetterOrDigit() }) { i++; continue }
+            val start = i
+            var end = i
+            var length = texts[i].length
+            while (end + 1 < texts.size) {
+                val next = texts[end + 1]
+                if (next.none { it.isLetterOrDigit() }) { end++; continue }
+                val nextShort = next.length < minChars
+                val curShort = length < minChars
+                if (!nextShort && !curShort) break
+                if (length + 1 + next.length > maxChars) break
+                length += 1 + next.length
+                end++
+            }
+            // A short fragment that could not merge forward belongs to the previous
+            // group instead of being synthesized alone.
+            if (length < minChars && groups.isNotEmpty()) {
+                val prev = groups[groups.size - 1]
+                if (prev.last + 1 == start && lengths[lengths.size - 1] + 1 + length <= maxChars) {
+                    groups[groups.size - 1] = prev.first..end
+                    lengths[lengths.size - 1] = lengths[lengths.size - 1] + 1 + length
+                    i = end + 1
+                    continue
+                }
+            }
+            groups.add(start..end)
+            lengths.add(length)
+            i = end + 1
+        }
+        return groups
     }
 
     private fun isFalseBreak(sb: StringBuilder): Boolean {

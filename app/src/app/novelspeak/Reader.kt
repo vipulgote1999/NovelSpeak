@@ -107,6 +107,9 @@ class Reader(private val app: NovelSpeakApp) {
     interface Listener {
         fun onReaderState(state: State)
         fun onHighlight(blockIndex: Int)
+
+        /** The last queued sentence finished playing; auto mode uses this to advance. */
+        fun onQueueFinished() {}
     }
 
     data class State(
@@ -147,6 +150,10 @@ class Reader(private val app: NovelSpeakApp) {
         main.post { for (l in ArrayList(listeners)) l.onHighlight(b.blockIndex) }
     }
 
+    private fun notifyQueueFinished() {
+        main.post { for (l in ArrayList(listeners)) l.onQueueFinished() }
+    }
+
     /** Replace the reading queue with newly extracted content. */
     fun setContent(newTitle: String, blocks: List<Block>, append: Boolean = false) {
         stopInternal()
@@ -159,8 +166,9 @@ class Reader(private val app: NovelSpeakApp) {
         notifyHighlight()
     }
 
-    fun appendContent(blocks: List<Block>) {
+    fun appendContent(blocks: List<Block>, newTitle: String = "") {
         if (blocks.isEmpty()) return
+        if (newTitle.isNotEmpty()) title = newTitle
         sentences = sentences + blocks
         status = "Chapter appended · ${sentences.size} sentences"
         notifyState()
@@ -210,6 +218,7 @@ class Reader(private val app: NovelSpeakApp) {
                 generation++
                 submitted = cursor - 1
                 pump()
+                schedulePump()
                 notifyState()
                 PlaybackService.start(app)
                 DiagLog.line(app, "play started engine=${e.id} sentence=$cursor/" + sentences.size)
@@ -222,10 +231,28 @@ class Reader(private val app: NovelSpeakApp) {
         }
     }
 
+    /**
+     * Re-runs pump() while playing. Without this the queue is only refilled when a sentence
+     * drains, so generation stops as soon as the initial lookahead is rendered.
+     */
+    private fun schedulePump() {
+        main.removeCallbacks(pumpTick)
+        main.postDelayed(pumpTick, PUMP_INTERVAL_MS)
+    }
+
+    private val pumpTick = object : Runnable {
+        override fun run() {
+            if (!playing) return
+            pump()
+            main.postDelayed(this, PUMP_INTERVAL_MS)
+        }
+    }
+
     fun pause() {
         if (!playing) return
         playing = false
         generation++
+        main.removeCallbacks(pumpTick)
         engine?.stop()
         status = "Paused"
         notifyState()
@@ -243,6 +270,7 @@ class Reader(private val app: NovelSpeakApp) {
         playing = false
         generation++
         submitted = cursor - 1
+        main.removeCallbacks(pumpTick)
         engine?.stop()
         PlaybackService.stop(app)
     }
@@ -266,7 +294,12 @@ class Reader(private val app: NovelSpeakApp) {
         submitted = cursor - 1
         notifyHighlight()
         notifyState()
-        if (wasPlaying) pump()
+        if (wasPlaying) {
+            pump()
+            schedulePump()
+        } else {
+            main.removeCallbacks(pumpTick)
+        }
     }
 
     private fun pump() {
@@ -274,8 +307,20 @@ class Reader(private val app: NovelSpeakApp) {
         val e = engine ?: return
         try {
             val gen = generation
-            val lookahead = app.prefs.prefetch.coerceIn(0, 5)
-            while (submitted < cursor + lookahead && submitted < sentences.size - 1) {
+            val minAhead = app.prefs.prefetch.coerceIn(0, 5)
+            // 1. Always keep the user's sentence lookahead.
+            while (submitted < cursor + minAhead && submitted < sentences.size - 1) {
+                submitted++
+                val index = submitted
+                e.speak(sentences[index].text) { ok -> onSentenceDone(gen, index, ok) }
+            }
+            // 2. Then keep synthesizing ahead while the audio buffer is below the target,
+            //    bounded by a hard cap so memory stays flat. pump() is re-run every 500 ms
+            //    while playing, so the buffer refills without waiting for a sentence drain.
+            while (submitted < cursor + HARD_LOOKAHEAD &&
+                submitted < sentences.size - 1 &&
+                e.bufferedSeconds() < TARGET_BUFFER_SECONDS
+            ) {
                 submitted++
                 val index = submitted
                 e.speak(sentences[index].text) { ok -> onSentenceDone(gen, index, ok) }
@@ -309,6 +354,7 @@ class Reader(private val app: NovelSpeakApp) {
                     status = "Finished"
                     notifyState()
                     PlaybackService.stop(app)
+                    notifyQueueFinished()
                     return@Runnable
                 }
                 cursor++
@@ -330,5 +376,15 @@ class Reader(private val app: NovelSpeakApp) {
         engine?.release()
         engine = null
         app.player.release()
+    }
+
+    private companion object {
+        /** Keep roughly this much synthesized audio queued ahead of the speaker. */
+        const val TARGET_BUFFER_SECONDS = 12f
+
+        /** Hard cap on queued sentences, so a fast engine cannot buffer a whole chapter. */
+        const val HARD_LOOKAHEAD = 8
+
+        const val PUMP_INTERVAL_MS = 500L
     }
 }
