@@ -68,6 +68,16 @@ class AudioDsp(sampleRateHz: Int = 24000) {
         // step is audible if the first frame happens to be a loud syllable.
         const val WET_RAMP_FRAMES = 24 // 0.26 s
 
+        // ---- low-level noise gate ----
+        // The vocoder occasionally emits short high-frequency bursts below speech level
+        // (measured ~-48 dBFS between words on Pocket). Minimum-statistics denoising cannot
+        // learn a non-stationary burst, so a slow downward expander removes it without
+        // touching speech (narration sits above -30 dBFS).
+        const val GATE_OPEN_DB = -38.0
+        const val GATE_CLOSE_DB = -52.0
+        const val GATE_FLOOR = 0.03f
+        const val GATE_SMOOTH = 0.25f
+
         // Below this, biquad state is flushed to zero (denormal arithmetic is slow on ARM).
         const val DENORMAL_EPS = 1e-25f
     }
@@ -99,6 +109,7 @@ class AudioDsp(sampleRateHz: Int = 24000) {
 
     private var frameCount = 0
     private var wet = 0f
+    private var gate = 1f
     @Volatile private var resetPending = false
 
     // ---- FFT tables ----
@@ -201,6 +212,7 @@ class AudioDsp(sampleRateHz: Int = 24000) {
         outPos = HOP
         frameCount = 0
         wet = 0f
+        gate = 1f
         hpX1 = 0f; hpX2 = 0f; hpY1 = 0f; hpY2 = 0f
         lpX1 = 0f; lpX2 = 0f; lpY1 = 0f; lpY2 = 0f
     }
@@ -226,10 +238,14 @@ class AudioDsp(sampleRateHz: Int = 24000) {
             cur[k] = ps
         }
         if (frameCount == 0) {
-            // Bootstrap: pretend the first frame is representative for the whole window, so the
-            // estimate cannot start at zero (transparent) and then step down audibly.
+            // Bootstrap: assume the first frame is ~10 dB above the noise floor rather than
+            // representative of it. Treating it as the floor suppressed the first second of
+            // speech by ~14 dB (measured); a quiet prior lets speech through while the
+            // sliding minimum still settles within ~1 s.
             for (s in 0 until NOISE_FRAMES) {
-                if (s != ringSlot) System.arraycopy(cur, 0, ring[s], 0, BINS)
+                if (s != ringSlot) {
+                    for (k in 0 until BINS) ring[s][k] = cur[k] * 0.1f
+                }
             }
         }
         var k = 0
@@ -318,6 +334,22 @@ class AudioDsp(sampleRateHz: Int = 24000) {
         }
         System.arraycopy(acc, HOP, acc, 0, FRAME - HOP)
         java.util.Arrays.fill(acc, FRAME - HOP, FRAME, 0f)
+
+        // Slow downward expander: open for speech, close for sub-speech residual.
+        var sum = 0.0
+        for (i in 0 until HOP) {
+            val y = outBlock[i]
+            sum += y.toDouble() * y
+        }
+        val rms = kotlin.math.sqrt(sum / HOP)
+        val db = 20.0 * kotlin.math.log10(rms + 1e-9)
+        val target = when {
+            db > GATE_OPEN_DB -> 1f
+            db < GATE_CLOSE_DB -> GATE_FLOOR
+            else -> ((db - GATE_CLOSE_DB) / (GATE_OPEN_DB - GATE_CLOSE_DB)).toFloat()
+        }
+        gate += (target - gate) * GATE_SMOOTH
+        for (i in 0 until HOP) outBlock[i] *= gate
 
         frameCount++
         if (wet < 1f) {

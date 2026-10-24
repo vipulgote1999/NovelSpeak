@@ -27,4 +27,11 @@ interface TtsEngine {
     fun voices(): List<Pair<String, String>>
 
     fun setVoice(id: String)
+
+    /**
+     * Seconds of audio already synthesized but not yet played. Reader uses it to keep
+     * generation ahead of playback instead of only refilling when a sentence drains.
+     * 0 means the engine cannot report a buffer (treated as "keep the sentence lookahead").
+     */
+    fun bufferedSeconds(): Float = 0f
 }

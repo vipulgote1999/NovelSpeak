@@ -44,15 +44,38 @@ class PcmPlayer {
     /** Denoiser for the current track; rebuilt with the track so its filters match the rate. */
     @Volatile private var denoise: AudioDsp? = null
 
+    /**
+     * The spectral denoiser targets the neural vocoder's low-level hiss. System TTS output is
+     * already clean, so it is switched off there (no processing, no CPU, no timbre risk).
+     */
+    @Volatile private var denoiseEnabled = DENOISE_ENABLED
+
+    fun setDenoiseEnabled(on: Boolean) {
+        if (denoiseEnabled == on) return
+        denoiseEnabled = on
+        denoise = if (on && track != null) AudioDsp(sampleRate) else null
+    }
+
     // PCM writer thread: write() enqueues and returns immediately so sherpa can generate the
     // next sentence while the current sentence is still playing. Without this, AudioTrack.write
     // blocks the generation thread for the full sentence and each sentence boundary has a
     // generation-sized silence.
-    private class Chunk(val epoch: Int, val bytes: ByteArray)
+    private class Chunk(
+        val epoch: Int,
+        val bytes: ByteArray,
+        val fadeIn: Boolean = false,
+        val tailFrames: Int = 0,
+        val lastSample: Float = 0f
+    )
     private val playQueue = LinkedBlockingQueue<Chunk>()
     @Volatile private var writer: Thread? = null
     @Volatile private var writerRun = false
     @Volatile private var playbackEpoch = 0
+
+    /** Smoothed output gain: drops instantly, rises slowly, so chunk peaks cannot pump. */
+    private var gainNow = 0f
+
+    private fun fadeFrames(): Int = (sampleRate * 6 / 1000).coerceAtLeast(24)
 
     /** Playback is held until enough PCM is buffered, which avoids the initial underrun. */
     @Volatile private var started = false
@@ -75,7 +98,7 @@ class PcmPlayer {
         }
         release()
         sampleRate = sampleRateHz
-        denoise = if (DENOISE_ENABLED) AudioDsp(sampleRateHz) else null
+        denoise = if (denoiseEnabled) AudioDsp(sampleRateHz) else null
         val minBytes = AudioTrack.getMinBufferSize(
             sampleRateHz, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT
         )
@@ -115,6 +138,7 @@ class PcmPlayer {
     fun reset() {
         writtenFrames = 0
         stopped = false
+        gainNow = 0f
         playbackEpoch++
         playQueue.clear()
         // Lock-free: AudioDsp clears itself at the start of the next write.
@@ -126,8 +150,13 @@ class PcmPlayer {
         Log.i("NovelSpeak", "PcmPlayer reset state=${track?.playState}")
     }
 
-    /** Blocking write of float samples in [-1, 1]. Returns false if stopped. */
-    fun write(samples: FloatArray): Boolean {
+    /** Blocking write of float samples in [-1, 1]. Returns false if stopped.
+     *
+     * [fadeIn] ramps the first ~6 ms, so a sentence never starts with a step from the
+     * previous one. Call [endSentence] after the last chunk of a sentence to ramp the
+     * tail to silence (the writer knows the last written sample).
+     */
+    fun write(samples: FloatArray, fadeIn: Boolean = false): Boolean {
         val t = track ?: return false
         if (stopped) return false
         if (writer == null) startWriter()
@@ -145,20 +174,30 @@ class PcmPlayer {
             val a = if (s < 0f) -s else s
             if (a > peak) peak = a
         }
-        val gain = if (peak > 0.001f) minOf(OUTPUT_GAIN, 0.98f / peak) else OUTPUT_GAIN
+        val target = if (peak > 0.001f) minOf(OUTPUT_GAIN, 0.98f / peak) else OUTPUT_GAIN
+        if (gainNow <= 0f) gainNow = target
+        val fade = if (fadeIn) fadeFrames() else 0
         var k = 0
+        var i = 0
+        var last = 0f
         for (s in pcm) {
-            val g = s * gain
-            val v = when {
-                g >= 1.0f -> 32767
-                g <= -1.0f -> -32768
-                else -> (g * 32767f).roundToInt()
+            // Gain drops immediately (clipping safety) and rises slowly, so a chunk with
+            // a different peak cannot step the level.
+            gainNow = if (target < gainNow) target else gainNow + (target - gainNow) * 0.0008f
+            var v = s * gainNow
+            if (i < fade) v *= i.toFloat() / fade
+            last = v
+            val clipped = when {
+                v >= 1.0f -> 32767
+                v <= -1.0f -> -32768
+                else -> (v * 32767f).roundToInt()
             }
-            bytes[k++] = (v and 0xFF).toByte()
-            bytes[k++] = ((v shr 8) and 0xFF).toByte()
+            bytes[k++] = (clipped and 0xFF).toByte()
+            bytes[k++] = ((clipped shr 8) and 0xFF).toByte()
+            i++
         }
         if (stopped) return false
-        playQueue.offer(Chunk(playbackEpoch, bytes))
+        playQueue.offer(Chunk(playbackEpoch, bytes, lastSample = last))
         writtenFrames += samples.size
         maybeStart()
         if (writtenFrames <= samples.size) {
@@ -170,8 +209,30 @@ class PcmPlayer {
         return true
     }
 
+    /**
+     * Marks the end of a synthesized sentence: the writer appends a ~6 ms ramp from the
+     * last written sample to silence. Without it a sentence ending mid-waveform and the
+     * next starting at a different value produce an audible click.
+     */
+    fun endSentence() {
+        if (stopped) return
+        val n = fadeFrames()
+        playQueue.offer(Chunk(playbackEpoch, ByteArray(0), tailFrames = n))
+        writtenFrames += n
+    }
+
     /** Number of sentences/chunks waiting for the writer thread (diagnostics). */
     fun queueDepth(): Int = playQueue.size
+
+    /** Frames written to the track but not yet heard (drives the reader's look-ahead). */
+    fun bufferedFrames(): Long {
+        val written = writtenFrames
+        val played = playedFrames()
+        return (written - played).coerceAtLeast(0)
+    }
+
+    fun bufferedSeconds(): Float =
+        if (sampleRate > 0) bufferedFrames().toFloat() / sampleRate else 0f
 
     private fun maybeStart() {
         if (started || writtenFrames < (sampleRate * 35L / 100L)) return
@@ -214,6 +275,24 @@ class PcmPlayer {
     }
 
     private fun writerLoop() {
+        var writerEpoch = -1
+        var lastWritten = 0f
+        fun writeAll(bytes: ByteArray, t: AudioTrack): Boolean {
+            var off = 0
+            while (off < bytes.size && writerRun && !stopped && writerEpoch == playbackEpoch) {
+                val n = try {
+                    t.write(bytes, off, bytes.size - off)
+                } catch (e: Throwable) {
+                    -1
+                }
+                if (n <= 0) {
+                    Log.w("NovelSpeak", "PcmPlayer writer write failed n=$n state=${t.playState}")
+                    return false
+                }
+                off += n
+            }
+            return true
+        }
         while (writerRun) {
             val chunk = try {
                 playQueue.take()
@@ -227,21 +306,28 @@ class PcmPlayer {
                 continue
             }
             val t = track ?: continue
-            var off = 0
-            while (off < chunk.bytes.size && writerRun && !stopped &&
-                chunk.epoch == playbackEpoch
-            ) {
-                val n = try {
-                    t.write(chunk.bytes, off, chunk.bytes.size - off)
-                } catch (e: Throwable) {
-                    -1
-                }
-                if (n <= 0) {
-                    Log.w("NovelSpeak", "PcmPlayer writer write failed n=$n state=${t.playState}")
-                    break
-                }
-                off += n
+            if (chunk.epoch != writerEpoch) {
+                writerEpoch = chunk.epoch
+                lastWritten = 0f
             }
+            // Sentence tail: ramp the last written sample to zero so the next sentence
+            // cannot produce a step discontinuity (an audible click).
+            if (chunk.tailFrames > 0) {
+                val n = chunk.tailFrames
+                val tail = ByteArray(n * 2)
+                for (i in 0 until n) {
+                    val v = lastWritten * (1f - i.toFloat() / (n - 1).coerceAtLeast(1))
+                    val s = (v * 32767f).roundToInt().coerceIn(-32768, 32767)
+                    tail[i * 2] = (s and 0xFF).toByte()
+                    tail[i * 2 + 1] = ((s shr 8) and 0xFF).toByte()
+                }
+                if (!writeAll(tail, t)) break
+                lastWritten = 0f
+                continue
+            }
+            if (chunk.bytes.isEmpty()) continue
+            if (!writeAll(chunk.bytes, t)) break
+            lastWritten = chunk.lastSample
         }
     }
 
@@ -250,9 +336,18 @@ class PcmPlayer {
         return try { t.playbackHeadPosition.toLong() and 0xFFFFFFFFL } catch (e: Throwable) { writtenFrames }
     }
 
-    /** Blocks until the given absolute frame count has been played (or stop). */
-    fun awaitDrained(targetFrames: Long, stopFlag: () -> Boolean) {
-        while (!stopFlag() && playedFrames() < targetFrames) {
+    /** Increments on every reset/stop, so a waiter can detect that its frame target is stale. */
+    fun epoch(): Int = playbackEpoch
+
+    /**
+     * Blocks until the given absolute frame count has been played.
+     *
+     * [epochAtStart] guards against the flush race: stop()/reset() clears the AudioTrack and its
+     * head position returns to 0, so a target captured before the flush can never be reached.
+     * Without this, a seek during playback leaves the engine thread waiting forever.
+     */
+    fun awaitDrained(targetFrames: Long, epochAtStart: Int, stopFlag: () -> Boolean) {
+        while (!stopFlag() && playbackEpoch == epochAtStart && playedFrames() < targetFrames) {
             try { Thread.sleep(15) } catch (e: InterruptedException) { return }
         }
     }
