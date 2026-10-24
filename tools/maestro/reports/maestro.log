@@ -1,6 +1,13 @@
 
 Waiting for flows to complete...
-[Failed] 06 sleep timer: 15 minutes arms countdown, Off clears it (94ms)
+[Passed] 07 library: opened chapter appears with progress and resumes (44s)
+[Passed] 05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch (1m 47s)
+[Passed] 06 sleep timer: set 15 minutes, countdown appears, Off clears it (37s)
+[Passed] 09 privacy: About & privacy -> Privacy & licences -> back (11s)
+[Passed] 03 read local chapter: URL loads, Read extracts, player shows sentence state (21s)
+[Passed] 02 settings: overflow opens the Settings screen and back returns (10s)
+[Passed] 01 launch: address bar and player are visible (3s)
+[Passed] 04 next chapter: Next ch follows rel=next to chapter2 (24s)
 
-1/1 Flow Failed
+8/8 Flows Passed in 4m 15s
 
