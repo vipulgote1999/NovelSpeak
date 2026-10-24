@@ -11,9 +11,18 @@ fails on novel sites and stops when the screen locks.
   - **Neural voices (sherpa-onnx)** — **Kokoro** (11 English voices, 103 MB int8) or
     **Pocket TTS** (zero-shot voice cloning, 98 MB int8), downloaded on demand from upstream.
 - **Screen-off playback**: media-playback foreground service + wake lock + MediaSession controls.
+  Wired/Bluetooth headset buttons (play/pause, next, previous) work for both engines: system TTS is
+  rendered to PCM and played in-process so Android routes media keys to NovelSpeak. See
+  [docs/media-controls.md](docs/media-controls.md).
 - **Streaming pipeline**: sentences are pre-split, the next 1–2 are generated while the current one
   plays, PCM goes straight into a low-latency AudioTrack — no waiting for a whole chapter.
 - **Read-along**: the spoken paragraph is highlighted and auto-scrolled on the page itself.
+- **Auto mode** (setting): pages are extracted and read automatically, and at the end of a
+  chapter the reader prompts, opens the next chapter, waits 2.5 s and continues. Off by default.
+- **Generation ahead of playback**: sentences are synthesized up to ~12 s of buffered audio
+  while the current one plays, so sentence changes do not wait for synthesis.
+- **Audio cleanup**: vocoder hiss is suppressed and sentence boundaries are faded, so quotes /
+  dialogue boundaries do not click or hiss. See [docs/audio-quality.md](docs/audio-quality.md).
 - **Ad blocking**: EasyList/EasyPrivacy/uBlock lists, a token-indexed matcher, cosmetic filtering,
   popup/redirect blocking and a per-site bypass. Pure Kotlin, no native dependency. See
   [docs/adblocker.md](docs/adblocker.md).
@@ -26,8 +35,8 @@ The reverse-engineering notes are in [docs/re-natural-ai-voices.md](docs/re-natu
 
 Download the latest APK from [GitHub Releases](https://github.com/vipulgote1999/NovelSpeak/releases/latest):
 
-- `NovelSpeak-1.0.0-arm64-v8a.apk` — Android 7.0 (API 24)+, arm64-v8a.
-- `NovelSpeak-1.0.0-arm64-v8a.apk.sha256` — verify with `sha256sum -c`.
+- `NovelSpeak-1.1.0-arm64-v8a.apk` — Android 7.0 (API 24)+, arm64-v8a.
+- `NovelSpeak-1.1.0-arm64-v8a.apk.sha256` — verify with `sha256sum -c`.
 
 The release APK is signed with a dedicated release key. If you previously installed a
 debug-signed build, uninstall it first; that erases its settings and downloaded models.
@@ -90,6 +99,12 @@ Licences and sources are in `app/assets/adblock/NOTICE.txt`.
   keeps short repeated dialogue.
 - Long sentences split at punctuation/whitespace boundaries, with a 180-char
   default and a migration for the old 90-char default.
+- **Neural text safety**: raw chapter text is sanitized before Kokoro/Pocket.
+  Quote glyphs (which Kokoro renders as audible junk at every dialogue boundary),
+  asterisks, ellipses and dashes are normalized without touching words, punctuation-only
+  fragments are skipped, short dialogue fragments are merged, and a saturated/garbage
+  output chunk is dropped instead of played. See
+  [docs/tts-text-normalization.md](docs/tts-text-normalization.md).
 - The reader and settings screens respect status/navigation bar insets.
 
 Root causes and on-device evidence: [docs/reader-fixes.md](docs/reader-fixes.md).
