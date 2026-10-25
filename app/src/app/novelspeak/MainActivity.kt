@@ -9,6 +9,7 @@ import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -52,6 +53,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.PopupWindow
@@ -133,19 +135,34 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val label: String,
         val monogram: String,
         val url: String,
+        val iconAsset: String,
         val opensLibrary: Boolean = false
     )
 
     private val homeShortcuts = listOf(
-        HomeShortcut("EmpireNovel", "EN", "https://www.empirenovel.com/"),
-        HomeShortcut("Royal Road", "RR", "https://www.royalroad.com/"),
-        HomeShortcut("LightNovel", "LN", "https://www.lightnovelworld.com/"),
-        HomeShortcut("WebNovel", "WN", "https://www.webnovel.com/"),
-        HomeShortcut("Wattpad", "WP", "https://www.wattpad.com/"),
-        HomeShortcut("Gutenberg", "PG", "https://www.gutenberg.org/"),
-        HomeShortcut("Wikipedia", "WI", "https://en.m.wikipedia.org/"),
-        HomeShortcut("Library", "L", "", opensLibrary = true)
+        HomeShortcut("EmpireNovel", "EN", "https://www.empirenovel.com/", "empirenovel"),
+        HomeShortcut("Royal Road", "RR", "https://www.royalroad.com/", "royalroad"),
+        HomeShortcut("LightNovel", "LN", "https://www.lightnovelworld.com/", "lightnovelworld"),
+        HomeShortcut("WebNovel", "WN", "https://www.webnovel.com/", "webnovel"),
+        HomeShortcut("Wattpad", "WP", "https://www.wattpad.com/", "wattpad"),
+        HomeShortcut("Gutenberg", "PG", "https://www.gutenberg.org/", "gutenberg"),
+        HomeShortcut("Wikipedia", "WI", "https://en.m.wikipedia.org/", "wikipedia"),
+        HomeShortcut("Library", "L", "", "library", opensLibrary = true)
     )
+
+    private val homeIconCache = HashMap<String, Bitmap?>()
+
+    /** Bundled shortcut icon (no runtime network); falls back to the monogram. */
+    private fun loadHomeIcon(name: String): Bitmap? {
+        if (homeIconCache.containsKey(name)) return homeIconCache[name]
+        val bitmap = try {
+            assets.open("home-icons/" + name + ".png").use { BitmapFactory.decodeStream(it) }
+        } catch (t: Throwable) {
+            null
+        }
+        homeIconCache[name] = bitmap
+        return bitmap
+    }
     private lateinit var library: LibraryStore
     private lateinit var bookmarks: BookmarkStore
     private lateinit var readingStats: ReadingStats
@@ -830,17 +847,27 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 }
             }
             addView(FrameLayout(this@MainActivity).apply {
-                background = ripple(Palette.SURFACE_HIGH, 28, oval = true)
+                // Chrome-style light plate so site icons keep their own colors on the dark tab.
+                background = ripple(HOME_ICON_PLATE, 28, oval = true)
                 layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
-                addView(TextView(this@MainActivity).apply {
-                    text = shortcut.monogram
-                    textSize = 15f
-                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                    setTextColor(Palette.ACCENT)
-                    gravity = Gravity.CENTER
-                }, FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
-                ))
+                val icon = loadHomeIcon(shortcut.iconAsset)
+                if (icon != null) {
+                    addView(ImageView(this@MainActivity).apply {
+                        setImageBitmap(icon)
+                        scaleType = ImageView.ScaleType.FIT_CENTER
+                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                    }, FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER))
+                } else {
+                    addView(TextView(this@MainActivity).apply {
+                        text = shortcut.monogram
+                        textSize = 15f
+                        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                        setTextColor(0xFF1B2430.toInt())
+                        gravity = Gravity.CENTER
+                    }, FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+                    ))
+                }
             })
             addView(TextView(this@MainActivity).apply {
                 text = shortcut.label
@@ -2669,6 +2696,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         private const val MENU_IMPORT = 14
         private const val REQ_IMPORT_DOCUMENT = 1001
         private const val PREFETCH_DELAY_MS = 12_000L
+        private val HOME_ICON_PLATE = 0xFFE9EEF4.toInt()
         private const val PREFETCH_MIN_FREE_BYTES = 350L * 1024 * 1024
 
         /** Pause between a chapter's extraction and its first spoken sentence. */
