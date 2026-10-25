@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+    <style>
+      @import url("assets/fonts/fonts.local.css");
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #000;
+      }
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #0E1318;
+      }
+      #hf-vignette,
+      #hf-grain {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      #hf-vignette {
+        background: radial-gradient(ellipse at 50% 46%, rgba(0, 0, 0, 0) 52%, rgba(3, 6, 9, 0.34) 100%);
+      }
+      #hf-grain {
+        opacity: 0.05;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="23"
+      data-width="1080"
+      data-height="1920"
+    >
+      <div
+        id="el-01-hook"
+        class="scene"
+        data-composition-id="01-hook"
+        data-composition-src="compositions/frames/01-hook.html"
+        data-start="0"
+        data-duration="4"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-02-reveal"
+        class="scene"
+        data-composition-id="02-reveal"
+        data-composition-src="compositions/frames/02-reveal.html"
+        data-start="4"
+        data-duration="4"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-03-reading"
+        class="scene"
+        data-composition-id="03-reading"
+        data-composition-src="compositions/frames/03-reading.html"
+        data-start="8"
+        data-duration="5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-04-voices"
+        class="scene"
+        data-composition-id="04-voices"
+        data-composition-src="compositions/frames/04-voices.html"
+        data-start="13"
+        data-duration="3"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-05-screenoff"
+        class="scene"
+        data-composition-id="05-screenoff"
+        data-composition-src="compositions/frames/05-screenoff.html"
+        data-start="16"
+        data-duration="3"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-06-cta"
+        class="scene"
+        data-composition-id="06-cta"
+        data-composition-src="compositions/frames/06-cta.html"
+        data-start="19"
+        data-duration="4"
+        data-track-index="1"
+      ></div>
+
+      <!-- global grade overlay (grain + vignette) -->
+      <div id="hf-vignette" class="clip" data-start="0" data-duration="23" data-track-index="12"></div>
+      <div id="hf-grain" class="clip" data-start="0" data-duration="23" data-track-index="13"></div>
+
+      <!-- BGM -->
+      <audio
+        id="el-bgm"
+        src="assets/bgm/track.wav"
+        data-start="0"
+        data-duration="23"
+        data-track-index="11"
+        data-volume="0.58"
+      ></audio>
+
+      <!-- SFX -->
+      <audio
+        id="el-sfx-0"
+        src="assets/sfx/whoosh-short.mp3"
+        data-start="0"
+        data-duration="0.57"
+        data-track-index="20"
+        data-volume="0.38"
+      ></audio>
+      <audio
+        id="el-sfx-1"
+        src="assets/sfx/impact-bass-1.mp3"
+        data-start="4"
+        data-duration="2.12"
+        data-track-index="21"
+        data-volume="0.47"
+      ></audio>
+      <audio
+        id="el-sfx-2"
+        src="assets/sfx/sparkle.mp3"
+        data-start="6.15"
+        data-duration="1.8"
+        data-track-index="22"
+        data-volume="0.3"
+      ></audio>
+      <audio
+        id="el-sfx-3"
+        src="assets/sfx/click.mp3"
+        data-start="8"
+        data-duration="0.37"
+        data-track-index="23"
+        data-volume="0.38"
+      ></audio>
+      <audio
+        id="el-sfx-4"
+        src="assets/sfx/whoosh-short.mp3"
+        data-start="10.8"
+        data-duration="0.57"
+        data-track-index="24"
+        data-volume="0.33"
+      ></audio>
+      <audio
+        id="el-sfx-5"
+        src="assets/sfx/pop.mp3"
+        data-start="13"
+        data-duration="0.72"
+        data-track-index="25"
+        data-volume="0.38"
+      ></audio>
+      <audio
+        id="el-sfx-6"
+        src="assets/sfx/sparkle.mp3"
+        data-start="14.05"
+        data-duration="1.8"
+        data-track-index="26"
+        data-volume="0.28"
+      ></audio>
+      <audio
+        id="el-sfx-7"
+        src="assets/sfx/impact-bass-2.mp3"
+        data-start="16"
+        data-duration="2.59"
+        data-track-index="27"
+        data-volume="0.38"
+      ></audio>
+      <audio
+        id="el-sfx-8"
+        src="assets/sfx/ping.mp3"
+        data-start="16.95"
+        data-duration="1.32"
+        data-track-index="28"
+        data-volume="0.32"
+      ></audio>
+      <audio
+        id="el-sfx-9"
+        src="assets/sfx/whoosh-cinematic.mp3"
+        data-start="19"
+        data-duration="1.4"
+        data-track-index="29"
+        data-volume="0.38"
+      ></audio>
+      <audio
+        id="el-sfx-10"
+        src="assets/sfx/chime.mp3"
+        data-start="21"
+        data-duration="1"
+        data-track-index="30"
+        data-volume="0.38"
+      ></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

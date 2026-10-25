@@ -1,0 +1,207 @@
+<template>
+  <div data-hf-id="hf-2dze" id="root" data-composition-id="01-hook" data-duration="4" data-width="1080" data-height="1920">
+    <style>
+@import url("../../assets/fonts/fonts.local.css");
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  container-type: size;
+  isolation: isolate;
+  background: transparent;
+}
+
+.clip {
+  position: absolute;
+  inset: 0;
+}
+
+#h01-ground {
+  background: #0E1318;
+  background-image: radial-gradient(circle at 78% 18%, rgba(111, 231, 190, 0.08) 0%, transparent 46%);
+}
+
+#h01-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 72px;
+}
+
+#h01-label {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #6FE7BE;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+#h01-rule-label {
+  width: 56px;
+  height: 2px;
+  background: #F4C66A;
+  margin-top: 14px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
+}
+
+#h01-headline {
+  margin-top: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+#h01-line-a,
+#h01-line-b {
+  font-family: 'Playfair Display', serif;
+  font-weight: 500;
+  font-size: 104px;
+  line-height: 1.1;
+  color: #F1F6FA;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 0.28em;
+}
+
+#h01-line-b {
+  position: relative;
+  min-height: 1.08em;
+}
+
+.h01-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.h01-word {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+.h01-group-read,
+.h01-group-hear {
+  display: flex;
+  gap: 0.28em;
+  justify-content: center;
+  align-items: baseline;
+}
+
+.h01-group-hear {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  opacity: 0;
+}
+
+.h01-hear {
+  color: #6FE7BE;
+  font-style: italic;
+}
+
+#h01-rule-head {
+  width: 96px;
+  height: 2px;
+  background: #F4C66A;
+  margin-top: 16px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
+}
+    </style>
+
+    <div data-hf-id="hf-cgb7" id="h01-ground" class="clip" data-start="0" data-duration="4" data-track-index="0"></div>
+
+    <div data-hf-id="hf-f4ey" id="h01-content" class="clip" data-start="0" data-duration="4" data-track-index="1">
+      <div data-hf-id="hf-i4sv" id="h01-stage">
+        <div data-hf-id="hf-3tqe" id="h01-label">FOR WEB NOVEL READERS</div>
+        <div data-hf-id="hf-ntvc" id="h01-rule-label"></div>
+        <div data-hf-id="hf-2n83" id="h01-headline">
+          <div data-hf-id="hf-c21b" id="h01-line-a">
+            <span data-hf-id="hf-x0yz" class="h01-mask"><span data-hf-id="hf-j95y" class="h01-word">You</span></span>
+            <span data-hf-id="hf-tgjv" class="h01-mask"><span data-hf-id="hf-tkmn" class="h01-word">don't</span></span>
+            <span data-hf-id="hf-t28u" class="h01-mask"><span data-hf-id="hf-gm7l" class="h01-word">have</span></span>
+            <span data-hf-id="hf-snxt" class="h01-mask"><span data-hf-id="hf-30wa" class="h01-word">to</span></span>
+          </div>
+          <div data-hf-id="hf-16jo" id="h01-line-b">
+            <div data-hf-id="hf-94ok" class="h01-group-read">
+              <span data-hf-id="hf-s9ms" class="h01-mask"><span data-hf-id="hf-f58z" class="h01-word">read</span></span>
+              <span data-hf-id="hf-rvbr" class="h01-mask"><span data-hf-id="hf-59is" class="h01-word">it.</span></span>
+            </div>
+            <div data-hf-id="hf-es3s" class="h01-group-hear">
+              <span data-hf-id="hf-rh0q" class="h01-mask"><span data-hf-id="hf-waij" class="h01-word h01-hear">Hear</span></span>
+              <span data-hf-id="hf-r2pp" class="h01-mask"><span data-hf-id="hf-xo4c" class="h01-word h01-hear">it.</span></span>
+            </div>
+          </div>
+        </div>
+        <div data-hf-id="hf-axcc" id="h01-rule-head"></div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+
+        // initial states: line A is already on screen at t=0 (thumbnail), settling only 22px
+        gsap.set("#h01-line-a .h01-word", { y: 22 });
+        gsap.set("#h01-label", { y: 16, opacity: 0 });
+        gsap.set(".h01-group-read .h01-word", { yPercent: 100, opacity: 0 });
+        gsap.set(".h01-group-hear .h01-word", { yPercent: 0, opacity: 0 });
+
+        // label + amber rule arrive immediately
+        tl.fromTo("#h01-label", { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.05);
+        tl.fromTo("#h01-rule-label", { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power2.out" }, 0.35);
+
+        // line A words settle 22px -> 0 (visible from frame 0)
+        var aWords = document.querySelectorAll("#h01-line-a .h01-word");
+        aWords.forEach(function (w, i) {
+          tl.to(w, { y: 0, duration: 0.7, ease: "power3.out" }, 0.0 + i * 0.06);
+        });
+
+        // read it. mask rise
+        var readWords = document.querySelectorAll(".h01-group-read .h01-word");
+        readWords.forEach(function (w, i) {
+          tl.fromTo(w, { yPercent: 100, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, 0.8 + i * 0.15);
+        });
+
+        // hard swap at 2.5: read it. -> Hear it.
+        tl.set(".h01-group-read", { opacity: 0 }, 2.5);
+        var hearWords = document.querySelectorAll(".h01-group-hear .h01-word");
+        hearWords.forEach(function (w) {
+          tl.set(w, { opacity: 1 }, 2.5);
+        });
+        tl.set(".h01-group-hear", { opacity: 1 }, 2.5);
+
+        // 96px amber rule under headline draws 2.5-3.05
+        tl.fromTo("#h01-rule-head", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.out" }, 2.5);
+
+        tl.seek(0);
+        window.__timelines["01-hook"] = tl;
+      })();
+    </script>
+  </div>
+</template>

@@ -1,0 +1,5 @@
+NovelSpeak — Android app that reads any web novel aloud.
+Home: NovelSpeak / A quiet place to read. / Search or enter a web address / Shortcuts / Continue reading / Local only: no account, no ads, no tracking.
+Reader: chapter text, Read, player (play/pause, prev/next sentence, stop, speed, Next ch).
+Settings: engine (Android system TTS / Neural voices), Kokoro voices, model install, threads/NNAPI/prefetch, sleep timer, reader typography, pronunciation dictionary, ad blocking.
+Verified features: any-URL + Readability extraction, offline Kokoro/Pocket neural voices, screen-off playback with media controls, read-along highlight + auto-scroll, auto-next chapter, library/resume, sleep timer, no account/ads/telemetry.

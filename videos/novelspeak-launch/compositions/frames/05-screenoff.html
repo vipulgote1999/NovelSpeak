@@ -1,0 +1,206 @@
+<template>
+  <div data-hf-id="hf-8ky7" id="root" data-composition-id="05-screenoff" data-duration="3" data-width="1080" data-height="1920" data-fps="30">
+    <style>
+@import url("../../assets/fonts/fonts.local.css");
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+#root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  container-type: size;
+  isolation: isolate;
+  background: transparent;
+  color: #F1F6FA;
+  font-family: 'Inter', sans-serif;
+  pointer-events: none;
+}
+
+/* full-bleed ink ground on a clip layer, NOT on #root */
+.ink-ground {
+  position: absolute;
+  inset: 0;
+  background: #0E1318;
+}
+
+/* soft amber/mint glow beneath the floating plate */
+.card-glow {
+  position: absolute;
+  left: 40px;
+  top: 794px;
+  width: 1000px;
+  height: 433px;
+  background: radial-gradient(ellipse at 50% 55%, rgba(111,231,190,0.20) 0%, rgba(244,198,106,0.14) 38%, rgba(14,19,24,0) 72%);
+  filter: blur(18px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* floating plate */
+.card-plate {
+  position: absolute;
+  left: 65px;
+  top: 819px;
+  width: 950px;
+  border: 1px solid #2C3944;
+  border-radius: 24px;
+  overflow: hidden;
+  z-index: 2;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+  background: #161D24;
+}
+
+.card-plate img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* mint sheen overlay (light only) */
+.sheen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 380px;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(111,231,190,0) 0%, rgba(111,231,190,0.32) 50%, rgba(111,231,190,0) 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 1;
+  will-change: transform;
+}
+
+/* copy layer */
+.so-copy {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.so-mask {
+  position: absolute;
+  left: 65px;
+  width: 950px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.so-mask--1 { top: 522px; height: 100px; }
+.so-mask--2 { top: 646px; height: 100px; }
+
+.so-headline {
+  font-family: 'Playfair Display', serif;
+  font-weight: 500;
+  font-size: 92px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  will-change: transform, opacity;
+}
+
+.so-h1 { color: #F1F6FA; }
+.so-h2 { color: #6FE7BE; }
+
+.so-caption {
+  position: absolute;
+  top: 1330px;
+  left: 65px;
+  width: 950px;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 28px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #9AA9B8;
+  opacity: 0;
+  will-change: opacity;
+}
+    </style>
+
+    <div data-hf-id="hf-h01g" id="so-clip" class="clip" data-start="0" data-duration="3" data-track-index="0">
+      <!-- ground -->
+      <div data-hf-id="hf-etec" class="ink-ground"></div>
+
+      <!-- glow -->
+      <div data-hf-id="hf-nbp4" class="card-glow"></div>
+
+      <!-- floating plate -->
+      <div data-hf-id="hf-abxg" class="card-plate" id="so-card">
+        <img data-hf-id="hf-9tvy" src="../../assets/stills/media-controls.png" alt="" />
+        <div data-hf-id="hf-l1pu" class="sheen" id="so-sheen" data-layout-allow-overflow></div>
+      </div>
+
+      <!-- copy -->
+      <div data-hf-id="hf-8kdo" class="so-copy">
+        <div data-hf-id="hf-1uhj" class="so-mask so-mask--1">
+          <div data-hf-id="hf-c0i0" class="so-headline so-h1" id="so-h1">Screen off.</div>
+        </div>
+        <div data-hf-id="hf-vd8d" class="so-mask so-mask--2" data-layout-allow-overflow>
+          <div data-hf-id="hf-d69p" class="so-headline so-h2" id="so-h2">Still reading.</div>
+        </div>
+        <div data-hf-id="hf-6zm2" class="so-caption" id="so-caption">MEDIA CONTROLS, EVEN LOCKED</div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        var root = document.getElementById("root");
+        var card = document.getElementById("so-card");
+        var sheen = document.getElementById("so-sheen");
+        var h1 = document.getElementById("so-h1");
+        var h2 = document.getElementById("so-h2");
+        var caption = document.getElementById("so-caption");
+        var mask1 = h1.parentElement;
+        var mask2 = h2.parentElement;
+
+        mask1.style.overflow = "hidden";
+        mask2.style.overflow = "hidden";
+
+        // initial states
+        card.style.filter = "brightness(0.84)";
+        card.style.transform = "translateY(60px)";
+        gsap.set(card, { opacity: 0 });
+        gsap.set(h1, { yPercent: 100, opacity: 1 });
+        gsap.set(h2, { yPercent: 100, opacity: 1 });
+        gsap.set(caption, { opacity: 0 });
+        gsap.set(sheen, { x: -400, opacity: 1 });
+
+        var bright = { v: 0.84 };
+        function applyBright() {
+          card.style.filter = "brightness(" + bright.v + ")";
+        }
+
+        var tl = gsap.timeline({ paused: true });
+
+        // 0.0 card rises 60px + opacity 0->1 (0.75s, expo.out), dimmed 84%
+        tl.to(card, { y: 0, opacity: 1, duration: 0.75, ease: "expo.out" }, 0);
+
+        // 0.2 "Screen off." mask-rises
+        tl.to(h1, { yPercent: 0, duration: 0.6, ease: "power3.out" }, 0.2);
+
+        // 0.85 card brightness ->100% + mint sheen sweep (0.55s)
+        tl.to(bright, { v: 1, duration: 0.4, ease: "power2.out", onUpdate: applyBright }, 0.85);
+        tl.fromTo(sheen, { x: -400 }, { x: 1350, duration: 0.55, ease: "power2.inOut" }, 0.85);
+        tl.set(sheen, { opacity: 0 }, 0.85 + 0.55);
+
+        // 1.0 "Still reading." mask-rises in mint
+        tl.to(h2, { yPercent: 0, duration: 0.6, ease: "power3.out" }, 1.0);
+
+        // 1.6 caption fades
+        tl.to(caption, { opacity: 1, duration: 0.5, ease: "power3.out" }, 1.6);
+
+        // 1.8-3.0 hold perfectly still
+
+        tl.seek(0);
+        window.__timelines = window.__timelines || {};
+        window.__timelines["05-screenoff"] = tl;
+      })();
+    </script>
+  </div>
+</template>
