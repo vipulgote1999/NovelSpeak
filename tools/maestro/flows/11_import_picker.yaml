@@ -1,0 +1,14 @@
+appId: app.novelspeak
+name: "11 import: overflow opens the document picker for EPUB/PDF"
+tags: [import]
+---
+- launchApp
+- tapOn: "More options"
+- tapOn: "Import EPUB or PDF"
+- extendedWaitUntil:
+    visible: "Recent|Downloads|Open from|Images"
+    timeout: 15000
+- pressKey: Back
+- extendedWaitUntil:
+    visible: "More options"
+    timeout: 10000

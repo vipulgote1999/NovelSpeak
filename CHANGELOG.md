@@ -4,6 +4,33 @@ All notable changes to NovelSpeak are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-25
+
+### Added
+- Local library with saved reading position, Continue reading, bookmarks and reading stats.
+- Share-sheet and selected-text intake; EPUB/PDF/plain-text import (PDF is text-layer only).
+- Sleep timer (15/30/45/60 min or end of chapter), engine-capped speed up to 3x, volume boost,
+  pitch and skip-silence.
+- Reader typography controls (size, family, theme, line height, width) and word-level read-along.
+- Pronunciation dictionary applied to both TTS engines; paywall/login detection with an honest
+  warning (no bypass); diagnostics bundle; privacy and licences page.
+- Chapter prefetch: the next chapter is extracted in a hidden WebView and appended without a stall.
+- Translation hand-off to the system browser; two-pane tablet/landscape layout.
+- Signed model catalog verification plus an explicit OTA check; tools/model-catalog-sign.sh.
+- Maestro E2E harness (fixtures, 10 flows, share/adaptive checks) and host test suites for the
+  library, settings features, TTS cleaner, audio DSP, EPUB and PDF importers.
+
+### Changed
+- Version 1.2.0-dev (versionCode 16); allowBackup disabled; exported media receiver permission;
+  WebView lifecycle fixed; cleartext allowed only for loopback test hosts; model catalog in assets.
+- README positioning corrected: Chrome does support lock-screen playback; the real gap is site
+  coverage and the data-sharing setting.
+
+### Fixed
+- Per-site reader mode now actually writes per site; top-bar label reflects it.
+- Sleep-timer/import/bookmark actions reachable from the overflow menu; speed UI no longer lies.
+- Stale stopping behaviour after seek while a long sentence plays (carried from 1.1.0 evidence).
+
 ## [1.1.0] - 2026-10-24
 
 ### Added

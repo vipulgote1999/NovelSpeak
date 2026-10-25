@@ -118,6 +118,9 @@ class Reader(private val app: NovelSpeakApp) {
 
         /** The last queued sentence finished playing; auto mode uses this to advance. */
         fun onQueueFinished() {}
+
+        /** Approximate word-level progress inside the spoken sentence (char offsets). */
+        fun onWordHighlight(blockIndex: Int, charStart: Int, charEnd: Int) {}
     }
 
     data class State(
@@ -142,6 +145,13 @@ class Reader(private val app: NovelSpeakApp) {
 
     private var engine: TtsEngine? = null
     private var engineName = ""
+
+    // Word-level read-along: the engine boundary APIs are chunk-based, so progress inside a
+    // sentence is estimated from elapsed time and the current speed. Sentence highlight is
+    // authoritative; word highlight is an enhancement and can be turned off in Settings.
+    private var wordTick: Runnable? = null
+    private var sentenceStartAt = 0L
+    private var sentenceChars = 0
 
     fun addListener(l: Listener) { if (!listeners.contains(l)) listeners.add(l) }
     fun removeListener(l: Listener) { listeners.remove(l) }
@@ -214,6 +224,44 @@ class Reader(private val app: NovelSpeakApp) {
         }
     }
 
+    private fun startWordTracking() {
+        stopWordTracking()
+        if (!playing) return
+        if (!app.prefs.readerWordHighlight) return
+        val block = sentences.getOrNull(cursor) ?: return
+        sentenceStartAt = android.os.SystemClock.uptimeMillis()
+        sentenceChars = block.text.length
+        if (sentenceChars <= 0) return
+        val run = object : Runnable {
+            override fun run() {
+                if (!playing) return
+                val textBlock = sentences.getOrNull(cursor) ?: return
+                val elapsedSec = (android.os.SystemClock.uptimeMillis() - sentenceStartAt) / 1000f
+                // ~13.5 chars/second at 1x for English prose; speed scales speech rate.
+                val charsPerSec = 13.5f * app.prefs.speed.coerceIn(0.5f, 3.0f)
+                val end = (elapsedSec * charsPerSec).toInt()
+                    .coerceIn(0, textBlock.text.length)
+                var start = end
+                while (start > 0 && !textBlock.text[start - 1].isWhitespace()) start--
+                var stop = end
+                while (stop < textBlock.text.length && !textBlock.text[stop].isWhitespace()) stop++
+                main.post {
+                    for (l in ArrayList(listeners)) {
+                        l.onWordHighlight(textBlock.blockIndex, start, stop)
+                    }
+                }
+                main.postDelayed(this, 140L)
+            }
+        }
+        wordTick = run
+        main.post(run)
+    }
+
+    private fun stopWordTracking() {
+        wordTick?.let { main.removeCallbacks(it) }
+        wordTick = null
+    }
+
     fun play() {
         if (sentences.isEmpty()) { status = "Nothing to read"; notifyState(); return }
         if (playing) return
@@ -227,6 +275,7 @@ class Reader(private val app: NovelSpeakApp) {
                 submitted = cursor - 1
                 pump()
                 schedulePump()
+                startWordTracking()
                 notifyState()
                 PlaybackService.start(app)
                 DiagLog.line(app, "play started engine=${e.id} sentence=$cursor/" + sentences.size)
@@ -261,6 +310,7 @@ class Reader(private val app: NovelSpeakApp) {
         playing = false
         generation++
         main.removeCallbacks(pumpTick)
+        stopWordTracking()
         engine?.stop()
         status = "Paused"
         notifyState()
@@ -279,6 +329,7 @@ class Reader(private val app: NovelSpeakApp) {
         generation++
         submitted = cursor - 1
         main.removeCallbacks(pumpTick)
+        stopWordTracking()
         engine?.stop()
         PlaybackService.stop(app)
     }
@@ -305,6 +356,7 @@ class Reader(private val app: NovelSpeakApp) {
         if (wasPlaying) {
             pump()
             schedulePump()
+            startWordTracking()
         } else {
             main.removeCallbacks(pumpTick)
         }
@@ -359,6 +411,7 @@ class Reader(private val app: NovelSpeakApp) {
             if (index == cursor) {
                 if (cursor >= sentences.size - 1) {
                     playing = false
+                    stopWordTracking()
                     status = "Finished"
                     notifyState()
                     PlaybackService.stop(app)
@@ -367,6 +420,7 @@ class Reader(private val app: NovelSpeakApp) {
                 }
                 cursor++
                 notifyHighlight()
+                startWordTracking()
                 notifyState()
                 pump()
             }

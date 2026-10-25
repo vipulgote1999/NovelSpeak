@@ -133,3 +133,12 @@ flow was then updated for the new player status wording (`Playing`, not `Extract
 - **External drafts:** another process wrote alternative 05–09 flows at 22:42 while this harness was
   being built. They are preserved in `tools/maestro/_external-2242/`; the verified flows above are
   the ones wired into `flows/`.
+
+## Additional checks (v1.2.0-dev)
+
+| Flow / script | Feature | Assertions | Expected | Status |
+|---|---|---|---|---|
+| 10_bookmark_sentence.yaml | bookmarks | "Bookmark sentence" -> Library "BOOKMARKS" -> reopen | sentence saved and reopened | PASS |
+| 11_import_picker.yaml | EPUB/PDF import | "Import EPUB or PDF" opens the document picker | picker opens and Back returns | PASS |
+| adaptive.sh | two-pane layout | rotate landscape/portrait; address bar + Read present | no crash, controls preserved | PASS |
+| intents.sh | share intake | ACTION_SEND text reaches the reader | "Shared text"/sentence state | PASS |

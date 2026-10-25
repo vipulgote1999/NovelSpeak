@@ -481,16 +481,31 @@ class SettingsActivity : Activity() {
             emptyList<ModelCatalog.CatalogModel>()
         }
         diagnosticsCard.addView(note(
-            "Bundled model catalog: " + catalog.size + " entr" +
+            "Model catalog: " + catalog.size + " entr" +
                 (if (catalog.size == 1) "y" else "ies") + " · " +
                 (if (catalog.isEmpty()) "none" else catalog.joinToString { it.displayName }) +
-                ". Auto-check is reserved for a signed OTA catalog; the bundled copy is offline."
+                ". OTA updates are signature-checked (RSA/SHA-256) before use; the bundled copy " +
+                "stays as the offline fallback."
         ))
         toggleRow(
             diagnosticsCard, "Auto-check model catalog",
-            "Reserved for signed OTA updates — no network request is made yet",
+            "Checks the signed OTA catalog in the background when enabled",
             prefs.modelCatalogAuto
         ) { prefs.modelCatalogAuto = it }
+        diagnosticsCard.addView(pillButton(
+            "Check catalog now", primary = false, contentDescription = "Check model catalog"
+        ) {
+            Thread({
+                val status = ModelCatalog.refreshSigned(
+                    this,
+                    "https://raw.githubusercontent.com/vipulgote1999/NovelSpeak/main/app/assets/model_catalog.json",
+                    "https://raw.githubusercontent.com/vipulgote1999/NovelSpeak/main/app/assets/model_catalog.json.sig"
+                )
+                runOnUiThread {
+                    Toast.makeText(this, status, Toast.LENGTH_LONG).show()
+                }
+            }, "ns-catalog-check").start()
+        })
         diagnosticsCard.addView(note(
             "Diagnostics bundles are built on-device: build/SDK/model info, a settings snapshot " +
                 "with URLs, tokens and rules redacted, the event log and the last crash. Capped " +

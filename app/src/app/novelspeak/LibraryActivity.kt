@@ -21,6 +21,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import app.novelspeak.library.Bookmark
+import app.novelspeak.library.BookmarkStore
 import app.novelspeak.library.LibraryEntry
 import app.novelspeak.library.LibraryStore
 import app.novelspeak.library.PrefsLibraryStorage
@@ -42,13 +44,16 @@ import java.util.Locale
 class LibraryActivity : Activity() {
 
     private lateinit var store: LibraryStore
+    private lateinit var bookmarks: BookmarkStore
     private lateinit var list: LinearLayout
     private lateinit var clearAction: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyWindowTheme()
-        store = LibraryStore(PrefsLibraryStorage(this))
+        val storage = PrefsLibraryStorage(this)
+        store = LibraryStore(storage)
+        bookmarks = BookmarkStore(storage)
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -167,15 +172,99 @@ class LibraryActivity : Activity() {
         } catch (t: Throwable) {
             emptyList<LibraryEntry>()
         }
-        if (entries.isEmpty()) {
+        val marks = try {
+            bookmarks.list()
+        } catch (t: Throwable) {
+            emptyList<Bookmark>()
+        }
+        if (entries.isEmpty() && marks.isEmpty()) {
             clearAction.visibility = View.GONE
             list.addView(emptyView())
             return
         }
-        clearAction.visibility = View.VISIBLE
-        for (entry in entries) {
-            list.addView(entryRow(entry))
+        clearAction.visibility = if (entries.isEmpty()) View.GONE else View.VISIBLE
+        if (entries.isNotEmpty()) {
+            if (marks.isNotEmpty()) list.addView(sectionHeader("CHAPTERS"))
+            for (entry in entries) list.addView(entryRow(entry))
         }
+        if (marks.isNotEmpty()) {
+            list.addView(sectionHeader("BOOKMARKS"))
+            for (mark in marks) list.addView(bookmarkRow(mark))
+        }
+    }
+
+    private fun sectionHeader(label: String): TextView = TextView(this).apply {
+        text = label
+        textSize = 10f
+        letterSpacing = 0.12f
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        setTextColor(LPalette.MUTED)
+        setPadding(dp(6), dp(12), dp(6), dp(6))
+    }
+
+    private fun bookmarkRow(mark: Bookmark): View {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = ripple(LPalette.SURFACE, 18)
+            setPadding(dp(14), dp(12), dp(6), dp(12))
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Bookmark entry, " + mark.snippet.take(40)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(8) }
+            setOnClickListener {
+                val intent = Intent(this@LibraryActivity, MainActivity::class.java)
+                    .setAction(Intent.ACTION_VIEW)
+                    .setData(Uri.parse(mark.url))
+                    .putExtra(EXTRA_RESUME_SENTENCE, mark.sentenceIndex)
+                    .putExtra(EXTRA_FROM_LIBRARY, true)
+                try {
+                    startActivity(intent)
+                    finish()
+                } catch (t: Throwable) {
+                    Toast.makeText(this@LibraryActivity, "Could not open the bookmark", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        texts.addView(TextView(this).apply {
+            text = "“" + mark.snippet.take(160) + "”"
+            textSize = 14f
+            setTextColor(LPalette.TEXT)
+            maxLines = 3
+            ellipsize = TextUtils.TruncateAt.END
+        })
+        texts.addView(TextView(this).apply {
+            text = mark.title.ifBlank { mark.url }
+            textSize = 11.5f
+            setTextColor(LPalette.MUTED)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, dp(3), 0, 0)
+        })
+        card.addView(texts)
+        card.addView(TextView(this).apply {
+            text = "✕"
+            textSize = 16f
+            gravity = Gravity.CENTER
+            setTextColor(LPalette.MUTED)
+            background = ripple(LPalette.SURFACE_HIGH, 22, oval = true)
+            layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(6) }
+            contentDescription = "Delete bookmark"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                bookmarks.remove(mark.url, mark.createdAt)
+                render()
+                Toast.makeText(this@LibraryActivity, "Bookmark removed", Toast.LENGTH_SHORT).show()
+            }
+        })
+        return card
     }
 
     private fun emptyView(): TextView = TextView(this).apply {
@@ -195,7 +284,8 @@ class LibraryActivity : Activity() {
             setPadding(dp(14), dp(12), dp(6), dp(12))
             isClickable = true
             isFocusable = true
-            contentDescription = "Library entry"
+            contentDescription = "Library entry, " + entry.title.ifBlank { entry.url } +
+                ", " + (if (entry.finished) "finished" else entry.percent.toString() + " percent read")
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT

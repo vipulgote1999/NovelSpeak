@@ -26,7 +26,7 @@ tags:
 # Readability cleans the stored title to "<h1 minus chapter prefix> — <site>";
 # for chapter2 that is "The Salt Road — The Wick Chronicle".
 - assertVisible: "Library"
-- assertVisible: "Library entry"
+- assertVisible: "Library entry.*"
 - assertVisible: ".*Salt Road.*"
 - assertVisible: ".*[0-9]+%.*"
 - tapOn:
@@ -40,5 +40,5 @@ tags:
 - launchApp
 - tapOn: "More options"
 - tapOn: "Library"
-- assertVisible: "Library entry"
+- assertVisible: "Library entry.*"
 - assertVisible: ".*Salt Road.*"

@@ -33,6 +33,11 @@ object ModelCatalog {
     /** Asset file name; must stay in sync with build.sh's `aapt2 -A app/assets` input. */
     const val ASSET_NAME = "model_catalog.json"
 
+    /** Release assets for a signed catalog (catalog, hex signature, PEM public key). */
+    const val CATALOG_ASSET = ASSET_NAME
+    const val SIGNATURE_ASSET = "model_catalog.json.sig"
+    const val PUBLIC_KEY_ASSET = "model_catalog_pub.pem"
+
     /** Upper bound on entries parsed from one catalog (defensive against oversized payloads). */
     const val MAX_ENTRIES = 100
 
@@ -224,6 +229,171 @@ object ModelCatalog {
 
     private fun isHttpUrl(url: String): Boolean =
         url.startsWith("https://") || url.startsWith("http://")
+
+    // ---- signed catalog (OTA) ------------------------------------------------
+
+    /**
+     * Verifies a catalog payload against an RSA/SHA-256 signature (hex-encoded signature,
+     * PEM or hex public key). The release process signs the catalog's UTF-8 bytes and ships
+     * the signature next to it; a tampered download is rejected before any model URL/hash
+     * is used. The shipped catalog may be unsigned until a release key exists, in which case
+     * the bundled/fallback list is used.
+     */
+    fun verifySignature(
+        json: String,
+        signatureHex: String,
+        publicKeyPem: String
+    ): ValidationResult {
+        if (json.isBlank()) return ValidationResult.failure("empty catalog")
+        if (signatureHex.isBlank()) return ValidationResult.failure("missing signature")
+        return try {
+            val signature = hexToBytes(signatureHex)
+                ?: return ValidationResult.failure("signature is not hex")
+            val keyBytes = parsePublicKey(publicKeyPem)
+                ?: return ValidationResult.failure("public key is not PEM/DER")
+            val spec = java.security.spec.X509EncodedKeySpec(keyBytes)
+            val key = java.security.KeyFactory.getInstance("RSA").generatePublic(spec)
+            val verifier = java.security.Signature.getInstance("SHA256withRSA")
+            verifier.initVerify(key)
+            verifier.update(json.toByteArray(Charsets.UTF_8))
+            if (verifier.verify(signature)) {
+                ValidationResult.success()
+            } else {
+                ValidationResult.failure("signature mismatch")
+            }
+        } catch (t: Throwable) {
+            ValidationResult.failure("signature check failed: " + t.javaClass.simpleName)
+        }
+    }
+
+    /** Parses a catalog only when its signature verifies. */
+    fun parseVerified(
+        json: String,
+        signatureHex: String,
+        publicKeyPem: String
+    ): Pair<List<CatalogModel>, ValidationResult> {
+        val check = verifySignature(json, signatureHex, publicKeyPem)
+        if (!check.ok) return emptyList<CatalogModel>() to check
+        return parse(json) to ValidationResult.success()
+    }
+
+    /**
+     * Explicit OTA catalog refresh: downloads a catalog plus its detached signature, verifies
+     * the signature with the bundled public key, and only then caches it under filesDir.
+     * Returns a user-facing status string. The bundled catalog remains the offline fallback.
+     */
+    fun refreshSigned(context: Context, catalogUrl: String, signatureUrl: String): String {
+        return try {
+            val pem = context.assets.open(PUBLIC_KEY_ASSET).bufferedReader().use { it.readText() }
+            val catalog = httpGetText(catalogUrl, 512 * 1024)
+                ?: return "Catalog update failed: no response"
+            val signature = httpGetText(signatureUrl, 8 * 1024)
+                ?: return "Catalog update failed: no signature"
+            val check = verifySignature(catalog.trimEnd(), signature.trim(), pem)
+            if (!check.ok) return "Catalog rejected: " + check.reason
+            val models = parse(catalog)
+            if (models.isEmpty()) return "Catalog rejected: no valid entries"
+            val dir = File(context.filesDir, "catalog")
+            if (!dir.exists()) dir.mkdirs()
+            File(dir, "model_catalog.json").writeText(catalog)
+            File(dir, "model_catalog.json.sig").writeText(signature)
+            clearCache()
+            "Catalog verified and cached: " + models.size + " entries"
+        } catch (t: Throwable) {
+            "Catalog update failed: " + t.javaClass.simpleName
+        }
+    }
+
+    private fun httpGetText(url: String, maxBytes: Int): String? {
+        var connection: java.net.HttpURLConnection? = null
+        return try {
+            connection = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "GET"
+                setRequestProperty("Accept", "text/plain, application/json")
+            }
+            if (connection.responseCode != 200) return null
+            val out = java.io.ByteArrayOutputStream()
+            connection.inputStream.use { input ->
+                val buffer = ByteArray(16 * 1024)
+                var read: Int
+                while (true) {
+                    read = input.read(buffer)
+                    if (read <= 0) break
+                    out.write(buffer, 0, read)
+                    if (out.size() > maxBytes) return null
+                }
+            }
+            out.toString("UTF-8")
+        } catch (t: Throwable) {
+            null
+        } finally {
+            try { connection?.disconnect() } catch (t: Throwable) { }
+        }
+    }
+
+    /** Status of bundled signed assets, for Settings/diagnostics (null-safe). */
+    fun bundledSignatureStatus(context: Context): String {
+        return try {
+            val catalog = context.assets.open(CATALOG_ASSET).bufferedReader().use { it.readText() }
+            val sigFile = context.assets.open(SIGNATURE_ASSET).bufferedReader().use { it.readText() }
+            val pem = context.assets.open(PUBLIC_KEY_ASSET).bufferedReader().use { it.readText() }
+            val result = verifySignature(catalog.trimEnd(), sigFile.trim(), pem)
+            if (result.ok) "signed catalog verified" else "signed catalog rejected: " + result.reason
+        } catch (t: Throwable) {
+            "signed catalog assets not bundled (using built-in list)"
+        }
+    }
+
+    private fun parsePublicKey(value: String): ByteArray? {
+        val text = value.trim()
+        if (text.contains("-----BEGIN")) {
+            val body = text
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replace(Regex("\\s"), "")
+            return decodeBase64(body.toByteArray(Charsets.US_ASCII))
+        }
+        return hexToBytes(text)
+    }
+
+    /** Tiny Base64 decoder, so verification needs no android.util dependency. */
+    private fun decodeBase64(input: ByteArray): ByteArray? {
+        val table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        val map = IntArray(128) { -1 }
+        for (i in table.indices) map[table[i].code] = i
+        val out = java.io.ByteArrayOutputStream()
+        var buffer = 0
+        var bits = 0
+        for (raw in input) {
+            val c = raw.toInt()
+            if (c == '='.code) break
+            if (c < 0 || c >= map.size) continue
+            val v = map[c]
+            if (v < 0) continue
+            buffer = (buffer shl 6) or v
+            bits += 6
+            if (bits >= 8) {
+                bits -= 8
+                out.write((buffer shr bits) and 0xFF)
+            }
+        }
+        return out.toByteArray()
+    }
+
+    private fun hexToBytes(value: String): ByteArray? {
+        val clean = value.trim()
+        if (clean.isEmpty() || clean.length % 2 != 0) return null
+        val out = ByteArray(clean.length / 2)
+        for (i in out.indices) {
+            val hi = Character.digit(clean[i * 2], 16)
+            val lo = Character.digit(clean[i * 2 + 1], 16)
+            if (hi < 0 || lo < 0) return null
+            out[i] = ((hi shl 4) or lo).toByte()
+        }
+        return out
+    }
 
     private fun isSha256(value: String): Boolean {
         if (value.length != 64) return false

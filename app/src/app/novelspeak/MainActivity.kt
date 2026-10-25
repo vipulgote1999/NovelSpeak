@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.res.Configuration
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -61,6 +62,7 @@ import android.widget.TextView
 import android.widget.Toast
 import app.novelspeak.adblock.UrlTools
 import android.os.SystemClock
+import app.novelspeak.library.BookmarkStore
 import app.novelspeak.library.LibraryStore
 import app.novelspeak.library.PrefsLibraryStorage
 import app.novelspeak.library.ReadingStats
@@ -118,7 +120,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private var autoPlayRunnable: Runnable? = null
     private val uiHandler = Handler(Looper.getMainLooper())
 
+    private lateinit var contentRow: LinearLayout
+    private lateinit var playerCard: LinearLayout
     private lateinit var library: LibraryStore
+    private lateinit var bookmarks: BookmarkStore
     private lateinit var readingStats: ReadingStats
     private var lastSentenceTickMs = 0L
     private var lastStatsCursor = -1
@@ -129,6 +134,16 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private var sleepTimerChapter = false
     private var lastPersistedCursor = -1
     private var lastPersistAt = 0L
+
+    // Chapter prefetch: extract the next chapter in a hidden WebView while the current one
+    // plays, then append it instantly so the sentence queue never waits on a page load.
+    private var prefetchLink = ""
+    private var prefetching = false
+    private var prefetchedUrl: String? = null
+    private var prefetchedTitle = ""
+    private var prefetchedBlocks: List<Reader.Block>? = null
+    private var hiddenWeb: WebView? = null
+    private var suppressNextExtract = false
 
     /** Releases a stuck drag flag if a gesture ends without onStopTrackingTouch. */
     private val seekingTimeout = Runnable {
@@ -151,6 +166,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val storage = PrefsLibraryStorage(this)
         library = LibraryStore(storage)
         readingStats = ReadingStats(storage)
+        bookmarks = BookmarkStore(storage)
         onReaderState(reader.state())
         handleShareIntent(intent)
     }
@@ -427,7 +443,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             )
             setBackgroundColor(Palette.BG)
         }
-        root.addView(web)
         web.setOnTouchListener { _, _ ->
             if (editingUrl) exitEditMode()
             false
@@ -537,12 +552,16 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(4), 0, 0)
         }
-        actionsRow.addView(textButton("Read", primary = false, widthDp = 0, heightDp = 38) {
+        val readButton = textButton("Read", primary = false, widthDp = 0, heightDp = 38) {
             extractNow(append = false)
-        })
-        actionsRow.addView(textButton("Next ch", primary = false, widthDp = 0, heightDp = 38) {
+        }
+        readButton.contentDescription = "Read chapter"
+        actionsRow.addView(readButton)
+        val nextButton = textButton("Next ch", primary = false, widthDp = 0, heightDp = 38) {
             loadNextChapter()
-        })
+        }
+        nextButton.contentDescription = "Next chapter"
+        actionsRow.addView(nextButton)
         actionsRow.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
         actionsRow.addView(iconButton(Glyph.MINUS, "Slower", 34) { bumpSpeed(-0.05f) })
         speedView = TextView(this).apply {
@@ -583,7 +602,22 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             reader.stop()
         })
         card.addView(transportRow)
-        root.addView(card)
+        playerCard = card
+
+        // Phone: browser above, player card below. Tablet/landscape: card beside the page.
+        contentRow = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        contentRow.addView(
+            web,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
+            )
+        )
+        contentRow.addView(card, card.layoutParams)
+        root.addView(
+            contentRow,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
+        )
+        applyAdaptiveLayout()
 
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -613,6 +647,54 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         applyInsets(root)
         updateReaderButton()
         updateNotificationHint()
+    }
+
+    /** Two-pane layout above 600dp (tablets, landscape phones); single column otherwise. */
+    private fun applyAdaptiveLayout() {
+        if (!::contentRow.isInitialized || !::playerCard.isInitialized) return
+        val wide = resources.configuration.screenWidthDp >= 600
+        if (wide) {
+            contentRow.orientation = LinearLayout.HORIZONTAL
+            contentRow.gravity = Gravity.TOP
+            val webParams = web.layoutParams as? LinearLayout.LayoutParams
+                ?: LinearLayout.LayoutParams(0, 0)
+            webParams.width = 0
+            webParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            webParams.weight = 1f
+            webParams.setMargins(0, 0, 0, 0)
+            web.layoutParams = webParams
+            val cardParams = playerCard.layoutParams as? LinearLayout.LayoutParams
+                ?: LinearLayout.LayoutParams(dp(360), ViewGroup.LayoutParams.WRAP_CONTENT)
+            cardParams.width = dp(360)
+            cardParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            cardParams.weight = 0f
+            cardParams.setMargins(dp(8), dp(8), dp(8), dp(8))
+            playerCard.layoutParams = cardParams
+        } else {
+            contentRow.orientation = LinearLayout.VERTICAL
+            contentRow.gravity = Gravity.NO_GRAVITY
+            val webParams = web.layoutParams as? LinearLayout.LayoutParams
+                ?: LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0)
+            webParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+            webParams.height = 0
+            webParams.weight = 1f
+            webParams.setMargins(0, 0, 0, 0)
+            web.layoutParams = webParams
+            val cardParams = playerCard.layoutParams as? LinearLayout.LayoutParams
+                ?: LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            cardParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+            cardParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            cardParams.weight = 0f
+            cardParams.setMargins(dp(8), dp(4), dp(8), dp(8))
+            playerCard.layoutParams = cardParams
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyAdaptiveLayout()
     }
 
     /** Keep the browser bar below the status bar and the player card above the nav bar. */
@@ -680,6 +762,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 setReloadGlyph(true)
                 if (!editingUrl) updateAddressDisplay(url)
                 updateNavButtons()
+                if (url != null && url != prefetchLink) cancelPrefetch()
                 AdBlocker.onPageStarted(url ?: "")
                 updateShield()
                 dismissSuggestions()
@@ -731,6 +814,26 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     .putString("last_url", url ?: "").apply()
                 updateNavButtons()
                 if (view != null) AdBlocker.inject(view, url ?: "")
+                // Prefetched chapter: its text was appended before the visible page loaded.
+                // Tag the live DOM only (for read-along) and never replace the queue.
+                if (suppressNextExtract) {
+                    suppressNextExtract = false
+                    appendNext = false
+                    lastExtractedUrl = url
+                    lastExtractedBlocks = reader.state().total
+                    if (view != null) {
+                        WebExtractor.install(web) {
+                            WebExtractor.extract(web) { _, _, _ -> }
+                            val p = NovelSpeakApp.instance.prefs
+                            val host = UrlTools.host(url ?: "") ?: ""
+                            val site = app.novelspeak.adblock.PublicSuffixList
+                                .registrableDomain(host).ifEmpty { host }
+                            WebExtractor.setReader(web, p.readerModeForSite(site))
+                            applyReaderPrefs()
+                        }
+                    }
+                    return
+                }
                 // A duplicate onPageFinished for the same document (ad-driven reload,
                 // popunder navigation back, WebView quirk) must not rewind the reader.
                 // Retry only when the previous extraction was weak (challenge page)
@@ -1031,11 +1134,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         popup.menu.add(0, MENU_SHARE, 3, "Share link")
         popup.menu.add(0, MENU_EXTERNAL, 4, "Open in browser")
         popup.menu.add(0, MENU_SITE, 5, "Site settings")
-        popup.menu.add(0, MENU_SLEEP, 6, "Sleep timer")
-        popup.menu.add(0, MENU_LIBRARY, 7, "Library")
-        popup.menu.add(0, MENU_CONTINUE, 8, "Continue reading")
-        popup.menu.add(0, MENU_SETTINGS, 9, "NovelSpeak settings")
-        popup.menu.add(0, MENU_PRIVACY, 10, "About & privacy")
+        popup.menu.add(0, MENU_IMPORT, 6, "Import EPUB or PDF")
+        popup.menu.add(0, MENU_BOOKMARK, 7, "Bookmark sentence")
+        popup.menu.add(0, MENU_SLEEP, 8, "Sleep timer")
+        popup.menu.add(0, MENU_LIBRARY, 9, "Library")
+        popup.menu.add(0, MENU_TRANSLATE, 10, "Translate page")
+        popup.menu.add(0, MENU_CONTINUE, 11, "Continue reading")
+        popup.menu.add(0, MENU_SETTINGS, 12, "NovelSpeak settings")
+        popup.menu.add(0, MENU_PRIVACY, 13, "About & privacy")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 MENU_HOME -> web.loadUrl(DEFAULT_URL)
@@ -1047,12 +1153,15 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 MENU_LIBRARY -> startActivity(Intent(this, LibraryActivity::class.java))
                 MENU_CONTINUE -> continueReading()
                 MENU_SLEEP -> showSleepTimerDialog()
+                MENU_BOOKMARK -> bookmarkCurrentSentence()
                 MENU_SETTINGS -> startActivity(
                     Intent(this, SettingsActivity::class.java)
                 )
                 MENU_PRIVACY -> startActivity(
                     Intent(this, AboutPrivacyActivity::class.java)
                 )
+                MENU_TRANSLATE -> translateCurrentPage()
+                MENU_IMPORT -> pickDocumentForImport()
             }
             true
         }
@@ -1336,6 +1445,90 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             reader.seek(idx)
             statusView.text = "Resumed at sentence " + (idx + 1) + " / " + total
         }
+        val p = NovelSpeakApp.instance.prefs
+        if (wall.isEmpty() && reader.hasContent() && (p.autoMode || reader.state().playing)) {
+            // Delay until the TTS engine has finished loading: a hidden WebView extracting a
+            // page at the same time as a 100 MB model load peaks memory on low-RAM devices.
+            uiHandler.removeCallbacks(prefetchRunnable)
+            uiHandler.postDelayed(prefetchRunnable, PREFETCH_DELAY_MS)
+        }
+    }
+
+    private val prefetchRunnable = Runnable { maybePrefetchNextChapter() }
+
+    // ---- chapter prefetch -----------------------------------------------------
+
+    private fun maybePrefetchNextChapter() {
+        if (prefetching || prefetchedBlocks != null) return
+        val current = web.url ?: return
+        // Do not start a second WebView when the device is already under memory pressure.
+        try {
+            val am = getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
+            val info = android.app.ActivityManager.MemoryInfo()
+            am.getMemoryInfo(info)
+            if (info.availMem < PREFETCH_MIN_FREE_BYTES) {
+                DiagLog.line(this, "prefetch skipped: low memory " + (info.availMem / (1024 * 1024)) + " MB")
+                return
+            }
+        } catch (t: Throwable) {
+        }
+        prefetching = true
+        WebExtractor.nextLink(web) { link ->
+            runOnUiThread {
+                prefetching = false
+                if (link.isNullOrEmpty() || link == current) return@runOnUiThread
+                prefetchLink = link
+                try {
+                    val hw = WebView(this)
+                    hw.settings.javaScriptEnabled = true
+                    hw.settings.domStorageEnabled = true
+                    hw.settings.javaScriptCanOpenWindowsAutomatically = false
+                    hw.settings.setSupportMultipleWindows(false)
+                    hiddenWeb = hw
+                    hw.webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(v: WebView?, u: String?) {
+                            if (hiddenWeb !== v || v == null) return
+                            WebExtractor.install(v) {
+                                WebExtractor.extract(v) { t, blocks, wall ->
+                                    runOnUiThread {
+                                        if (hiddenWeb === v && wall.isEmpty() && blocks.isNotEmpty()) {
+                                            prefetchedUrl = link
+                                            prefetchedTitle = t
+                                            prefetchedBlocks = blocks
+                                            DiagLog.line(
+                                                this@MainActivity,
+                                                "prefetch ready blocks=" + blocks.size + " url=" + link
+                                            )
+                                        }
+                                        if (hiddenWeb === v) {
+                                            hiddenWeb = null
+                                            try { v.stopLoading(); v.destroy() } catch (e: Throwable) { }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    hw.loadUrl(link)
+                } catch (t: Throwable) {
+                    DiagLog.exception(this, "prefetch failed", t)
+                    cancelPrefetch()
+                }
+            }
+        }
+    }
+
+    private fun cancelPrefetch() {
+        prefetching = false
+        prefetchLink = ""
+        prefetchedUrl = null
+        prefetchedTitle = ""
+        prefetchedBlocks = null
+        val hw = hiddenWeb
+        hiddenWeb = null
+        if (hw != null) {
+            try { hw.stopLoading(); hw.destroy() } catch (t: Throwable) { }
+        }
     }
 
     private fun showWallBanner(wall: String) {
@@ -1396,6 +1589,203 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     // ---- continue reading / library / sharing ---------------------------------
 
+    // ---- EPUB / PDF / text import -------------------------------------------
+
+    private fun pickDocumentForImport() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            putExtra(
+                Intent.EXTRA_MIME_TYPES,
+                arrayOf("application/epub+zip", "application/pdf", "text/plain")
+            )
+        }
+        try {
+            startActivityForResult(intent, REQ_IMPORT_DOCUMENT)
+        } catch (t: Throwable) {
+            Toast.makeText(this, "No document picker available", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQ_IMPORT_DOCUMENT || resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        try {
+            contentResolver.takePersistableUriPermission(
+                uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        } catch (t: Throwable) {
+            // Not all providers grant persistable access; the one-shot read still works.
+        }
+        importDocument(uri, null)
+    }
+
+    /** Imports a picked/shared EPUB, PDF or plain-text document into the reader queue. */
+    private fun importDocument(uri: Uri, mimeHint: String?) {
+        Thread({
+            try {
+                val name = documentName(uri)
+                val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    ?: return@Thread runOnUiThread {
+                        Toast.makeText(this, "Could not read that file", Toast.LENGTH_SHORT).show()
+                    }
+                if (bytes.size > 64 * 1024 * 1024) {
+                    return@Thread runOnUiThread {
+                        Toast.makeText(this, "File is too large (limit 64 MB)", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                val lower = (name ?: "").lowercase()
+                val mime = mimeHint ?: contentResolver.getType(uri) ?: ""
+                when {
+                    lower.endsWith(".epub") || mime.contains("epub") -> {
+                        val result = EpubImporter.import(bytes.inputStream())
+                        val book = result.book ?: return@Thread runOnUiThread {
+                            Toast.makeText(this, result.error.ifBlank { "EPUB import failed" }, Toast.LENGTH_LONG).show()
+                        }
+                        val blocks = ArrayList<Reader.Block>()
+                        var blockIndex = 0
+                        var sentences = 0
+                        for (chapter in book.chapters) {
+                            for (s in SentenceSplitter.split(chapter.text, NovelSpeakApp.instance.prefs.maxSentenceChars)) {
+                                if (sentences >= 5000) break
+                                blocks.add(Reader.Block(s, blockIndex))
+                                sentences++
+                            }
+                            blockIndex++
+                            if (sentences >= 5000) break
+                        }
+                        runOnUiThread {
+                            applyImported(
+                                book.title + " · " + book.chapters.size + " chapters",
+                                blocks
+                            )
+                        }
+                    }
+                    lower.endsWith(".pdf") || mime.contains("pdf") -> {
+                        val result = PdfTextImporter.import(bytes)
+                        if (result.pages.isEmpty()) {
+                            return@Thread runOnUiThread {
+                                Toast.makeText(
+                                    this,
+                                    result.error.ifBlank { "PDF has no text layer (OCR not supported)" },
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                        val blocks = ArrayList<Reader.Block>()
+                        var sentenceIndex = 0
+                        for (page in result.pages) {
+                            for (s in SentenceSplitter.split(page.text, NovelSpeakApp.instance.prefs.maxSentenceChars)) {
+                                if (sentenceIndex >= 5000) break
+                                blocks.add(Reader.Block(s, sentenceIndex))
+                                sentenceIndex++
+                            }
+                        }
+                        runOnUiThread {
+                            applyImported(
+                                (if (name.isNullOrBlank()) "Imported PDF" else name) +
+                                    " · " + result.pages.size + " pages",
+                                blocks
+                            )
+                        }
+                    }
+                    else -> {
+                        val text = String(bytes, Charsets.UTF_8)
+                        val blocks = ArrayList<Reader.Block>()
+                        var i = 0
+                        for (s in SentenceSplitter.split(text, NovelSpeakApp.instance.prefs.maxSentenceChars)) {
+                            if (i >= 5000) break
+                            blocks.add(Reader.Block(s, i))
+                            i++
+                        }
+                        runOnUiThread {
+                            applyImported(if (name.isNullOrBlank()) "Imported text" else name, blocks)
+                        }
+                    }
+                }
+            } catch (t: Throwable) {
+                DiagLog.exception(this, "import failed", t)
+                runOnUiThread {
+                    Toast.makeText(this, "Import failed: " + t.javaClass.simpleName, Toast.LENGTH_LONG).show()
+                }
+            }
+        }, "ns-import").start()
+    }
+
+    private fun applyImported(title: String, blocks: List<Reader.Block>) {
+        if (blocks.isEmpty()) {
+            Toast.makeText(this, "Nothing readable in that file", Toast.LENGTH_SHORT).show()
+            return
+        }
+        reader.setContent(title, blocks)
+        hideWallBanner()
+        WebExtractor.setReader(web, false)
+        updateReaderButton()
+        statusView.text = "Imported " + blocks.size + " sentences — tap Play"
+        statusView.contentDescription = "Reader status, imported " + blocks.size + " sentences"
+        Toast.makeText(this, "Imported " + blocks.size + " sentences", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun documentName(uri: Uri): String? {
+        return try {
+            contentResolver.query(
+                uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null
+            )?.use { c ->
+                if (c.moveToFirst()) c.getString(0) else null
+            }
+        } catch (t: Throwable) {
+            uri.lastPathSegment
+        }
+    }
+
+    /**
+     * Translation hand-off: opens the current page in the system's translation flow
+     * (external browser/app) prefilled with the user's language. No on-device translation
+     * is attempted, so no model or account is added to the app.
+     */
+    private fun translateCurrentPage() {
+        val url = web.url ?: lastDisplayedUrl
+        if (url.isEmpty()) {
+            Toast.makeText(this, "Open a page first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val target = java.util.Locale.getDefault().language.ifEmpty { "en" }
+        val source = try {
+            java.net.URLEncoder.encode(url, "UTF-8")
+        } catch (t: Throwable) {
+            url
+        }
+        val translate = "https://translate.google.com/translate?sl=auto&tl=" + target + "&u=" + source
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(translate)))
+        } catch (t: Throwable) {
+            Toast.makeText(this, "No browser available to translate", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** Saves the sentence currently being spoken (or where playback is paused). */
+    private fun bookmarkCurrentSentence() {
+        if (!reader.hasContent()) {
+            Toast.makeText(this, "Start reading a chapter first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val url = web.url ?: lastDisplayedUrl
+        if (url.isEmpty()) {
+            Toast.makeText(this, "No page to bookmark", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val index = reader.currentIndex()
+        val snippet = reader.sentenceText(index).ifBlank { "Sentence " + (index + 1) }
+        val title = reader.state().title.ifEmpty { web.title ?: "" }
+        val mark = bookmarks.add(url, title, index, snippet.take(240))
+        if (mark == null) {
+            Toast.makeText(this, "Could not save bookmark", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Bookmarked sentence " + (index + 1), Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun continueReading() {
         val entry = if (::library.isInitialized) library.resumeEntry() else null
         if (entry == null) {
@@ -1421,12 +1811,34 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private fun handleShareIntent(intent: Intent?) {
         if (intent == null) { openLastPosition(); return }
         val action = intent.action
-        // Library row tap: launchMode=singleTask delivers ACTION_VIEW to this instance.
-        if (action == Intent.ACTION_VIEW && intent.data != null) {
+        @Suppress("DEPRECATION")
+        val stream = if (android.os.Build.VERSION.SDK_INT >= 33) {
+            intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        } else {
+            intent.getParcelableExtra(Intent.EXTRA_STREAM)
+        }
+        val data = intent.data
+        val mime = intent.type ?: ""
+        val isDocument = data != null && (
+            data.scheme == "content" || data.scheme == "file" ||
+                mime.contains("epub") || mime.contains("pdf")
+            )
+        if (action == Intent.ACTION_SEND && stream != null && isDocument) {
+            importDocument(stream, mime)
+            return
+        }
+        if (action == Intent.ACTION_VIEW && data != null) {
+            if (isDocument && (mime.contains("epub") || mime.contains("pdf") ||
+                    (data.path ?: "").lowercase().let { it.endsWith(".epub") || it.endsWith(".pdf") })
+            ) {
+                importDocument(data, mime)
+                return
+            }
+            // Library row tap: launchMode=singleTask delivers ACTION_VIEW here.
             pendingResumeIndex = intent.getIntExtra(
                 LibraryActivity.EXTRA_RESUME_SENTENCE, -1
             )
-            web.loadUrl(intent.data.toString())
+            web.loadUrl(data.toString())
             return
         }
         if (action == Intent.ACTION_SEND || action == Intent.ACTION_PROCESS_TEXT) {
@@ -1458,6 +1870,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         reader.setContent("Shared text", blocks)
         hideWallBanner()
         statusView.text = "Shared text · " + blocks.size + " sentences"
+        statusView.contentDescription = "Reader status, shared text queued"
         WebExtractor.setReader(web, false)
         AppPermissions.requestNotificationsOnce(this)
         reader.play()
@@ -1529,10 +1942,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             remaining > 0L -> {
                 val secs = (remaining / 1000L).toInt()
                 sleepTimerView.text = String.format("Sleep timer · %d:%02d", secs / 60, secs % 60)
+                sleepTimerView.contentDescription =
+                    "Sleep timer active, " + (secs / 60) + " minutes " + (secs % 60) + " seconds remaining"
                 sleepTimerView.visibility = View.VISIBLE
             }
             sleepTimerChapter -> {
                 sleepTimerView.text = "Sleep timer · end of chapter"
+                sleepTimerView.contentDescription = "Sleep timer active, end of chapter"
                 sleepTimerView.visibility = View.VISIBLE
             }
             else -> sleepTimerView.visibility = View.GONE
@@ -1579,6 +1995,35 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private fun loadNextChapter() {
         pendingResumeIndex = -1
+        val cached = prefetchedBlocks
+        val cachedUrl = prefetchedUrl
+        if (cached != null && !cachedUrl.isNullOrEmpty()) {
+            val title = prefetchedTitle
+            prefetchedBlocks = null
+            prefetchedUrl = null
+            prefetchedTitle = ""
+            prefetchLink = ""
+            appendNext = false
+            suppressNextExtract = true
+            lastExtractedUrl = cachedUrl
+            lastExtractedBlocks = cached.size
+            autoAppendStart = reader.state().total
+            reader.appendContent(cached, title.ifEmpty { "Next chapter" })
+            statusView.text = "Prefetched chapter · " + cached.size + " sentences"
+            val p = NovelSpeakApp.instance.prefs
+            if (p.autoMode) {
+                val start = autoAppendStart
+                autoAdvance = false
+                uiHandler.postDelayed(Runnable {
+                    if (!isFinishing && reader.hasContent()) {
+                        if (start > 0) reader.seek(start)
+                        reader.play()
+                    }
+                }, 350L)
+            }
+            web.loadUrl(cachedUrl)
+            return
+        }
         WebExtractor.nextLink(web) { link ->
             DiagLog.line(this, "next chapter link=${link.ifEmpty { "(none)" }}")
             runOnUiThread {
@@ -1628,6 +2073,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         recordReadingTime(state)
         titleView.text = state.title.ifEmpty { web.title ?: "" }
         statusView.text = state.status
+        statusView.contentDescription = "Reader status, " + state.status
         engineChip.text = state.engine
         engineChip.visibility = if (state.engine.isEmpty()) View.GONE else View.VISIBLE
         progressView.text = if (total > 0) "${state.cursor + 1} / $total" else "0 / 0"
@@ -1673,6 +2119,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (NovelSpeakApp.instance.prefs.highlight) {
             WebExtractor.highlight(web, blockIndex)
         }
+    }
+
+    override fun onWordHighlight(blockIndex: Int, charStart: Int, charEnd: Int) {
+        val p = NovelSpeakApp.instance.prefs
+        if (!p.highlight || !p.readerWordHighlight) return
+        WebExtractor.highlightWord(web, blockIndex, charStart, charEnd)
     }
 
     private fun updateShield() {
@@ -1776,6 +2228,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     override fun onDestroy() {
         dismissSuggestions()
+        cancelPrefetch()
+        uiHandler.removeCallbacks(prefetchRunnable)
         uiHandler.removeCallbacks(sleepTick)
         reader.removeListener(this)
         AdBlocker.removeListener(this)
@@ -1885,11 +2339,17 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         private const val MENU_SHARE = 4
         private const val MENU_EXTERNAL = 5
         private const val MENU_SITE = 6
+        private const val MENU_BOOKMARK = 12
         private const val MENU_LIBRARY = 7
         private const val MENU_CONTINUE = 8
         private const val MENU_SLEEP = 9
         private const val MENU_SETTINGS = 10
         private const val MENU_PRIVACY = 11
+        private const val MENU_TRANSLATE = 13
+        private const val MENU_IMPORT = 14
+        private const val REQ_IMPORT_DOCUMENT = 1001
+        private const val PREFETCH_DELAY_MS = 12_000L
+        private const val PREFETCH_MIN_FREE_BYTES = 350L * 1024 * 1024
 
         /** Pause between a chapter's extraction and its first spoken sentence. */
         private const val AUTO_PLAY_DELAY_MS = 2500L
