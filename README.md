@@ -3,6 +3,19 @@
 An Android browser that reads any serialized novel aloud — with neural voices that work offline,
 screen-off controls, and no account, meter or telemetry.
 
+<p align="center">
+  <a href="docs/media/novelspeak-launch.mp4" title="Watch the 23-second launch film">
+    <img src="docs/media/novelspeak-launch-poster.jpg" alt="NovelSpeak launch film — real reader with read-along highlight and player" width="820">
+  </a>
+</p>
+
+<p align="center">
+  <a href="docs/media/novelspeak-launch.mp4"><strong>▶&nbsp; Watch the 23-second launch film</strong></a>
+  &nbsp;·&nbsp;
+  <a href="docs/media/novelspeak-launch-contact-sheet.jpg">Contact sheet</a><br>
+  <sub>9:16 · 1080 × 1920 · real app UI · no narration</sub>
+</p>
+
 **Why it exists.** Chrome's *Listen to this page* keeps playing while the screen is locked (Google's
 help doc says so), but it is limited to supported sites: *"This feature isn't available yet on all
 websites."* It also needs the *Make searches and browsing better* data-sharing setting. NovelSpeak
