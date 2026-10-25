@@ -66,6 +66,8 @@ import android.widget.Toast
 import app.novelspeak.adblock.UrlTools
 import android.os.SystemClock
 import app.novelspeak.library.BookmarkStore
+import app.novelspeak.library.ImportedBook
+import app.novelspeak.library.ImportedBookStore
 import app.novelspeak.library.LibraryStore
 import app.novelspeak.library.PrefsLibraryStorage
 import app.novelspeak.library.ReadingStats
@@ -125,6 +127,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private lateinit var contentRow: LinearLayout
     private lateinit var playerCard: LinearLayout
+    private lateinit var readChapterButton: TextView
+    private lateinit var nextChapterButton: TextView
     private lateinit var pageHolder: FrameLayout
     private lateinit var homeView: ScrollView
     private lateinit var homeContinue: LinearLayout
@@ -137,6 +141,15 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val url: String,
         val iconAsset: String,
         val opensLibrary: Boolean = false
+    )
+
+    private data class HomeResume(
+        val title: String,
+        val meta: String,
+        val url: String?,
+        val importId: String?,
+        val position: Int,
+        val updatedAt: Long
     )
 
     private val homeShortcuts = listOf(
@@ -170,6 +183,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private var lastStatsCursor = -1
     private lateinit var wallBanner: TextView
     private lateinit var sleepTimerView: TextView
+    private lateinit var importPage: LinearLayout
+    private lateinit var importedBooks: ImportedBookStore
+    private var currentImportId: String? = null
+    private var lastImportedCursor = -1
+    private var lastImportedAt = 0L
     private var pendingResumeIndex = -1
     private var sleepTimerEndsAt = 0L
     private var sleepTimerChapter = false
@@ -208,6 +226,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         library = LibraryStore(storage)
         readingStats = ReadingStats(storage)
         bookmarks = BookmarkStore(storage)
+        importedBooks = ImportedBookStore(this)
         onReaderState(reader.state())
         handleShareIntent(intent)
     }
@@ -593,16 +612,16 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(4), 0, 0)
         }
-        val readButton = textButton("Read", primary = false, widthDp = 0, heightDp = 38) {
+        readChapterButton = textButton("Read", primary = false, widthDp = 0, heightDp = 38) {
             extractNow(append = false)
         }
-        readButton.contentDescription = "Read chapter"
-        actionsRow.addView(readButton)
-        val nextButton = textButton("Next ch", primary = false, widthDp = 0, heightDp = 38) {
+        readChapterButton.contentDescription = "Read chapter"
+        actionsRow.addView(readChapterButton)
+        nextChapterButton = textButton("Next ch", primary = false, widthDp = 0, heightDp = 38) {
             loadNextChapter()
         }
-        nextButton.contentDescription = "Next chapter"
-        actionsRow.addView(nextButton)
+        nextChapterButton.contentDescription = "Next chapter"
+        actionsRow.addView(nextChapterButton)
         actionsRow.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
         actionsRow.addView(iconButton(Glyph.MINUS, "Slower", 34) { bumpSpeed(-0.05f) })
         speedView = TextView(this).apply {
@@ -657,6 +676,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         homeView = buildHomeView()
         pageHolder.addView(
             homeView,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+        importPage = buildImportPage()
+        pageHolder.addView(
+            importPage,
             FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
             )
@@ -883,42 +909,83 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private fun refreshHome() {
         if (!::homeContinue.isInitialized) return
         homeContinue.removeAllViews()
-        val entries = try {
+        val resumes = ArrayList<HomeResume>()
+        try {
             if (::library.isInitialized) {
-                library.listEntries().filter { !it.finished }.take(3)
-            } else {
-                emptyList()
+                for (e in library.listEntries()) {
+                    if (e.finished) continue
+                    val site = try {
+                        app.novelspeak.adblock.UrlTools.host(e.url) ?: ""
+                    } catch (t: Throwable) {
+                        ""
+                    }
+                    resumes.add(
+                        HomeResume(
+                            title = e.title.ifBlank { e.url },
+                            meta = (if (site.isEmpty()) "" else site + " · ") + e.percent + "%",
+                            url = e.url,
+                            importId = null,
+                            position = e.sentenceIndex,
+                            updatedAt = e.updatedAt
+                        )
+                    )
+                }
             }
-        } catch (t: Throwable) {
-            emptyList()
-        }
-        if (entries.isEmpty()) {
+        } catch (t: Throwable) { }
+        try {
+            if (::importedBooks.isInitialized) {
+                for (b in importedBooks.list()) {
+                    if (b.finished) continue
+                    val author = if (b.author.isBlank()) "" else b.author + " · "
+                    resumes.add(
+                        HomeResume(
+                            title = b.title,
+                            meta = author + b.kind + " · " + b.percent + "%",
+                            url = null,
+                            importId = b.id,
+                            position = b.position,
+                            updatedAt = b.updatedAt
+                        )
+                    )
+                }
+            }
+        } catch (t: Throwable) { }
+        resumes.sortByDescending { it.updatedAt }
+        val top = if (resumes.size > 3) ArrayList(resumes.subList(0, 3)) else resumes
+        if (top.isEmpty()) {
             homeContinue.addView(TextView(this).apply {
-                text = "Chapters you open will appear here."
+                text = "Chapters and imported books will appear here."
                 textSize = 13f
                 setTextColor(Palette.MUTED)
                 setPadding(0, dp(4), 0, dp(4))
             })
             return
         }
-        for (entry in entries) {
+        for (item in top) {
             homeContinue.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 background = rippleStroke(Palette.SURFACE, 14, Palette.BORDER)
                 setPadding(dp(14), dp(12), dp(14), dp(12))
                 isClickable = true
                 isFocusable = true
-                contentDescription = "Continue reading: " + entry.title
+                contentDescription = "Continue reading: " + item.title
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { bottomMargin = dp(8) }
                 setOnClickListener {
-                    pendingResumeIndex = entry.sentenceIndex
-                    hideHome()
-                    web.loadUrl(entry.url)
+                    val importId = item.importId
+                    if (importId != null) {
+                        hideHome()
+                        openImportedBook(importId)
+                    } else {
+                        val url = item.url ?: return@setOnClickListener
+                        pendingResumeIndex = item.position
+                        hideHome()
+                        web.loadUrl(url)
+                    }
                 }
                 addView(TextView(this@MainActivity).apply {
-                    text = entry.title.ifBlank { entry.url }
+                    text = item.title
                     textSize = 14.5f
                     typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                     setTextColor(Palette.TEXT)
@@ -926,8 +993,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     ellipsize = TextUtils.TruncateAt.END
                 })
                 addView(TextView(this@MainActivity).apply {
-                    val site = try { app.novelspeak.adblock.UrlTools.host(entry.url) ?: "" } catch (t: Throwable) { "" }
-                    text = (if (site.isEmpty()) "" else site + " · ") + entry.percent + "%"
+                    text = item.meta
                     textSize = 12f
                     setTextColor(Palette.MUTED)
                     setPadding(0, dp(3), 0, 0)
@@ -940,6 +1006,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (!::homeView.isInitialized) return
         if (editingUrl) exitEditMode()
         hideKeyboard()
+        hideImportedMode()
         homeVisible = true
         refreshHome()
         homeView.visibility = View.VISIBLE
@@ -1078,6 +1145,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             ) {
                 super.onPageStarted(view, url, favicon)
                 hideHome()
+                hideImportedMode()
                 pageLoading = true
                 progressBar.visibility = View.VISIBLE
                 progressBar.progress = 0
@@ -1918,6 +1986,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     private fun persistProgressThrottled(state: Reader.State) {
+        if (currentImportId != null) return
         if (!::library.isInitialized || state.total <= 0) return
         val now = System.currentTimeMillis()
         if (state.cursor == lastPersistedCursor || now - lastPersistAt < 2000L) return
@@ -1931,11 +2000,24 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         lastPersistAt = now
     }
 
+    /** Saves the position inside an imported book (separate from URL library progress). */
+    private fun persistImportedProgress(state: Reader.State) {
+        val id = currentImportId ?: return
+        if (state.total <= 0) return
+        val now = System.currentTimeMillis()
+        if (state.cursor == lastImportedCursor) return
+        if (now - lastImportedAt < 1500L) return
+        importedBooks.updateProgress(id, state.cursor, state.total)
+        lastImportedCursor = state.cursor
+        lastImportedAt = now
+    }
+
     // ---- continue reading / library / sharing ---------------------------------
 
     // ---- EPUB / PDF / text import -------------------------------------------
 
     private fun pickDocumentForImport() {
+        DiagLog.line(this, "import picker open")
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "*/*"
@@ -1953,6 +2035,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQ_IMPORT_DOCUMENT) {
+            DiagLog.line(
+                this,
+                "import result ok=" + (resultCode == RESULT_OK) + " uri=" + (data?.data ?: "null")
+            )
+        }
         if (requestCode != REQ_IMPORT_DOCUMENT || resultCode != RESULT_OK) return
         val uri = data?.data ?: return
         try {
@@ -1970,6 +2058,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         Thread({
             try {
                 val name = documentName(uri)
+                DiagLog.line(this, "import read name=" + name + " mime=" + (mimeHint ?: "?"))
                 val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     ?: return@Thread runOnUiThread {
                         Toast.makeText(this, "Could not read that file", Toast.LENGTH_SHORT).show()
@@ -1985,6 +2074,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     lower.endsWith(".epub") || mime.contains("epub") -> {
                         val result = EpubImporter.import(bytes.inputStream())
                         val book = result.book ?: return@Thread runOnUiThread {
+                            DiagLog.line(this, "epub import failed: " + result.error)
                             Toast.makeText(this, result.error.ifBlank { "EPUB import failed" }, Toast.LENGTH_LONG).show()
                         }
                         val blocks = ArrayList<Reader.Block>()
@@ -2001,8 +2091,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         }
                         runOnUiThread {
                             applyImported(
-                                book.title + " · " + book.chapters.size + " chapters",
-                                blocks
+                                book.title,
+                                blocks,
+                                "EPUB · " + plural(book.chapters.size, "chapter", "chapters"),
+                                book.author
                             )
                         }
                     }
@@ -2028,9 +2120,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         }
                         runOnUiThread {
                             applyImported(
-                                (if (name.isNullOrBlank()) "Imported PDF" else name) +
-                                    " · " + result.pages.size + " pages",
-                                blocks
+                                if (name.isNullOrBlank()) "Imported PDF"
+                                else name.removeSuffix(".pdf").removeSuffix(".PDF"),
+                                blocks,
+                                "PDF · " + plural(result.pages.size, "page", "pages"),
+                                ""
                             )
                         }
                     }
@@ -2044,7 +2138,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                             i++
                         }
                         runOnUiThread {
-                            applyImported(if (name.isNullOrBlank()) "Imported text" else name, blocks)
+                            applyImported(
+                                if (name.isNullOrBlank()) "Imported text"
+                                else name.removeSuffix(".txt").removeSuffix(".TXT"),
+                                blocks,
+                                "Text",
+                                ""
+                            )
                         }
                     }
                 }
@@ -2057,18 +2157,146 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }, "ns-import").start()
     }
 
-    private fun applyImported(title: String, blocks: List<Reader.Block>) {
+    /**
+     * Persist an imported document and open it. Imports are stored as extracted sentences in
+     * app-private storage, indexed for Library/Home, and reopened without the source file.
+     */
+    private fun applyImported(
+        title: String,
+        blocks: List<Reader.Block>,
+        kind: String,
+        author: String
+    ) {
         if (blocks.isEmpty()) {
             Toast.makeText(this, "Nothing readable in that file", Toast.LENGTH_SHORT).show()
             return
         }
-        reader.setContent(title, blocks)
+        val book = importedBooks.save(title, author, kind, blocks.map { it.text })
+        DiagLog.line(this, "import save id=" + (book?.id ?: "FAILED") + " sentences=" + blocks.size)
+        if (book == null) {
+            Toast.makeText(this, "Could not save the imported book", Toast.LENGTH_LONG).show()
+            return
+        }
+        openImportedBook(book.id)
+        Toast.makeText(
+            this,
+            "Saved to Library · " + blocks.size + " sentences",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun plural(count: Int, one: String, many: String): String =
+        count.toString() + " " + (if (count == 1) one else many)
+
+    /** Loads a saved import into the reader so TTS, seek and progress work immediately. */
+    private fun openImportedBook(id: String) {
+        val book = importedBooks.get(id)
+        if (book == null) {
+            Toast.makeText(this, "That imported book is no longer available", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val sentences = importedBooks.loadSentences(id)
+        if (sentences.isEmpty()) {
+            Toast.makeText(this, "The saved text for this book is missing", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val blocks = ArrayList<Reader.Block>(sentences.size)
+        for (i in sentences.indices) blocks.add(Reader.Block(sentences[i], i))
+        currentImportId = id
+        pendingResumeIndex = -1
+        reader.setContent(book.title, blocks)
+        val start = book.position.coerceIn(0, (blocks.size - 1).coerceAtLeast(0))
+        if (start > 0) reader.seek(start)
+        hideHome()
         hideWallBanner()
         WebExtractor.setReader(web, false)
+        showImportPage(book)
+        lastImportedCursor = -1
+        lastImportedAt = 0L
+        statusView.text = "Imported · " + blocks.size + " sentences"
+        statusView.contentDescription =
+            "Reader status, imported book, " + blocks.size + " sentences"
         updateReaderButton()
-        statusView.text = "Imported " + blocks.size + " sentences — tap Play"
-        statusView.contentDescription = "Reader status, imported " + blocks.size + " sentences"
-        Toast.makeText(this, "Imported " + blocks.size + " sentences", Toast.LENGTH_SHORT).show()
+        DiagLog.line(this, "import opened id=" + id + " sentences=" + blocks.size + " start=" + start)
+    }
+
+    private fun buildImportPage(): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setBackgroundColor(Palette.BG)
+        setPadding(dp(28), dp(34), dp(28), dp(24))
+        visibility = View.GONE
+        contentDescription = "Imported book screen"
+        addView(TextView(this@MainActivity).apply {
+            text = "Imported"
+            textSize = 12f
+            letterSpacing = 0.14f
+            setTextColor(Palette.AMBER)
+        })
+        addView(TextView(this@MainActivity).apply {
+            id = View.generateViewId()
+            tag = "import-title"
+            text = "Imported book"
+            textSize = 26f
+            typeface = Typeface.create("serif", Typeface.BOLD)
+            setTextColor(Palette.TEXT)
+            setPadding(0, dp(8), 0, 0)
+            maxLines = 4
+            ellipsize = TextUtils.TruncateAt.END
+        })
+        addView(TextView(this@MainActivity).apply {
+            tag = "import-meta"
+            text = ""
+            textSize = 12.5f
+            setTextColor(Palette.MUTED)
+            setPadding(0, dp(6), 0, 0)
+        })
+        addView(View(this@MainActivity).apply {
+            background = rounded(Palette.AMBER, 1)
+            layoutParams = LinearLayout.LayoutParams(dp(38), dp(2)).apply { topMargin = dp(16) }
+        })
+        addView(TextView(this@MainActivity).apply {
+            text = "Use the player controls below. Your position is saved automatically, so you " +
+                "can close the app and continue later."
+            textSize = 13f
+            setTextColor(Palette.TEXT_SECONDARY)
+            setLineSpacing(dp(4).toFloat(), 1f)
+            setPadding(0, dp(20), 0, 0)
+        })
+    }
+
+    private fun showImportPage(book: ImportedBook) {
+        if (!::importPage.isInitialized) return
+        for (i in 0 until importPage.childCount) {
+            val child = importPage.getChildAt(i)
+            if (child is TextView && child.tag == "import-title") {
+                child.text = book.title
+            } else if (child is TextView && child.tag == "import-meta") {
+                val author = if (book.author.isBlank()) "" else book.author + " · "
+                child.text = author + book.kind + " · " +
+                    plural(book.sentenceCount, "sentence", "sentences") +
+                    (if (book.position > 0) " · " + book.percent + "%" else "")
+            }
+        }
+        importPage.visibility = View.VISIBLE
+        web.visibility = View.GONE
+        homeView.visibility = View.GONE
+        // Web-only controls are meaningless for a stored book.
+        if (::readChapterButton.isInitialized) readChapterButton.visibility = View.GONE
+        if (::nextChapterButton.isInitialized) nextChapterButton.visibility = View.GONE
+        if (::readerBtn.isInitialized) readerBtn.visibility = View.GONE
+        if (::adblockView.isInitialized) adblockView.visibility = View.GONE
+    }
+
+    /** Leaves imported-book mode (called when a web page starts loading or Home opens). */
+    private fun hideImportedMode() {
+        if (currentImportId == null) return
+        currentImportId = null
+        if (::importPage.isInitialized) importPage.visibility = View.GONE
+        if (::web.isInitialized) web.visibility = View.VISIBLE
+        if (::readChapterButton.isInitialized) readChapterButton.visibility = View.VISIBLE
+        if (::nextChapterButton.isInitialized) nextChapterButton.visibility = View.VISIBLE
+        if (::readerBtn.isInitialized) readerBtn.visibility = View.VISIBLE
+        if (::adblockView.isInitialized) adblockView.visibility = View.VISIBLE
     }
 
     private fun documentName(uri: Uri): String? {
@@ -2150,6 +2378,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private fun handleShareIntent(intent: Intent?) {
         if (intent == null) { openLastPosition(); return }
+        // Library "Imported books" rows re-open a stored import in the reader.
+        val importId = intent.getStringExtra(LibraryActivity.EXTRA_IMPORT_ID)
+        if (!importId.isNullOrEmpty()) {
+            hideHome()
+            openImportedBook(importId)
+            return
+        }
         val action = intent.action
         @Suppress("DEPRECATION")
         val stream = if (android.os.Build.VERSION.SDK_INT >= 33) {
@@ -2310,6 +2545,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             Toast.makeText(this, "Sleep timer: chapter finished, stopped", Toast.LENGTH_SHORT).show()
             return
         }
+        val importId = currentImportId
+        if (importId != null) {
+            importedBooks.markFinished(importId)
+            Toast.makeText(this, "Imported book finished", Toast.LENGTH_SHORT).show()
+            return
+        }
         val p = NovelSpeakApp.instance.prefs
         if (!p.autoMode) {
             val url = web.url ?: lastDisplayedUrl
@@ -2409,6 +2650,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val total = state.total.coerceAtLeast(0)
         sentenceTotal = total
         persistProgressThrottled(state)
+        persistImportedProgress(state)
         updateSleepTimerView()
         recordReadingTime(state)
         if (homeVisible && ::playerCard.isInitialized) {
@@ -2459,12 +2701,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     override fun onHighlight(blockIndex: Int) {
+        if (currentImportId != null) return
         if (NovelSpeakApp.instance.prefs.highlight) {
             WebExtractor.highlight(web, blockIndex)
         }
     }
 
     override fun onWordHighlight(blockIndex: Int, charStart: Int, charEnd: Int) {
+        if (currentImportId != null) return
         val p = NovelSpeakApp.instance.prefs
         if (!p.highlight || !p.readerWordHighlight) return
         WebExtractor.highlightWord(web, blockIndex, charStart, charEnd)

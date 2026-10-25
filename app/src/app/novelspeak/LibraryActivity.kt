@@ -23,6 +23,8 @@ import android.widget.TextView
 import android.widget.Toast
 import app.novelspeak.library.Bookmark
 import app.novelspeak.library.BookmarkStore
+import app.novelspeak.library.ImportedBook
+import app.novelspeak.library.ImportedBookStore
 import app.novelspeak.library.LibraryEntry
 import app.novelspeak.library.LibraryStore
 import app.novelspeak.library.PrefsLibraryStorage
@@ -45,6 +47,7 @@ class LibraryActivity : Activity() {
 
     private lateinit var store: LibraryStore
     private lateinit var bookmarks: BookmarkStore
+    private lateinit var imports: ImportedBookStore
     private lateinit var list: LinearLayout
     private lateinit var clearAction: TextView
 
@@ -54,6 +57,7 @@ class LibraryActivity : Activity() {
         val storage = PrefsLibraryStorage(this)
         store = LibraryStore(storage)
         bookmarks = BookmarkStore(storage)
+        imports = ImportedBookStore(this)
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -177,20 +181,95 @@ class LibraryActivity : Activity() {
         } catch (t: Throwable) {
             emptyList<Bookmark>()
         }
-        if (entries.isEmpty() && marks.isEmpty()) {
+        val books = try {
+            imports.list()
+        } catch (t: Throwable) {
+            emptyList<ImportedBook>()
+        }
+        if (entries.isEmpty() && marks.isEmpty() && books.isEmpty()) {
             clearAction.visibility = View.GONE
             list.addView(emptyView())
             return
         }
-        clearAction.visibility = if (entries.isEmpty()) View.GONE else View.VISIBLE
+        clearAction.visibility = if (entries.isEmpty() && books.isEmpty()) View.GONE else View.VISIBLE
+        val multipleSections = listOf(entries.isNotEmpty(), books.isNotEmpty(), marks.isNotEmpty())
+            .count { it } > 1
         if (entries.isNotEmpty()) {
-            if (marks.isNotEmpty()) list.addView(sectionHeader("CHAPTERS"))
+            if (multipleSections) list.addView(sectionHeader("CHAPTERS"))
             for (entry in entries) list.addView(entryRow(entry))
         }
+        if (books.isNotEmpty()) {
+            if (multipleSections) list.addView(sectionHeader("IMPORTED BOOKS"))
+            for (book in books) list.addView(importRow(book))
+        }
         if (marks.isNotEmpty()) {
-            list.addView(sectionHeader("BOOKMARKS"))
+            if (multipleSections) list.addView(sectionHeader("BOOKMARKS"))
             for (mark in marks) list.addView(bookmarkRow(mark))
         }
+    }
+
+    /** EPUB/PDF/TXT imports: durable copies that reopen in the reader for TTS. */
+    private fun importRow(book: ImportedBook): View {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = ripple(Palette.SURFACE, 18)
+            setPadding(dp(14), dp(12), dp(6), dp(12))
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Imported book, " + book.title
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(8) }
+            setOnClickListener {
+                val intent = Intent(this@LibraryActivity, MainActivity::class.java)
+                    .putExtra(EXTRA_IMPORT_ID, book.id)
+                try {
+                    startActivity(intent)
+                    finish()
+                } catch (t: Throwable) {
+                    Toast.makeText(this@LibraryActivity, "Could not open the book", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        texts.addView(TextView(this).apply {
+            text = book.title
+            textSize = 15f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+            maxLines = 2
+            ellipsize = TextUtils.TruncateAt.END
+        })
+        val author = if (book.author.isBlank()) "" else book.author + " · "
+        val state = if (book.finished) "Finished" else book.percent.toString() + "%"
+        texts.addView(TextView(this).apply {
+            text = author + book.kind + " · " + book.sentenceCount + " sentences · " + state
+            textSize = 12f
+            setTextColor(if (book.finished) Palette.ACCENT else Palette.MUTED)
+            setPadding(0, dp(3), 0, 0)
+        })
+        card.addView(texts)
+        card.addView(TextView(this).apply {
+            text = "✕"
+            textSize = 16f
+            gravity = Gravity.CENTER
+            setTextColor(Palette.MUTED)
+            background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
+            layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(6) }
+            contentDescription = "Delete imported book"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                imports.remove(book.id)
+                render()
+                Toast.makeText(this@LibraryActivity, "Imported book removed", Toast.LENGTH_SHORT).show()
+            }
+        })
+        return card
     }
 
     private fun sectionHeader(label: String): TextView = TextView(this).apply {
@@ -397,6 +476,7 @@ class LibraryActivity : Activity() {
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Clear") { _, _ ->
                 store.clear()
+                imports.clear()
                 render()
                 Toast.makeText(this, "Library cleared", Toast.LENGTH_SHORT).show()
             }
@@ -454,8 +534,12 @@ class LibraryActivity : Activity() {
         /** Extra: true when the launch came from this library screen. */
         const val EXTRA_FROM_LIBRARY = "fromLibrary"
 
-        /** Shown when no chapter has been opened yet. */
-        const val EMPTY_TEXT = "No chapters yet — open a page in NovelSpeak and start reading."
+        /** Extra: id of a stored import (EPUB/PDF/text) to open in the reader. */
+        const val EXTRA_IMPORT_ID = "importId"
+
+        /** Shown when no chapter has been opened and no book imported yet. */
+        const val EMPTY_TEXT =
+            "Nothing here yet — open a page, or import an EPUB/PDF from the menu, and it will appear here."
 
         private const val MINUTE_MS = 60_000L
         private const val HOUR_MS = 60 * MINUTE_MS

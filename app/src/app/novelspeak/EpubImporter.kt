@@ -190,16 +190,26 @@ object EpubImporter {
     }
 
     private fun parseXml(bytes: ByteArray): Document? {
-        return try {
+        // Hardened configuration first; then a plain namespace-aware parser. Some Android
+        // vendors ship DocumentBuilderFactory implementations that reject one of the SAX/XInclude
+        // knobs, and a rejected knob must not make a valid EPUB unreadable.
+        val hardened = try {
             val factory = DocumentBuilderFactory.newInstance()
             factory.isNamespaceAware = true
             try { factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true) } catch (_: Throwable) {}
             try { factory.setFeature("http://xml.org/sax/features/external-general-entities", false) } catch (_: Throwable) {}
             try { factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false) } catch (_: Throwable) {}
-            factory.isXIncludeAware = false
-            factory.setExpandEntityReferences(false)
-            val builder = factory.newDocumentBuilder()
-            builder.parse(ByteArrayInputStream(bytes))
+            try { factory.isXIncludeAware = false } catch (_: Throwable) {}
+            try { factory.setExpandEntityReferences(false) } catch (_: Throwable) {}
+            factory.newDocumentBuilder().parse(ByteArrayInputStream(bytes))
+        } catch (_: Throwable) {
+            null
+        }
+        if (hardened != null) return hardened
+        return try {
+            val plain = DocumentBuilderFactory.newInstance()
+            plain.isNamespaceAware = true
+            plain.newDocumentBuilder().parse(ByteArrayInputStream(bytes))
         } catch (_: Throwable) {
             null
         }

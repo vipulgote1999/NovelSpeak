@@ -27,6 +27,8 @@ only, no OCR), translation hand-off to the system browser, a two-pane tablet/lan
 signed model-catalog verification (`tools/model-catalog-sign.sh`).
 
 - **Any URL**: full WebView browser with URL bar, back/forward, reload.
+- **Imports**: EPUB, PDF (text layer) and plain-text files are extracted into app-private storage,
+  shown in Library and Continue reading, reopen in the reader, and keep their playback position.
 - **Generic extraction**: Mozilla Readability + a text-density fallback; works on empirenovel and
   any similar serialized-novel site (chapter pages, next-chapter detection, append-as-you-go).
 - **Two TTS backends**, switchable in settings:

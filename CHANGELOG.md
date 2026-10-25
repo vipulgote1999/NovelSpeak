@@ -33,6 +33,12 @@ All notable changes to NovelSpeak are documented here. The format follows
   coverage and the data-sharing setting.
 
 ### Fixed
+- Imported EPUB/PDF/text books are now durable: extracted sentences are stored in app-private
+  files (filesDir/imports/<id>.txt + index.json), listed in Library → Imported books and Home →
+  Continue reading, reopen in the reader for TTS, and save playback position. Previously they
+  existed only in the reader's memory and silently vanished.
+- EPUB import on Android: the XML parser now falls back to a plain namespace-aware parser when a
+  vendor build rejects a hardening feature (the previous silent "corrupt OPF" failure).
 - Per-site reader mode now actually writes per site; top-bar label reflects it.
 - Sleep-timer/import/bookmark actions reachable from the overflow menu; speed UI no longer lies.
 - Stale stopping behaviour after seek while a long sentence plays (carried from 1.1.0 evidence).
