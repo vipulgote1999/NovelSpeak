@@ -67,7 +67,7 @@ class SettingsActivity : Activity() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(SPalette.BG)
+            setBackgroundColor(Palette.BG)
         }
         root.addView(buildTopBar())
 
@@ -112,9 +112,9 @@ class SettingsActivity : Activity() {
     }
 
     private fun applyWindowTheme() {
-        window.statusBarColor = SPalette.BG
-        window.navigationBarColor = SPalette.BG
-        window.setBackgroundDrawable(ColorDrawable(SPalette.BG))
+        window.statusBarColor = Palette.BG
+        window.navigationBarColor = Palette.BG
+        window.setBackgroundDrawable(ColorDrawable(Palette.BG))
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = 0
     }
@@ -129,8 +129,8 @@ class SettingsActivity : Activity() {
             text = "←"
             textSize = 22f
             gravity = Gravity.CENTER
-            setTextColor(SPalette.TEXT)
-            background = ripple(SPalette.SURFACE_HIGH, 24, oval = true)
+            setTextColor(Palette.TEXT)
+            background = ripple(Palette.SURFACE_HIGH, 24, oval = true)
             layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
             contentDescription = "Back"
             isClickable = true
@@ -142,7 +142,7 @@ class SettingsActivity : Activity() {
             text = "Settings"
             textSize = 20f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(SPalette.TEXT)
+            setTextColor(Palette.TEXT)
             setPadding(dp(12), 0, 0, 0)
         })
         return bar
@@ -151,7 +151,7 @@ class SettingsActivity : Activity() {
     private fun buildFooter(): LinearLayout {
         val footer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(SPalette.SURFACE, 18)
+            background = rounded(Palette.SURFACE, 18)
             setPadding(dp(16), dp(10), dp(16), dp(10))
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
@@ -160,7 +160,7 @@ class SettingsActivity : Activity() {
         status = TextView(this).apply {
             text = "Changes are saved instantly"
             textSize = 12f
-            setTextColor(SPalette.MUTED)
+            setTextColor(Palette.MUTED)
             maxLines = 3
         }
         footer.addView(status)
@@ -444,7 +444,7 @@ class SettingsActivity : Activity() {
                 text = shown + suffix
                 textSize = 12f
                 typeface = Typeface.MONOSPACE
-                setTextColor(SPalette.TEXT)
+                setTextColor(Palette.TEXT)
                 setPadding(0, dp(8), 0, 0)
             })
         }
@@ -636,12 +636,12 @@ class SettingsActivity : Activity() {
             text = m.label
             textSize = 14f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(SPalette.TEXT)
+            setTextColor(Palette.TEXT)
         })
         texts.addView(TextView(this).apply {
             text = "${m.sizeMb} MB · ${m.sha256.take(8)}…"
             textSize = 12f
-            setTextColor(SPalette.MUTED)
+            setTextColor(Palette.MUTED)
             setPadding(0, dp(2), 0, 0)
         })
         top.addView(texts)
@@ -652,8 +652,8 @@ class SettingsActivity : Activity() {
                 text = "ACTIVE"
                 textSize = 10f
                 typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                setTextColor(SPalette.ACCENT)
-                background = rounded(SPalette.SURFACE_HIGH, 8)
+                setTextColor(Palette.ACCENT)
+                background = rounded(Palette.SURFACE_HIGH, 8)
                 setPadding(dp(8), dp(3), dp(8), dp(3))
             })
         }
@@ -702,7 +702,7 @@ class SettingsActivity : Activity() {
             textSize = 11f
             letterSpacing = 0.1f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(SPalette.MUTED)
+            setTextColor(Palette.MUTED)
             setPadding(dp(4), dp(18), 0, dp(8))
             if (accessibilityLabel != null) contentDescription = accessibilityLabel
         })
@@ -710,7 +710,7 @@ class SettingsActivity : Activity() {
 
     private fun card(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
-        background = rounded(SPalette.SURFACE, 18)
+        background = rounded(Palette.SURFACE, 18)
         setPadding(dp(14), dp(8), dp(14), dp(8))
         layoutParams = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
@@ -721,13 +721,13 @@ class SettingsActivity : Activity() {
         layoutParams = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, dp(1)
         ).apply { setMargins(0, dp(2), 0, dp(2)) }
-        setBackgroundColor(SPalette.BORDER)
+        setBackgroundColor(Palette.BORDER)
     }
 
     private fun note(text: String): TextView = TextView(this).apply {
         this.text = text
         textSize = 12f
-        setTextColor(SPalette.MUTED)
+        setTextColor(Palette.MUTED)
         setPadding(0, dp(8), 0, 0)
     }
 
@@ -750,14 +750,14 @@ class SettingsActivity : Activity() {
         val title = TextView(this).apply {
             text = label
             textSize = 13f
-            setTextColor(SPalette.TEXT)
+            setTextColor(Palette.TEXT)
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         val valueView = TextView(this).apply {
             text = onChange(value)
             textSize = 13f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(SPalette.ACCENT)
+            setTextColor(Palette.ACCENT)
             gravity = Gravity.END
         }
         titleRow.addView(title)
@@ -766,9 +766,9 @@ class SettingsActivity : Activity() {
         wrap.addView(SeekBar(this).apply {
             this.max = max - min
             progress = (value - min).coerceIn(0, max - min)
-            progressTintList = ColorStateList.valueOf(SPalette.ACCENT)
-            thumbTintList = ColorStateList.valueOf(SPalette.ACCENT)
-            progressBackgroundTintList = ColorStateList.valueOf(SPalette.BORDER)
+            progressTintList = ColorStateList.valueOf(Palette.ACCENT)
+            thumbTintList = ColorStateList.valueOf(Palette.ACCENT)
+            progressBackgroundTintList = ColorStateList.valueOf(Palette.BORDER)
             splitTrack = false
             setPadding(dp(12), dp(2), dp(12), 0)
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -797,7 +797,7 @@ class SettingsActivity : Activity() {
             minimumHeight = dp(56)
             isClickable = true
             isFocusable = true
-            background = ripple(SPalette.SURFACE_HIGH, 12)
+            background = ripple(Palette.SURFACE_HIGH, 12)
         }
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -806,12 +806,12 @@ class SettingsActivity : Activity() {
         texts.addView(TextView(this).apply {
             text = title
             textSize = 13f
-            setTextColor(SPalette.TEXT)
+            setTextColor(Palette.TEXT)
         })
         texts.addView(TextView(this).apply {
             text = subtitle
             textSize = 11f
-            setTextColor(SPalette.MUTED)
+            setTextColor(Palette.MUTED)
             setPadding(0, dp(1), 0, 0)
         })
         row.addView(texts)
@@ -830,12 +830,12 @@ class SettingsActivity : Activity() {
 
     private fun switchThumbColors(): ColorStateList = ColorStateList(
         arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-        intArrayOf(SPalette.ACCENT, SPalette.MUTED)
+        intArrayOf(Palette.ACCENT, Palette.MUTED)
     )
 
     private fun switchTrackColors(): ColorStateList = ColorStateList(
         arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-        intArrayOf(0x666EE7B7, SPalette.BORDER)
+        intArrayOf(0x666EE7B7, Palette.BORDER)
     )
 
     private fun pillButton(
@@ -853,13 +853,13 @@ class SettingsActivity : Activity() {
         gravity = Gravity.CENTER
         setTextColor(
             when {
-                primary -> SPalette.BG
-                danger -> SPalette.RED
-                else -> SPalette.TEXT
+                primary -> Palette.BG
+                danger -> Palette.RED
+                else -> Palette.TEXT
             }
         )
         background = ripple(
-            if (primary) SPalette.ACCENT else SPalette.SURFACE_HIGH, 12
+            if (primary) Palette.ACCENT else Palette.SURFACE_HIGH, 12
         )
         setPadding(dp(14), 0, dp(14), 0)
         layoutParams = LinearLayout.LayoutParams(
@@ -1041,16 +1041,16 @@ class SettingsActivity : Activity() {
             text = "Playback notification"
             textSize = 13f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(SPalette.TEXT)
+            setTextColor(Palette.TEXT)
         })
         row.addView(TextView(this).apply {
             text = AppPermissions.notificationStatus(this@SettingsActivity)
             textSize = 11f
             setTextColor(
                 when {
-                    !granted -> SPalette.AMBER
-                    !channelOn -> SPalette.AMBER
-                    else -> SPalette.MUTED
+                    !granted -> Palette.AMBER
+                    !channelOn -> Palette.AMBER
+                    else -> Palette.MUTED
                 }
             )
             setPadding(0, dp(2), 0, 0)
@@ -1058,7 +1058,7 @@ class SettingsActivity : Activity() {
         row.addView(TextView(this).apply {
             text = "Channel: ${AppPermissions.notificationChannelStatus(this@SettingsActivity)}"
             textSize = 11f
-            setTextColor(SPalette.MUTED)
+            setTextColor(Palette.MUTED)
             setPadding(0, dp(2), 0, 0)
         })
 
@@ -1103,7 +1103,7 @@ class SettingsActivity : Activity() {
             text = "Background playback"
             textSize = 13f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(SPalette.TEXT)
+            setTextColor(Palette.TEXT)
         })
         row.addView(TextView(this).apply {
             text = if (playing) {
@@ -1112,21 +1112,21 @@ class SettingsActivity : Activity() {
                 "Ready · starts automatically when you tap Read"
             }
             textSize = 11f
-            setTextColor(if (playing) SPalette.ACCENT else SPalette.MUTED)
+            setTextColor(if (playing) Palette.ACCENT else Palette.MUTED)
             setPadding(0, dp(2), 0, 0)
         })
         row.addView(TextView(this).apply {
             text = "Media playback stays active with the screen off and exposes transport " +
                 "controls on the lock screen and in the notification shade."
             textSize = 11f
-            setTextColor(SPalette.MUTED)
+            setTextColor(Palette.MUTED)
             setPadding(0, dp(2), 0, 0)
         })
         row.addView(TextView(this).apply {
             text = "If your device stops playback with the screen off, allow NovelSpeak in " +
                 "system battery settings."
             textSize = 11f
-            setTextColor(SPalette.MUTED)
+            setTextColor(Palette.MUTED)
             setPadding(0, dp(4), 0, 0)
         })
         val actions = LinearLayout(this).apply {
@@ -1146,7 +1146,7 @@ class SettingsActivity : Activity() {
             text = title
             textSize = 12f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(SPalette.ACCENT)
+            setTextColor(Palette.ACCENT)
             setPadding(0, dp(12), 0, dp(2))
         })
     }
@@ -1180,7 +1180,7 @@ class SettingsActivity : Activity() {
             text = "One rule per line, from=to. Matching is case-insensitive and literal; " +
                 "an empty replacement deletes the word."
             textSize = 12f
-            setTextColor(SPalette.MUTED)
+            setTextColor(Palette.MUTED)
         })
         val rulesInput = EditText(this).apply {
             setText(prefs.pronunciationRules)
@@ -1192,9 +1192,9 @@ class SettingsActivity : Activity() {
             maxLines = 10
             gravity = Gravity.TOP or Gravity.START
             contentDescription = "Pronunciation rules"
-            setTextColor(SPalette.TEXT)
-            setHintTextColor(SPalette.MUTED)
-            setBackgroundColor(SPalette.SURFACE_HIGH)
+            setTextColor(Palette.TEXT)
+            setHintTextColor(Palette.MUTED)
+            setBackgroundColor(Palette.SURFACE_HIGH)
             setPadding(dp(10), dp(8), dp(10), dp(8))
         }
         wrap.addView(rulesInput, LinearLayout.LayoutParams(
@@ -1204,7 +1204,7 @@ class SettingsActivity : Activity() {
         wrap.addView(TextView(this).apply {
             text = "Test preview"
             textSize = 12f
-            setTextColor(SPalette.MUTED)
+            setTextColor(Palette.MUTED)
             setPadding(0, dp(12), 0, dp(4))
         })
         val testInput = EditText(this).apply {
@@ -1212,9 +1212,9 @@ class SettingsActivity : Activity() {
             textSize = 14f
             maxLines = 2
             contentDescription = "Pronunciation test sentence"
-            setTextColor(SPalette.TEXT)
-            setHintTextColor(SPalette.MUTED)
-            setBackgroundColor(SPalette.SURFACE_HIGH)
+            setTextColor(Palette.TEXT)
+            setHintTextColor(Palette.MUTED)
+            setBackgroundColor(Palette.SURFACE_HIGH)
             setPadding(dp(10), dp(8), dp(10), dp(8))
         }
         wrap.addView(testInput, LinearLayout.LayoutParams(
@@ -1222,13 +1222,13 @@ class SettingsActivity : Activity() {
         ))
         val validationView = TextView(this).apply {
             textSize = 12f
-            setTextColor(SPalette.MUTED)
+            setTextColor(Palette.MUTED)
             setPadding(0, dp(8), 0, dp(2))
         }
         wrap.addView(validationView)
         val previewView = TextView(this).apply {
             textSize = 13f
-            setTextColor(SPalette.TEXT)
+            setTextColor(Palette.TEXT)
             contentDescription = "Pronunciation preview"
             setPadding(0, dp(2), 0, dp(2))
         }
@@ -1240,14 +1240,14 @@ class SettingsActivity : Activity() {
             val problem = PronunciationRules.validate(raw)
             if (problem != null) {
                 validationView.text = "Fix: " + problem
-                validationView.setTextColor(SPalette.AMBER)
+                validationView.setTextColor(Palette.AMBER)
             } else if (parsed.isEmpty()) {
                 validationView.text = "No rules yet — add one per line as from=to."
-                validationView.setTextColor(SPalette.MUTED)
+                validationView.setTextColor(Palette.MUTED)
             } else {
                 validationView.text = parsed.size.toString() +
                     " rule(s) active · case-insensitive · longest first"
-                validationView.setTextColor(SPalette.ACCENT)
+                validationView.setTextColor(Palette.ACCENT)
             }
             val sample = testInput.text?.toString()?.takeIf { it.isNotBlank() }
             previewView.text = if (sample == null) "" else "⇒ " + PronunciationRules.apply(sample, parsed)
@@ -1386,7 +1386,7 @@ class SettingsActivity : Activity() {
         GradientDrawable().apply {
             shape = GradientDrawable.OVAL
             setColor(Color.TRANSPARENT)
-            setStroke(dp(2), if (checked) SPalette.ACCENT else SPalette.BORDER)
+            setStroke(dp(2), if (checked) Palette.ACCENT else Palette.BORDER)
         }
 
     private fun ripple(color: Int, radiusDp: Int, oval: Boolean = false): RippleDrawable {
@@ -1415,14 +1415,14 @@ class SettingsActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(8), dp(10), dp(8), dp(10))
             minimumHeight = dp(56)
-            background = ripple(SPalette.SURFACE_HIGH, 12)
+            background = ripple(Palette.SURFACE_HIGH, 12)
             isClickable = true
             isFocusable = true
 
             ringView.layoutParams = LayoutParams(dp(22), dp(22))
             ringView.background = ring(checked)
             dot.layoutParams = FrameLayout.LayoutParams(dp(10), dp(10), Gravity.CENTER)
-            dot.background = oval(SPalette.ACCENT)
+            dot.background = oval(Palette.ACCENT)
             dot.visibility = if (checked) View.VISIBLE else View.INVISIBLE
             ringView.addView(dot)
             addView(ringView)
@@ -1435,13 +1435,13 @@ class SettingsActivity : Activity() {
             texts.addView(TextView(this@SettingsActivity).apply {
                 text = title
                 textSize = 14f
-                setTextColor(SPalette.TEXT)
+                setTextColor(Palette.TEXT)
             })
             if (!subtitle.isNullOrEmpty()) {
                 texts.addView(TextView(this@SettingsActivity).apply {
                     text = subtitle
                     textSize = 12f
-                    setTextColor(SPalette.MUTED)
+                    setTextColor(Palette.MUTED)
                     setPadding(0, dp(2), 0, 0)
                 })
             }
@@ -1456,14 +1456,3 @@ class SettingsActivity : Activity() {
     }
 }
 
-private object SPalette {
-    val BG = 0xFF0F1115.toInt()
-    val SURFACE = 0xFF171A21.toInt()
-    val SURFACE_HIGH = 0xFF222833.toInt()
-    val BORDER = 0xFF2C3442.toInt()
-    val TEXT = 0xFFF3F6F9.toInt()
-    val MUTED = 0xFF9AA6B6.toInt()
-    val ACCENT = 0xFF6EE7B7.toInt()
-    val AMBER = 0xFFF6C453.toInt()
-    val RED = 0xFFF87171.toInt()
-}

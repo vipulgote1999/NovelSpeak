@@ -23,6 +23,10 @@ All notable changes to NovelSpeak are documented here. The format follows
   library, settings features, TTS cleaner, audio DSP, EPUB and PDF importers.
 
 ### Changed
+- Colour system unified into one semantic Palette (removed three duplicated palettes):
+  ink base #0E1318 with layered surfaces, secondary/faint text tiers, mint signal #6FE7BE,
+  warm amber #F4C66A, softer red #F87C7C, light icon plate #EEF2F5. All text pairs are
+  WCAG-AA or better; cards gained 1dp borders and the reader CSS uses the same tokens.
 - Version 1.2.0-dev (versionCode 16); allowBackup disabled; exported media receiver permission;
   WebView lifecycle fixed; cleartext allowed only for loopback test hosts; model catalog in assets.
 - README positioning corrected: Chrome does support lock-screen playback; the real gap is site

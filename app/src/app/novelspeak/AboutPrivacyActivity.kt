@@ -311,12 +311,4 @@ class AboutPrivacyActivity : Activity() {
             cornerRadius = dp(radiusDp).toFloat()
         }
 
-    private object Palette {
-        val BG = 0xFF0F1115.toInt()
-        val SURFACE = 0xFF171A21.toInt()
-        val SURFACE_HIGH = 0xFF222833.toInt()
-        val TEXT = 0xFFF3F6F9.toInt()
-        val MUTED = 0xFF9AA6B6.toInt()
-        val ACCENT = 0xFF6EE7B7.toInt()
-    }
 }

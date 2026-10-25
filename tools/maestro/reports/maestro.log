@@ -1,6 +1,8 @@
 
 Waiting for flows to complete...
-[Passed] 13 home: new-tab page shows wordmark, search, shortcuts, continue reading (11s)
+[Passed] 01 launch: home tab is visible with search and shortcuts (3s)
+[Passed] 02 settings: overflow opens the Settings screen and back returns (9s)
+[Passed] 13 home: new-tab page shows wordmark, search, shortcuts, continue reading (8s)
 
-1/1 Flow Passed in 11s
+3/3 Flows Passed in 20s
 

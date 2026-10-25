@@ -1,7 +1,17 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <testsuites>
-  <testsuite name="Test Suite" device="MedTrail_API35" tests="1" failures="0" time="10.72" timestamp="2026-10-25T14:24:17">
-    <testcase id="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" name="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" classname="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" file="tools/maestro/flows/13_home.yaml" time="10.703" timestamp="2026-10-25T14:24:17" status="SUCCESS">
+  <testsuite name="Test Suite" device="MedTrail_API35" tests="3" failures="0" time="20.497" timestamp="2026-10-25T14:32:34">
+    <testcase id="01 launch: home tab is visible with search and shortcuts" name="01 launch: home tab is visible with search and shortcuts" classname="01 launch: home tab is visible with search and shortcuts" file="tools/maestro/flows/01_launch.yaml" time="2.765" timestamp="2026-10-25T14:32:34" status="SUCCESS">
+      <properties>
+        <property name="tags" value="baseline, smoke"/>
+      </properties>
+    </testcase>
+    <testcase id="02 settings: overflow opens the Settings screen and back returns" name="02 settings: overflow opens the Settings screen and back returns" classname="02 settings: overflow opens the Settings screen and back returns" file="tools/maestro/flows/02_settings.yaml" time="9.24" timestamp="2026-10-25T14:32:37" status="SUCCESS">
+      <properties>
+        <property name="tags" value="baseline, smoke"/>
+      </properties>
+    </testcase>
+    <testcase id="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" name="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" classname="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" file="tools/maestro/flows/13_home.yaml" time="8.48" timestamp="2026-10-25T14:32:46" status="SUCCESS">
       <properties>
         <property name="tags" value="home"/>
       </properties>

@@ -492,7 +492,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         // ---- now-playing card ----
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(Palette.SURFACE, 18)
+            background = roundedStroke(Palette.SURFACE, 18, Palette.BORDER, 1)
             setPadding(dp(12), dp(10), dp(12), dp(10))
             elevation = dp(8).toFloat()
             layoutParams = LinearLayout.LayoutParams(
@@ -731,7 +731,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         col.addView(TextView(this).apply {
             text = "A quiet place to read."
             textSize = 13f
-            setTextColor(Palette.MUTED)
+            setTextColor(Palette.TEXT_SECONDARY)
             setPadding(0, dp(4), 0, 0)
         })
         col.addView(View(this).apply {
@@ -814,7 +814,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         col.addView(TextView(this).apply {
             text = "Local only: no account, no ads, no tracking."
             textSize = 11f
-            setTextColor(Palette.MUTED)
+            setTextColor(Palette.FAINT)
             setPadding(0, dp(22), 0, 0)
         })
 
@@ -848,7 +848,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             }
             addView(FrameLayout(this@MainActivity).apply {
                 // Chrome-style light plate so site icons keep their own colors on the dark tab.
-                background = ripple(HOME_ICON_PLATE, 28, oval = true)
+                background = ripple(Palette.ICON_PLATE, 28, oval = true)
                 layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
                 val icon = loadHomeIcon(shortcut.iconAsset)
                 if (icon != null) {
@@ -862,7 +862,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         text = shortcut.monogram
                         textSize = 15f
                         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                        setTextColor(0xFF1B2430.toInt())
+                        setTextColor(Palette.ON_LIGHT)
                         gravity = Gravity.CENTER
                     }, FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
@@ -904,7 +904,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         for (entry in entries) {
             homeContinue.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                background = ripple(Palette.SURFACE, 14)
+                background = rippleStroke(Palette.SURFACE, 14, Palette.BORDER)
                 setPadding(dp(14), dp(12), dp(14), dp(12))
                 isClickable = true
                 isFocusable = true
@@ -2626,6 +2626,16 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         return RippleDrawable(ColorStateList.valueOf(Palette.RIPPLE), content, mask)
     }
 
+    /** Ripple card with a 1dp border, for surfaces on the dark ink background. */
+    private fun rippleStroke(color: Int, radiusDp: Int, strokeColor: Int): RippleDrawable {
+        val content = roundedStroke(color, radiusDp, strokeColor, 1)
+        val mask = GradientDrawable().apply {
+            setColor(Color.WHITE)
+            cornerRadius = dp(radiusDp).toFloat()
+        }
+        return RippleDrawable(ColorStateList.valueOf(Palette.RIPPLE), content, mask)
+    }
+
     private fun textButton(
         label: String,
         primary: Boolean,
@@ -2696,7 +2706,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         private const val MENU_IMPORT = 14
         private const val REQ_IMPORT_DOCUMENT = 1001
         private const val PREFETCH_DELAY_MS = 12_000L
-        private val HOME_ICON_PLATE = 0xFFE9EEF4.toInt()
         private const val PREFETCH_MIN_FREE_BYTES = 350L * 1024 * 1024
 
         /** Pause between a chapter's extraction and its first spoken sentence. */
@@ -2708,19 +2717,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 }
 
 // ---- palette + drawn icons -------------------------------------------------
-
-private object Palette {
-    val BG = 0xFF0F1115.toInt()
-    val SURFACE = 0xFF171A21.toInt()
-    val SURFACE_HIGH = 0xFF222833.toInt()
-    val BORDER = 0xFF2C3442.toInt()
-    val TEXT = 0xFFF3F6F9.toInt()
-    val MUTED = 0xFF9AA6B6.toInt()
-    val ACCENT = 0xFF6EE7B7.toInt()
-    val AMBER = 0xFFF6C453.toInt()
-    val RED = 0xFFF87171.toInt()
-    val RIPPLE = 0x33FFFFFF
-}
 
 private enum class Glyph {
     PLAY, PAUSE, STOP, PREV, NEXT, BACK, FORWARD, RELOAD, GEAR, MENU, MORE,

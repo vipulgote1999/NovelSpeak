@@ -241,8 +241,8 @@
 
   var style = document.createElement('style');
   style.textContent =
-    '[data-ns].ns-active{background:rgba(255,214,0,.38);border-radius:3px;' +
-    'box-shadow:0 0 0 2px rgba(255,214,0,.25);transition:background .15s ease}';
+    '[data-ns].ns-active{background:rgba(244,198,106,.35);border-radius:3px;' +
+    'box-shadow:0 0 0 2px rgba(244,198,106,.22);transition:background .15s ease}';
   (document.head || document.documentElement).appendChild(style);
 
   // Reader mode: keep the real page (so highlight and links still work) but strip the
@@ -250,8 +250,8 @@
   var readerStyle = document.createElement('style');
   readerStyle.textContent = `
     html.ns-reader, html.ns-reader body {
-      background:#0F1115 !important; background-image:none !important;
-      color:#E9EDF2 !important;
+      background:#0E1318 !important; background-image:none !important;
+      color:#EAF0F5 !important;
     }
     html.ns-reader body {
       max-width:var(--ns-width,760px) !important; margin:0 auto !important;
@@ -262,7 +262,7 @@
     }
     html.ns-reader p, html.ns-reader li, html.ns-reader blockquote,
     html.ns-reader td, html.ns-reader dd {
-      color:#E9EDF2 !important; background:transparent !important;
+      color:#EAF0F5 !important; background:transparent !important;
       font-size:var(--ns-font-size,17px) !important;
       line-height:var(--ns-line-height,1.7) !important;
       margin:0 0 1.05em !important;
@@ -275,19 +275,19 @@
     html.ns-reader h1 { font-size:1.5em !important; }
     html.ns-reader h2 { font-size:1.32em !important; }
     html.ns-reader h3 { font-size:1.18em !important; }
-    html.ns-reader a { color:#6EE7B7 !important; }
+    html.ns-reader a { color:#6FE7BE !important; }
     html.ns-reader img { max-width:100% !important; height:auto !important; }
     html.ns-reader article, html.ns-reader main,
     html.ns-reader [class*="chapter"], html.ns-reader [id*="chapter"],
     html.ns-reader [class*="content"], html.ns-reader [id*="content"] {
-      background:transparent !important; color:#E9EDF2 !important;
+      background:transparent !important; color:#EAF0F5 !important;
       max-width:var(--ns-width,760px) !important;
       margin-left:auto !important; margin-right:auto !important;
     }
     /* Word-level read-along uses the CSS Custom Highlight API (Chromium 105+). */
     ::highlight(ns-word) {
       background: rgba(110, 231, 183, 0.55) !important;
-      color: #0F1115 !important;
+      color: #0E1318 !important;
     }
     html.ns-reader nav, html.ns-reader header, html.ns-reader footer,
     html.ns-reader aside, html.ns-reader iframe,
@@ -313,8 +313,8 @@
     }
     html.ns-reader .ns-reader-hidden { display:none !important; }
     html.ns-reader [data-ns].ns-active {
-      background:rgba(246,196,83,.10) !important;
-      box-shadow:inset 3px 0 0 #F6C453 !important;
+      background:rgba(244,198,106,.10) !important;
+      box-shadow:inset 3px 0 0 #F4C66A !important;
       border-radius:4px !important;
     }
     html.ns-reader h1[data-ns].ns-active, html.ns-reader h2[data-ns].ns-active,
@@ -322,7 +322,7 @@
     html.ns-reader h5[data-ns].ns-active,
     html.ns-reader [data-ns="0"].ns-active, html.ns-reader .ns-active-heading {
       background:transparent !important;
-      box-shadow:inset 3px 0 0 #F6C453 !important;
+      box-shadow:inset 3px 0 0 #F4C66A !important;
     }
 
     /* ---- surface reset -------------------------------------------------
@@ -346,9 +346,9 @@
     html.ns-reader body dl, html.ns-reader body dt, html.ns-reader body dd,
     html.ns-reader body figure, html.ns-reader body figcaption,
     html.ns-reader body pre, html.ns-reader body code, html.ns-reader body center {
-      color:#E9EDF2 !important;
+      color:#EAF0F5 !important;
     }
-    html.ns-reader a, html.ns-reader a:visited { color:#6EE7B7 !important; }
+    html.ns-reader a, html.ns-reader a:visited { color:#6FE7BE !important; }
     html.ns-reader pre {
       background:rgba(255,255,255,.06) !important;
       padding:10px !important; border-radius:6px !important;

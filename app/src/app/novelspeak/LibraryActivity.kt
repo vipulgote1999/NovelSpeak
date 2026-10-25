@@ -57,7 +57,7 @@ class LibraryActivity : Activity() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(LPalette.BG)
+            setBackgroundColor(Palette.BG)
         }
         root.addView(buildTopBar())
 
@@ -106,9 +106,9 @@ class LibraryActivity : Activity() {
     }
 
     private fun applyWindowTheme() {
-        window.statusBarColor = LPalette.BG
-        window.navigationBarColor = LPalette.BG
-        window.setBackgroundDrawable(ColorDrawable(LPalette.BG))
+        window.statusBarColor = Palette.BG
+        window.navigationBarColor = Palette.BG
+        window.setBackgroundDrawable(ColorDrawable(Palette.BG))
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = 0
     }
@@ -123,8 +123,8 @@ class LibraryActivity : Activity() {
             text = "←"
             textSize = 22f
             gravity = Gravity.CENTER
-            setTextColor(LPalette.TEXT)
-            background = ripple(LPalette.SURFACE_HIGH, 24, oval = true)
+            setTextColor(Palette.TEXT)
+            background = ripple(Palette.SURFACE_HIGH, 24, oval = true)
             layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
             contentDescription = "Back"
             isClickable = true
@@ -136,7 +136,7 @@ class LibraryActivity : Activity() {
             text = "Library"
             textSize = 20f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(LPalette.TEXT)
+            setTextColor(Palette.TEXT)
             setPadding(dp(12), 0, 0, 0)
             contentDescription = "Library"
         })
@@ -148,8 +148,8 @@ class LibraryActivity : Activity() {
             textSize = 12f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             gravity = Gravity.CENTER
-            setTextColor(LPalette.RED)
-            background = ripple(LPalette.SURFACE_HIGH, 12)
+            setTextColor(Palette.RED)
+            background = ripple(Palette.SURFACE_HIGH, 12)
             setPadding(dp(14), 0, dp(14), 0)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -198,7 +198,7 @@ class LibraryActivity : Activity() {
         textSize = 10f
         letterSpacing = 0.12f
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-        setTextColor(LPalette.MUTED)
+        setTextColor(Palette.MUTED)
         setPadding(dp(6), dp(12), dp(6), dp(6))
     }
 
@@ -206,7 +206,7 @@ class LibraryActivity : Activity() {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = ripple(LPalette.SURFACE, 18)
+            background = ripple(Palette.SURFACE, 18)
             setPadding(dp(14), dp(12), dp(6), dp(12))
             isClickable = true
             isFocusable = true
@@ -235,14 +235,14 @@ class LibraryActivity : Activity() {
         texts.addView(TextView(this).apply {
             text = "“" + mark.snippet.take(160) + "”"
             textSize = 14f
-            setTextColor(LPalette.TEXT)
+            setTextColor(Palette.TEXT)
             maxLines = 3
             ellipsize = TextUtils.TruncateAt.END
         })
         texts.addView(TextView(this).apply {
             text = mark.title.ifBlank { mark.url }
             textSize = 11.5f
-            setTextColor(LPalette.MUTED)
+            setTextColor(Palette.MUTED)
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
             setPadding(0, dp(3), 0, 0)
@@ -252,8 +252,8 @@ class LibraryActivity : Activity() {
             text = "✕"
             textSize = 16f
             gravity = Gravity.CENTER
-            setTextColor(LPalette.MUTED)
-            background = ripple(LPalette.SURFACE_HIGH, 22, oval = true)
+            setTextColor(Palette.MUTED)
+            background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
             layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(6) }
             contentDescription = "Delete bookmark"
             isClickable = true
@@ -270,7 +270,7 @@ class LibraryActivity : Activity() {
     private fun emptyView(): TextView = TextView(this).apply {
         text = EMPTY_TEXT
         textSize = 14f
-        setTextColor(LPalette.MUTED)
+        setTextColor(Palette.MUTED)
         gravity = Gravity.CENTER
         setLineSpacing(dp(4).toFloat(), 1f)
         setPadding(dp(24), dp(72), dp(24), dp(24))
@@ -280,7 +280,7 @@ class LibraryActivity : Activity() {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = ripple(LPalette.SURFACE, 18)
+            background = ripple(Palette.SURFACE, 18)
             setPadding(dp(14), dp(12), dp(6), dp(12))
             isClickable = true
             isFocusable = true
@@ -304,7 +304,7 @@ class LibraryActivity : Activity() {
             text = entry.title.ifBlank { entry.url }
             textSize = 15f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(LPalette.TEXT)
+            setTextColor(Palette.TEXT)
             maxLines = 2
             ellipsize = TextUtils.TruncateAt.END
         })
@@ -317,7 +317,7 @@ class LibraryActivity : Activity() {
         texts.addView(TextView(this).apply {
             text = meta.joinToString(" · ")
             textSize = 12f
-            setTextColor(if (entry.finished) LPalette.ACCENT else LPalette.MUTED)
+            setTextColor(if (entry.finished) Palette.ACCENT else Palette.MUTED)
             setPadding(0, dp(3), 0, 0)
         })
         if (!entry.finished && entry.percent in 1..99) {
@@ -332,7 +332,7 @@ class LibraryActivity : Activity() {
         val clamped = percent.coerceIn(0, 100)
         val track = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            background = rounded(LPalette.SURFACE_HIGH, 2)
+            background = rounded(Palette.SURFACE_HIGH, 2)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 dp(3)
@@ -342,7 +342,7 @@ class LibraryActivity : Activity() {
             }
         }
         track.addView(View(this).apply {
-            background = rounded(LPalette.ACCENT, 2)
+            background = rounded(Palette.ACCENT, 2)
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, clamped / 100f)
         })
         track.addView(View(this).apply {
@@ -355,8 +355,8 @@ class LibraryActivity : Activity() {
         text = "✕"
         textSize = 16f
         gravity = Gravity.CENTER
-        setTextColor(LPalette.MUTED)
-        background = ripple(LPalette.SURFACE_HIGH, 22, oval = true)
+        setTextColor(Palette.MUTED)
+        background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
         layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(6) }
         contentDescription = "Delete entry"
         isClickable = true
@@ -444,7 +444,7 @@ class LibraryActivity : Activity() {
             setColor(Color.WHITE)
             if (oval) shape = GradientDrawable.OVAL else cornerRadius = dp(radiusDp).toFloat()
         }
-        return RippleDrawable(ColorStateList.valueOf(LPalette.RIPPLE), content, mask)
+        return RippleDrawable(ColorStateList.valueOf(Palette.RIPPLE), content, mask)
     }
 
     companion object {
@@ -464,15 +464,3 @@ class LibraryActivity : Activity() {
     }
 }
 
-private object LPalette {
-    val BG = 0xFF0F1115.toInt()
-    val SURFACE = 0xFF171A21.toInt()
-    val SURFACE_HIGH = 0xFF222833.toInt()
-    val BORDER = 0xFF2C3442.toInt()
-    val TEXT = 0xFFF3F6F9.toInt()
-    val MUTED = 0xFF9AA6B6.toInt()
-    val ACCENT = 0xFF6EE7B7.toInt()
-    val AMBER = 0xFFF6C453.toInt()
-    val RED = 0xFFF87171.toInt()
-    val RIPPLE = 0x33FFFFFF
-}
