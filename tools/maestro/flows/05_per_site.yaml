@@ -8,7 +8,16 @@ tags:
 # authoritative state; the top-bar "Reader/Reader on" label still reads the
 # GLOBAL pref in 1.2.0-dev, so it is deliberately not asserted here.
 - launchApp
-- tapOn: "Edit address"
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
 - eraseText: 200
 - inputText: "http://localhost:8765/chapter1.html"
 - pressKey: Enter
@@ -43,7 +52,16 @@ tags:
     checked: false
 - tapOn: "Done"
 # Site B is a different host: it must still be ON.
-- tapOn: "Edit address"
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
 - eraseText: 200
 - inputText: "http://10.0.2.2:8765/chapter2.html"
 - pressKey: Enter
@@ -58,7 +76,16 @@ tags:
 - tapOn: "Done"
 # Persistence across process restart: A off, B on.
 - launchApp
-- tapOn: "Edit address"
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
 - eraseText: 200
 - inputText: "http://localhost:8765/chapter1.html"
 - pressKey: Enter
@@ -71,7 +98,16 @@ tags:
     text: "Reader mode"
     checked: false
 - tapOn: "Done"
-- tapOn: "Edit address"
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
 - eraseText: 200
 - inputText: "http://10.0.2.2:8765/chapter2.html"
 - pressKey: Enter

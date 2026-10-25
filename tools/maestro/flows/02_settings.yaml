@@ -13,5 +13,4 @@ tags:
 - assertVisible: "Changes are saved instantly"
 - assertVisible: "Back"
 - tapOn: "Back"
-- assertVisible: "Read"
-- assertVisible: "Address bar.*"
+- assertVisible: "More options"

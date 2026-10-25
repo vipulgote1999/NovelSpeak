@@ -142,3 +142,5 @@ flow was then updated for the new player status wording (`Playing`, not `Extract
 | 11_import_picker.yaml | EPUB/PDF import | "Import EPUB or PDF" opens the document picker | picker opens and Back returns | PASS |
 | adaptive.sh | two-pane layout | rotate landscape/portrait; address bar + Read present | no crash, controls preserved | PASS |
 | intents.sh | share intake | ACTION_SEND text reaches the reader | "Shared text"/sentence state | PASS |
+
+| 13_home.yaml | home tab | wordmark/search/shortcuts/continue; shortcut opens page | PASS |

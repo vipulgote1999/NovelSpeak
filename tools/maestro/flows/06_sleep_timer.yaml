@@ -5,7 +5,16 @@ tags:
   - sleep-timer
 ---
 - launchApp
-- tapOn: "Edit address"
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
 - eraseText: 200
 - inputText: "http://localhost:8765/chapter1.html"
 - pressKey: Enter

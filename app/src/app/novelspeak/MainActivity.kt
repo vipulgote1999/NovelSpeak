@@ -56,6 +56,7 @@ import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.PopupWindow
 import android.widget.ProgressBar
+import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.Space
 import android.widget.TextView
@@ -122,6 +123,29 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private lateinit var contentRow: LinearLayout
     private lateinit var playerCard: LinearLayout
+    private lateinit var pageHolder: FrameLayout
+    private lateinit var homeView: ScrollView
+    private lateinit var homeContinue: LinearLayout
+    private lateinit var titleRow: LinearLayout
+    private var homeVisible = false
+
+    private data class HomeShortcut(
+        val label: String,
+        val monogram: String,
+        val url: String,
+        val opensLibrary: Boolean = false
+    )
+
+    private val homeShortcuts = listOf(
+        HomeShortcut("EmpireNovel", "EN", "https://www.empirenovel.com/"),
+        HomeShortcut("Royal Road", "RR", "https://www.royalroad.com/"),
+        HomeShortcut("LightNovel", "LN", "https://www.lightnovelworld.com/"),
+        HomeShortcut("WebNovel", "WN", "https://www.webnovel.com/"),
+        HomeShortcut("Wattpad", "WP", "https://www.wattpad.com/"),
+        HomeShortcut("Gutenberg", "PG", "https://www.gutenberg.org/"),
+        HomeShortcut("Wikipedia", "WI", "https://en.m.wikipedia.org/"),
+        HomeShortcut("Library", "L", "", opensLibrary = true)
+    )
     private lateinit var library: LibraryStore
     private lateinit var bookmarks: BookmarkStore
     private lateinit var readingStats: ReadingStats
@@ -387,7 +411,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
 
         // ---- chapter title + reader toggle ----
-        val titleRow = LinearLayout(this).apply {
+        titleRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), 0, dp(10), dp(6))
@@ -605,9 +629,24 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         playerCard = card
 
         // Phone: browser above, player card below. Tablet/landscape: card beside the page.
+        // The page slot holds the WebView plus the home tab overlay.
+        pageHolder = FrameLayout(this)
+        pageHolder.addView(
+            web,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+        homeView = buildHomeView()
+        pageHolder.addView(
+            homeView,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
         contentRow = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         contentRow.addView(
-            web,
+            pageHolder,
             LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
             )
@@ -649,6 +688,261 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         updateNotificationHint()
     }
 
+    // ---- Home / new tab -----------------------------------------------------
+
+    private fun buildHomeView(): ScrollView {
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            visibility = View.GONE
+            contentDescription = "NovelSpeak home"
+            setBackgroundColor(Palette.BG)
+        }
+        val col = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(24), dp(24), dp(24))
+        }
+
+        // Wordmark: quiet serif display with one warm rule. Deliberately not a browser clone.
+        col.addView(TextView(this).apply {
+            text = "NovelSpeak"
+            textSize = 34f
+            typeface = Typeface.create("serif", Typeface.BOLD)
+            setTextColor(Palette.TEXT)
+            letterSpacing = -0.01f
+            contentDescription = "NovelSpeak"
+        })
+        col.addView(TextView(this).apply {
+            text = "A quiet place to read."
+            textSize = 13f
+            setTextColor(Palette.MUTED)
+            setPadding(0, dp(4), 0, 0)
+        })
+        col.addView(View(this).apply {
+            background = rounded(Palette.AMBER, 1)
+            layoutParams = LinearLayout.LayoutParams(dp(38), dp(2)).apply { topMargin = dp(14) }
+        })
+
+        // Search pill expands the real address bar, so there is one navigation path.
+        val search = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = ripple(Palette.SURFACE_HIGH, 26)
+            setPadding(dp(18), 0, dp(18), 0)
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Home search"
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(52)
+            ).apply { topMargin = dp(26) }
+            setOnClickListener { enterEditMode() }
+        }
+        search.addView(
+            GlyphView(this, Glyph.GLOBE, Palette.MUTED),
+            LinearLayout.LayoutParams(dp(17), dp(17)).apply { marginEnd = dp(12) }
+        )
+        search.addView(TextView(this).apply {
+            text = "Search or enter a web address"
+            textSize = 14.5f
+            setTextColor(Palette.MUTED)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+        })
+        col.addView(search)
+
+        col.addView(homeSectionTitle("Shortcuts"))
+        for (row in 0 until 2) {
+            val rowView = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            for (i in 0 until 4) {
+                val shortcut = homeShortcuts[row * 4 + i]
+                rowView.addView(
+                    homeShortcutCell(shortcut),
+                    LinearLayout.LayoutParams(
+                        0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
+                    )
+                )
+            }
+            col.addView(rowView)
+        }
+
+        val continueHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(22), 0, 0)
+        }
+        continueHeader.addView(TextView(this).apply {
+            text = "Continue reading"
+            textSize = 15f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        continueHeader.addView(TextView(this).apply {
+            text = "Library"
+            textSize = 12.5f
+            setTextColor(Palette.ACCENT)
+            setPadding(dp(10), dp(6), 0, dp(6))
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Open library"
+            setOnClickListener { startActivity(Intent(this@MainActivity, LibraryActivity::class.java)) }
+        })
+        col.addView(continueHeader)
+
+        homeContinue = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(8), 0, 0)
+        }
+        col.addView(homeContinue)
+
+        col.addView(TextView(this).apply {
+            text = "Local only: no account, no ads, no tracking."
+            textSize = 11f
+            setTextColor(Palette.MUTED)
+            setPadding(0, dp(22), 0, 0)
+        })
+
+        scroll.addView(col)
+        return scroll
+    }
+
+    private fun homeSectionTitle(label: String): TextView = TextView(this).apply {
+        text = label
+        textSize = 13f
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        setTextColor(Palette.MUTED)
+        setPadding(0, dp(24), 0, dp(8))
+    }
+
+    private fun homeShortcutCell(shortcut: HomeShortcut): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(0, dp(8), 0, dp(8))
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Shortcut " + shortcut.label
+            setOnClickListener {
+                if (shortcut.opensLibrary) {
+                    startActivity(Intent(this@MainActivity, LibraryActivity::class.java))
+                } else {
+                    hideHome()
+                    web.loadUrl(shortcut.url)
+                }
+            }
+            addView(FrameLayout(this@MainActivity).apply {
+                background = ripple(Palette.SURFACE_HIGH, 28, oval = true)
+                layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
+                addView(TextView(this@MainActivity).apply {
+                    text = shortcut.monogram
+                    textSize = 15f
+                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                    setTextColor(Palette.ACCENT)
+                    gravity = Gravity.CENTER
+                }, FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+                ))
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = shortcut.label
+                textSize = 11f
+                setTextColor(Palette.MUTED)
+                gravity = Gravity.CENTER
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+                setPadding(0, dp(6), 0, 0)
+            })
+        }
+
+    private fun refreshHome() {
+        if (!::homeContinue.isInitialized) return
+        homeContinue.removeAllViews()
+        val entries = try {
+            if (::library.isInitialized) {
+                library.listEntries().filter { !it.finished }.take(3)
+            } else {
+                emptyList()
+            }
+        } catch (t: Throwable) {
+            emptyList()
+        }
+        if (entries.isEmpty()) {
+            homeContinue.addView(TextView(this).apply {
+                text = "Chapters you open will appear here."
+                textSize = 13f
+                setTextColor(Palette.MUTED)
+                setPadding(0, dp(4), 0, dp(4))
+            })
+            return
+        }
+        for (entry in entries) {
+            homeContinue.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                background = ripple(Palette.SURFACE, 14)
+                setPadding(dp(14), dp(12), dp(14), dp(12))
+                isClickable = true
+                isFocusable = true
+                contentDescription = "Continue reading: " + entry.title
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = dp(8) }
+                setOnClickListener {
+                    pendingResumeIndex = entry.sentenceIndex
+                    hideHome()
+                    web.loadUrl(entry.url)
+                }
+                addView(TextView(this@MainActivity).apply {
+                    text = entry.title.ifBlank { entry.url }
+                    textSize = 14.5f
+                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                    setTextColor(Palette.TEXT)
+                    maxLines = 2
+                    ellipsize = TextUtils.TruncateAt.END
+                })
+                addView(TextView(this@MainActivity).apply {
+                    val site = try { app.novelspeak.adblock.UrlTools.host(entry.url) ?: "" } catch (t: Throwable) { "" }
+                    text = (if (site.isEmpty()) "" else site + " · ") + entry.percent + "%"
+                    textSize = 12f
+                    setTextColor(Palette.MUTED)
+                    setPadding(0, dp(3), 0, 0)
+                })
+            })
+        }
+    }
+
+    private fun showHome() {
+        if (!::homeView.isInitialized) return
+        if (editingUrl) exitEditMode()
+        hideKeyboard()
+        homeVisible = true
+        refreshHome()
+        homeView.visibility = View.VISIBLE
+        homeView.alpha = 0f
+        homeView.translationY = dp(12).toFloat()
+        homeView.animate().alpha(1f).translationY(0f).setDuration(220L).start()
+        web.visibility = View.GONE
+        titleRow.visibility = View.GONE
+        navCluster.visibility = View.GONE
+        addressBox.visibility = View.GONE
+        cancelEdit.visibility = View.GONE
+        // The player bar only appears on Home while audio is actually playing; otherwise
+        // the tab gets the full height (like a browser new-tab page).
+        playerCard.visibility = if (reader.state().playing) View.VISIBLE else View.GONE
+        titleView.text = "NovelSpeak"
+        updateAddressDisplay(null)
+        DiagLog.line(this, "home shown")
+    }
+
+    private fun hideHome() {
+        if (!homeVisible) return
+        homeVisible = false
+        if (homeView.visibility == View.VISIBLE) homeView.visibility = View.GONE
+        web.visibility = View.VISIBLE
+        if (::titleRow.isInitialized) titleRow.visibility = View.VISIBLE
+        if (::playerCard.isInitialized) playerCard.visibility = View.VISIBLE
+        if (::navCluster.isInitialized) navCluster.visibility = View.VISIBLE
+        if (::addressBox.isInitialized) addressBox.visibility = View.VISIBLE
+    }
+
     /** Two-pane layout above 600dp (tablets, landscape phones); single column otherwise. */
     private fun applyAdaptiveLayout() {
         if (!::contentRow.isInitialized || !::playerCard.isInitialized) return
@@ -656,13 +950,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (wide) {
             contentRow.orientation = LinearLayout.HORIZONTAL
             contentRow.gravity = Gravity.TOP
-            val webParams = web.layoutParams as? LinearLayout.LayoutParams
+            val pageParams = pageHolder.layoutParams as? LinearLayout.LayoutParams
                 ?: LinearLayout.LayoutParams(0, 0)
-            webParams.width = 0
-            webParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-            webParams.weight = 1f
-            webParams.setMargins(0, 0, 0, 0)
-            web.layoutParams = webParams
+            pageParams.width = 0
+            pageParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            pageParams.weight = 1f
+            pageParams.setMargins(0, 0, 0, 0)
+            pageHolder.layoutParams = pageParams
             val cardParams = playerCard.layoutParams as? LinearLayout.LayoutParams
                 ?: LinearLayout.LayoutParams(dp(360), ViewGroup.LayoutParams.WRAP_CONTENT)
             cardParams.width = dp(360)
@@ -673,13 +967,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         } else {
             contentRow.orientation = LinearLayout.VERTICAL
             contentRow.gravity = Gravity.NO_GRAVITY
-            val webParams = web.layoutParams as? LinearLayout.LayoutParams
+            val pageParams = pageHolder.layoutParams as? LinearLayout.LayoutParams
                 ?: LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0)
-            webParams.width = ViewGroup.LayoutParams.MATCH_PARENT
-            webParams.height = 0
-            webParams.weight = 1f
-            webParams.setMargins(0, 0, 0, 0)
-            web.layoutParams = webParams
+            pageParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+            pageParams.height = 0
+            pageParams.weight = 1f
+            pageParams.setMargins(0, 0, 0, 0)
+            pageHolder.layoutParams = pageParams
             val cardParams = playerCard.layoutParams as? LinearLayout.LayoutParams
                 ?: LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
@@ -756,6 +1050,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 favicon: Bitmap?
             ) {
                 super.onPageStarted(view, url, favicon)
+                hideHome()
                 pageLoading = true
                 progressBar.visibility = View.VISIBLE
                 progressBar.progress = 0
@@ -964,6 +1259,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private fun enterEditMode() {
         if (editingUrl) return
+        // Home hides the omnibox; the home search pill re-opens it for typing.
+        if (::addressBox.isInitialized) addressBox.visibility = View.VISIBLE
         val current = web.url ?: lastDisplayedUrl
         setEditingUi(true)
         urlBar.setText(current)
@@ -988,6 +1285,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         setEditingUi(false)
         dismissSuggestions()
         updateAddressDisplay(web.url ?: lastDisplayedUrl)
+        if (homeVisible) {
+            // Returning to Home keeps its minimal chrome.
+            if (::addressBox.isInitialized) addressBox.visibility = View.GONE
+            if (::navCluster.isInitialized) navCluster.visibility = View.GONE
+        }
     }
 
     private fun setEditingUi(editing: Boolean) {
@@ -1053,6 +1355,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
      */
     private fun updateAddressDisplay(url: String?) {
         if (!::urlDisplay.isInitialized) return
+        if (homeVisible) {
+            lastDisplayedUrl = ""
+            urlDisplay.text = "Search or enter a web address"
+            urlDisplay.setTextColor(Palette.MUTED)
+            siteGlyph.setGlyph(Glyph.GLOBE, Palette.MUTED)
+            addressBox.contentDescription = "Address bar"
+            return
+        }
         val value = url ?: ""
         lastDisplayedUrl = value
         if (value.isEmpty() || value == "about:blank") {
@@ -1144,7 +1454,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         popup.menu.add(0, MENU_PRIVACY, 13, "About & privacy")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
-                MENU_HOME -> web.loadUrl(DEFAULT_URL)
+                MENU_HOME -> showHome()
                 MENU_RELOAD -> web.reload()
                 MENU_COPY -> copyLink()
                 MENU_SHARE -> shareLink()
@@ -1427,7 +1737,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         } else {
             hideWallBanner()
         }
-        if (wall.isEmpty() && url.isNotEmpty()) {
+        // Challenge/interstitial pages must never pollute Continue reading.
+        val probe = (title + " " + (web.title ?: "")).lowercase()
+        val challengePage = probe.contains("just a moment") ||
+            probe.contains("attention required") ||
+            probe.contains("security verification") ||
+            probe.contains("checking your browser") ||
+            probe.contains("enable javascript and cookies")
+        if (wall.isEmpty() && url.isNotEmpty() && !challengePage) {
             NovelSpeakApp.instance.prefs.lastUrl = url
             val site = UrlTools.host(url) ?: ""
             val total = reader.state().total
@@ -1796,16 +2113,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         web.loadUrl(entry.url)
     }
 
+    /**
+     * Cold start opens the home tab (like a browser's new-tab page). The last chapter is one
+     * tap away in Continue reading, so a process restart never silently re-reads an old page.
+     */
     private fun openLastPosition() {
-        if (web.url == null || web.url == "about:blank") {
-            val resume = if (::library.isInitialized) library.resumeEntry() else null
-            if (resume != null && resume.sentenceIndex > 0) {
-                pendingResumeIndex = resume.sentenceIndex
-                web.loadUrl(resume.url)
-                return
-            }
-            web.loadUrl(NovelSpeakApp.instance.prefs.lastUrl ?: DEFAULT_URL)
-        }
+        showHome()
     }
 
     private fun handleShareIntent(intent: Intent?) {
@@ -2071,6 +2384,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         persistProgressThrottled(state)
         updateSleepTimerView()
         recordReadingTime(state)
+        if (homeVisible && ::playerCard.isInitialized) {
+            playerCard.visibility = if (state.playing) View.VISIBLE else View.GONE
+        }
         titleView.text = state.title.ifEmpty { web.title ?: "" }
         statusView.text = state.status
         statusView.contentDescription = "Reader status, " + state.status
@@ -2187,6 +2503,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     override fun onBackPressed() {
+        if (homeVisible) {
+            super.onBackPressed()
+            return
+        }
         if (editingUrl) {
             exitEditMode()
             return

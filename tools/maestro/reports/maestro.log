@@ -1,15 +1,16 @@
 
 Waiting for flows to complete...
-[Passed] 07 library: opened chapter appears with progress and resumes (37s)
-[Passed] 05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch (1m 41s)
+[Passed] 07 library: opened chapter appears with progress and resumes (44s)
+[Passed] 05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch (2m 12s)
 [Passed] 11 import: overflow opens the document picker for EPUB/PDF (8s)
-[Passed] 10 bookmark: bookmark current sentence, find it in Library, reopen it (31s)
-[Passed] 06 sleep timer: set 15 minutes, countdown appears, Off clears it (35s)
+[Passed] 10 bookmark: bookmark current sentence, find it in Library, reopen it (40s)
+[Passed] 06 sleep timer: set 15 minutes, countdown appears, Off clears it (42s)
 [Passed] 09 privacy: About & privacy -> Privacy & licences -> back (8s)
-[Passed] 03 read local chapter: URL loads, Read extracts, player shows sentence state (20s)
-[Passed] 02 settings: overflow opens the Settings screen and back returns (10s)
-[Passed] 01 launch: address bar and player are visible (3s)
-[Passed] 04 next chapter: Next ch follows rel=next to chapter2 (22s)
+[Passed] 03 read local chapter: URL loads, Read extracts, player shows sentence state (28s)
+[Passed] 02 settings: overflow opens the Settings screen and back returns (9s)
+[Passed] 01 launch: home tab is visible with search and shortcuts (2s)
+[Passed] 13 home: new-tab page shows wordmark, search, shortcuts, continue reading (7s)
+[Passed] 04 next chapter: Next ch follows rel=next to chapter2 (30s)
 
-10/10 Flows Passed in 4m 36s
+11/11 Flows Passed in 5m 51s
 

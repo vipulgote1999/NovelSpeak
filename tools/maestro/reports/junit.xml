@@ -1,52 +1,57 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <testsuites>
-  <testsuite name="Test Suite" device="MedTrail_API35" tests="10" failures="0" time="275.571" timestamp="2026-10-25T11:57:52">
-    <testcase id="07 library: opened chapter appears with progress and resumes" name="07 library: opened chapter appears with progress and resumes" classname="07 library: opened chapter appears with progress and resumes" file="tools/maestro/flows/07_library_resume.yaml" time="36.995" timestamp="2026-10-25T11:57:52" status="SUCCESS">
+  <testsuite name="Test Suite" device="MedTrail_API35" tests="11" failures="0" time="350.841" timestamp="2026-10-25T14:09:50">
+    <testcase id="07 library: opened chapter appears with progress and resumes" name="07 library: opened chapter appears with progress and resumes" classname="07 library: opened chapter appears with progress and resumes" file="tools/maestro/flows/07_library_resume.yaml" time="44.262" timestamp="2026-10-25T14:09:50" status="SUCCESS">
       <properties>
         <property name="tags" value="pending, library"/>
       </properties>
     </testcase>
-    <testcase id="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" name="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" classname="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" file="tools/maestro/flows/05_per_site.yaml" time="101.235" timestamp="2026-10-25T11:58:29" status="SUCCESS">
+    <testcase id="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" name="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" classname="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" file="tools/maestro/flows/05_per_site.yaml" time="131.995" timestamp="2026-10-25T14:10:35" status="SUCCESS">
       <properties>
         <property name="tags" value="pending, per-site"/>
       </properties>
     </testcase>
-    <testcase id="11 import: overflow opens the document picker for EPUB/PDF" name="11 import: overflow opens the document picker for EPUB/PDF" classname="11 import: overflow opens the document picker for EPUB/PDF" file="tools/maestro/flows/11_import_picker.yaml" time="7.949" timestamp="2026-10-25T12:00:10" status="SUCCESS">
+    <testcase id="11 import: overflow opens the document picker for EPUB/PDF" name="11 import: overflow opens the document picker for EPUB/PDF" classname="11 import: overflow opens the document picker for EPUB/PDF" file="tools/maestro/flows/11_import_picker.yaml" time="8.032" timestamp="2026-10-25T14:12:47" status="SUCCESS">
       <properties>
         <property name="tags" value="import"/>
       </properties>
     </testcase>
-    <testcase id="10 bookmark: bookmark current sentence, find it in Library, reopen it" name="10 bookmark: bookmark current sentence, find it in Library, reopen it" classname="10 bookmark: bookmark current sentence, find it in Library, reopen it" file="tools/maestro/flows/10_bookmark_sentence.yaml" time="31.285" timestamp="2026-10-25T12:00:18" status="SUCCESS">
+    <testcase id="10 bookmark: bookmark current sentence, find it in Library, reopen it" name="10 bookmark: bookmark current sentence, find it in Library, reopen it" classname="10 bookmark: bookmark current sentence, find it in Library, reopen it" file="tools/maestro/flows/10_bookmark_sentence.yaml" time="39.546" timestamp="2026-10-25T14:12:55" status="SUCCESS">
       <properties>
         <property name="tags" value="bookmark, library"/>
       </properties>
     </testcase>
-    <testcase id="06 sleep timer: set 15 minutes, countdown appears, Off clears it" name="06 sleep timer: set 15 minutes, countdown appears, Off clears it" classname="06 sleep timer: set 15 minutes, countdown appears, Off clears it" file="tools/maestro/flows/06_sleep_timer.yaml" time="35.061" timestamp="2026-10-25T12:00:50" status="SUCCESS">
+    <testcase id="06 sleep timer: set 15 minutes, countdown appears, Off clears it" name="06 sleep timer: set 15 minutes, countdown appears, Off clears it" classname="06 sleep timer: set 15 minutes, countdown appears, Off clears it" file="tools/maestro/flows/06_sleep_timer.yaml" time="42.096" timestamp="2026-10-25T14:13:34" status="SUCCESS">
       <properties>
         <property name="tags" value="pending, sleep-timer"/>
       </properties>
     </testcase>
-    <testcase id="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" name="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" classname="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" file="tools/maestro/flows/09_privacy_about.yaml" time="8.22" timestamp="2026-10-25T12:01:25" status="SUCCESS">
+    <testcase id="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" name="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" classname="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" file="tools/maestro/flows/09_privacy_about.yaml" time="8.441" timestamp="2026-10-25T14:14:16" status="SUCCESS">
       <properties>
         <property name="tags" value="pending, privacy"/>
       </properties>
     </testcase>
-    <testcase id="03 read local chapter: URL loads, Read extracts, player shows sentence state" name="03 read local chapter: URL loads, Read extracts, player shows sentence state" classname="03 read local chapter: URL loads, Read extracts, player shows sentence state" file="tools/maestro/flows/03_read_local_chapter.yaml" time="19.854" timestamp="2026-10-25T12:01:33" status="SUCCESS">
+    <testcase id="03 read local chapter: URL loads, Read extracts, player shows sentence state" name="03 read local chapter: URL loads, Read extracts, player shows sentence state" classname="03 read local chapter: URL loads, Read extracts, player shows sentence state" file="tools/maestro/flows/03_read_local_chapter.yaml" time="27.975" timestamp="2026-10-25T14:14:25" status="SUCCESS">
       <properties>
         <property name="tags" value="reading, fixture"/>
       </properties>
     </testcase>
-    <testcase id="02 settings: overflow opens the Settings screen and back returns" name="02 settings: overflow opens the Settings screen and back returns" classname="02 settings: overflow opens the Settings screen and back returns" file="tools/maestro/flows/02_settings.yaml" time="9.674" timestamp="2026-10-25T12:01:53" status="SUCCESS">
+    <testcase id="02 settings: overflow opens the Settings screen and back returns" name="02 settings: overflow opens the Settings screen and back returns" classname="02 settings: overflow opens the Settings screen and back returns" file="tools/maestro/flows/02_settings.yaml" time="9.392" timestamp="2026-10-25T14:14:53" status="SUCCESS">
       <properties>
         <property name="tags" value="baseline, smoke"/>
       </properties>
     </testcase>
-    <testcase id="01 launch: address bar and player are visible" name="01 launch: address bar and player are visible" classname="01 launch: address bar and player are visible" file="tools/maestro/flows/01_launch.yaml" time="2.884" timestamp="2026-10-25T12:02:02" status="SUCCESS">
+    <testcase id="01 launch: home tab is visible with search and shortcuts" name="01 launch: home tab is visible with search and shortcuts" classname="01 launch: home tab is visible with search and shortcuts" file="tools/maestro/flows/01_launch.yaml" time="1.826" timestamp="2026-10-25T14:15:02" status="SUCCESS">
       <properties>
         <property name="tags" value="baseline, smoke"/>
       </properties>
     </testcase>
-    <testcase id="04 next chapter: Next ch follows rel=next to chapter2" name="04 next chapter: Next ch follows rel=next to chapter2" classname="04 next chapter: Next ch follows rel=next to chapter2" file="tools/maestro/flows/04_next_chapter.yaml" time="22.389" timestamp="2026-10-25T12:02:05" status="SUCCESS">
+    <testcase id="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" name="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" classname="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" file="tools/maestro/flows/13_home.yaml" time="6.814" timestamp="2026-10-25T14:15:04" status="SUCCESS">
+      <properties>
+        <property name="tags" value="home"/>
+      </properties>
+    </testcase>
+    <testcase id="04 next chapter: Next ch follows rel=next to chapter2" name="04 next chapter: Next ch follows rel=next to chapter2" classname="04 next chapter: Next ch follows rel=next to chapter2" file="tools/maestro/flows/04_next_chapter.yaml" time="30.437" timestamp="2026-10-25T14:15:11" status="SUCCESS">
       <properties>
         <property name="tags" value="reading, fixture"/>
       </properties>

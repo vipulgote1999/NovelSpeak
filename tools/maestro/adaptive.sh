@@ -6,8 +6,8 @@ ADB="${ADB:-$HOME/Android/Sdk/platform-tools/adb}"; DEVICE="${DEVICE:-emulator-5
 dump_ui() { "$ADB" -s "$DEVICE" shell uiautomator dump /sdcard/adaptive.xml >/dev/null 2>&1; "$ADB" -s "$DEVICE" pull /sdcard/adaptive.xml /tmp/adaptive.xml >/dev/null 2>&1; }
 check() {
   dump_ui
-  if grep -q 'content-desc="Address bar' /tmp/adaptive.xml && grep -q 'text="Read"' /tmp/adaptive.xml; then
-    echo "  OK $1: address bar + Read present"
+  if grep -q 'text="Search or enter a web address"' /tmp/adaptive.xml && grep -q 'text="Shortcuts"' /tmp/adaptive.xml; then
+    echo "  OK $1: home search + shortcuts present"
     return 0
   fi
   echo "  FAIL $1"; grep -oE '(text|content-desc)="[^"]{2,50}"' /tmp/adaptive.xml | head -15; return 1

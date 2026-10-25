@@ -7,6 +7,8 @@ All notable changes to NovelSpeak are documented here. The format follows
 ## [1.2.0] - 2026-10-25
 
 ### Added
+- Home tab / new-tab page: NovelSpeak wordmark, one search pill, a curated shortcut grid for
+  popular novel sites (plus Library), and Continue-reading cards from the local library.
 - Local library with saved reading position, Continue reading, bookmarks and reading stats.
 - Share-sheet and selected-text intake; EPUB/PDF/plain-text import (PDF is text-layer only).
 - Sleep timer (15/30/45/60 min or end of chapter), engine-capped speed up to 3x, volume boost,

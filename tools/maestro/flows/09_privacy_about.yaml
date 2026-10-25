@@ -16,4 +16,4 @@ tags:
 - assertVisible: ".*no analytics.*"
 - assertVisible: "Back"
 - tapOn: "Back"
-- assertVisible: "Read"
+- assertVisible: "More options"

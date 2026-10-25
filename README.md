@@ -12,6 +12,10 @@ on-device after a one-time model download. Free file readers (ReadEra, PocketBoo
 documents but cannot open a URL; paid AI readers are good at documents but bill subscriptions and
 require accounts. This app is the combination none of them ship.
 
+**Home tab** (v1.2): opening the app lands on a quiet new-tab page — wordmark, one search field, a
+curated shortcut grid for novel sites (and Library), and *Continue reading* cards. No feed, no ads,
+no personalization profile.
+
 **Around the reader** (v1.2): local library with reading position and *Continue reading*; share-sheet
 and selected-text intake; true per-site reader mode; sleep timer (minutes or end-of-chapter); reader
 typography (font, size, family, theme, width); pronunciation dictionary applied to both engines;
