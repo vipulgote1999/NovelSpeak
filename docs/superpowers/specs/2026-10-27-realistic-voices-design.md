@@ -9,11 +9,11 @@ NovelSpeak reads novels aloud. Today only Kokoro (11 English voices) and Pocket 
 
 ## Goals
 
-- Add Kokoro multi-lang v1_1 (103 speakers, zh+en) as a model entry; reuse the Kokoro engine path with an expanded sid range and lexicon list.
-- Add Supertonic 3 (20 styles M0-M9/F0-F9, en) as a new family branch.
+- Curate Kokoro to the 2 community-favorite voices only (Heart US female, Adam US male); hide the other 9.
+- Add Supertonic 3 but expose only 2 curated styles (F1 female, M1 male).
 - Add ZipVoice distill int8 (zh+en cloning with transcript) as a new family branch, including the separate 24 kHz vocoder dependency.
 - Keep Pocket TTS (already wired) as the audio-only cloning path.
-- Add Kitten TTS nano as a low-RAM fallback family.
+- Skip Kitten and Kokoro multi-lang in v1 to keep the voice list to <=5 (revisit later).
 - Surface all new models in Settings via the existing ModelManager.MODELS loop.
 - Surface new voice lists in the voice picker for each family.
 - Gate installs behind storage/RAM checks; download on first use.

@@ -333,6 +333,15 @@ class Prefs(ctx: Context) {
         val FONT_FAMILIES = setOf("serif", "sans", "dyslexic")
         val READER_THEMES = setOf("dark", "sepia", "light")
 
+        /**
+         * Curated best-sounding Kokoro voices (sid to label). Kokoro ships 11 speakers but a
+         * novel reader only needs a couple of good ones; the ids are the sids in voices.bin.
+         */
+        val KOKORO_CURATED: List<Pair<Int, String>> = listOf(
+            0 to "Heart (US female)",
+            5 to "Adam (US male)"
+        )
+
         /** Kokoro en-v0_19 speakers, in the order stored in voices.bin. */
         val KOKORO_VOICES = listOf(
             "af" to "Heart (US female)",

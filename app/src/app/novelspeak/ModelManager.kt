@@ -162,7 +162,7 @@ object ModelManager {
                 return false
             }
             onProgress(0, "Connecting…")
-            val downloaded = download(model.url, tmp, model.sizeMb, onProgress)
+            val downloaded = downloadWithRetry(model.url, tmp, model.sizeMb, onProgress)
             if (downloaded != true) {
                 tmp.delete()
                 DiagLog.line(ctx, "download FAILED url=${model.url}")
@@ -219,6 +219,32 @@ object ModelManager {
 
     // ---- internals ----
 
+    /**
+     * Downloads [url] to [out]. Large bundles can stall for a while on a slow link before the
+     * first byte arrives, so a 60 s read timeout is used and one transient failure is retried
+     * from scratch instead of surfacing as a hard error.
+     */
+    private fun downloadWithRetry(
+        url: String,
+        out: File,
+        sizeMb: Int,
+        onProgress: (Int, String) -> Unit
+    ): Boolean? {
+        var lastError: Throwable? = null
+        for (attempt in 0 until 2) {
+            try {
+                return download(url, out, sizeMb, onProgress)
+            } catch (e: Throwable) {
+                lastError = e
+                out.delete()
+                if (attempt == 0) {
+                    onProgress(-1, "Network stalled — retrying…")
+                }
+            }
+        }
+        throw lastError ?: java.io.IOException("download failed")
+    }
+
     private fun download(url: String, out: File, sizeMb: Int, onProgress: (Int, String) -> Unit): Boolean? {
         var conn: HttpURLConnection? = null
         try {
@@ -226,8 +252,8 @@ object ModelManager {
             var redirects = 0
             while (redirects < 5) {
                 conn = (URL(current).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 20000
-                    readTimeout = 30000
+                    connectTimeout = 30000
+                    readTimeout = 60000
                     instanceFollowRedirects = false
                     setRequestProperty("User-Agent", "NovelSpeak/0.1")
                 }
@@ -246,14 +272,16 @@ object ModelManager {
                         val buf = ByteArray(128 * 1024)
                         var read = 0L
                         var lastPct = -1
+                        var lastReportedMb = -1L
                         while (true) {
                             val n = input.read(buf)
                             if (n <= 0) break
                             fos.write(buf, 0, n)
                             read += n
                             val pct = ((read * 100) / total).toInt().coerceIn(0, 99)
-                            if (pct != lastPct) {
+                            if (pct != lastPct || read / 1048576 - lastReportedMb >= 2) {
                                 lastPct = pct
+                                lastReportedMb = read / 1048576
                                 onProgress(pct, "$pct%  (${read / 1048576} / ${total / 1048576} MB)")
                             }
                         }

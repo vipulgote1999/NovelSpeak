@@ -530,7 +530,7 @@ class SherpaEngine(
             "pocket" -> listOf("" to "Default (bria) + imported clip")
             "supertonic" -> listOf("0" to "F1 (female, fast)", "1" to "M1 (male, fast)")
             "zipvoice" -> listOf("" to "Cloned (transcript)")
-            else -> listOf("0" to "Heart (US female)", "5" to "Adam (US male)")
+            else -> Prefs.KOKORO_CURATED.map { pair -> pair.first.toString() to pair.second }
         }
     }
 
