@@ -189,14 +189,17 @@ class VoicePreview(private val context: Context, private val prefs: Prefs) {
                 false
             } else {
                 val arch = System.getProperty("os.arch") ?: ""
-                val expected = when {
-                    arch.contains("aarch64") -> "arm64-v8a"
-                    arch.contains("x86_64") -> "x86_64"
-                    arch.contains("x86") -> "x86"
-                    arch.contains("arm") -> "armeabi-v7a"
-                    else -> ""
+                // Android's nativeLibraryDir uses short ABI directory names: lib/arm64 for
+                // arm64-v8a, lib/arm for armeabi-v7a, lib/x86_64 and lib/x86.
+                val nativeDir = java.io.File(dir).name
+                when {
+                    arch.contains("aarch64") ->
+                        nativeDir == "arm64" || nativeDir == "arm64-v8a"
+                    arch.contains("x86_64") -> nativeDir == "x86_64"
+                    arch.contains("x86") -> nativeDir == "x86"
+                    arch.contains("arm") -> nativeDir == "arm" || nativeDir == "armeabi-v7a"
+                    else -> false
                 }
-                expected.isNotEmpty() && dir.endsWith("/" + expected)
             }
         } catch (t: Throwable) {
             false
