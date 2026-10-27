@@ -7,10 +7,13 @@ All notable changes to NovelSpeak are documented here. The format follows
 ## [1.2.0] - 2026-10-25
 
 ### Added
-- Voice previews for every engine: a small ▶ on each voice row samples a short line through
-  the selected engine (system TTS, Kokoro's 11 voices, Pocket's cloned narrator). Previews pause
-  the reader and resume it, refuse on low-memory/ABI-mismatch devices instead of crashing, and the
-  full system voice list (400+) opens in a picker while the page shows a 20-voice shortlist.
+- On-device voice previews are now a dedicated section in Settings, independent of the active
+  engine: every installed Kokoro speaker and the Pocket narrator has a ▶ that samples a short
+  line through the offline engine, even while system TTS is selected. Previews pause/resume the
+  reader, temporarily load the auditioned model, restore the active model and selected voice,
+  and refuse on low-memory/ABI-mismatch devices instead of crashing.
+- System TTS voice previews remain available in the Voice card (20-voice shortlist plus a
+  Browse-all picker for the 400+ device voices) for comparison with the offline voices.
 - Current voice is shown in the player card ("Voice · Kokoro · Bella (US female)"), including
   device voice selection, and voice/engine changes now drop the cached engine so they apply at
   the next play instead of after a process restart.

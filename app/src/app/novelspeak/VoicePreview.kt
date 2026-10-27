@@ -26,6 +26,8 @@ class VoicePreview(private val context: Context, private val prefs: Prefs) {
     private var generation = 0
     private var resumeReader = false
     private var listening = false
+    private var modelToRestore: String? = null
+    private var sidToRestore: Int? = null
 
     private companion object {
         /** Below this, loading libonnxruntime + a neural model can abort the process. */
@@ -81,7 +83,12 @@ class VoicePreview(private val context: Context, private val prefs: Prefs) {
         }
     }
 
-    fun previewNeural(voiceId: String, label: String, onStatus: (String) -> Unit) {
+    fun previewNeural(
+        modelId: String,
+        voiceId: String,
+        label: String,
+        onStatus: (String) -> Unit
+    ) {
         if (!nativeAbiMatchesApk()) {
             listening = false
             DiagLog.line(context, "voice preview refused: ABI mismatch")
@@ -115,10 +122,21 @@ class VoicePreview(private val context: Context, private val prefs: Prefs) {
         DiagLog.line(context, "voice preview neural voice=" + voiceId + " label=" + label)
         report(onStatus, "Loading " + label + "…")
         val app = NovelSpeakApp.instance
+        // SherpaEngine chooses its model from prefs at prepare time. Point the pref at the
+        // auditioned model for that moment, then restore the user's active model.
+        sidToRestore = prefs.kokoroSid
+        DiagLog.line(context, "voice preview sid before=" + prefs.kokoroSid)
+        val previousModel = prefs.modelId
+        if (previousModel != modelId) {
+            modelToRestore = previousModel
+            prefs.modelId = modelId
+        }
         val engine = SherpaEngine(app, prefs, app.player)
         sherpa = engine
-        engine.setVoice(voiceId)
+        engine.setPreviewVoice(voiceId)
         engine.prepare { ok, message ->
+            restoreModelPref()
+            DiagLog.line(context, "voice preview sid after prepare=" + prefs.kokoroSid)
             if (gen != generation) {
                 engine.release()
                 return@prepare
@@ -199,9 +217,18 @@ class VoicePreview(private val context: Context, private val prefs: Prefs) {
             val reader = NovelSpeakApp.instance.reader
             resumeReader = reader.state().playing
             if (resumeReader) reader.pause()
+            // Free the active engine/model before loading the auditioned model; otherwise two
+            // ONNX models can be resident at once on a phone.
+            reader.invalidateEngine()
         } catch (t: Throwable) {
             resumeReader = false
         }
+    }
+
+    private fun restoreModelPref() {
+        val previous = modelToRestore ?: return
+        modelToRestore = null
+        try { prefs.modelId = previous } catch (t: Throwable) { }
     }
 
     private fun maybeResume() {
@@ -223,6 +250,12 @@ class VoicePreview(private val context: Context, private val prefs: Prefs) {
     }
 
     private fun stopInternal() {
+        restoreModelPref()
+        sidToRestore?.let {
+            DiagLog.line(context, "voice preview restoring sid=" + it + " from=" + prefs.kokoroSid)
+            try { prefs.kokoroSid = it } catch (t: Throwable) { }
+            sidToRestore = null
+        }
         try { tts?.stop() } catch (t: Throwable) { }
         try { tts?.shutdown() } catch (t: Throwable) { }
         tts = null

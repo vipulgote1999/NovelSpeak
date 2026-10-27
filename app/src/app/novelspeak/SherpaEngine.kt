@@ -377,7 +377,10 @@ class SherpaEngine(
                 val cfg = GenerationConfig(
                     generationSpeed(), // speed from the player controls, clamped to this engine
                     1.0f,               // silenceScale: HayaiTTS value
-                    if (family == "pocket") 0 else prefs.kokoroSid,
+                    // A preview sets voiceId without touching the saved selection; normal
+                    // playback leaves voiceId empty and follows prefs.kokoroSid.
+                    if (family == "pocket") 0
+                    else (voiceId.toIntOrNull() ?: prefs.kokoroSid),
                     reference ?: FloatArray(0),
                     referenceRate,
                     "",                 // Pocket needs no reference transcript
@@ -484,9 +487,15 @@ class SherpaEngine(
     }
 
     override fun setVoice(id: String) {
+        DiagLog.line(ctx, "sherpa setVoice id=" + id)
         voiceId = id
         if (family == "pocket") return
         id.toIntOrNull()?.let { prefs.kokoroSid = it }
+    }
+
+    /** Sets a voice for an audition without changing the user's saved selection. */
+    fun setPreviewVoice(id: String) {
+        voiceId = id
     }
 
     override fun currentVoiceLabel(): String {

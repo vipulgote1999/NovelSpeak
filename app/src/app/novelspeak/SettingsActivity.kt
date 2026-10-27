@@ -231,6 +231,40 @@ class SettingsActivity : Activity() {
         modelCard.addView(note("Active model: $active"))
         container.addView(modelCard)
 
+        // Auditioning is deliberately independent of the active engine: the user can hear the
+        // offline voices without switching the reader engine or changing the selected voice.
+        section("ON-DEVICE VOICE PREVIEWS")
+        val offlinePreviewCard = card()
+        val installedModels = ModelManager.MODELS.filter {
+            ModelManager.isInstalled(this, it.id)
+        }
+        if (installedModels.isEmpty()) {
+            offlinePreviewCard.addView(note(
+                "Install Kokoro or Pocket above to audition the offline voices."
+            ))
+        } else {
+            offlinePreviewCard.addView(note(
+                "Short samples from the on-device engine. Reading pauses while a sample plays; " +
+                    "your selected voice is not changed."
+            ))
+            for (model in installedModels) {
+                if (model.family == "pocket") {
+                    addOnDevicePreviewRow(
+                        offlinePreviewCard, model.id, "",
+                        "Pocket · narrator (bria clip)", "Pocket"
+                    )
+                } else {
+                    Prefs.KOKORO_VOICES.forEachIndexed { sid, voice ->
+                        addOnDevicePreviewRow(
+                            offlinePreviewCard, model.id, sid.toString(),
+                            voice.second, "Kokoro"
+                        )
+                    }
+                }
+            }
+        }
+        container.addView(offlinePreviewCard)
+
         section("VOICE")
         val voiceCard = card()
         if (prefs.engine == Prefs.ENGINE_SYSTEM) {
@@ -935,6 +969,66 @@ class SettingsActivity : Activity() {
         card.addView(row)
     }
 
+    private fun addOnDevicePreviewRow(
+        card: LinearLayout,
+        modelId: String,
+        voiceId: String,
+        label: String,
+        modelLabel: String
+    ) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(10), dp(8), dp(4), dp(8))
+            background = ripple(Palette.SURFACE_HIGH, 12)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(6) }
+            setOnClickListener { previewOnDevice(modelId, voiceId, label) }
+        }
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        texts.addView(TextView(this).apply {
+            text = label
+            textSize = 14f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+        })
+        texts.addView(TextView(this).apply {
+            text = modelLabel + " · offline sample"
+            textSize = 11.5f
+            setTextColor(Palette.MUTED)
+            setPadding(0, dp(2), 0, 0)
+        })
+        row.addView(texts)
+        row.addView(TextView(this).apply {
+            text = "▶"
+            textSize = 15f
+            gravity = Gravity.CENTER
+            setTextColor(Palette.ACCENT)
+            background = ripple(Palette.SURFACE, 22, oval = true)
+            layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
+            contentDescription = "Preview on-device voice " + label
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { previewOnDevice(modelId, voiceId, label) }
+        })
+        card.addView(row)
+    }
+
+    private fun previewOnDevice(modelId: String, voiceId: String, label: String) {
+        if (!ModelManager.isInstalled(this, modelId)) {
+            status.text = "Install " + modelId + " before previewing it"
+            Toast.makeText(this, "Install the model first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        preview.previewNeural(modelId, voiceId, label) { msg ->
+            runOnUiThread { status.text = msg }
+        }
+    }
+
     private fun previewVoice(id: String, label: String) {
         if (prefs.engine == Prefs.ENGINE_SHERPA &&
             !ModelManager.isInstalled(this, prefs.modelId)
@@ -945,7 +1039,7 @@ class SettingsActivity : Activity() {
         }
         val onStatus: (String) -> Unit = { msg -> runOnUiThread { status.text = msg } }
         if (prefs.engine == Prefs.ENGINE_SHERPA) {
-            preview.previewNeural(id, label, onStatus)
+            preview.previewNeural(prefs.modelId, id, label, onStatus)
         } else {
             preview.previewSystem(id, label, onStatus)
         }
