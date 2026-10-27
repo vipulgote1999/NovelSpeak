@@ -275,8 +275,14 @@ class SherpaEngine(
     }
 
     private fun loadReference(dir: File): FloatArray? {
+        if (family == "supertonic") return null
         val custom = prefs.pocketVoicePath
-        val file = if (custom.isNotEmpty() && File(custom).isFile) File(custom) else File(dir, "test_wavs/bria.wav")
+        var file = if (custom.isNotEmpty() && File(custom).isFile) File(custom) else File(dir, "test_wavs/bria.wav")
+        if (!file.isFile) {
+            // ZipVoice bundles ship a different default clip.
+            val tw = File(dir, "test_wavs")
+            file = tw.listFiles()?.firstOrNull { it.isFile && it.name.endsWith(".wav", true) } ?: file
+        }
         val samples = if (file.isFile) WavReader.readForCloning(file) else null
         referenceRate = WavReader.TARGET_RATE
         return samples
@@ -285,8 +291,12 @@ class SherpaEngine(
     private fun buildConfig(dir: File, family: String, provider: String = if (prefs.nnapi) "nnapi" else "cpu"): OfflineTtsConfig {
         val kokoro: OfflineTtsKokoroModelConfig
         val pocket: OfflineTtsPocketModelConfig
+        val zipvoice: OfflineTtsZipVoiceModelConfig
+        val supertonic: OfflineTtsSupertonicModelConfig
         if (family == "pocket") {
             kokoro = OfflineTtsKokoroModelConfig()
+            supertonic = OfflineTtsSupertonicModelConfig()
+            zipvoice = OfflineTtsZipVoiceModelConfig()
             pocket = OfflineTtsPocketModelConfig(
                 ModelManager.findFile(dir, listOf("lm_flow.int8.onnx", "lm_flow.onnx"))!!.absolutePath,
                 ModelManager.findFile(dir, listOf("lm_main.int8.onnx", "lm_main.onnx"))!!.absolutePath,
@@ -297,8 +307,41 @@ class SherpaEngine(
                 File(dir, "token_scores.json").absolutePath,
                 16 // HayaiTTS: pocket voice embedding cache capacity
             )
+        } else if (family == "supertonic") {
+            kokoro = OfflineTtsKokoroModelConfig()
+            pocket = OfflineTtsPocketModelConfig()
+            zipvoice = OfflineTtsZipVoiceModelConfig()
+            supertonic = OfflineTtsSupertonicModelConfig(
+                ModelManager.findFile(dir, listOf("duration_predictor.int8.onnx", "duration_predictor.onnx"))!!.absolutePath,
+                ModelManager.findFile(dir, listOf("text_encoder.int8.onnx", "text_encoder.onnx"))!!.absolutePath,
+                ModelManager.findFile(dir, listOf("vector_estimator.int8.onnx", "vector_estimator.onnx"))!!.absolutePath,
+                ModelManager.findFile(dir, listOf("vocoder.int8.onnx", "vocoder.onnx"))!!.absolutePath,
+                File(dir, "tts.json").absolutePath,
+                File(dir, "unicode_indexer.bin").absolutePath,
+                File(dir, "voice.bin").absolutePath
+            )
+        } else if (family == "zipvoice") {
+            kokoro = OfflineTtsKokoroModelConfig()
+            pocket = OfflineTtsPocketModelConfig()
+            supertonic = OfflineTtsSupertonicModelConfig()
+            val vocoderFile = if (File(dir, "vocos_24khz.onnx").isFile) File(dir, "vocos_24khz.onnx")
+                else File(File(dir.parentFile, "vocos-24khz"), "vocos_24khz.onnx")
+            zipvoice = OfflineTtsZipVoiceModelConfig(
+                ModelManager.findFile(dir, listOf("tokens.txt"))!!.absolutePath,
+                ModelManager.findFile(dir, listOf("encoder.int8.onnx", "encoder.onnx"))!!.absolutePath,
+                ModelManager.findFile(dir, listOf("decoder.int8.onnx", "decoder.onnx"))!!.absolutePath,
+                vocoderFile.absolutePath,
+                "", // dataDir
+                File(dir, "lexicon.txt").absolutePath,
+                1.0f, // featScale
+                0.5f, // tShift
+                0.1f, // targetRms
+                1.0f  // guidanceScale
+            )
         } else {
             pocket = OfflineTtsPocketModelConfig()
+            supertonic = OfflineTtsSupertonicModelConfig()
+            zipvoice = OfflineTtsZipVoiceModelConfig()
             kokoro = OfflineTtsKokoroModelConfig(
                 ModelManager.findFile(dir, listOf("model.int8.onnx", "model.onnx"))!!.absolutePath,
                 File(dir, "voices.bin").absolutePath,
@@ -314,10 +357,10 @@ class SherpaEngine(
             OfflineTtsVitsModelConfig(),
             OfflineTtsMatchaModelConfig(),
             kokoro,
-            OfflineTtsZipVoiceModelConfig(),
+            zipvoice,
             OfflineTtsKittenModelConfig(),
             pocket,
-            OfflineTtsSupertonicModelConfig(),
+            supertonic,
             prefs.threads.coerceIn(1, Runtime.getRuntime().availableProcessors()),
             false,
             provider
@@ -379,11 +422,15 @@ class SherpaEngine(
                     1.0f,               // silenceScale: HayaiTTS value
                     // A preview sets voiceId without touching the saved selection; normal
                     // playback leaves voiceId empty and follows prefs.kokoroSid.
-                    if (family == "pocket") 0
-                    else (voiceId.toIntOrNull() ?: prefs.kokoroSid),
+                    when (family) {
+                        "pocket" -> 0
+                        "supertonic" -> (voiceId.toIntOrNull() ?: prefs.supertonicStyle)
+                        "zipvoice" -> 0
+                        else -> (voiceId.toIntOrNull() ?: prefs.kokoroSid)
+                    },
                     reference ?: FloatArray(0),
                     referenceRate,
-                    "",                 // Pocket needs no reference transcript
+                    if (family == "zipvoice") prefs.zipVoiceTranscript else "",
                     8,                  // numSteps: HayaiTTS default for cloning generation
                     emptyMap()
                 )
@@ -479,18 +526,22 @@ class SherpaEngine(
     }
 
     override fun voices(): List<Pair<String, String>> {
-        return if (family == "pocket") {
-            listOf("" to "Default (bria) + imported clip")
-        } else {
-            Prefs.KOKORO_VOICES.mapIndexed { i, p -> i.toString() to p.second }
+        return when (family) {
+            "pocket" -> listOf("" to "Default (bria) + imported clip")
+            "supertonic" -> listOf("0" to "F1 (female, fast)", "1" to "M1 (male, fast)")
+            "zipvoice" -> listOf("" to "Cloned (transcript)")
+            else -> listOf("0" to "Heart (US female)", "5" to "Adam (US male)")
         }
     }
 
     override fun setVoice(id: String) {
         DiagLog.line(ctx, "sherpa setVoice id=" + id)
         voiceId = id
-        if (family == "pocket") return
-        id.toIntOrNull()?.let { prefs.kokoroSid = it }
+        when (family) {
+            "pocket", "zipvoice" -> return
+            "supertonic" -> id.toIntOrNull()?.let { prefs.supertonicStyle = it }
+            else -> id.toIntOrNull()?.let { prefs.kokoroSid = it }
+        }
     }
 
     /** Sets a voice for an audition without changing the user's saved selection. */
@@ -499,9 +550,15 @@ class SherpaEngine(
     }
 
     override fun currentVoiceLabel(): String {
-        if (family == "pocket") return "Pocket · cloned narrator"
-        val sid = prefs.kokoroSid
-        return "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(sid)?.second ?: "voice $sid")
+        return when (family) {
+            "pocket" -> "Pocket · cloned narrator"
+            "supertonic" -> "Supertonic · " + (if (prefs.supertonicStyle == 0) "F1 (female)" else "M1 (male)")
+            "zipvoice" -> "ZipVoice · cloned (transcript)"
+            else -> {
+                val sid = prefs.kokoroSid
+                "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(sid)?.second ?: "voice $sid")
+            }
+        }
     }
 
     override fun bufferedSeconds(): Float = player.bufferedSeconds()

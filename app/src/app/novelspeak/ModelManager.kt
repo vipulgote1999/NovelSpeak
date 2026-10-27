@@ -55,6 +55,36 @@ object ModelManager {
             unpackedMb = 200,
             sampleRate = 24000,
             family = "pocket"
+        ),
+        Model(
+            id = Prefs.MODEL_SUPERTONIC,
+            label = "Supertonic 3 int8 (English, 2 curated styles)",
+            url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2",
+            sha256 = "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+            sizeMb = 123,
+            unpackedMb = 180,
+            sampleRate = 24000,
+            family = "supertonic"
+        ),
+        Model(
+            id = Prefs.MODEL_ZIPVOICE,
+            label = "ZipVoice distill int8 (zh+en, transcript cloning)",
+            url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-zipvoice-distill-int8-zh-en-emilia.tar.bz2",
+            sha256 = "77219c8b40f4ee8d73a7f902305ff6c1128ef9b54461c41b4ca6ed890b6c2803",
+            sizeMb = 104,
+            unpackedMb = 160,
+            sampleRate = 24000,
+            family = "zipvoice"
+        ),
+        Model(
+            id = Prefs.MODEL_VOCOS24,
+            label = "Vocoder 24 kHz (for ZipVoice)",
+            url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/vocoder-models/vocos_24khz.onnx",
+            sha256 = "bcb3b970e384161c4d634f0bb9e999ff1c471b34c9bc0b1049a5014065ed3cc0",
+            sizeMb = 52,
+            unpackedMb = 52,
+            sampleRate = 24000,
+            family = "vocoder"
         )
     )
 
@@ -73,6 +103,19 @@ object ModelManager {
                     findFile(d, listOf("decoder.int8.onnx", "decoder.onnx")) != null &&
                     File(d, "text_conditioner.onnx").isFile &&
                     File(d, "vocab.json").isFile && File(d, "token_scores.json").isFile
+            "supertonic" -> findFile(d, listOf("duration_predictor.int8.onnx", "duration_predictor.onnx")) != null &&
+                    findFile(d, listOf("text_encoder.int8.onnx", "text_encoder.onnx")) != null &&
+                    findFile(d, listOf("vector_estimator.int8.onnx", "vector_estimator.onnx")) != null &&
+                    findFile(d, listOf("vocoder.int8.onnx", "vocoder.onnx")) != null &&
+                    File(d, "tts.json").isFile && File(d, "unicode_indexer.bin").isFile &&
+                    File(d, "voice.bin").isFile
+            "zipvoice" -> findFile(d, listOf("encoder.int8.onnx", "encoder.onnx")) != null &&
+                    findFile(d, listOf("decoder.int8.onnx", "decoder.onnx")) != null &&
+                    File(d, "tokens.txt").isFile && File(d, "lexicon.txt").isFile &&
+                    // vocoder is a separate model dir; accept if present alongside OR in vocos dir
+                    (File(d, "vocos_24khz.onnx").isFile ||
+                     File(File(d.parentFile, "vocos-24khz"), "vocos_24khz.onnx").isFile)
+            "vocoder" -> File(d, "vocos_24khz.onnx").isFile
             else -> false
         }
     }
