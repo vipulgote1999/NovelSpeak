@@ -4,7 +4,7 @@ All notable changes to NovelSpeak are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-10-25
+## [1.2.0] - 2026-10-27
 
 ### Added
 - On-device voice previews are now a dedicated section in Settings, independent of the active
@@ -42,7 +42,7 @@ All notable changes to NovelSpeak are documented here. The format follows
   ink base #0E1318 with layered surfaces, secondary/faint text tiers, mint signal #6FE7BE,
   warm amber #F4C66A, softer red #F87C7C, light icon plate #EEF2F5. All text pairs are
   WCAG-AA or better; cards gained 1dp borders and the reader CSS uses the same tokens.
-- Version 1.2.0-dev (versionCode 16); allowBackup disabled; exported media receiver permission;
+- Version 1.2.0 (versionCode 17); allowBackup disabled; exported media receiver permission;
   WebView lifecycle fixed; cleartext allowed only for loopback test hosts; model catalog in assets.
 - README positioning corrected: Chrome does support lock-screen playback; the real gap is site
   coverage and the data-sharing setting.

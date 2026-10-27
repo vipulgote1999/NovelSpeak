@@ -9,7 +9,7 @@ privacy posture (no account, no analytics, no cloud inference).
 - Build per-ABI artifacts: `ABI=arm64-v8a ./build.sh` and `ABI=armeabi-v7a ./build.sh`
   (the neural `.so`s dominate APK size; the default build is arm64-only).
 - For Play, upload an AAB or per-ABI APKs; keep `versionCode` monotonic in `app/AndroidManifest.xml`
-  (`1.2.0-dev` = 16 today).
+  (`1.2.0` = 17 today).
 - Current APK: ~15.3 MB arm64; native payload ~32 MB uncompressed, models are downloaded on demand.
 - Permissions must stay at the current five (INTERNET, ACCESS_NETWORK_STATE, WAKE_LOCK,
   FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK, POST_NOTIFICATIONS); no storage, location,
