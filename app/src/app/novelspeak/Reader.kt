@@ -129,6 +129,7 @@ class Reader(private val app: NovelSpeakApp) {
         val cursor: Int,
         val total: Int,
         val engine: String,
+        val voice: String,
         val status: String
     )
 
@@ -156,7 +157,10 @@ class Reader(private val app: NovelSpeakApp) {
     fun addListener(l: Listener) { if (!listeners.contains(l)) listeners.add(l) }
     fun removeListener(l: Listener) { listeners.remove(l) }
 
-    fun state() = State(playing, title, cursor, sentences.size, engineName, status)
+    fun state() = State(
+        playing, title, cursor, sentences.size, engineName,
+        engine?.currentVoiceLabel() ?: "", status
+    )
 
     private fun notifyState() {
         val s = state()
@@ -335,6 +339,19 @@ class Reader(private val app: NovelSpeakApp) {
     }
 
     fun toggle() { if (playing) pause() else play() }
+
+    /**
+     * Drops the prepared engine so a changed engine/voice applies on the next play. Without
+     * this, Settings wrote the new preference but the cached engine kept the old voice.
+     */
+    fun invalidateEngine() {
+        stopInternal()
+        engine?.release()
+        engine = null
+        engineName = ""
+        status = if (sentences.isEmpty()) "Idle" else "Ready · " + sentences.size + " sentences"
+        notifyState()
+    }
 
     fun nextSentence() {
         if (cursor < sentences.size - 1) seek(cursor + 1)

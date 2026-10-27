@@ -146,3 +146,5 @@ flow was then updated for the new player status wording (`Playing`, not `Extract
 | 13_home.yaml | home tab | wordmark/search/shortcuts/continue; shortcut opens page | PASS |
 | 14_read_restart.yaml | reader | Read restarts current chapter at sentence 1 | PASS |
 | 15_next_fallback.yaml | reader | Next ch advances numbered URL without a next anchor | PASS |
+| 16_transport.yaml | reader | voice label, next/prev sentence, speed, stop, restart | PASS |
+| 17_voice_preview.yaml | settings | voice rows preview a sample to completion | PASS |

@@ -81,7 +81,9 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
 
     override fun prepare(onResult: (Boolean, String?) -> Unit) {
         if (isReady) { onResult(true, null); return }
-        DiagLog.line(ctx, "tts init start")
+        // Restore the saved device voice before the first synthesis call.
+        voiceId = prefs.systemVoice.ifEmpty { null }
+        DiagLog.line(ctx, "tts init start voice=" + (voiceId ?: "default"))
         tts = TextToSpeech(ctx) { status ->
             try {
                 if (status == TextToSpeech.SUCCESS) {
@@ -456,6 +458,19 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
 
     override fun setVoice(id: String) {
         voiceId = id.ifEmpty { null }
+    }
+
+    override fun currentVoiceLabel(): String {
+        val saved = prefs.systemVoiceLabel
+        if (saved.isNotEmpty()) return saved
+        val vid = voiceId ?: return "Device default"
+        return try {
+            tts?.voices?.firstOrNull { it.name == vid }?.let {
+                (it.locale?.displayName ?: it.locale?.toLanguageTag() ?: "") + " · " + it.name
+            } ?: vid
+        } catch (t: Throwable) {
+            vid
+        }
     }
 
     private companion object {

@@ -105,6 +105,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var progressView: TextView
     private lateinit var speedView: TextView
     private lateinit var engineChip: TextView
+    private lateinit var voiceView: TextView
     private lateinit var dotView: View
     private lateinit var seekBar: SeekBar
     private lateinit var playButton: FrameLayout
@@ -557,6 +558,18 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         statusRow.addView(engineChip)
         card.addView(statusRow)
 
+        voiceView = TextView(this).apply {
+            text = ""
+            textSize = 10.5f
+            setTextColor(Palette.MUTED)
+            setPadding(dp(2), dp(2), 0, 0)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            contentDescription = "Current voice"
+            visibility = View.GONE
+        }
+        card.addView(voiceView)
+
         val progressRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -648,6 +661,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             setPadding(0, dp(6), 0, 0)
         }
         transportRow.addView(iconButton(Glyph.PREV, "Previous sentence", 44) {
+            cancelAutoAdvance()
             reader.prevSentence()
         })
         playButton = iconButton(
@@ -661,6 +675,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         playGlyph = playButton.getChildAt(0) as GlyphView
         transportRow.addView(playButton)
         transportRow.addView(iconButton(Glyph.NEXT, "Next sentence", 44) {
+            cancelAutoAdvance()
             reader.nextSentence()
         })
         transportRow.addView(iconButton(Glyph.STOP, "Stop", 40) {
@@ -727,6 +742,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             override fun onStopTrackingTouch(sb: SeekBar?) {
                 uiHandler.removeCallbacks(seekingTimeout)
                 seeking = false
+                cancelAutoAdvance()
                 if (sentenceTotal > 0) reader.seek(sb?.progress ?: 0)
             }
         })
@@ -2753,6 +2769,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         statusView.contentDescription = "Reader status, " + state.status
         engineChip.text = state.engine
         engineChip.visibility = if (state.engine.isEmpty()) View.GONE else View.VISIBLE
+        val voice = currentVoiceLabel(state)
+        voiceView.text = if (voice.isEmpty()) "" else "Voice · " + voice
+        voiceView.visibility = if (voice.isEmpty()) View.GONE else View.VISIBLE
+        voiceView.contentDescription = "Current voice, " + voice
         progressView.text = if (total > 0) "${state.cursor + 1} / $total" else "0 / 0"
         speedView.text = "%.2f×".format(NovelSpeakApp.instance.prefs.speed)
         speedView.contentDescription =
@@ -2780,6 +2800,21 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         dotView.background = oval(statusColor(state))
         updateReaderButton()
         updateNotificationHint()
+    }
+
+    /** The voice the active engine will actually speak with (state first, prefs fallback). */
+    private fun currentVoiceLabel(state: Reader.State): String {
+        if (state.voice.isNotEmpty()) return state.voice
+        val p = NovelSpeakApp.instance.prefs
+        return if (p.engine == Prefs.ENGINE_SHERPA) {
+            if (p.modelId == Prefs.MODEL_POCKET) {
+                "Pocket · cloned narrator"
+            } else {
+                "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(p.kokoroSid)?.second ?: "voice")
+            }
+        } else {
+            p.systemVoiceLabel.ifEmpty { "Device default" }
+        }
     }
 
     private fun statusColor(state: Reader.State): Int {

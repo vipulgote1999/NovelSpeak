@@ -489,6 +489,12 @@ class SherpaEngine(
         id.toIntOrNull()?.let { prefs.kokoroSid = it }
     }
 
+    override fun currentVoiceLabel(): String {
+        if (family == "pocket") return "Pocket · cloned narrator"
+        val sid = prefs.kokoroSid
+        return "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(sid)?.second ?: "voice $sid")
+    }
+
     override fun bufferedSeconds(): Float = player.bufferedSeconds()
 
     /**

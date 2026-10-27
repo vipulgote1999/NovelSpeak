@@ -7,6 +7,13 @@ All notable changes to NovelSpeak are documented here. The format follows
 ## [1.2.0] - 2026-10-25
 
 ### Added
+- Voice previews for every engine: a small ▶ on each voice row samples a short line through
+  the selected engine (system TTS, Kokoro's 11 voices, Pocket's cloned narrator). Previews pause
+  the reader and resume it, refuse on low-memory/ABI-mismatch devices instead of crashing, and the
+  full system voice list (400+) opens in a picker while the page shows a 20-voice shortlist.
+- Current voice is shown in the player card ("Voice · Kokoro · Bella (US female)"), including
+  device voice selection, and voice/engine changes now drop the cached engine so they apply at
+  the next play instead of after a process restart.
 - Home tab / new-tab page: NovelSpeak wordmark, one search pill, a curated shortcut grid for
   popular novel sites (plus Library), and Continue-reading cards from the local library.
 - Local library with saved reading position, Continue reading, bookmarks and reading stats.

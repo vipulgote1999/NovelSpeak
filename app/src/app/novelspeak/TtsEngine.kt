@@ -28,6 +28,9 @@ interface TtsEngine {
 
     fun setVoice(id: String)
 
+    /** Human label of the voice this engine will speak with (for the player card). */
+    fun currentVoiceLabel(): String = ""
+
     /**
      * Seconds of audio already synthesized but not yet played. Reader uses it to keep
      * generation ahead of playback instead of only refilling when a sentence drains.

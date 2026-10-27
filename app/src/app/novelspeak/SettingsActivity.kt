@@ -15,6 +15,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
+import android.speech.tts.TextToSpeech
 import android.text.Editable
 import android.text.InputType
 import android.text.SpannableStringBuilder
@@ -58,12 +59,18 @@ class SettingsActivity : Activity() {
     private var lastMessage = ""
     private var wake: PowerManager.WakeLock? = null
     private var ticker: Runnable? = null
+    private lateinit var preview: VoicePreview
+    private var systemVoices: List<Pair<String, String>> = emptyList()
+    private var allSystemVoices: List<Pair<String, String>> = emptyList()
+    private var systemVoicesLoading = false
+    private var systemVoicesLoaded = false
     private val voiceRows = ArrayList<ChoiceRow>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyWindowTheme()
         prefs = Prefs(this)
+        preview = VoicePreview(this, prefs)
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -226,22 +233,33 @@ class SettingsActivity : Activity() {
 
         section("VOICE")
         val voiceCard = card()
-        val voices = currentVoices()
-        if (voices.isEmpty()) {
-            voiceCard.addView(note(
-                "No selectable voices for this engine. System TTS voices are chosen from " +
-                    "the device's text-to-speech settings."
-            ))
-        } else {
-            for ((id, label) in voices) {
-                val row = ChoiceRow(label, null, id == currentVoiceId()) {
-                    applyVoice(id)
-                    voiceRows.forEach { it.setChecked(it.tag == id) }
-                    status.text = "Voice: $label"
+        if (prefs.engine == Prefs.ENGINE_SYSTEM) {
+            if (!systemVoicesLoaded) {
+                voiceCard.addView(note("Loading the device's installed voices…"))
+                loadSystemVoices()
+            } else if (systemVoices.isEmpty()) {
+                voiceCard.addView(note("No installed system voices were reported by the device."))
+            } else {
+                for ((id, label) in systemVoices) addVoiceRow(voiceCard, id, label)
+                if (allSystemVoices.size > systemVoices.size) {
+                    voiceCard.addView(note(
+                        "Showing " + (systemVoices.size - 1) + " of " +
+                            (allSystemVoices.size - 1) + " installed voices."
+                    ))
+                    voiceCard.addView(pillButton("Browse all voices") { showAllVoicesDialog() })
                 }
-                row.tag = id
-                voiceRows.add(row)
-                voiceCard.addView(row)
+            }
+            voiceCard.addView(note("Current voice: " + currentVoiceLabelText()))
+        } else {
+            val voices = currentVoices()
+            if (voices.isEmpty()) {
+                voiceCard.addView(note("No selectable voices for this engine."))
+            } else {
+                for ((id, label) in voices) addVoiceRow(voiceCard, id, label)
+                voiceCard.addView(note("Current voice: " + currentVoiceLabelText()))
+                if (!ModelManager.isInstalled(this, prefs.modelId)) {
+                    voiceCard.addView(note("Install the neural model to preview these voices."))
+                }
             }
         }
         container.addView(voiceCard)
@@ -614,7 +632,7 @@ class SettingsActivity : Activity() {
 
     private fun selectEngine(sherpa: Boolean) {
         prefs.engine = if (sherpa) Prefs.ENGINE_SHERPA else Prefs.ENGINE_SYSTEM
-        NovelSpeakApp.instance.reader.stop()
+        NovelSpeakApp.instance.reader.invalidateEngine()
         status.text = if (sherpa) "Neural engine selected" else "System TTS selected"
         build()
     }
@@ -881,23 +899,124 @@ class SettingsActivity : Activity() {
                 Prefs.KOKORO_VOICES.mapIndexed { i, p -> i.toString() to p.second }
             }
         } else {
-            emptyList()
+            systemVoices
         }
     }
 
     private fun currentVoiceId(): String =
-        if (prefs.engine == Prefs.ENGINE_SHERPA && prefs.modelId != Prefs.MODEL_POCKET) {
-            prefs.kokoroSid.toString()
-        } else {
-            ""
+        when {
+            prefs.engine != Prefs.ENGINE_SHERPA -> prefs.systemVoice
+            prefs.modelId == Prefs.MODEL_POCKET -> ""
+            else -> prefs.kokoroSid.toString()
         }
 
-    private fun applyVoice(id: String) {
-        if (prefs.modelId == Prefs.MODEL_POCKET) {
-            prefs.pocketVoicePath = ""
-        } else {
-            id.toIntOrNull()?.let { prefs.kokoroSid = it }
+    private fun currentVoiceLabelText(): String {
+        if (prefs.engine != Prefs.ENGINE_SHERPA) {
+            return prefs.systemVoiceLabel.ifEmpty { "Device default" }
         }
+        if (prefs.modelId == Prefs.MODEL_POCKET) return "Pocket · cloned narrator"
+        return "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(prefs.kokoroSid)?.second ?: "voice")
+    }
+
+    private fun addVoiceRow(card: LinearLayout, id: String, label: String) {
+        val row = ChoiceRow(
+            title = label,
+            subtitle = null,
+            checked = id == currentVoiceId(),
+            onPreview = { previewVoice(id, label) },
+            onClick = {
+                applyVoice(id)
+                voiceRows.forEach { it.setChecked(it.tag == id) }
+                status.text = "Voice: " + label
+            }
+        )
+        row.tag = id
+        voiceRows.add(row)
+        card.addView(row)
+    }
+
+    private fun previewVoice(id: String, label: String) {
+        if (prefs.engine == Prefs.ENGINE_SHERPA &&
+            !ModelManager.isInstalled(this, prefs.modelId)
+        ) {
+            status.text = "Install the neural model before previewing its voices"
+            Toast.makeText(this, "Install the model first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val onStatus: (String) -> Unit = { msg -> runOnUiThread { status.text = msg } }
+        if (prefs.engine == Prefs.ENGINE_SHERPA) {
+            preview.previewNeural(id, label, onStatus)
+        } else {
+            preview.previewSystem(id, label, onStatus)
+        }
+    }
+
+    /** Loads installed system voices once; the list is rebuilt when ready. */
+    private fun loadSystemVoices() {
+        if (systemVoicesLoading || systemVoicesLoaded) return
+        systemVoicesLoading = true
+        var created: TextToSpeech? = null
+        created = TextToSpeech(this) { status ->
+            var list: List<Pair<String, String>> = emptyList()
+            if (status == TextToSpeech.SUCCESS) {
+                list = try {
+                    (created?.voices ?: emptySet())
+                        .filter { it.locale != null }
+                        .sortedWith(compareBy({ it.locale.toLanguageTag() }, { it.name }))
+                        .map { it.name to (it.locale.displayName + " · " + it.name) }
+                } catch (t: Throwable) {
+                    emptyList()
+                }
+            }
+            try { created?.shutdown() } catch (t: Throwable) { }
+            ui.post {
+                allSystemVoices = if (list.isEmpty()) emptyList()
+                    else listOf("" to "Device default") + list
+                // Google TTS can expose 400+ voices; rendering all rows would stall the page.
+                // Show a device-language/English-first shortlist and offer a full picker.
+                val deviceLang = java.util.Locale.getDefault().language
+                val preferred = list.filter {
+                    it.second.lowercase().startsWith(java.util.Locale.getDefault().displayName.lowercase())
+                        || it.second.lowercase().contains("english")
+                }
+                val shortlist = (preferred + list.filter { it !in preferred }).take(20)
+                systemVoices = if (shortlist.isEmpty()) emptyList()
+                    else listOf("" to "Device default") + shortlist
+                systemVoicesLoaded = true
+                systemVoicesLoading = false
+                if (!isFinishing && !isDestroyed) build()
+            }
+        }
+    }
+
+    private fun showAllVoicesDialog() {
+        val labels = allSystemVoices.map { it.second }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("System voices (" + (labels.size - 1) + ")")
+            .setItems(labels) { _, which ->
+                val (id, label) = allSystemVoices[which]
+                applyVoice(id)
+                voiceRows.forEach { it.setChecked(it.tag == id) }
+                status.text = "Voice: " + label
+                previewVoice(id, label)
+                build()
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun applyVoice(id: String) {
+        when {
+            prefs.engine != Prefs.ENGINE_SHERPA -> {
+                prefs.systemVoice = id
+                prefs.systemVoiceLabel = if (id.isEmpty()) "Device default"
+                    else systemVoices.firstOrNull { it.first == id }?.second ?: id
+            }
+            prefs.modelId == Prefs.MODEL_POCKET -> prefs.pocketVoicePath = ""
+            else -> id.toIntOrNull()?.let { prefs.kokoroSid = it }
+        }
+        // Drop the cached engine so the next Play uses the selected voice.
+        NovelSpeakApp.instance.reader.invalidateEngine()
     }
 
     private fun downloadModel(m: ModelManager.Model) {
@@ -1025,6 +1144,7 @@ class SettingsActivity : Activity() {
 
     override fun onDestroy() {
         if (!installing) stopInstallUi()
+        preview.release()
         super.onDestroy()
     }
 
@@ -1405,6 +1525,7 @@ class SettingsActivity : Activity() {
         title: String,
         subtitle: String?,
         checked: Boolean,
+        onPreview: (() -> Unit)? = null,
         onClick: () -> Unit
     ) : LinearLayout(this@SettingsActivity) {
         private val ringView = FrameLayout(this@SettingsActivity)
@@ -1446,6 +1567,20 @@ class SettingsActivity : Activity() {
                 })
             }
             addView(texts)
+            if (onPreview != null) {
+                addView(TextView(this@SettingsActivity).apply {
+                    text = "▶"
+                    textSize = 14f
+                    gravity = Gravity.CENTER
+                    setTextColor(Palette.ACCENT)
+                    background = ripple(Palette.SURFACE, 20, oval = true)
+                    layoutParams = LayoutParams(dp(40), dp(40))
+                    contentDescription = "Preview " + title
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { onPreview.invoke() }
+                })
+            }
             setOnClickListener { onClick() }
         }
 

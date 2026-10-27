@@ -56,6 +56,16 @@ class Prefs(ctx: Context) {
         get() = sp.getString(K_MODEL, MODEL_KOKORO) ?: MODEL_KOKORO
         set(v) = sp.edit().putString(K_MODEL, v).apply()
 
+    /** Selected Android system TTS voice name ("" = device default). */
+    var systemVoice: String
+        get() = sp.getString(K_SYSTEM_VOICE, "") ?: ""
+        set(v) = sp.edit().putString(K_SYSTEM_VOICE, v).apply()
+
+    /** Human label for [systemVoice], shown in the player card and Settings. */
+    var systemVoiceLabel: String
+        get() = sp.getString(K_SYSTEM_VOICE_LABEL, "") ?: ""
+        set(v) = sp.edit().putString(K_SYSTEM_VOICE_LABEL, v).apply()
+
     /** Kokoro speaker index; NekoSpeak default voice is af_heart (sid 0 in sherpa's en bundle). */
     var kokoroSid: Int
         get() = sp.getInt(K_SID, 0)
@@ -269,6 +279,8 @@ class Prefs(ctx: Context) {
         private const val K_ENGINE = "engine"
         private const val K_MODEL = "model"
         private const val K_SID = "kokoro_sid"
+        private const val K_SYSTEM_VOICE = "system_voice"
+        private const val K_SYSTEM_VOICE_LABEL = "system_voice_label"
         private const val K_POCKET_VOICE = "pocket_voice"
         private const val K_SPEED = "speed"
         private const val K_THREADS = "threads"
