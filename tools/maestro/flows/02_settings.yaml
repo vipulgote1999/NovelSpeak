@@ -1,5 +1,5 @@
 appId: app.novelspeak
-name: "02 settings: overflow opens the Settings screen and back returns"
+name: "02 settings: hub categories open a subpage and back returns"
 tags:
   - baseline
   - smoke
@@ -9,8 +9,18 @@ tags:
 - assertVisible: "NovelSpeak settings"
 - tapOn: "NovelSpeak settings"
 - assertVisible: "Settings"
-- assertVisible: "SPEECH ENGINE"
-- assertVisible: "Changes are saved instantly"
-- assertVisible: "Back"
+- assertVisible: "Reading aloud"
+- assertVisible: "Voices & previews"
+- assertVisible: "Playback & sleep"
+- assertVisible: "Reading & display"
+- assertVisible: "Privacy & data"
+- assertVisible: "Advanced"
+- assertVisible: "Changes are saved instantly.*"
+- tapOn: "Reading aloud"
+- assertVisible: "Engine & models"
+- assertVisible: "Speech engine"
+- assertVisible: "Neural model"
 - tapOn: "Back"
-- assertVisible: "More options"
+- assertVisible: "Reading aloud"
+- tapOn: "Back"
+- assertVisible: "Shortcuts"

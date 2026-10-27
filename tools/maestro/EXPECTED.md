@@ -148,3 +148,4 @@ flow was then updated for the new player status wording (`Playing`, not `Extract
 | 15_next_fallback.yaml | reader | Next ch advances numbered URL without a next anchor | PASS |
 | 16_transport.yaml | reader | voice label, next/prev sentence, speed, stop, restart | PASS |
 | 17_voice_preview.yaml | settings | voice rows preview a sample to completion | PASS |
+| 18_settings_hub.yaml | settings | every hub category opens and returns | PASS |

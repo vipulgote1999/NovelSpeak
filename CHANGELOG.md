@@ -33,6 +33,11 @@ All notable changes to NovelSpeak are documented here. The format follows
   library, settings features, TTS cleaner, audio DSP, EPUB and PDF importers.
 
 ### Changed
+- Settings is now a categorized hub (Reading aloud, Voices & previews, Playback & sleep,
+  Reading & display, Privacy & data, Advanced, About) with one short page per category instead
+  of one 14-section scroll. Summaries show the current engine/voice, speed, theme, ad-block state
+  and performance at a glance; the overlapping sticky footer is replaced by an inline status line,
+  section labels are sentence case, and Reset moved to Advanced.
 - Colour system unified into one semantic Palette (removed three duplicated palettes):
   ink base #0E1318 with layered surfaces, secondary/faint text tiers, mint signal #6FE7BE,
   warm amber #F4C66A, softer red #F87C7C, light icon plate #EEF2F5. All text pairs are

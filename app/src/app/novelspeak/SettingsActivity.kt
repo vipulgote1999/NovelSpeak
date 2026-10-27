@@ -66,11 +66,31 @@ class SettingsActivity : Activity() {
     private var systemVoicesLoaded = false
     private val voiceRows = ArrayList<ChoiceRow>()
 
+    private val KEY_PAGE = "settings_page"
+
+    private enum class Page(val title: String) {
+        HUB("Settings"),
+        ENGINE("Engine & models"),
+        VOICES("Voices & previews"),
+        PLAYBACK("Playback & sleep"),
+        READING("Reading & display"),
+        PRIVACY("Privacy & data"),
+        ADVANCED("Advanced")
+    }
+
+    private var page = Page.HUB
+    private val pageStack = ArrayDeque<Page>()
+    private var resetScroll = false
+    private lateinit var pageTitle: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyWindowTheme()
         prefs = Prefs(this)
         preview = VoicePreview(this, prefs)
+        savedInstanceState?.getString(KEY_PAGE)?.let { name ->
+            try { page = Page.valueOf(name) } catch (t: Throwable) { }
+        }
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -90,7 +110,6 @@ class SettingsActivity : Activity() {
         }
         scroll.addView(container)
         root.addView(scroll)
-        root.addView(buildFooter())
         setContentView(root)
         applyInsets(root)
 
@@ -142,16 +161,17 @@ class SettingsActivity : Activity() {
             contentDescription = "Back"
             isClickable = true
             isFocusable = true
-            setOnClickListener { finish() }
+            setOnClickListener { goBack() }
         }
         bar.addView(back)
-        bar.addView(TextView(this).apply {
+        pageTitle = TextView(this).apply {
             text = "Settings"
             textSize = 20f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.TEXT)
             setPadding(dp(12), 0, 0, 0)
-        })
+        }
+        bar.addView(pageTitle)
         return bar
     }
 
@@ -198,10 +218,29 @@ class SettingsActivity : Activity() {
     }
 
     private fun build() {
-        val y = scroll.scrollY
+        val y = if (resetScroll) 0 else scroll.scrollY
+        resetScroll = false
         container.removeAllViews()
         voiceRows.clear()
+        pageTitle.text = page.title
 
+        val previousStatus = if (::status.isInitialized) status.text?.toString() else null
+        status = TextView(this).apply {
+            text = previousStatus?.takeIf { it.isNotBlank() } ?: "Changes are saved instantly"
+            textSize = 12f
+            setTextColor(Palette.MUTED)
+            maxLines = 3
+            setPadding(dp(4), dp(2), dp(4), dp(10))
+        }
+        if (page != Page.HUB) container.addView(status)
+
+        if (page == Page.HUB) {
+            buildHub()
+            scroll.post { scroll.scrollTo(0, 0) }
+            return
+        }
+
+        if (page == Page.ENGINE) {
         section("SPEECH ENGINE")
         val engineCard = card()
         engineCard.addView(ChoiceRow(
@@ -220,7 +259,9 @@ class SettingsActivity : Activity() {
             selectEngine(true)
         })
         container.addView(engineCard)
+        }
 
+        if (page == Page.ENGINE) {
         section("NEURAL MODEL")
         val modelCard = card()
         ModelManager.MODELS.forEachIndexed { index, model ->
@@ -230,9 +271,21 @@ class SettingsActivity : Activity() {
         val active = ModelManager.model(prefs.modelId)?.label ?: prefs.modelId
         modelCard.addView(note("Active model: $active"))
         container.addView(modelCard)
+        }
+
+        if (page == Page.ENGINE) {
+            hubRow("Voices & previews", currentVoiceLabelText(), Page.VOICES)
+            hubRow(
+                "Speed, pitch & sleep",
+                "%.2f× speed · ".format(prefs.speed) +
+                    if (prefs.sleepTimerMinutes > 0) prefs.sleepTimerMinutes.toString() + " min sleep" else "sleep off",
+                Page.PLAYBACK
+            )
+        }
 
         // Auditioning is deliberately independent of the active engine: the user can hear the
         // offline voices without switching the reader engine or changing the selected voice.
+        if (page == Page.VOICES) {
         section("ON-DEVICE VOICE PREVIEWS")
         val offlinePreviewCard = card()
         val installedModels = ModelManager.MODELS.filter {
@@ -264,7 +317,9 @@ class SettingsActivity : Activity() {
             }
         }
         container.addView(offlinePreviewCard)
+        }
 
+        if (page == Page.VOICES) {
         section("VOICE")
         val voiceCard = card()
         if (prefs.engine == Prefs.ENGINE_SYSTEM) {
@@ -297,8 +352,10 @@ class SettingsActivity : Activity() {
             }
         }
         container.addView(voiceCard)
+        }
 
-        section("TUNING")
+        if (page == Page.PLAYBACK) {
+        section("Speed")
         val tuningCard = card()
         // P0.6: the slider ceiling follows the active engine's own limit, so a 2.0-3.0x
         // interface can never silently promise more than the engine produces.
@@ -314,29 +371,12 @@ class SettingsActivity : Activity() {
         tuningCard.addView(note(
             "Speech speed is capped by the active engine at " + (maxSpeedPct / 100f) + "×."
         ))
-        sliderRow(tuningCard, "Sentence look-ahead", 0, 5, prefs.prefetch) { v ->
-            prefs.prefetch = v
-            "$v sentence(s)"
-        }
-        sliderRow(
-            tuningCard, "Synthesis threads", 1,
-            Runtime.getRuntime().availableProcessors(), prefs.threads
-        ) { v ->
-            prefs.threads = v
-            "$v thread(s)"
-        }
-        sliderRow(tuningCard, "Max sentence length", 80, 400, prefs.maxSentenceChars) { v ->
-            prefs.maxSentenceChars = v
-            "$v chars"
-        }
         container.addView(tuningCard)
+        }
 
+        if (page == Page.READING) {
         section("READING")
         val readingCard = card()
-        toggleRow(
-            readingCard, "Hardware acceleration (NNAPI)",
-            "Falls back to CPU when the provider is unsupported", prefs.nnapi
-        ) { prefs.nnapi = it }
         toggleRow(
             readingCard, "Highlight spoken paragraph",
             "Keep the active paragraph tinted while reading", prefs.highlight
@@ -354,9 +394,11 @@ class SettingsActivity : Activity() {
             "Hide site chrome, ads and verification dialogs", prefs.readerMode
         ) { prefs.readerMode = it }
         container.addView(readingCard)
+        }
 
         // ---- v1.2 competitive-parity sections (P1.2, P1.3, P1.5, P1.6, P1.9, P0.5, P0.10) ----
 
+        if (page == Page.PLAYBACK) {
         section("PLAYBACK", "Settings playback")
         val playbackCard = card()
         sliderRow(
@@ -380,10 +422,12 @@ class SettingsActivity : Activity() {
         }
         playbackCard.addView(note(
             "Digital gain up to +9.5 dB, and pitch up/down 20% without changing speed where " +
-                "the device supports it. Speech speed lives under Tuning."
+                "the device supports it. Speech speed is set in Speed above."
         ))
         container.addView(playbackCard)
+        }
 
+        if (page == Page.PLAYBACK) {
         section("SLEEP TIMER", "Settings sleep timer")
         val sleepCard = card()
         val sleepOptions: List<Pair<Int, String>> = listOf(
@@ -411,7 +455,9 @@ class SettingsActivity : Activity() {
                 "Resuming manually clears the timer."
         ))
         container.addView(sleepCard)
+        }
 
+        if (page == Page.READING) {
         section("READER APPEARANCE", "Settings reader appearance")
         val appearanceCard = card()
         sliderRow(
@@ -478,6 +524,33 @@ class SettingsActivity : Activity() {
             "Applies the next time a page is extracted or reloaded. Reader mode must be on."
         ))
         container.addView(appearanceCard)
+        }
+
+        if (page == Page.ADVANCED) {
+        if (page == Page.ADVANCED) {
+            section("Performance")
+            val performanceCard = card()
+            toggleRow(
+                performanceCard, "Hardware acceleration (NNAPI)",
+                "Falls back to CPU when the provider is unsupported", prefs.nnapi
+            ) { prefs.nnapi = it }
+            sliderRow(performanceCard, "Sentence look-ahead", 0, 5, prefs.prefetch) { v ->
+                prefs.prefetch = v
+                "$v sentence(s)"
+            }
+            sliderRow(
+                performanceCard, "Synthesis threads", 1,
+                Runtime.getRuntime().availableProcessors(), prefs.threads
+            ) { v ->
+                prefs.threads = v
+                "$v thread(s)"
+            }
+            sliderRow(performanceCard, "Max sentence length", 80, 400, prefs.maxSentenceChars) { v ->
+                prefs.maxSentenceChars = v
+                "$v chars"
+            }
+            container.addView(performanceCard)
+        }
 
         section("PRONUNCIATION", "Settings pronunciation")
         val pronunciationCard = card()
@@ -524,7 +597,22 @@ class SettingsActivity : Activity() {
         }
         pronunciationCard.addView(pronunciationActions)
         container.addView(pronunciationCard)
+        }
 
+        if (page == Page.ADVANCED) {
+            section("Reset")
+            val resetCard = card()
+            resetCard.addView(pillButton("Reset to tuned defaults", danger = false, topMarginDp = 0) {
+                resetDefaults()
+            })
+            resetCard.addView(note(
+                "Restores playback, reader appearance and performance defaults. Installed models and " +
+                    "your library are not touched."
+            ))
+            container.addView(resetCard)
+        }
+
+        if (page == Page.PRIVACY) {
         section("DIAGNOSTICS & PRIVACY", "Settings diagnostics")
         val diagnosticsCard = card()
         val catalog = try {
@@ -581,7 +669,9 @@ class SettingsActivity : Activity() {
                 "model downloads and filter-list updates."
         ))
         container.addView(diagnosticsCard)
+        }
 
+        if (page == Page.PLAYBACK) {
         section("AUDIO", "Settings audio")
         val audioCard = card()
         audioCard.addView(note(
@@ -604,7 +694,9 @@ class SettingsActivity : Activity() {
                 "the file to Downloads on Android 10+. WAV is uncompressed and framework-only."
         ))
         container.addView(audioCard)
+        }
 
+        if (page == Page.PRIVACY) {
         section("PERMISSIONS & BACKGROUND")
         val permissionsCard = card()
         notificationPermissionRow(permissionsCard)
@@ -616,7 +708,9 @@ class SettingsActivity : Activity() {
                 "media-playback permissions are normal permissions granted at install time."
         ))
         container.addView(permissionsCard)
+        }
 
+        if (page == Page.PRIVACY) {
         section("AD BLOCKING")
         val adblockCard = card()
         toggleRow(
@@ -660,8 +754,173 @@ class SettingsActivity : Activity() {
                 "the browser bar to disable blocking for one site."
         ))
         container.addView(adblockCard)
+        }
 
         if (y > 0) scroll.post { scroll.scrollTo(0, y) }
+    }
+
+    /** Hub: one screen, four categories and About; each row navigates to a short page. */
+    private fun buildHub() {
+        container.addView(TextView(this).apply {
+            text = "Reading, voice and privacy — grouped so common changes stay one tap away."
+            textSize = 13f
+            setTextColor(Palette.TEXT_SECONDARY)
+            setLineSpacing(dp(3).toFloat(), 1f)
+            setPadding(dp(4), dp(6), dp(4), dp(10))
+        })
+
+        hubRow("Reading aloud", engineSummary() + " · " + shortVoiceLabel(), Page.ENGINE)
+        hubRow("Voices & previews", voiceSummary(), Page.VOICES)
+        hubRow(
+            "Playback & sleep",
+            "%.2f× speed · ".format(prefs.speed) +
+                if (prefs.sleepTimerMinutes > 0) prefs.sleepTimerMinutes.toString() + " min sleep" else "sleep off",
+            Page.PLAYBACK
+        )
+        hubRow("Reading & display", readingSummary(), Page.READING)
+        hubRow("Privacy & data", privacySummary(), Page.PRIVACY)
+        hubRow("Advanced", advancedSummary(), Page.ADVANCED)
+        hubRow("About NovelSpeak", "Privacy, licences and version") {
+            startActivity(Intent(this, AboutPrivacyActivity::class.java))
+        }
+
+        container.addView(TextView(this).apply {
+            text = "Changes are saved instantly."
+            textSize = 11.5f
+            setTextColor(Palette.FAINT)
+            setPadding(dp(4), dp(18), dp(4), 0)
+        })
+    }
+
+    private fun hubRow(title: String, subtitle: String, target: Page? = null, onClick: (() -> Unit)? = null) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = ripple(Palette.SURFACE, 18)
+            setPadding(dp(16), dp(14), dp(12), dp(14))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(8) }
+            isClickable = true
+            isFocusable = true
+            contentDescription = title
+            setOnClickListener {
+                if (target != null) openPage(target) else onClick?.invoke()
+            }
+        }
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        texts.addView(TextView(this).apply {
+            text = title
+            textSize = 15.5f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+        })
+        texts.addView(TextView(this).apply {
+            text = subtitle
+            textSize = 12f
+            setTextColor(Palette.MUTED)
+            setPadding(0, dp(3), 0, 0)
+            maxLines = 1
+        })
+        row.addView(texts)
+        row.addView(TextView(this).apply {
+            text = "›"
+            textSize = 20f
+            setTextColor(Palette.FAINT)
+            gravity = Gravity.CENTER
+            setPadding(dp(8), 0, dp(4), 0)
+        })
+        container.addView(row)
+    }
+
+    private fun engineSummary(): String {
+        if (prefs.engine == Prefs.ENGINE_SHERPA) {
+            val model = ModelManager.model(prefs.modelId)?.label ?: "Neural"
+            return "Neural · " + model.substringBefore(" (")
+        }
+        return "Android system TTS"
+    }
+
+    private fun shortVoiceLabel(): String {
+        val label = currentVoiceLabelText()
+        return label.substringAfter(" · ", label)
+    }
+
+    private fun voiceSummary(): String = currentVoiceLabelText()
+
+    private fun readingSummary(): String {
+        val theme = prefs.readerTheme.replaceFirstChar { it.uppercase() }
+        val family = when (prefs.readerFontFamily) {
+            "sans" -> "Sans"
+            "dyslexic" -> "Dyslexic"
+            else -> "Serif"
+        }
+        return theme + " · " + family + " · " + prefs.readerFontScale + "%"
+    }
+
+    private fun privacySummary(): String =
+        (if (prefs.adblockEnabled) "Ads blocked" else "Ads off") + " · local only"
+
+    private fun advancedSummary(): String =
+        prefs.threads.toString() + " threads · NNAPI " + (if (prefs.nnapi) "on" else "off")
+
+    private fun openPage(target: Page) {
+        if (target == page) return
+        pageStack.addLast(page)
+        page = target
+        resetScroll = true
+        build()
+    }
+
+    private fun goBack() {
+        if (page == Page.HUB || pageStack.isEmpty()) {
+            finish()
+            return
+        }
+        page = pageStack.removeLast()
+        resetScroll = true
+        build()
+    }
+
+    override fun onBackPressed() {
+        if (page == Page.HUB) {
+            super.onBackPressed()
+        } else {
+            goBack()
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(KEY_PAGE, page.name)
+        super.onSaveInstanceState(outState)
+    }
+
+    /** Advanced: destructive reset moved off the global footer. */
+    private fun resetDefaults() {
+        prefs.speed = 1.0f
+        prefs.prefetch = 4
+        prefs.threads = 4
+        prefs.nnapi = false
+        prefs.maxSentenceChars = Prefs.DEFAULT_MAX_CHARS
+        prefs.highlight = true
+        prefs.autoScroll = true
+        prefs.readerMode = true
+        prefs.readerFontScale = 100
+        prefs.readerFontFamily = "serif"
+        prefs.readerTheme = "dark"
+        prefs.readerLineHeight = 170
+        prefs.readerWidthPx = 0
+        prefs.readerWordHighlight = false
+        prefs.ttsVolumeBoost = 1.0f
+        prefs.ttsSkipSilence = false
+        prefs.ttsPitch = 1.0f
+        prefs.sleepTimerMinutes = 0
+        prefs.modelCatalogAuto = true
+        status.text = "Defaults restored"
+        build()
     }
 
     private fun selectEngine(sherpa: Boolean) {
@@ -749,10 +1008,12 @@ class SettingsActivity : Activity() {
     }
 
     private fun section(title: String, accessibilityLabel: String? = null) {
+        val pretty = if (title.isEmpty()) title else
+            title.lowercase().replaceFirstChar { it.uppercase() }
         container.addView(TextView(this).apply {
-            text = title
-            textSize = 11f
-            letterSpacing = 0.1f
+            text = pretty
+            textSize = 12.5f
+            letterSpacing = 0.01f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.MUTED)
             setPadding(dp(4), dp(18), 0, dp(8))

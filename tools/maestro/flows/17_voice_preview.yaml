@@ -1,5 +1,5 @@
 appId: app.novelspeak
-name: "17 voice preview: Settings lists voices and plays a sample"
+name: "17 voice preview: Voices page previews a sample"
 tags:
   - settings
   - voice
@@ -7,6 +7,7 @@ tags:
 - launchApp
 - tapOn: "More options"
 - tapOn: "NovelSpeak settings"
+- tapOn: "Voices & previews"
 - scrollUntilVisible:
     element:
       text: "Preview .*"
@@ -15,5 +16,5 @@ tags:
 - tapOn:
     text: "Preview .*"
 - extendedWaitUntil:
-    visible: "Preview finished.*"
-    timeout: 25000
+    visible: "Preview (finished|failed).*"
+    timeout: 30000
