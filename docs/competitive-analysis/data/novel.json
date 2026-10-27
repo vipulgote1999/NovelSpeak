@@ -1,0 +1,1515 @@
+{
+  "generatedAt": "2026-10-24",
+  "stream": "novel",
+  "competitors": [
+    {
+      "name": "WebNovel",
+      "package": "com.qidian.Int.reader",
+      "developer": "Cloudary (Qidian)",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.qidian.Int.reader&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "Some chapters free; user-reported 24h free-novel rotation",
+        "monthly": "$9.99 (Membership_Monthly)",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Apple US IAP list 2026-10-24: 50 coins $0.99, 250 $4.99, 500 $9.99, 1000 $19.99, 2500 $49.99, 5000 $99.99; Membership $4.99; Weekly short-story membership $19.99. Play IAP range $0.99-$299.99. User-reported: 10 coins/chapter; 160-chapter book at ~$? (review 2026-10-21)."
+      },
+      "popularity": {
+        "installs": "10M+",
+        "rating": 4,
+        "ratingsCount": 450803,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Web"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [
+          "in-app 'audio book' / voice reading (engine not identified)"
+        ],
+        "voices": "user-selectable voices (count unknown)",
+        "languages": "unknown",
+        "offline": "unknown",
+        "cloning": "unknown",
+        "speedControl": "yes",
+        "streaming": "unknown",
+        "notes": "Official Q&A instructs: 'Press the Read button to select the voice and speed you want to read aloud' and a separate 'listen to novel' button. Oct-2026 reviews report regressions: freezes after first sentence, language switches (French to German), audio stops."
+      },
+      "sourcesSupported": [
+        "WebNovel owned and translated catalog only"
+      ],
+      "extraction": {
+        "engine": "",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "Chapter-based native reader; no third-party page extraction."
+      },
+      "library": {
+        "library": "yes (My Bookshelf)",
+        "bookmarks": "unknown",
+        "progressSync": "account-based; details unknown",
+        "notes": "Bookshelf + chapter progress bar per official Q&A."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "Reddit thread title: 'WebNovel Text-to-Speech Feature Needs Fixes (Android Auto / Calls ...)'; reviews: 'it keeps stopping my audio and have to restart manually'."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "yes (CN-to-EN translated catalog)",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Novels + comics/manga; My Bookshelf; chapter progress."
+      },
+      "privacy": {
+        "ads": "yes (Play: Contains ads; reviews report audible ad sound effects)",
+        "trackers": "unknown",
+        "accountRequired": "yes (Q&A: 'log in to your account')",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "Largest translated-Chinese catalog (Solo Leveling, Lord of the Mysteries)",
+        "Mature bookshelf + chapter reader + comics cross-sell",
+        "Built-in audio with voice and speed selection",
+        "10M+ installs, 450,803 Play ratings"
+      ],
+      "weaknesses": [
+        "TTS regressions in Oct-2026 releases (freeze, wrong language, stops)",
+        "Coin paywall: user-reported 10 coins/chapter, 160-chapter books",
+        "Audio ads/sound effects users cannot disable",
+        "Owned catalog only; no arbitrary web-novel URLs"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "audio book option works",
+          "large catalog"
+        ],
+        "complaints": [
+          "TTS freezes after first sentence",
+          "language switches mid-chapter",
+          "coins/paywall too expensive",
+          "ads with sound effects"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.qidian.Int.reader&hl=en&gl=US",
+          "supports": "installs 10M+, 4.0/450,803 ratings, Contains ads, IAP range"
+        },
+        {
+          "url": "https://m.webnovel.com/ask/q333045156705338",
+          "supports": "voice reading setup: voice + speed selection; 'listen to novel' button"
+        },
+        {
+          "url": "https://apps.apple.com/us/app/id1234939196",
+          "supports": "US IAP price list (coins, memberships)"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.qidian.Int.reader&hl=en&gl=US",
+          "supports": "recent Play reviews (newest + 1-star, accessed 2026-10-24)"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Wattpad",
+      "package": "wp.wattpad",
+      "developer": "Wattpad Corp",
+      "storeUrl": "https://play.google.com/store/apps/details?id=wp.wattpad&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "free+ads",
+      "pricing": {
+        "freeTier": "Millions of free stories",
+        "monthly": "unknown (Wattpad Premium)",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Play IAP range $0.99-$89.99. Apple US page returned HTTP 429 during research; exact Premium price Unknown."
+      },
+      "popularity": {
+        "installs": "100M+",
+        "rating": 3.72,
+        "ratingsCount": 5020507,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Web"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [
+          "in-app TTS (beta)"
+        ],
+        "voices": "unknown",
+        "languages": "English only (beta)",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Official support: 'Text-to-speech is a beta feature on Wattpad and it was added to thousands of stories written in English.' A 2026-10-16 review asks for auto-next: 'can u make the text to speech stories go to the next chapter automatically'."
+      },
+      "sourcesSupported": [
+        "Wattpad user-written catalog only"
+      ],
+      "extraction": {
+        "engine": "",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "no (user request 2026-10-16)",
+        "notes": "Native story reader; no external URL support."
+      },
+      "library": {
+        "library": "yes (free library)",
+        "bookmarks": "unknown",
+        "progressSync": "account-based; details unknown",
+        "notes": "Store description: 'Build your own free library'."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "No evidence of background playback controls for TTS."
+      },
+      "ux": {
+        "themes": "dark mode (support article)",
+        "typography": "unknown",
+        "translation": "no (content in 25+ languages, no in-app translate claim)",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Inline comments on paragraphs; votes; writer community."
+      },
+      "privacy": {
+        "ads": "yes (Play: Contains ads; 'ad between chapters' review 2026-10-22)",
+        "trackers": "unknown",
+        "accountRequired": "yes (login required to read/write per reviews)",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "100M+ installs and 5.0M Play ratings: largest audience in set",
+        "Community: inline comments, votes, writer tools",
+        "Offline download ('Download to read offline')",
+        "Free at point of reading"
+      ],
+      "weaknesses": [
+        "TTS is beta, English-only subset of stories",
+        "No auto-next chapter in TTS (2026 request)",
+        "Ads between chapters; login/loading failures in reviews",
+        "No arbitrary-site reading"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "free stories",
+          "community and comments"
+        ],
+        "complaints": [
+          "ad between every two chapters",
+          "login/loading failures",
+          "TTS lacks auto-next chapter",
+          "cannot download own published work"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=wp.wattpad&hl=en&gl=US",
+          "supports": "installs 100M+, 3.72/5,020,507 ratings, Contains ads, offline download, 25+ languages"
+        },
+        {
+          "url": "https://support.wattpad.com/hc/en-us/articles/360049082211-Text-to-speech",
+          "supports": "TTS beta, thousands of English stories"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=wp.wattpad&hl=en&gl=US",
+          "supports": "recent Play reviews (accessed 2026-10-24)"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "GoodNovel",
+      "package": "com.read.goodnovel",
+      "developer": "GoodNovel (Singapore New Reading Technology)",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.read.goodnovel&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "Free first chapters + daily quest coins",
+        "monthly": "unknown",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Apple US IAP list: 200 coins $1.99, 500 $4.99, 600 $5.99, 1000 $9.99, 1500 $14.99, 2000 $19.99, 5000 $49.99; Weekly Subscription $9.99; Weekly Membership $19.99. Play IAP range $0.10-$199.99."
+      },
+      "popularity": {
+        "installs": "10M+",
+        "rating": 4.55,
+        "ratingsCount": 1062103,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Web"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [],
+        "voices": "",
+        "languages": "",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "No TTS/read-aloud claim in store description and zero TTS mentions in 144 recent reviews. Description advertises 'voiceovers, sound effects' for anime-style content (Observed) but that is not evidence of novel TTS. A Facebook search snippet says GoodNovel 'added the audio feature' to an author's story - unverified."
+      },
+      "sourcesSupported": [
+        "GoodNovel owned catalog only"
+      ],
+      "extraction": {
+        "engine": "",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "Native chapter reader."
+      },
+      "library": {
+        "library": "yes (favorites/library)",
+        "bookmarks": "unknown",
+        "progressSync": "unknown",
+        "notes": "Offline reading explicitly supported."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "No TTS evidence, so playback controls Unknown."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "BookTok-style romance; daily quests and vouchers."
+      },
+      "privacy": {
+        "ads": "no (Play: no 'Contains ads' badge)",
+        "trackers": "unknown",
+        "accountRequired": "unknown",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "10M+ installs and 1.06M ratings (4.55)",
+        "Offline reading",
+        "Daily reading quests for free coins",
+        "Ad-free store listing"
+      ],
+      "weaknesses": [
+        "Coin economy: user-reported 10-15 coins/chapter rising to 35 after chapter 3",
+        "Subscription does not remove coin costs (reviews)",
+        "No confirmed built-in TTS",
+        "Owned catalog only"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "stories addictive",
+          "offline reading"
+        ],
+        "complaints": [
+          "ad promises free story then $20 paywall",
+          "coin price jumps after chapter 3",
+          "membership still requires coins",
+          "short chapters inflate cost"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.read.goodnovel&hl=en&gl=US",
+          "supports": "installs 10M+, 4.55/1,062,103 ratings, no ads badge, offline reading, IAP range"
+        },
+        {
+          "url": "https://apps.apple.com/us/app/id1503128132",
+          "supports": "US IAP price list (coins + weekly subscriptions)"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.read.goodnovel&hl=en&gl=US",
+          "supports": "recent Play reviews (accessed 2026-10-24)"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Pocket Novel",
+      "package": "com.pocketfm.novel",
+      "developer": "Pocket FM Corp",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.pocketfm.novel&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "Free chapters/coins (details unknown)",
+        "monthly": "unknown",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Play IAP range $0.49-$99.99. Apple US page returned HTTP 429; exact tiers Unknown."
+      },
+      "popularity": {
+        "installs": "10M+",
+        "rating": 4.13,
+        "ratingsCount": 26501,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [],
+        "voices": "",
+        "languages": "",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Reading app of audio-first Pocket FM. No TTS claim in description; a Hindi review asks to 'add voice to every book', suggesting voice is not universal. Unresolved."
+      },
+      "sourcesSupported": [
+        "Pocket Novel owned/translated catalog only"
+      ],
+      "extraction": {
+        "engine": "",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "Native reader + writer community."
+      },
+      "library": {
+        "library": "yes",
+        "bookmarks": "unknown",
+        "progressSync": "unknown (reviews report library deleting itself)",
+        "notes": ""
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": ""
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "yes (translated novels offered)",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Community + author tools."
+      },
+      "privacy": {
+        "ads": "yes (Play: Contains ads)",
+        "trackers": "unknown",
+        "accountRequired": "unknown",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "Parent company is audio-first (Pocket FM: 4.38, 4.67M ratings)",
+        "10M+ installs",
+        "Translated + original novels; writer community",
+        "Cross-promotion with audio dramas"
+      ],
+      "weaknesses": [
+        "Stability complaints: app will not open, profile update fails, library deletes",
+        "No confirmed built-in TTS",
+        "Reading app is secondary to the audio parent",
+        "Owned catalog only"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "story variety"
+        ],
+        "complaints": [
+          "app will not open",
+          "profile update broken",
+          "library deleted / progress lost",
+          "support pages error"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.pocketfm.novel&hl=en&gl=US",
+          "supports": "installs 10M+, 4.13/26,501 ratings, Contains ads, IAP range"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.radio.pocketfm&hl=en&gl=US",
+          "supports": "Pocket FM audio-first sibling: 4.38, 4,668,895 ratings"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.pocketfm.novel&hl=en&gl=US",
+          "supports": "recent Play reviews (accessed 2026-10-24)"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Hinovel",
+      "package": "com.aynovel.vixs",
+      "developer": "Hinovel (Hong Kong RiMing)",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.aynovel.vixs&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "Free updates + check-in coins",
+        "monthly": "$5.99 (Monthly Subscription)",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Apple US IAP list: 300 coins $2.99, 500 $4.99, 1000 $9.99, 1500 $14.99, 2000 $19.99, 3000 $29.99; Weekly Subscription $5.99; Short Stories Subscription $19.99. Play IAP range $0.99-$269.99. Users report a $20/week tier."
+      },
+      "popularity": {
+        "installs": "5M+",
+        "rating": 3.58,
+        "ratingsCount": 83351,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Web"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [],
+        "voices": "",
+        "languages": "",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "No TTS claim in store description; zero TTS mentions in 148 recent reviews. A TikTok search result ('How to Do Read Out Loud on Hinovel') suggests users ask about it - unverified."
+      },
+      "sourcesSupported": [
+        "Hinovel owned catalog only"
+      ],
+      "extraction": {
+        "engine": "",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": ""
+      },
+      "library": {
+        "library": "unknown",
+        "bookmarks": "unknown",
+        "progressSync": "unknown",
+        "notes": "Author Center at writer.hinovel.com."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": ""
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Check-in coins and tasks."
+      },
+      "privacy": {
+        "ads": "no (Play: no 'Contains ads' badge)",
+        "trackers": "unknown",
+        "accountRequired": "unknown",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "5M+ installs",
+        "Check-in/task coin economy",
+        "Author Center + writer pipeline",
+        "Ad-free store listing"
+      ],
+      "weaknesses": [
+        "Lowest rating among 5M+ apps (3.58)",
+        "Unsubscribe complaints ('NO WAY TO UNSUBSCRIBE')",
+        "Coins cover only half a story, rest subscription-only (review)",
+        "No confirmed TTS"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "free updates",
+          "coin check-ins"
+        ],
+        "complaints": [
+          "no way to unsubscribe",
+          "$20/week subscription",
+          "coins cover half the book only",
+          "bait-and-switch paywall"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.aynovel.vixs&hl=en&gl=US",
+          "supports": "installs 5M+, 3.58/83,351 ratings, no ads badge, IAP range"
+        },
+        {
+          "url": "https://apps.apple.com/us/app/id1492422313",
+          "supports": "US IAP price list (coins + weekly/monthly subscriptions)"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.aynovel.vixs&hl=en&gl=US",
+          "supports": "recent Play reviews (accessed 2026-10-24)"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "JoyRead",
+      "package": "com.whaledream.novel",
+      "developer": "UREAD Global",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.whaledream.novel&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "Coins/Pearls daily + lucky draw",
+        "monthly": "$19.99 (Monthly Membership); $9.99 subscription-month",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Apple US IAP list: 350 coins $4.99, 560 $7.99, 630 $8.99, 700 $9.99, 1400 $19.99, 1680 $23.99, 2100 $29.99; Weekly Shorts Pass $19.99. A review reports '$50 for the Novel Subscription' for the pro audiobook voice. Play IAP range $0.59-$359.99."
+      },
+      "popularity": {
+        "installs": "10M+",
+        "rating": 3.76,
+        "ratingsCount": 380216,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [
+          "in-app audio with human/quality narrators for some stories; 'pro audiobook voice' as paid tier"
+        ],
+        "voices": "multiple narrators (count unknown)",
+        "languages": "unknown",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Reviews: 'Some of the stories also have quality narrators that I use when my eyes get too tired to read' (5*, 2026-10-05); paid pro audiobook voice did not work (2*, 2026-09-08); audio stops after 3 chapters and repeats on Bluetooth (2*, 2026-10-22)."
+      },
+      "sourcesSupported": [
+        "JoyRead owned catalog + Shorts"
+      ],
+      "extraction": {
+        "engine": "",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": ""
+      },
+      "library": {
+        "library": "unknown",
+        "bookmarks": "unknown",
+        "progressSync": "unknown",
+        "notes": "Shorts + novels in one app."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "Audio 'stops after 3 chapters'; Bluetooth resume 'will repeat the same chapter' (review 2026-10-22)."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Coins, Pearls, VIP group, Lucky Draw, Shorts."
+      },
+      "privacy": {
+        "ads": "yes (Play: Contains ads; mid-read ads reported)",
+        "trackers": "unknown",
+        "accountRequired": "unknown",
+        "dataCollection": "unknown (one review alleges clipboard copying - unverified)"
+      },
+      "strengths": [
+        "10M+ installs, 380K ratings",
+        "Audiobook narrators for some stories (differentiator among readers)",
+        "Shorts + novels catalog",
+        "Daily coin/Pearl economy + VIP group"
+      ],
+      "weaknesses": [
+        "Paid pro audiobook voice reported not working",
+        "Audio stops after 3 chapters; Bluetooth repeat bug",
+        "Coin cost: one review computes 26,208 coins for one novel",
+        "Mid-read ads"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "quality narrators for some stories",
+          "lots of ways to earn coins"
+        ],
+        "complaints": [
+          "$50 audiobook subscription did not work",
+          "audio stops after 3 chapters",
+          "mid-read ads",
+          "subscription does not cover all books"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.whaledream.novel&hl=en&gl=US",
+          "supports": "installs 10M+, 3.76/380,216 ratings, Contains ads, IAP range"
+        },
+        {
+          "url": "https://apps.apple.com/us/app/id1551079603",
+          "supports": "US IAP price list (coins + memberships)"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.whaledream.novel&hl=en&gl=US",
+          "supports": "recent Play reviews incl. audiobook/narrator complaints (accessed 2026-10-24)"
+        }
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Readink",
+      "package": "com.app.android.qw.readink",
+      "developer": "Readink",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.app.android.qw.readink&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "unknown",
+        "monthly": "unknown",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Play IAP range $0.49-$239.99. No iOS listing found in US App Store search; exact tiers Unknown."
+      },
+      "popularity": {
+        "installs": "1M+",
+        "rating": 4.56,
+        "ratingsCount": 89031,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [
+          "in-app listening mode"
+        ],
+        "voices": "unknown",
+        "languages": "unknown",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Review: 'I love tat you have the option of reading or listening' (5*, 2026-10-07); quality complaint: 'readings a little choppy wish it was more natural' (4*, 2026-10-20)."
+      },
+      "sourcesSupported": [
+        "Readink owned catalog only"
+      ],
+      "extraction": {
+        "engine": "",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": ""
+      },
+      "library": {
+        "library": "yes (auto-synced)",
+        "bookmarks": "unknown",
+        "progressSync": "yes ('Auto-synced personal library across all devices')",
+        "notes": ""
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": ""
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Romance/werewolf/mafia genres; cross-device library."
+      },
+      "privacy": {
+        "ads": "no (Play: no 'Contains ads' badge)",
+        "trackers": "unknown",
+        "accountRequired": "unknown",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "4.56 rating on 89K ratings",
+        "Reading or listening option",
+        "Cross-device library sync",
+        "Ad-free store listing"
+      ],
+      "weaknesses": [
+        "TTS quality 'choppy'",
+        "Pay-to-read despite free-ad marketing",
+        "Subscription charged after cancellation (reviews)",
+        "Progress reset bug (review)"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "read or listen option",
+          "story library"
+        ],
+        "complaints": [
+          "choppy/natural-sounding voice",
+          "pay-to-read despite 'free' ads",
+          "charged after subscription cancelled",
+          "progress reset to chapter 1"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.app.android.qw.readink&hl=en&gl=US",
+          "supports": "installs 1M+, 4.56/89,031 ratings, no ads badge, cross-device library, IAP range"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.app.android.qw.readink&hl=en&gl=US",
+          "supports": "recent Play reviews incl. listening-mode quotes (accessed 2026-10-24)"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "AlphaNovel",
+      "package": "io.alpha.novel",
+      "developer": "Brailion Ventures",
+      "storeUrl": "https://play.google.com/store/apps/details?id=io.alpha.novel&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "First chapters free",
+        "monthly": "AlphaNovel Plus $6.99 or $9.99 (US IAP)",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Apple US IAP list: 100 coins $0.99, 500 $4.99, 1000 $9.99, 1500 $14.99, 2000 $19.99, 3000 $29.99; AlphaNovel Plus $6.99/$9.99; Plus+300 coins $2.99; Plus+1500 coins $9.99. A review reports '$9.99 a week'. Play IAP range $0.99-$99.99."
+      },
+      "popularity": {
+        "installs": "1M+",
+        "rating": 4.63,
+        "ratingsCount": 98842,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [
+          "audiobooks (engine unknown)"
+        ],
+        "voices": "unknown",
+        "languages": "unknown",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Only indirect evidence: reviews 'I love audio books' (4*, 2026-10-05) and an audiobook complaint (1*, 2026-09-20). No official TTS/audio documentation found."
+      },
+      "sourcesSupported": [
+        "AlphaNovel owned catalog only"
+      ],
+      "extraction": {
+        "engine": "",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": ""
+      },
+      "library": {
+        "library": "yes (favorites)",
+        "bookmarks": "unknown",
+        "progressSync": "unknown",
+        "notes": "Top charts, categories, comments."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": ""
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Author community, comments on books/chapters."
+      },
+      "privacy": {
+        "ads": "yes (Play: Contains ads; 'too many ads' review)",
+        "trackers": "unknown",
+        "accountRequired": "unknown",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "4.63 rating on 98K ratings",
+        "Audiobooks for some titles",
+        "Author/reader community and comments",
+        "Free first chapters"
+      ],
+      "weaknesses": [
+        "$9.99/week pricing called out by users",
+        "Ad frequency complaints",
+        "Ad story often differs from in-app story",
+        "No official TTS documentation"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "original stories",
+          "audio books"
+        ],
+        "complaints": [
+          "$9.99/week too expensive",
+          "too many ads",
+          "advertised story differs from app",
+          "chapters <5 pages"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=io.alpha.novel&hl=en&gl=US",
+          "supports": "installs 1M+, 4.63/98,842 ratings, Contains ads, IAP range"
+        },
+        {
+          "url": "https://apps.apple.com/us/app/id1585933612",
+          "supports": "US IAP price list (coins + AlphaNovel Plus)"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=io.alpha.novel&hl=en&gl=US",
+          "supports": "recent Play reviews incl. audio mentions (accessed 2026-10-24)"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Starynovel (Dreame)",
+      "package": "com.dreame.unlimited.gp",
+      "developer": "Stary Pte. Ltd. (Dreame Media)",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.dreame.unlimited.gp&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "subscription",
+      "pricing": {
+        "freeTier": "unknown (subscription-first)",
+        "monthly": "$14.99 Monthly Subscription; $18.99-$22.99 Membership variants",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Apple US IAP list: Monthly Subscription $14.99; Membership Subscription $18.99/$19.99/$21.99/$22.99; Monthly Bundle $14.99; Weekly Membership $19.99. Play IAP range $0.99-$175.99."
+      },
+      "popularity": {
+        "installs": "100K+",
+        "rating": 3.29,
+        "ratingsCount": 1527,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS",
+        "Web"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [],
+        "voices": "",
+        "languages": "unknown",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Audiobooks are a separate product: 'Dreame FM - Audiobooks & Story' (GLOBOOK PTE. LTD., 4.44, 31,992 ratings) advertises 'Professional narrators, High-quality recording'. A 2023 review says screen readers/TTS did not work with Dreame."
+      },
+      "sourcesSupported": [
+        "Starynovel/Dreame owned catalog only"
+      ],
+      "extraction": {
+        "engine": "",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": ""
+      },
+      "library": {
+        "library": "yes",
+        "bookmarks": "unknown",
+        "progressSync": "yes ('Sync across devices')",
+        "notes": "Subscription unlocks whole library."
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "Audio lives in Dreame FM sibling app."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "One subscription unlocks all novels."
+      },
+      "privacy": {
+        "ads": "no (Play: no 'Contains ads' badge)",
+        "trackers": "unknown",
+        "accountRequired": "unknown",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "All-you-can-read subscription positioning",
+        "Cross-device sync claim",
+        "Separate audiobook app with professional narrators",
+        "Ad-free store listing"
+      ],
+      "weaknesses": [
+        "Lowest rating in set (3.29 on only 1,527 ratings)",
+        "Subscription did not unlock purchased book (reviews)",
+        "Cannot cancel subscription (reviews)",
+        "TTS in reader unverified/broken historically"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "unlimited reading"
+        ],
+        "complaints": [
+          "subscription would not open the book",
+          "cannot cancel subscription",
+          "points/coins confusing",
+          "screen reader/TTS not working (2023)"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.dreame.unlimited.gp&hl=en&gl=US",
+          "supports": "installs 100K+, 3.29/1,527 ratings, no ads badge, sync claim, IAP range"
+        },
+        {
+          "url": "https://apps.apple.com/us/app/id1562061999",
+          "supports": "US IAP price list (subscriptions)"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.joyreading.dreamefm&hl=en&gl=US",
+          "supports": "Dreame FM audiobook sibling: 4.44, 31,992 ratings, professional narrators"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.dreame.unlimited.gp&hl=en&gl=US",
+          "supports": "recent Play reviews (accessed 2026-10-24)"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "NovelUP",
+      "package": "com.cloudview.novel",
+      "developer": "Colorful Point",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.cloudview.novel&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "Free catalog + offline downloads (ads)",
+        "monthly": "$9.99 Monthly VIP",
+        "annual": "$79.99 Yearly VIP",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Apple US IAP list: Weekly VIP $2.99, Monthly VIP $9.99, Yearly VIP $79.99; 'Creative Spark' $0.49, 'Like' $0.49, 'Update Lightning' $4.99, 'Energy Drink' $0.99, 'Luxury car' $17.99, 'Champagne' $4.99. Play IAP range $0.49-$79.99."
+      },
+      "popularity": {
+        "installs": "5M+",
+        "rating": 4.01,
+        "ratingsCount": 69492,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS"
+      ],
+      "tts": {
+        "engineType": "system (inferred)",
+        "engines": [
+          "in-app audiobook/read-aloud (engine not identified; reviews imply system TTS)"
+        ],
+        "voices": "device TTS voices (inferred)",
+        "languages": "unknown",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Reviews: 'the audio part dosnt sound like english' (4*, 2026-10-17); 'you can't even use the audiobook' (2*, 2026-10-09); 'My audiobook isn't working' (2*, 2026-08-28). Quality complaints are consistent with system-TTS output."
+      },
+      "sourcesSupported": [
+        "NovelUP aggregated web-novel catalog (not arbitrary URLs)"
+      ],
+      "extraction": {
+        "engine": "catalog downloader (aggregates web novels into app)",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "Positions itself as 'Best webnovel downloader' with offline reading."
+      },
+      "library": {
+        "library": "yes",
+        "bookmarks": "unknown",
+        "progressSync": "unknown (reviews report stories disappearing)",
+        "notes": ""
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "Audiobook breakage complaints; no evidence of background controls."
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "yes (translated web novels)",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Ad+free model; offline downloads."
+      },
+      "privacy": {
+        "ads": "yes (Play: Contains ads; description: 'Ad+Free')",
+        "trackers": "unknown",
+        "accountRequired": "unknown",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "5M+ installs; free offline downloads of web novels",
+        "Closest content model to NovelSpeak (web-novel aggregator)",
+        "Weekly VIP only $2.99",
+        "Translated web-novel catalog"
+      ],
+      "weaknesses": [
+        "Audiobook/read-aloud broken in Oct-2026 builds",
+        "Audio quality poor ('doesnt sound like english')",
+        "Stories disappear from library (reviews)",
+        "Ads + 'no subscription' marketing contradiction"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "free offline downloads",
+          "web-novel catalog"
+        ],
+        "complaints": [
+          "audiobook does not work",
+          "audio quality unintelligible",
+          "stories disappear",
+          "'no subscription' claim is false"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.cloudview.novel&hl=en&gl=US",
+          "supports": "installs 5M+, 4.01/69,492 ratings, Contains ads, offline download, IAP range"
+        },
+        {
+          "url": "https://apps.apple.com/us/app/id6446337291",
+          "supports": "US IAP price list (VIP + consumables)"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.cloudview.novel&hl=en&gl=US",
+          "supports": "recent Play reviews incl. audiobook failures (accessed 2026-10-24)"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Light Novel - Read Web Novels",
+      "package": "com.notasimplestudio.webnovelfree",
+      "developer": "Not A Simple Studio",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.notasimplestudio.webnovelfree&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "free+ads",
+      "pricing": {
+        "freeTier": "Free reading + ads; coins for downloads",
+        "monthly": "unknown",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Play IAP range $1.99-$79.99. User-reported: 'why can't I download 100 chapters with 100 coins anymore' (1*, 2026-10-20) - coin-priced downloads. Voice editing reported as paid ('editing of the voice was permanently free' request)."
+      },
+      "popularity": {
+        "installs": "1M+",
+        "rating": 4.67,
+        "ratingsCount": 20801,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [
+          "in-app voice reading (engine not identified)"
+        ],
+        "voices": "voice with paid editing/customization (reviews)",
+        "languages": "unknown",
+        "offline": "yes (download chapters)",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "Reviews: 'love the download option and voice reading only if there are less ads' (4*, 2026-10-01); 'next and prev button that shows when listening ... is practically [unusable]' (1*, 2026-10-12); 'editing of the voice' should be permanently free (1*, 2026-10-17)."
+      },
+      "sourcesSupported": [
+        "Aggregated translated Asian web novels (catalog, not arbitrary URLs)"
+      ],
+      "extraction": {
+        "engine": "catalog reader",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": "'No subscription required', download chapters for offline reading."
+      },
+      "library": {
+        "library": "yes",
+        "bookmarks": "unknown",
+        "progressSync": "yes ('Auto Sync & Continue Reading')",
+        "notes": ""
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": "Users complain about next/prev controls while listening."
+      },
+      "ux": {
+        "themes": "customizable reading experience",
+        "typography": "unknown",
+        "translation": "yes (translated light novels)",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": "Fast, clean layout; ad-supported."
+      },
+      "privacy": {
+        "ads": "yes (Play: Contains ads; 'less ads' request)",
+        "trackers": "unknown",
+        "accountRequired": "unknown",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "4.67 rating on 20.8K ratings (highest in set)",
+        "Free + ad-supported, no subscription",
+        "Offline chapter downloads",
+        "Translated Asian light novels + auto-sync"
+      ],
+      "weaknesses": [
+        "Ad load is the main complaint",
+        "Voice editing monetized; TTS controls awkward",
+        "Download pricing changed (coins)",
+        "Catalog gaps / no arbitrary URL import"
+      ],
+      "reviewThemes": {
+        "praise": [
+          "free",
+          "offline download",
+          "voice reading"
+        ],
+        "complaints": [
+          "too many ads",
+          "next/prev buttons while listening unusable",
+          "voice editing no longer free",
+          "catalog missing titles"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.notasimplestudio.webnovelfree&hl=en&gl=US",
+          "supports": "installs 1M+, 4.67/20,801 ratings, Contains ads, offline download, IAP range"
+        },
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.notasimplestudio.webnovelfree&hl=en&gl=US",
+          "supports": "recent Play reviews incl. voice-reading quotes (accessed 2026-10-24)"
+        }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "AnyStories",
+      "package": "com.yj.anystories.android",
+      "developer": "Hong Kong Zhonghe Co.",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.yj.anystories.android&hl=en&gl=US",
+      "tier": "freemium",
+      "businessModel": "freemium",
+      "pricing": {
+        "freeTier": "Coins + daily free chapters (details unknown)",
+        "monthly": "$19.99 Unlimited-19.99; $29.99 unlimited_w; $39.99 Unlimited-39.99",
+        "annual": "unknown",
+        "oneTime": "",
+        "currency": "USD",
+        "notes": "Apple US IAP list: 300 coins $2.99, 500 $4.99, 1000 $9.99, 1500 $14.99, 2000 $19.99, 3000 $29.99; Weekly Membership $39.99; Unlimited plans $19.99/$29.99/$39.99. Play IAP range $0.49-$299.99."
+      },
+      "popularity": {
+        "installs": "500K+",
+        "rating": 4.36,
+        "ratingsCount": 17290,
+        "observedAt": "2026-10-24"
+      },
+      "platforms": [
+        "Android",
+        "iOS"
+      ],
+      "tts": {
+        "engineType": "unknown",
+        "engines": [],
+        "voices": "",
+        "languages": "unknown",
+        "offline": "unknown",
+        "cloning": "no",
+        "speedControl": "unknown",
+        "streaming": "unknown",
+        "notes": "No TTS/audio claim found in store description; not verified."
+      },
+      "sourcesSupported": [
+        "AnyStories owned catalog only"
+      ],
+      "extraction": {
+        "engine": "",
+        "readAlongHighlight": "unknown",
+        "autoScroll": "unknown",
+        "autoNextChapter": "unknown",
+        "notes": ""
+      },
+      "library": {
+        "library": "unknown",
+        "bookmarks": "unknown",
+        "progressSync": "unknown",
+        "notes": ""
+      },
+      "playback": {
+        "screenOff": "unknown",
+        "mediaSession": "unknown",
+        "notification": "unknown",
+        "headsetKeys": "unknown",
+        "sleepTimer": "unknown",
+        "androidAuto": "unknown",
+        "notes": ""
+      },
+      "ux": {
+        "themes": "unknown",
+        "typography": "unknown",
+        "translation": "unknown",
+        "dictionary": "unknown",
+        "widgets": "unknown",
+        "notes": ""
+      },
+      "privacy": {
+        "ads": "yes (Play: Contains ads)",
+        "trackers": "unknown",
+        "accountRequired": "unknown",
+        "dataCollection": "unknown"
+      },
+      "strengths": [
+        "Unlimited subscription tiers ($19.99-$39.99)",
+        "500K+ installs, 4.36 rating",
+        "iOS + Android"
+      ],
+      "weaknesses": [
+        "Weekly membership $39.99 is high",
+        "No verified TTS",
+        "Owned catalog only"
+      ],
+      "reviewThemes": {
+        "praise": [],
+        "complaints": []
+      },
+      "sources": [
+        {
+          "url": "https://play.google.com/store/apps/details?id=com.yj.anystories.android&hl=en&gl=US",
+          "supports": "installs 500K+, 4.36/17,290 ratings, Contains ads, IAP range"
+        },
+        {
+          "url": "https://apps.apple.com/us/app/id1500217654",
+          "supports": "US IAP price list (coins + unlimited/weekly)"
+        }
+      ],
+      "confidence": "low"
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.qidian.Int.reader&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "WebNovel installs 10M+, 4.0 rating, 450,803 ratings, Contains ads, IAP range $0.99-$299.99"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=wp.wattpad&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "Wattpad installs 100M+, 3.72 rating, 5,020,507 ratings, offline download, 25+ languages"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.read.goodnovel&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "GoodNovel installs 10M+, 4.55 rating, 1,062,103 ratings, no ads badge, offline reading"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.pocketfm.novel&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "Pocket Novel installs 10M+, 4.13 rating, 26,501 ratings, Contains ads"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.aynovel.vixs&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "Hinovel installs 5M+, 3.58 rating, 83,351 ratings, no ads badge"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.whaledream.novel&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "JoyRead installs 10M+, 3.76 rating, 380,216 ratings, Contains ads, narrator/audio complaints"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.app.android.qw.readink&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "Readink installs 1M+, 4.56 rating, 89,031 ratings, cross-device library, no ads badge"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=io.alpha.novel&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "AlphaNovel installs 1M+, 4.63 rating, 98,842 ratings, Contains ads"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.dreame.unlimited.gp&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "Starynovel installs 100K+, 3.29 rating, 1,527 ratings, sync claim, no ads badge"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.cloudview.novel&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "NovelUP installs 5M+, 4.01 rating, 69,492 ratings, offline downloads, Ad+Free, audiobook failures"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.notasimplestudio.webnovelfree&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "Light Novel installs 1M+, 4.67 rating, 20,801 ratings, offline download, voice reading complaints"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.yj.anystories.android&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "AnyStories installs 500K+, 4.36 rating, 17,290 ratings, Contains ads"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.joyreading.dreamefm&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "Dreame FM audiobook sibling: 4.44 rating, 31,992 ratings, 'Professional narrators, High-quality recording'"
+    },
+    {
+      "url": "https://play.google.com/store/apps/details?id=com.radio.pocketfm&hl=en&gl=US",
+      "accessed": "2026-10-24",
+      "supports": "Pocket FM audio dramas sibling: 4.38 rating, 4,668,895 ratings"
+    },
+    {
+      "url": "https://support.wattpad.com/hc/en-us/articles/360049082211-Text-to-speech",
+      "accessed": "2026-10-24",
+      "supports": "Wattpad TTS is a beta feature added to thousands of English stories"
+    },
+    {
+      "url": "https://m.webnovel.com/ask/q333045156705338",
+      "accessed": "2026-10-24",
+      "supports": "WebNovel voice reading: Read button, voice + speed selection, 'listen to novel' button, chapter choice"
+    },
+    {
+      "url": "https://apps.apple.com/us/app/id1234939196",
+      "accessed": "2026-10-24",
+      "supports": "WebNovel US IAP list: 50 coins $0.99 ... 5000 coins $99.99, Membership_Monthly $9.99"
+    },
+    {
+      "url": "https://apps.apple.com/us/app/id1503128132",
+      "accessed": "2026-10-24",
+      "supports": "GoodNovel US IAP list: 200 coins $1.99 ... 5000 coins $49.99, Weekly Subscription $9.99"
+    },
+    {
+      "url": "https://apps.apple.com/us/app/id1492422313",
+      "accessed": "2026-10-24",
+      "supports": "Hinovel US IAP list: 300 coins $2.99 ... 3000 coins $29.99, Monthly/Weekly Subscription $5.99"
+    },
+    {
+      "url": "https://apps.apple.com/us/app/id1551079603",
+      "accessed": "2026-10-24",
+      "supports": "JoyRead US IAP list: 350 coins $4.99 ... 2100 coins $29.99, Monthly Membership $19.99"
+    },
+    {
+      "url": "https://apps.apple.com/us/app/id1585933612",
+      "accessed": "2026-10-24",
+      "supports": "AlphaNovel US IAP list: 100 coins $0.99 ... 3000 coins $29.99, AlphaNovel Plus $6.99/$9.99"
+    },
+    {
+      "url": "https://apps.apple.com/us/app/id1562061999",
+      "accessed": "2026-10-24",
+      "supports": "Starynovel US IAP list: Monthly Subscription $14.99, Membership $18.99-$22.99"
+    },
+    {
+      "url": "https://apps.apple.com/us/app/id6446337291",
+      "accessed": "2026-10-24",
+      "supports": "NovelUP US IAP list: Weekly VIP $2.99, Monthly VIP $9.99, Yearly VIP $79.99"
+    },
+    {
+      "url": "https://apps.apple.com/us/app/id1500217654",
+      "accessed": "2026-10-24",
+      "supports": "AnyStories US IAP list: coins $2.99-$29.99, Unlimited $19.99/$29.99/$39.99, Weekly Membership $39.99"
+    },
+    {
+      "url": "https://itunes.apple.com/lookup?id=1234939196&country=us",
+      "accessed": "2026-10-24",
+      "supports": "iOS ratings/counts used for cross-platform popularity (WebNovel 4.34/48,317; same method for other IDs)"
+    }
+  ]
+}

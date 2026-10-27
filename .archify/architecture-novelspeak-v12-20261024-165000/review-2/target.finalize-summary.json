@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/candidate.json",
+    "sha256": "4c299bdf71f475ec251c7ffc421ac1c4cd6226d333320ddbdceb58642049c84d",
+    "bytes": 7455
+  },
+  "artifact": {
+    "path": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/target.html",
+    "sha256": "17f60fcc0d9168675332fba84c7e9d3e703190bd3dc28332729fe7206a3e79f8",
+    "bytes": 777784
+  },
+  "gates": {
+    "validate": "fail",
+    "deliver": "not-run",
+    "check": "not-run",
+    "browser-check": "not-run"
+  },
+  "failedStage": "validate",
+  "diagnostics": [
+    {
+      "code": "composition/label-route-clearance",
+      "severity": "error",
+      "message": "[composition/label-route-clearance] showcase architecture label \"text blocks\" on connections[4] id \"c-extract-reader\" \"extractor\" -> \"reader\" label \"text blocks\" is 0px from connections[3] id \"c-share-reader\" \"share\" -> \"reader\" label \"shared text\" segment 1 [570, 78] -> [570, 201] (label rect [539, 196, 63, 14]; minimum 4px) — adjust labelAt, labelDx, labelDy, or labelSegment; otherwise adjust the other relationship route/via/channel.",
+      "subject": {
+        "diagramType": "architecture",
+        "collection": "connections",
+        "index": 4,
+        "id": "c-extract-reader",
+        "from": "extractor",
+        "to": "reader"
+      },
+      "evidence": {
+        "label": "text blocks",
+        "otherRelationship": {
+          "diagramType": "architecture",
+          "collection": "connections",
+          "index": 3,
+          "id": "c-share-reader",
+          "from": "share",
+          "to": "reader"
+        },
+        "segmentIndex": 1,
+        "clearancePx": 0,
+        "minimumPx": 4,
+        "labelRect": {
+          "relation": {
+            "id": "c-extract-reader",
+            "from": "extractor",
+            "to": "reader",
+            "label": "text blocks",
+            "variant": "emphasis"
+          },
+          "relationIndex": 4,
+          "label": "text blocks",
+          "x": 538.6,
+          "y": 196.05,
+          "width": 62.8,
+          "height": 14,
+          "lx": 570,
+          "ly": 206.05
+        },
+        "from": [
+          570,
+          78
+        ],
+        "to": [
+          570,
+          201
+        ]
+      },
+      "supportedFixes": [
+        "adjust labelAt, labelDx, labelDy, or labelSegment; otherwise adjust the other relationship route/via/channel"
+      ]
+    },
+    {
+      "code": "composition/label-gap",
+      "severity": "error",
+      "message": "Label \"text blocks\" has only 40px between \"extractor\" and \"reader\"; it needs at least 79px to stay beside its route — increase that clear gap or place the connected nodes on another readable row, preserving the label.",
+      "subject": {
+        "diagramType": "architecture",
+        "collection": "connections",
+        "id": "c-extract-reader",
+        "from": "extractor",
+        "to": "reader"
+      },
+      "evidence": {
+        "clearGapPx": 40,
+        "minimumGapPx": 79,
+        "labelWidthPx": 62.8,
+        "obstacles": [
+          "extractor",
+          "reader"
+        ]
+      },
+      "supportedFixes": [
+        "increase the clear gap between the connected nodes to at least 79px",
+        "reposition the connected nodes together while preserving the full relationship label"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 2,
+    "shown": 2,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/review-2/target.finalize.json",
+    "summaryReceipt": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/review-2/target.finalize-summary.json"
+  },
+  "update": {
+    "status": "update_available",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.2.0",
+    "releaseNotes": "https://github.com/tt-a1i/archify/releases/tag/v3.2.0",
+    "severity": "normal",
+    "checkedAt": "2026-10-24T11:00:00.625Z",
+    "source": "cache",
+    "noticeRequired": true,
+    "noticeText": "Archify update: 3.0.1 → 3.2.0. A previous check at 2026-10-24T11:00:00.625Z found a newer release. Release notes: https://github.com/tt-a1i/archify/releases/tag/v3.2.0. The installed Skill has not changed; ask to snooze or ignore this reminder.",
+    "eventKey": "archify@sha256:70e210265c59f24dcbdf2a502ff671104b5454e7ee7d3554aecd86bad32384f5"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 237,
+  "nextAction": {
+    "action": "edit-in-place",
+    "candidate": "/home/vipul/Project/NovelSpeak/.archify/architecture-novelspeak-v12-20261024-165000/candidate.json",
+    "constraint": "Preserve all semantics and user-fixed geometry. Use references/architecture-layout-repair.md to choose a local repair or connected-scene reflow; edit the existing candidate.",
+    "then": "finalize-once"
+  }
+}

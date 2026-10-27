@@ -43,6 +43,14 @@ class NovelSpeakApp : Application() {
         player = PcmPlayer()
         reader = Reader(this)
         AdBlocker.init(this)
+        // Pronunciation dictionary: parsed once at startup; Settings re-applies on save.
+        try {
+            TtsOverrides.set(
+                PronunciationRules.parse(prefs.pronunciationRules).map { it.from to it.to }
+            )
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "pronunciation rules load failed", t)
+        }
     }
 
     private fun dumpCrash(text: String) {
@@ -110,6 +118,9 @@ class Reader(private val app: NovelSpeakApp) {
 
         /** The last queued sentence finished playing; auto mode uses this to advance. */
         fun onQueueFinished() {}
+
+        /** Approximate word-level progress inside the spoken sentence (char offsets). */
+        fun onWordHighlight(blockIndex: Int, charStart: Int, charEnd: Int) {}
     }
 
     data class State(
@@ -118,6 +129,7 @@ class Reader(private val app: NovelSpeakApp) {
         val cursor: Int,
         val total: Int,
         val engine: String,
+        val voice: String,
         val status: String
     )
 
@@ -135,10 +147,20 @@ class Reader(private val app: NovelSpeakApp) {
     private var engine: TtsEngine? = null
     private var engineName = ""
 
+    // Word-level read-along: the engine boundary APIs are chunk-based, so progress inside a
+    // sentence is estimated from elapsed time and the current speed. Sentence highlight is
+    // authoritative; word highlight is an enhancement and can be turned off in Settings.
+    private var wordTick: Runnable? = null
+    private var sentenceStartAt = 0L
+    private var sentenceChars = 0
+
     fun addListener(l: Listener) { if (!listeners.contains(l)) listeners.add(l) }
     fun removeListener(l: Listener) { listeners.remove(l) }
 
-    fun state() = State(playing, title, cursor, sentences.size, engineName, status)
+    fun state() = State(
+        playing, title, cursor, sentences.size, engineName,
+        engine?.currentVoiceLabel() ?: "", status
+    )
 
     private fun notifyState() {
         val s = state()
@@ -206,6 +228,44 @@ class Reader(private val app: NovelSpeakApp) {
         }
     }
 
+    private fun startWordTracking() {
+        stopWordTracking()
+        if (!playing) return
+        if (!app.prefs.readerWordHighlight) return
+        val block = sentences.getOrNull(cursor) ?: return
+        sentenceStartAt = android.os.SystemClock.uptimeMillis()
+        sentenceChars = block.text.length
+        if (sentenceChars <= 0) return
+        val run = object : Runnable {
+            override fun run() {
+                if (!playing) return
+                val textBlock = sentences.getOrNull(cursor) ?: return
+                val elapsedSec = (android.os.SystemClock.uptimeMillis() - sentenceStartAt) / 1000f
+                // ~13.5 chars/second at 1x for English prose; speed scales speech rate.
+                val charsPerSec = 13.5f * app.prefs.speed.coerceIn(0.5f, 3.0f)
+                val end = (elapsedSec * charsPerSec).toInt()
+                    .coerceIn(0, textBlock.text.length)
+                var start = end
+                while (start > 0 && !textBlock.text[start - 1].isWhitespace()) start--
+                var stop = end
+                while (stop < textBlock.text.length && !textBlock.text[stop].isWhitespace()) stop++
+                main.post {
+                    for (l in ArrayList(listeners)) {
+                        l.onWordHighlight(textBlock.blockIndex, start, stop)
+                    }
+                }
+                main.postDelayed(this, 140L)
+            }
+        }
+        wordTick = run
+        main.post(run)
+    }
+
+    private fun stopWordTracking() {
+        wordTick?.let { main.removeCallbacks(it) }
+        wordTick = null
+    }
+
     fun play() {
         if (sentences.isEmpty()) { status = "Nothing to read"; notifyState(); return }
         if (playing) return
@@ -219,6 +279,7 @@ class Reader(private val app: NovelSpeakApp) {
                 submitted = cursor - 1
                 pump()
                 schedulePump()
+                startWordTracking()
                 notifyState()
                 PlaybackService.start(app)
                 DiagLog.line(app, "play started engine=${e.id} sentence=$cursor/" + sentences.size)
@@ -253,6 +314,7 @@ class Reader(private val app: NovelSpeakApp) {
         playing = false
         generation++
         main.removeCallbacks(pumpTick)
+        stopWordTracking()
         engine?.stop()
         status = "Paused"
         notifyState()
@@ -271,11 +333,25 @@ class Reader(private val app: NovelSpeakApp) {
         generation++
         submitted = cursor - 1
         main.removeCallbacks(pumpTick)
+        stopWordTracking()
         engine?.stop()
         PlaybackService.stop(app)
     }
 
     fun toggle() { if (playing) pause() else play() }
+
+    /**
+     * Drops the prepared engine so a changed engine/voice applies on the next play. Without
+     * this, Settings wrote the new preference but the cached engine kept the old voice.
+     */
+    fun invalidateEngine() {
+        stopInternal()
+        engine?.release()
+        engine = null
+        engineName = ""
+        status = if (sentences.isEmpty()) "Idle" else "Ready · " + sentences.size + " sentences"
+        notifyState()
+    }
 
     fun nextSentence() {
         if (cursor < sentences.size - 1) seek(cursor + 1)
@@ -297,6 +373,7 @@ class Reader(private val app: NovelSpeakApp) {
         if (wasPlaying) {
             pump()
             schedulePump()
+            startWordTracking()
         } else {
             main.removeCallbacks(pumpTick)
         }
@@ -351,6 +428,7 @@ class Reader(private val app: NovelSpeakApp) {
             if (index == cursor) {
                 if (cursor >= sentences.size - 1) {
                     playing = false
+                    stopWordTracking()
                     status = "Finished"
                     notifyState()
                     PlaybackService.stop(app)
@@ -359,10 +437,72 @@ class Reader(private val app: NovelSpeakApp) {
                 }
                 cursor++
                 notifyHighlight()
+                startWordTracking()
                 notifyState()
                 pump()
             }
         })
+    }
+
+    /** Engine-reported ceiling; UI clamp uses this so 2.0-3.0x is not silently dropped. */
+    fun maxSpeed(): Float = engine?.maxSpeed ?: 2.0f
+
+    /** Index of the sentence currently being spoken (for progress persistence). */
+    fun currentIndex(): Int = cursor
+
+    /** Text of one queued sentence (bookmarks/stats); empty when out of range. */
+    fun sentenceText(index: Int): String = sentences.getOrNull(index)?.text ?: ""
+
+    /**
+     * Audio export v1: record what actually plays to a 24 kHz mono WAV.
+     * First call starts capture; the second stops, publishes to Downloads (API 29+) and
+     * returns a user-facing status string. Settings shows the return value as a Toast.
+     * (Full offline chapter rendering without playback is a later iteration.)
+     */
+    fun exportCurrentChapter(): String {
+        val player = app.player
+        if (player.isCapturing()) {
+            val file = player.stopCapture() ?: return "No recording in progress"
+            return publishCapture(file)
+        }
+        if (!hasContent()) return "Start reading a chapter first"
+        val dir = File(app.getExternalFilesDir(null) ?: app.filesDir, "exports")
+        if (!dir.exists()) dir.mkdirs()
+        val file = File(dir, "novelspeak-" + System.currentTimeMillis() + ".wav")
+        return if (player.startCapture(file)) {
+            "Recording… play the chapter, then tap Export again to save the WAV"
+        } else {
+            "Could not start audio export"
+        }
+    }
+
+    private fun publishCapture(file: File): String {
+        if (file.length() <= 44L) return "Export was empty — play some audio first"
+        if (Build.VERSION.SDK_INT >= 29) {
+            try {
+                val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+                val values = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, file.name)
+                    put(MediaStore.Downloads.MIME_TYPE, "audio/wav")
+                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
+                }
+                val uri = app.contentResolver.insert(collection, values)
+                if (uri != null) {
+                    app.contentResolver.openOutputStream(uri)?.use { out ->
+                        file.inputStream().use { it.copyTo(out) }
+                    }
+                    val done = ContentValues().apply {
+                        put(MediaStore.MediaColumns.IS_PENDING, 0)
+                    }
+                    app.contentResolver.update(uri, done, null, null)
+                    return "Saved " + file.name + " to Downloads"
+                }
+            } catch (t: Throwable) {
+                DiagLog.exception(app, "export publish failed", t)
+            }
+        }
+        return "Saved " + file.absolutePath
     }
 
     fun setSpeed(v: Float) {

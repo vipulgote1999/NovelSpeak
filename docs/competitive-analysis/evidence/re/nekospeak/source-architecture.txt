@@ -1,0 +1,114 @@
+# NekoSpeak source (github.com/siva-sub/NekoSpeak @ main) - architecture evidence
+## git HEAD of cloned source
+source zip: codeload.github.com/siva-sub/NekoSpeak/zip/refs/heads/main (fetched 2026-10-24)
+
+## Kotlin source tree (com.nekospeak.tts)
+com/nekospeak/tts/CheckVoiceData.kt
+com/nekospeak/tts/data/ModelRepository.kt
+com/nekospeak/tts/data/PocketVoiceRepository.kt
+com/nekospeak/tts/data/PrefsManager.kt
+com/nekospeak/tts/data/VoiceDefinitions.kt
+com/nekospeak/tts/data/VoiceDownloader.kt
+com/nekospeak/tts/data/VoiceRepository.kt
+com/nekospeak/tts/engine/EngineFactory.kt
+com/nekospeak/tts/engine/EspeakWrapper.kt
+com/nekospeak/tts/engine/KokoroEngine.kt
+com/nekospeak/tts/engine/misaki/G2P.kt
+com/nekospeak/tts/engine/misaki/Lexicon.kt
+com/nekospeak/tts/engine/misaki/MToken.kt
+com/nekospeak/tts/engine/misaki/Num2Words.kt
+com/nekospeak/tts/engine/misaki/TokenContext.kt
+com/nekospeak/tts/engine/Phonemizer.kt
+com/nekospeak/tts/engine/piper/MisakiToPiperIPA.kt
+com/nekospeak/tts/engine/piper/PiperConfig.kt
+com/nekospeak/tts/engine/piper/PiperEngine.kt
+com/nekospeak/tts/engine/pocket/GtcrnDenoiser.kt
+com/nekospeak/tts/engine/pocket/MimiCodec.kt
+com/nekospeak/tts/engine/pocket/PocketTokenizer.kt
+com/nekospeak/tts/engine/pocket/PocketTtsEngine.kt
+com/nekospeak/tts/engine/pocket/PocketVoiceState.kt
+com/nekospeak/tts/engine/TtsEngine.kt
+com/nekospeak/tts/GetSampleText.kt
+com/nekospeak/tts/InstallVoiceData.kt
+com/nekospeak/tts/NekoTtsService.kt
+com/nekospeak/tts/support/SupportCrashHandler.kt
+com/nekospeak/tts/support/SupportIssueLinkBuilder.kt
+com/nekospeak/tts/support/SupportLogStore.kt
+com/nekospeak/tts/support/SupportReportManager.kt
+com/nekospeak/tts/support/SupportShareHelper.kt
+com/nekospeak/tts/ui/components/AudioRecorder.kt
+com/nekospeak/tts/ui/components/VoiceCard.kt
+com/nekospeak/tts/ui/MainActivity.kt
+com/nekospeak/tts/ui/MainScreen.kt
+com/nekospeak/tts/ui/navigation/Screen.kt
+com/nekospeak/tts/ui/screens/ModelManagerScreen.kt
+com/nekospeak/tts/ui/screens/OnboardingScreen.kt
+com/nekospeak/tts/ui/screens/SettingsScreen.kt
+com/nekospeak/tts/ui/screens/VoiceRecorderScreen.kt
+com/nekospeak/tts/ui/screens/VoicesScreen.kt
+com/nekospeak/tts/ui/theme/AppTheme.kt
+com/nekospeak/tts/ui/theme/ThemeColors.kt
+com/nekospeak/tts/ui/theme/Theme.kt
+com/nekospeak/tts/ui/theme/ThemePicker.kt
+com/nekospeak/tts/ui/viewmodel/VoicesViewModel.kt
+com/nekospeak/tts/utils/AssetUtils.kt
+
+## build.gradle.kts dependencies
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.github.wendykierp:JTransforms:3.2")
+
+## TextToSpeechService subclass
+37:class NekoTtsService : TextToSpeechService() {
+
+## cloneVoice() entry point
+1526:    override suspend fun cloneVoice(audioPath: String, voiceName: String): String? = withContext(Dispatchers.IO) {
+
+## model catalog (ModelRepository.kt) - model files + remote bases
+15:data class ModelFile(
+34:    private const val HF_BASE = "https://huggingface.co/spaces/KevinAHM/pocket-tts-web/resolve/main"
+35:    private const val VOICES_BASE = "https://huggingface.co/kyutai/tts-voices/resolve/main"
+44:                ModelFile("pocket/models/mimi_encoder.onnx", "$HF_BASE/onnx/mimi_encoder.onnx", "Mimi Encoder (73MB)"),
+45:                ModelFile("pocket/models/text_conditioner.onnx", "$HF_BASE/onnx/text_conditioner.onnx", "Text Conditioner (16MB)"),
+46:                ModelFile("pocket/models/flow_lm_main_int8.onnx", "$HF_BASE/onnx/flow_lm_main_int8.onnx", "Flow LM Main INT8 (76MB)"),
+47:                ModelFile("pocket/models/flow_lm_flow_int8.onnx", "$HF_BASE/onnx/flow_lm_flow_int8.onnx", "Flow LM Flow INT8 (10MB)"),
+48:                ModelFile("pocket/models/mimi_decoder_int8.onnx", "$HF_BASE/onnx/mimi_decoder_int8.onnx", "Mimi Decoder INT8 (23MB)"),
+50:                ModelFile("pocket/tokenizer.model", "$HF_BASE/tokenizer.model", "Tokenizer (59KB)"),
+52:                ModelFile("pocket/voices/alba.wav", "$VOICES_BASE/alba-mackenna/casual.wav", "Alba Voice"),
+53:                ModelFile("pocket/voices/marius.wav", "$VOICES_BASE/voice-donations/Selfie.wav", "Marius Voice"),
+54:                ModelFile("pocket/voices/javert.wav", "$VOICES_BASE/voice-donations/Butter.wav", "Javert Voice"),
+55:                ModelFile("pocket/voices/jean.wav", "$VOICES_BASE/ears/p010/freeform_speech_01.wav", "Jean Voice"),
+56:                ModelFile("pocket/voices/fantine.wav", "$VOICES_BASE/vctk/p244_023.wav", "Fantine Voice"),
+57:                ModelFile("pocket/voices/cosette.wav", "$VOICES_BASE/expresso/ex04-ex02_confused_001_channel1_499s.wav", "Cosette Voice"),
+58:                ModelFile("pocket/voices/eponine.wav", "$VOICES_BASE/vctk/p262_023.wav", "Eponine Voice"),
+59:                ModelFile("pocket/voices/azelma.wav", "$VOICES_BASE/vctk/p303_023.wav", "Azelma Voice")
+67:                ModelFile("kokoro-v1.0.int8.onnx", "https://github.com/siva-sub/NekoSpeak/releases/download/v1.0.0/kokoro-v1.0.int8.onnx", "Model Weights"),
+68:                ModelFile("voices-v1.0.bin", "https://github.com/siva-sub/NekoSpeak/releases/download/v1.0.0/voices-v1.0.bin", "Voice Pack")
+76:                ModelFile("kitten_tts_nano_v0_1.onnx", "https://github.com/siva-sub/NekoSpeak/releases/download/v1.0.0/kitten_tts_nano_v0_1.onnx", "Model Weights"),
+77:                ModelFile("voices.npz", "https://github.com/siva-sub/NekoSpeak/releases/download/v1.0.0/voices.npz", "Voice Pack")
+
+## RELEASE_NOTES top heading (latest documented release)
+# Release v1.4.2 - Clone Stability & In-App Diagnostics 🛠️
+## docs/ and adr/
+/tmp/re-work/nekospeak-src/NekoSpeak-main/docs:
+adr
+
+/tmp/re-work/nekospeak-src/NekoSpeak-main/docs/adr:
+ADR-001-nnapi-execution-provider.md
+ADR-002-qnn-execution-provider.md
+ADR-003-removal-of-ebook-reader-and-m4b-export-pipeline.md
+ADR-004-gpu-npu-acceleration-investigation.md
+ADR-005-sigbus-fix-armv7-int8-models.md

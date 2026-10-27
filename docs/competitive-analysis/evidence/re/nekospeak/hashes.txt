@@ -1,0 +1,14 @@
+# NekoSpeak v1.5.0 arm64-v8a APK (official GitHub Release)
+0108360a8aafa07cbd769839a0436deda0d348ff7e5b9214261691febc2bbc64  /tmp/apks/neko-fresh.apk
+sizeBytes: 94472186
+asset URL: https://github.com/siva-sub/NekoSpeak/releases/download/v1.5.0/app-arm64-v8a-release.apk
+asset size per GitHub API: 94472186
+package: name='com.nekospeak.tts' versionCode='17' versionName='1.5.0' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'
+targetSdkVersion:'35'
+application-label:'NekoSpeak'
+nativeLibs:
+lib/arm64-v8a/libnekospeak.so
+lib/arm64-v8a/libonnxruntime.so
+lib/arm64-v8a/libonnxruntime4j_jni.so
+lib/arm64-v8a/libttsespeak.so
+espeak-ng-data asset files: 371

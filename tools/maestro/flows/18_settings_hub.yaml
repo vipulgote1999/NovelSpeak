@@ -1,0 +1,35 @@
+appId: app.novelspeak
+name: "18 settings hub: every category opens and returns"
+tags:
+  - settings
+  - regression
+---
+- launchApp
+- tapOn: "More options"
+- tapOn: "NovelSpeak settings"
+- assertVisible: "Reading aloud"
+- assertVisible: "Voices & previews"
+- assertVisible: "Playback & sleep"
+- assertVisible: "Reading & display"
+- assertVisible: "Privacy & data"
+- assertVisible: "Advanced"
+- tapOn: "Playback & sleep"
+- assertVisible: "Speed"
+- assertVisible: "Sleep timer"
+- tapOn: "Back"
+- tapOn: "Reading & display"
+- assertVisible: "Reader appearance"
+- tapOn: "Back"
+- tapOn: "Advanced"
+- assertVisible: "Performance"
+- assertVisible: "Reset to tuned defaults"
+- tapOn: "Back"
+- tapOn: "Privacy & data"
+- scrollUntilVisible:
+    element:
+      text: "Ad blocking"
+    direction: DOWN
+    timeout: 20000
+- assertVisible: "Ad blocking"
+- tapOn: "Back"
+- assertVisible: "About NovelSpeak"

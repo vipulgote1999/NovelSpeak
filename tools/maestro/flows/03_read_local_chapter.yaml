@@ -1,0 +1,31 @@
+appId: app.novelspeak
+name: "03 read local chapter: URL loads, Read extracts, player shows sentence state"
+tags:
+  - reading
+  - fixture
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter1.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter1.html"
+    timeout: 15000
+- tapOn: "Read"
+# Sentence seek bar exposes "Sentence N of M" as its contentDescription;
+# it appears as soon as the extracted blocks reach the reader.
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+"
+    timeout: 30000
+- assertVisible: "Next ch"
+- assertVisible: "Pause|Play"

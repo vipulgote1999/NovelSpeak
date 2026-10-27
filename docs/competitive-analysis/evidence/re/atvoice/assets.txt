@@ -1,0 +1,61 @@
+# @Voice assets/js inventory (extraction & UI injection)
+ 
+4096 .
+4096 ..
+10635 android.selection.min.js
+5516 BlockerDetect.min.js
+2303 Boldify.min.js
+5404 Bookmarks.min.js
+2823 CaptureBrowser.min.js
+4092 CaptureReader.js
+9101 CaptureReader.min.js
+12548 docReady.min.js
+16323 Editor.min.js
+13755 ExtractBrowser.min.js
+6030 FindRegEx.min.js
+1153 FindRegExTa.min.js
+8121 FlatTranslation.min.js
+10638 GetDisplayedHTML.min.js
+1140 highlight-within-textarea.css
+5286 highlight-within-textarea.min.js
+496 jpntext.min.js
+89947 jquery-3.6.3.min.js
+2532 jquery.easing.1.4.1.min.js
+18561 LoginWallDetect.min.js
+16917 mark.min.js
+854 minify_blocker_detect.min.js
+802 minify_extractbrowser.min.js
+23890 MyScripts.min.js
+16565 PageTurnCapture.min.js
+6428 prettyPrint.min.js
+351 ReplaceIframes.min.js
+1337 SortByVert.min.js
+6032 SpeechAliases.js
+1793 TranslationBoundaries.min.js
+6048 TranslationFrame.min.js
+5892 TrnBilangBar.min.js
+21538 TrnWidget.min.js
+14137 UnicodeWords.min.js
+12799 WpsDocumentImport.js
+
+# CloudTtsConfig.txt header comments (verbatim, first 20 lines)
+; @Voice cloud TTS model catalog, schema 1. Official provider endpoints stay in app code.
+; First supported by 40.7.4. Downloaded through the existing .changetimes.txt refresh.
+; Sign with texts/installConfig.bat or texts/signCloudTtsConfig.bat using C:/bin/WebCfgSigner-1.jar
+; using the existing KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_PASSWORD environment variables.
+; Upload signed CloudTtsConfig.txt to hyperionics.com/atVoice/config/. The server watcher updates
+; .changetimes.txt using its own timestamp scale. Do not upload this unsigned authoring file.
+; Edit and sign; no revision counter is needed. To restore old settings, sign and publish them again.
+; Signing uses SHA1withRSA and avarcfg, over UTF-8 trimmed nonempty/non-comment lines + LF.
+; The trailing Sig: line is excluded. Inline semicolons remain content. Never edit after signing.
+;
+; File order controls model order. Keep old entries with enabled:false or shutdownOn so saved
+; selections get a recovery message instead of silently selecting another paid model.
+; recommendedModel applies to users without an explicit choice. Other valid choices are retained.
+; Unknown providers/protocols and minAppVersion gates allow future catalog growth; the initial
+; reader implements openai/openai-speech-v1 only. Always retain a compatible model for old clients.
+; A replacement must be present in this provider's models array. It is a suggestion, never automatic.
+; Only mp3 and wav are decoded by this catalog-backed client. supportsSpeed:false omits speed;
+; otherwise requested speed is clamped to minSpeed/maxSpeed. maxInputCharacters is enforced
+; before HTTP (after exact saved-audio lookup). URLs, API keys, and speech instructions are not fields.
+; deprecatedOn/shutdownOn are ISO dates, effective at 00:00 UTC. Omit dates when unconfirmed.

@@ -32,3 +32,19 @@ Thumbs.db
 *~
 .idea/
 .vscode/
+tools/maestro/reports/artifacts/
+
+# ---- video projects (HyperFrames) ----
+videos/*/node_modules/
+videos/*/renders/
+videos/*/.thumbnails/
+videos/*/.waveform-cache/
+videos/*/.hyperframes/artifacts/
+videos/*/.hyperframes/preview/
+videos/*/.hyperframes/frame-packets/
+videos/*/.hyperframes/render-outputs.json
+videos/*/.hyperframes/hf-ids-stamped.json
+videos/*/.hyperframes/video-state.json
+
+# ---- launch film working capture (raw device shots + research scratch) ----
+/launch-capture/

@@ -4,6 +4,67 @@ All notable changes to NovelSpeak are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-27
+
+### Added
+- On-device voice previews are now a dedicated section in Settings, independent of the active
+  engine: every installed Kokoro speaker and the Pocket narrator has a ▶ that samples a short
+  line through the offline engine, even while system TTS is selected. Previews pause/resume the
+  reader, temporarily load the auditioned model, restore the active model and selected voice,
+  and refuse on low-memory/ABI-mismatch devices instead of crashing.
+- System TTS voice previews remain available in the Voice card (20-voice shortlist plus a
+  Browse-all picker for the 400+ device voices) for comparison with the offline voices.
+- Current voice is shown in the player card ("Voice · Kokoro · Bella (US female)"), including
+  device voice selection, and voice/engine changes now drop the cached engine so they apply at
+  the next play instead of after a process restart.
+- Home tab / new-tab page: NovelSpeak wordmark, one search pill, a curated shortcut grid for
+  popular novel sites (plus Library), and Continue-reading cards from the local library.
+- Local library with saved reading position, Continue reading, bookmarks and reading stats.
+- Share-sheet and selected-text intake; EPUB/PDF/plain-text import (PDF is text-layer only).
+- Sleep timer (15/30/45/60 min or end of chapter), engine-capped speed up to 3x, volume boost,
+  pitch and skip-silence.
+- Reader typography controls (size, family, theme, line height, width) and word-level read-along.
+- Pronunciation dictionary applied to both TTS engines; paywall/login detection with an honest
+  warning (no bypass); diagnostics bundle; privacy and licences page.
+- Chapter prefetch: the next chapter is extracted in a hidden WebView and appended without a stall.
+- Translation hand-off to the system browser; two-pane tablet/landscape layout.
+- Signed model catalog verification plus an explicit OTA check; tools/model-catalog-sign.sh.
+- Maestro E2E harness (fixtures, 10 flows, share/adaptive checks) and host test suites for the
+  library, settings features, TTS cleaner, audio DSP, EPUB and PDF importers.
+
+### Changed
+- Settings is now a categorized hub (Reading aloud, Voices & previews, Playback & sleep,
+  Reading & display, Privacy & data, Advanced, About) with one short page per category instead
+  of one 14-section scroll. Summaries show the current engine/voice, speed, theme, ad-block state
+  and performance at a glance; the overlapping sticky footer is replaced by an inline status line,
+  section labels are sentence case, and Reset moved to Advanced.
+- Colour system unified into one semantic Palette (removed three duplicated palettes):
+  ink base #0E1318 with layered surfaces, secondary/faint text tiers, mint signal #6FE7BE,
+  warm amber #F4C66A, softer red #F87C7C, light icon plate #EEF2F5. All text pairs are
+  WCAG-AA or better; cards gained 1dp borders and the reader CSS uses the same tokens.
+- Version 1.2.0 (versionCode 17); allowBackup disabled; exported media receiver permission;
+  WebView lifecycle fixed; cleartext allowed only for loopback test hosts; model catalog in assets.
+- README positioning corrected: Chrome does support lock-screen playback; the real gap is site
+  coverage and the data-sharing setting.
+
+### Fixed
+- Read now always restarts the current page from sentence 1 in every state, including auto
+  mode, paused playback, an in-flight extraction, and a verification interstitial (reloads once
+  instead of silently doing nothing). Auto-advance is cancelled while restarting.
+- Next ch now resolves the next chapter reliably: the prefetched chapter is only reused when it
+  was created from the current page (stale caches are dropped), page scripts are installed on
+  demand if Next ch is pressed before extraction, the link lookup is retried while the page
+  loads, and numbered chapter URLs fall back to +1 when no anchor exists.
+- Imported EPUB/PDF/text books are now durable: extracted sentences are stored in app-private
+  files (filesDir/imports/<id>.txt + index.json), listed in Library → Imported books and Home →
+  Continue reading, reopen in the reader for TTS, and save playback position. Previously they
+  existed only in the reader's memory and silently vanished.
+- EPUB import on Android: the XML parser now falls back to a plain namespace-aware parser when a
+  vendor build rejects a hardening feature (the previous silent "corrupt OPF" failure).
+- Per-site reader mode now actually writes per site; top-bar label reflects it.
+- Sleep-timer/import/bookmark actions reachable from the overflow menu; speed UI no longer lies.
+- Stale stopping behaviour after seek while a long sentence plays (carried from 1.1.0 evidence).
+
 ## [1.1.0] - 2026-10-24
 
 ### Added

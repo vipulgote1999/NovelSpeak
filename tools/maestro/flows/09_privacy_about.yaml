@@ -1,0 +1,19 @@
+appId: app.novelspeak
+name: "09 privacy: About & privacy -> Privacy & licences -> back"
+tags:
+  - pending
+  - privacy
+---
+# The installed 1.2.0-dev exposes privacy from the overflow menu; the newer
+# working-tree Settings screen adds a "Open privacy" button in
+# DIAGNOSTICS & PRIVACY. This flow uses the entry that exists in both builds'
+# user-visible navigation (overflow), so it stays valid across rebuilds.
+- launchApp
+- tapOn: "More options"
+- tapOn: "About & privacy"
+- assertVisible: "Privacy & licences"
+- assertVisible: "PRIVACY"
+- assertVisible: ".*no analytics.*"
+- assertVisible: "Back"
+- tapOn: "Back"
+- assertVisible: "More options"

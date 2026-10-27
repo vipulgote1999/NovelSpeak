@@ -1,0 +1,12 @@
+appId: app.novelspeak
+name: "01 launch: home tab is visible with search and shortcuts"
+tags:
+  - baseline
+  - smoke
+---
+- launchApp
+# Cold start opens the Home tab: search pill, shortcuts, overflow menu.
+- assertVisible: "NovelSpeak"
+- assertVisible: "Search or enter a web address"
+- assertVisible: "Shortcuts"
+- assertVisible: "More options"

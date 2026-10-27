@@ -1,0 +1,913 @@
+{
+  "generatedAt": "2026-10-24",
+  "stream": "novelspeak",
+  "anchorRoot": "app/src/app/novelspeak/",
+  "assetRoot": "app/assets/",
+  "docRoot": "docs/",
+  "note": "All capability/component anchors are repo-relative; when anchorRoot is prepended they resolve to the exact Kotlin file. Asset-only anchors (extract.js, content.js) are under assetRoot. Status vocabulary: present | partial | absent.",
+  "subject": {
+    "name": "NovelSpeak",
+    "version": "1.1.0",
+    "versionCode": 15,
+    "package": "app.novelspeak",
+    "license": "Apache-2.0",
+    "platform": "Android",
+    "minSdk": 24,
+    "targetSdk": 34,
+    "abi": "arm64-v8a (default)",
+    "repoCommit": "89e4809",
+    "apk": {
+      "path": "build/NovelSpeak-1.1.0-arm64-v8a.apk",
+      "bytes": 15254977,
+      "sha256": "8cf212f67ac969b61df4382efe5e8daf9ea4a70b07ea2007cc8fba823acda956",
+      "entries": 20,
+      "uncompressedBytes": 41947675,
+      "classesDexBytes": 4641640,
+      "nativeLibBytes": 31927176,
+      "assetBytes": 5368775
+    }
+  },
+  "architecture": {
+    "pattern": "Single-process Android app: Activity-owned WebView UI + application-scoped reader state machine + two pluggable in-process TTS engines writing one shared AudioTrack + foreground media service + pure-Kotlin ad-block engine",
+    "layers": [
+      {
+        "name": "Browser UI",
+        "components": [
+          "MainActivity",
+          "UrlInput"
+        ],
+        "responsibilities": [
+          "address bar, navigation, progress, suggestions, overflow menu",
+          "URL normalisation and non-web scheme rejection"
+        ]
+      },
+      {
+        "name": "Extraction",
+        "components": [
+          "WebExtractor",
+          "extract.js",
+          "readability.js"
+        ],
+        "responsibilities": [
+          "inject Readability + extractor, await execution",
+          "parse page to tagged blocks, re-tag live DOM",
+          "density fallback, reader CSS, highlight/scroll, next-chapter detection"
+        ]
+      },
+      {
+        "name": "Reader core",
+        "components": [
+          "Reader",
+          "SentenceSplitter",
+          "TtsTextCleaner"
+        ],
+        "responsibilities": [
+          "sentence queue, cursor, generation token, prefetch/generation-ahead, seek/pause state machine",
+          "chunking with abbreviation guards, short-fragment merge",
+          "neural text sanitisation"
+        ]
+      },
+      {
+        "name": "TTS engines",
+        "components": [
+          "TtsEngine",
+          "SystemTtsEngine",
+          "SherpaEngine",
+          "ModelManager",
+          "WavReader"
+        ],
+        "responsibilities": [
+          "engine interface",
+          "system TTS synthesised to WAV then decoded to PCM",
+          "sherpa-onnx Kokoro/Pocket with streaming callback, saturation guard, 45 s cap",
+          "model download/SHA-256/extract",
+          "WAV decode, resample, clone-clip cleanup"
+        ]
+      },
+      {
+        "name": "Audio path",
+        "components": [
+          "PcmPlayer",
+          "AudioDsp"
+        ],
+        "responsibilities": [
+          "one AudioTrack per chapter, async writer thread, gain/limiter, 6 ms sentence fades, drain tracking + epoch",
+          "streaming spectral denoiser and low-level gate"
+        ]
+      },
+      {
+        "name": "Playback / media",
+        "components": [
+          "PlaybackService",
+          "MediaButtonReceiver",
+          "AppPermissions"
+        ],
+        "responsibilities": [
+          "foreground media service, MediaSession, MediaStyle notification, wake lock, audio focus, media-key dispatch",
+          "restart-path media button receiver",
+          "notification permission and system settings entry points"
+        ]
+      },
+      {
+        "name": "Ad blocking",
+        "components": [
+          "AdBlocker",
+          "AdBlockBridge",
+          "adblock package",
+          "content.js"
+        ],
+        "responsibilities": [
+          "WebView adapter (intercept/override/inject/update)",
+          "JS bridge for generic selectors",
+          "token+host indexed engine, parser, PSL, scriptlets, surrogates, self-test",
+          "cosmetic/procedural/overlay/nag/window.open filtering"
+        ]
+      },
+      {
+        "name": "Platform services",
+        "components": [
+          "Prefs",
+          "DiagLog",
+          "NovelSpeakApp"
+        ],
+        "responsibilities": [
+          "SharedPreferences settings + migrations",
+          "MediaStore-backed diagnostics and crash dumps",
+          "process singleton, crash handler"
+        ]
+      }
+    ],
+    "dataFlow": [
+      "UrlInput.normalize -> WebView.loadUrl",
+      "onPageStarted -> AdBlocker.onPageStarted (document host, counters)",
+      "onPageCommitVisible -> AdBlocker.inject (content.js + host cosmetic config + scriptlets)",
+      "shouldInterceptRequest -> AdBlockEngine.check -> allow (null) or empty/pixel/surrogate response",
+      "shouldOverrideUrlLoading -> $popup rules + intent:/suspicious-TLD heuristics -> block or allow",
+      "onPageFinished (deduped by lastExtractedUrl) -> WebExtractor.install(readability.js, extract.js) -> __nsExtract() -> JSON {title, blocks[i], chars}",
+      "WebExtractor: SentenceSplitter.split(max 180 chars) + mergeGroups(<24-char fragments) -> List<Reader.Block>(text, blockIndex)",
+      "Reader.setContent/appendContent -> sentences, cursor, generation; play() -> ensureEngine -> TtsEngine.prepare",
+      "Reader.pump every 500 ms: prefetch look-ahead (<=5) then generation-ahead while engine.bufferedSeconds()<12 s and submitted<cursor+8",
+      "SherpaEngine generation thread: TtsTextCleaner -> GenerationConfig(speed, silenceScale=1.0, sid, referenceAudio, numSteps=8) -> generateWithConfigAndCallback -> SampleSink (1=continue/0=stop, rail-pinned drop, 45 s cap) -> PcmPlayer.write",
+      "SystemTtsEngine worker: synthesizeToFile (45 s latch) -> WavReader.parse/resample 24 kHz -> 6 ms edge fades -> PcmPlayer.write; monitor thread waits for drain",
+      "PcmPlayer writer thread -> AudioTrack (mono 16-bit 24 kHz, low latency, 1 s ring); boundary monitor -> Reader.onSentenceDone -> cursor++",
+      "cursor change -> notifyHighlight -> extract.js __nsHighlight (data-ns class + smooth scrollIntoView) and notifyState -> MainActivity player card + PlaybackService MediaSession/notification/wake lock"
+    ],
+    "threads": [
+      "main/UI: Reader state machine (Handler), engine callbacks re-posted to main, WebView, all views",
+      "ns-adblock-load: parse ~168k filter lines, build immutable engine",
+      "ns-sherpa-gen: TTS text clean + native generation + PcmPlayer.write",
+      "ns-sherpa-mon: per-sentence drain wait (250 ms poll)",
+      "ns-system-tts: synthesizeToFile + WAV decode + write",
+      "ns-system-mon: per-sentence drain wait (500 ms poll)",
+      "ns-pcm-writer: sole AudioTrack writer, applies sentence tail ramps",
+      "model install thread (SettingsActivity): download + SHA-256 + tar.bz2 extract with progress",
+      "adblock list update thread (SettingsActivity): sequential HTTPS downloads + validation + reload"
+    ],
+    "stateOwnership": {
+      "Reader": [
+        "sentence queue",
+        "cursor",
+        "generation token",
+        "playing",
+        "status",
+        "engine reference"
+      ],
+      "PcmPlayer": [
+        "AudioTrack",
+        "writtenFrames",
+        "playbackEpoch",
+        "gain state",
+        "play queue",
+        "denoiser instance"
+      ],
+      "engines": [
+        "native OfflineTts / TextToSpeech session",
+        "task queues",
+        "boundary queues",
+        "stop/cancel epochs"
+      ],
+      "PlaybackService": [
+        "MediaSession",
+        "PlaybackState/metadata",
+        "notification",
+        "wake lock",
+        "audio focus"
+      ],
+      "Prefs": [
+        "all persisted settings, adblock allowlist, recent URLs, notification-asked flag"
+      ],
+      "MainActivity": [
+        "lastExtractedUrl/lastExtractedBlocks",
+        "extractionInFlight",
+        "autoAdvance counters",
+        "appendNext"
+      ]
+    },
+    "diagramHints": "Draw 8 horizontal bands (Browser UI -> WebView+Extraction -> Reader -> TTS engines -> Audio path -> Playback/Media -> Ad blocking side-car -> Platform services). Arrows: WebView<->WebExtractor (JS bridge), Reader->Engine (speak), Engine->PcmPlayer (PCM), Reader->PlaybackService (state), AdBlocker<->WebView (intercept/inject), Prefs/DiagLog cross-cutting. Mark the 12 s / 8-sentence buffer and the epoch cancellation edges as the two stateful contracts."
+  },
+  "components": [
+    {
+      "id": "app",
+      "name": "NovelSpeakApp",
+      "files": [
+        "app/src/app/novelspeak/Reader.kt:15-92"
+      ],
+      "loc": 92,
+      "responsibility": "Application singleton; crash handler writes /sdcard/Download/novelspeak-crash.txt via MediaStore; owns Prefs, PcmPlayer, Reader; initialises AdBlocker"
+    },
+    {
+      "id": "main",
+      "name": "MainActivity",
+      "files": [
+        "app/src/app/novelspeak/MainActivity.kt"
+      ],
+      "loc": 1772,
+      "responsibility": "WebView browser + player card + reader/site dialogs + auto-advance + insets + hand-drawn icon system"
+    },
+    {
+      "id": "extract-kotlin",
+      "name": "WebExtractor",
+      "files": [
+        "app/src/app/novelspeak/WebExtractor.kt"
+      ],
+      "loc": 122,
+      "responsibility": "Script injection ordering, JSON->blocks, sentence split + short-fragment merge, highlight/scroll, reader toggle, next link"
+    },
+    {
+      "id": "extract-js",
+      "name": "extract.js",
+      "files": [
+        "app/assets/extract.js"
+      ],
+      "loc": 424,
+      "responsibility": "Readability + density fallback, data-ns tagging of live DOM, reader CSS (~140 rules), highlight/scroll, 4-strategy next-chapter finder, dotted-obfuscation normalisation"
+    },
+    {
+      "id": "readability",
+      "name": "readability.js",
+      "files": [
+        "app/assets/readability.js"
+      ],
+      "loc": 2786,
+      "responsibility": "Vendored Mozilla Readability (Apache-2.0, based on Arc90 1.7.1)"
+    },
+    {
+      "id": "reader",
+      "name": "Reader",
+      "files": [
+        "app/src/app/novelspeak/Reader.kt:103-390"
+      ],
+      "loc": 287,
+      "responsibility": "Engine-agnostic state machine: queue, cursor, generation token, prefetch + 12 s generation-ahead, seek/pause, listeners"
+    },
+    {
+      "id": "splitter",
+      "name": "SentenceSplitter",
+      "files": [
+        "app/src/app/novelspeak/SentenceSplitter.kt"
+      ],
+      "loc": 186,
+      "responsibility": "Chunking with abbreviation/decimal/initial guards, boundary-preferring wrap, short-fragment merge groups"
+    },
+    {
+      "id": "tts-iface",
+      "name": "TtsEngine",
+      "files": [
+        "app/src/app/novelspeak/TtsEngine.kt"
+      ],
+      "loc": 37,
+      "responsibility": "prepare/speak/stop/release/voices/setVoice/bufferedSeconds contract"
+    },
+    {
+      "id": "tts-system",
+      "name": "SystemTtsEngine",
+      "files": [
+        "app/src/app/novelspeak/SystemTtsEngine.kt"
+      ],
+      "loc": 417,
+      "responsibility": "android.speech.tts; synthesizeToFile->WAV->PCM in-process so media keys and screen-off work; direct-speak fallback; per-sentence boundary monitor"
+    },
+    {
+      "id": "tts-sherpa",
+      "name": "SherpaEngine",
+      "files": [
+        "app/src/app/novelspeak/SherpaEngine.kt"
+      ],
+      "loc": 407,
+      "responsibility": "sherpa-onnx OfflineTts Kokoro/Pocket; streaming callback with 1/0 contract, rail-pinned drop, 45 s cap; NNAPI-or-CPU provider with CPU retry; GenerationConfig incl. referenceAudio"
+    },
+    {
+      "id": "cleaner",
+      "name": "TtsTextCleaner",
+      "files": [
+        "app/src/app/novelspeak/TtsTextCleaner.kt"
+      ],
+      "loc": 215,
+      "responsibility": "Neural input sanitiser: NFKC, quote removal, glyph allowlist, ellipsis/dash->pause, punct-only skip, EOS guarantee"
+    },
+    {
+      "id": "model",
+      "name": "ModelManager",
+      "files": [
+        "app/src/app/novelspeak/ModelManager.kt"
+      ],
+      "loc": 299,
+      "responsibility": "Two pinned models (Kokoro 103 MB, Pocket 98 MB): download with redirects, SHA-256 verify, tar.bz2 extract with progress + 45 s stall watchdog, storage pre-check, install/delete"
+    },
+    {
+      "id": "wav",
+      "name": "WavReader",
+      "files": [
+        "app/src/app/novelspeak/WavReader.kt"
+      ],
+      "loc": 173,
+      "responsibility": "RIFF PCM 8/16/24/32 + float decode, mono mix, linear resample, peak normalise, 80 Hz HPF, trim silence, 30 s / 720k sample cap"
+    },
+    {
+      "id": "pcm",
+      "name": "PcmPlayer",
+      "files": [
+        "app/src/app/novelspeak/PcmPlayer.kt"
+      ],
+      "loc": 389,
+      "responsibility": "One AudioTrack per chapter (USAGE_MEDIA, SPEECH, mono 16-bit, low latency, 1 s ring), async writer thread, OUTPUT_GAIN 2.2 limiter, 6 ms sentence fades, drain/epoch tracking"
+    },
+    {
+      "id": "dsp",
+      "name": "AudioDsp",
+      "files": [
+        "app/src/app/novelspeak/AudioDsp.kt"
+      ],
+      "loc": 453,
+      "responsibility": "Streaming denoiser: 512/256 STFT, minimum-statistics noise floor (1.02 s), decision-directed Wiener gain with -16.5 dB floor, sqrt-Hann OLA, bootstrap fix, downward expander gate"
+    },
+    {
+      "id": "service",
+      "name": "PlaybackService",
+      "files": [
+        "app/src/app/novelspeak/PlaybackService.kt"
+      ],
+      "loc": 679,
+      "responsibility": "Foreground media service (mediaPlayback), MediaSession + MediaStyle notification, PARTIAL_WAKE_LOCK while playing, audio focus, media-key dispatch, START_NOT_STICKY"
+    },
+    {
+      "id": "receiver",
+      "name": "MediaButtonReceiver",
+      "files": [
+        "app/src/app/novelspeak/MediaButtonReceiver.kt"
+      ],
+      "loc": 58,
+      "responsibility": "Manifest receiver for restart/no-session media keys: ACTION_DOWN only, repeat 0, 26+ limited to PLAY/PLAY_PAUSE/HEADSETHOOK"
+    },
+    {
+      "id": "perms",
+      "name": "AppPermissions",
+      "files": [
+        "app/src/app/novelspeak/AppPermissions.kt"
+      ],
+      "loc": 133,
+      "responsibility": "POST_NOTIFICATIONS ask-once, notification/channel/app/battery settings intents, status strings"
+    },
+    {
+      "id": "prefs",
+      "name": "Prefs",
+      "files": [
+        "app/src/app/novelspeak/Prefs.kt"
+      ],
+      "loc": 208,
+      "responsibility": "17 settings, 4 tuning migrations, adblock allowlist, notification flag, 8 recent URLs, 11 Kokoro voices"
+    },
+    {
+      "id": "diag",
+      "name": "DiagLog",
+      "files": [
+        "app/src/app/novelspeak/DiagLog.kt"
+      ],
+      "loc": 259,
+      "responsibility": "Log to /sdcard/Download/novelspeak-log.txt via MediaStore (API 29+) or app-external fallback; stale-row repair; recovered crash merge; logcat mirror"
+    },
+    {
+      "id": "settings",
+      "name": "SettingsActivity",
+      "files": [
+        "app/src/app/novelspeak/SettingsActivity.kt"
+      ],
+      "loc": 986,
+      "responsibility": "Engine/model/voice/tuning/reading/permissions/adblock UI; model install runner with wake lock + keep-screen-on + elapsed ticker; adblock list update runner"
+    },
+    {
+      "id": "adblock-adapter",
+      "name": "AdBlocker",
+      "files": [
+        "app/src/app/novelspeak/AdBlocker.kt"
+      ],
+      "loc": 591,
+      "responsibility": "WebView adapter: background list load + atomic engine swap, intercept, popup/redirect/intent guard with suspicious-TLD heuristic, JS-dialog suppression, cosmetic injection, bridge rate limit, list updates, stats broadcast"
+    },
+    {
+      "id": "adblock-bridge",
+      "name": "AdBlockBridge",
+      "files": [
+        "app/src/app/novelspeak/AdBlockBridge.kt"
+      ],
+      "loc": 54,
+      "responsibility": "Only JS interface: bounded lookup (<=32 KB, <=400 names, 25 calls/s) and hidden-count reporter"
+    },
+    {
+      "id": "adblock-engine",
+      "name": "AdBlockEngine",
+      "files": [
+        "app/src/app/novelspeak/adblock/AdBlockEngine.kt"
+      ],
+      "loc": 669,
+      "responsibility": "Immutable token+host+regex-prefix indexed matcher; $important/$badfilter/exception precedence; cosmetic + generic selector lookup; WildcardMatcher for ABP * and ^"
+    },
+    {
+      "id": "adblock-parser",
+      "name": "FilterParser",
+      "files": [
+        "app/src/app/novelspeak/adblock/FilterParser.kt"
+      ],
+      "loc": 460,
+      "responsibility": "ABP/uBO line parser: network options, cosmetic separators/actions, procedural parse, badfilter FNV-1a canonical hash; unsupported options drop the rule"
+    },
+    {
+      "id": "adblock-support",
+      "name": "adblock support files",
+      "files": [
+        "app/src/app/novelspeak/adblock/AdBlockModels.kt",
+        "app/src/app/novelspeak/adblock/UrlTools.kt",
+        "app/src/app/novelspeak/adblock/PublicSuffixList.kt",
+        "app/src/app/novelspeak/adblock/Scriptlets.kt",
+        "app/src/app/novelspeak/adblock/Surrogates.kt",
+        "app/src/app/novelspeak/adblock/AdBlockSelfTest.kt"
+      ],
+      "loc": 628,
+      "responsibility": "Resource types/models, URL/host/token/type-from-Accept helpers, PSL registrable-domain/sameSite, 7 scriptlets, 10 surrogates, 22-assertion deterministic self-test"
+    },
+    {
+      "id": "content-js",
+      "name": "content.js",
+      "files": [
+        "app/assets/adblock/content.js"
+      ],
+      "loc": 597,
+      "responsibility": "In-page cosmetic engine: batched CSS insertion, procedural filters (:has-text/:matches-css/:upward/:xpath + actions), MutationObserver class/id lookup via bridge, overlay heuristic, fake-nag/iframe-nag removal, window.open neutralisation"
+    },
+    {
+      "id": "urlinput",
+      "name": "UrlInput",
+      "files": [
+        "app/src/app/novelspeak/UrlInput.kt"
+      ],
+      "loc": 59,
+      "responsibility": "Address-bar normaliser: http(s)/about only, 13 non-web schemes converted to search, host detection"
+    }
+  ],
+  "capabilities": [
+    {
+      "category": "TTS engines, voices, languages, offline",
+      "status": "present",
+      "anchor": "SystemTtsEngine.kt:75-123, SherpaEngine.kt:144-199, Prefs.kt:194-206",
+      "note": "Device system TTS (all installed voices/languages) plus offline Kokoro (11 English voices) and Pocket; speed 0.5-2.0x effective"
+    },
+    {
+      "category": "Voice cloning",
+      "status": "partial",
+      "anchor": "SherpaEngine.kt:212-223,301-310, WavReader.kt:27-39, Prefs.kt:64-67",
+      "note": "Engine + referenceAudio path wired and a pocketVoicePath pref exists, but no record/import UI; only the bundled bria.wav ships; ZipVoice unwired"
+    },
+    {
+      "category": "Sources: web / PDF / EPUB / DOCX / clipboard / email / OCR",
+      "status": "partial",
+      "anchor": "MainActivity.kt:391-401,597-778, AndroidManifest.xml:28-40",
+      "note": "Real browser for any web page; no share-intent receiver, file import, clipboard read or OCR"
+    },
+    {
+      "category": "Library / continue-reading / bookmarks / notes / highlights",
+      "status": "absent",
+      "anchor": "Prefs.kt:143-158, MainActivity.kt:136,688-689",
+      "note": "Only 8 recent URLs + last_url persisted; cursor is in-memory; data-ns indices exist but are never stored"
+    },
+    {
+      "category": "Progress sync / account / cloud",
+      "status": "absent",
+      "anchor": "no account/sync code paths",
+      "note": "No server integration beyond model/list downloads; privacy-positive, no cross-device resume"
+    },
+    {
+      "category": "Sleep timer / volume boost / skip silence / speed / pitch",
+      "status": "partial",
+      "anchor": "MainActivity.kt:1292-1297, PcmPlayer.kt:32,170-198, AudioDsp.kt:338-352",
+      "note": "Speed present (UI allows 2.5x but engines clamp to 2.0x); fixed +2.2x limiter and low-level gate; no sleep timer, explicit skip-silence, user boost or pitch"
+    },
+    {
+      "category": "Android Auto / car / lock-screen",
+      "status": "partial",
+      "anchor": "PlaybackService.kt:59-127,454-527, MediaButtonReceiver.kt:28-57",
+      "note": "Lock screen, shade, Bluetooth/wired keys and audio focus work; no MediaBrowserService so no Android Auto browse/voice UI"
+    },
+    {
+      "category": "Translation / dictionary",
+      "status": "absent",
+      "anchor": "none in app/src or assets JS",
+      "note": "No translation or dictionary feature"
+    },
+    {
+      "category": "Export audio",
+      "status": "absent",
+      "anchor": "none; PcmPlayer is in-memory only",
+      "note": "No file writer or encoder; README roadmap #5"
+    },
+    {
+      "category": "Per-site rules",
+      "status": "partial",
+      "anchor": "AdBlocker.kt:419-436, MainActivity.kt:1010-1057",
+      "note": "Ad-block allowlist is truly per registrable domain; the site dialog's Reader-mode item writes the global pref; no per-site extractor rules/cache"
+    },
+    {
+      "category": "Reading stats",
+      "status": "absent",
+      "anchor": "only DiagLog lines",
+      "note": "No sentence/minute counters or stats UI"
+    },
+    {
+      "category": "Accessibility",
+      "status": "partial",
+      "anchor": "MainActivity.kt:1521-1546, extract.js:219-227",
+      "note": "contentDescriptions and 40-56 dp targets, but fixed 17 px reader CSS, no dynamic type, no TalkBack state announcements, colour-only highlight"
+    },
+    {
+      "category": "Tablet / foldables",
+      "status": "absent",
+      "anchor": "MainActivity.kt:148-571",
+      "note": "Single-column phone layout; no window-size-class logic, no multi-pane; rotation handled only via configChanges"
+    },
+    {
+      "category": "Onboarding",
+      "status": "absent",
+      "anchor": "MainActivity.kt:128-138,1549",
+      "note": "No first-run tour; opens empirenovel immediately; notification ask deferred to first Play"
+    },
+    {
+      "category": "Monetization",
+      "status": "absent",
+      "anchor": "Apache-2.0 LICENSE; no billing imports",
+      "note": "No IAP, subscription or ads code paths"
+    },
+    {
+      "category": "Crash reporting / analytics",
+      "status": "partial",
+      "anchor": "Reader.kt:30-86, DiagLog.kt:15-31",
+      "note": "Local-only crash + rolling log in Download; zero remote reporting, zero third-party SDKs (support weakness, privacy strength)"
+    },
+    {
+      "category": "WebView hardening / lifecycle",
+      "status": "partial",
+      "anchor": "MainActivity.kt:597-627,1452-1457, AndroidManifest.xml:20,51-58",
+      "note": "Scheme allowlist, cleartext off, debug-gated CDP, immutable PendingIntents; but MIXED_CONTENT_COMPATIBILITY, third-party cookies, always-on JS bridge, exported MediaButtonReceiver, allowBackup unscoped, no WebView pause/destroy/saveState"
+    },
+    {
+      "category": "Test automation / CI",
+      "status": "partial",
+      "anchor": "tools/{adblock-test,audio-dsp-test,tts-cleaner-test,url-input-test}, no .github",
+      "note": "4 host-JVM harnesses + in-app self-test; no instrumentation tests, no CI, no Gradle build"
+    },
+    {
+      "category": "Offline reading cache",
+      "status": "absent",
+      "anchor": "MainActivity.kt:604",
+      "note": "WebView LOAD_DEFAULT cache only; extracted chapter text is discarded outside the live queue"
+    },
+    {
+      "category": "Localisation / i18n",
+      "status": "absent",
+      "anchor": "hardcoded English literals in MainActivity.kt/SettingsActivity.kt",
+      "note": "No strings.xml or values-* resources; English-only UI"
+    }
+  ],
+  "strengths": [
+    "Reads arbitrary web pages (Readability + density fallback + live-DOM re-tagging + 4 next-chapter strategies), not just shared text - the gap the reference apps never solved",
+    "Both TTS engines own their audio in-process (system TTS rendered to PCM), so headset keys, lock-screen transport and screen-off playback work identically on the zero-download backend",
+    "Real streaming pipeline with bounded memory: prefetch look-ahead plus 12 s / 8-sentence generation-ahead and an async PCM writer that keeps AudioTrack off the synthesis thread",
+    "Evidence-backed neural text safety: quote glyphs removed before synthesis, short-fragment merging, int8 rail-pinning detector and 45 s cap, each tied to upstream issue evidence",
+    "Measured, hand-written DSP: 512/256 STFT denoiser with minimum statistics, decision-directed Wiener gain and a floor that avoids musical noise; p20 noise floor improved -51.6 to -80.3 dBFS with speech level unchanged",
+    "A real ad-block engine in pure Kotlin: 122,884 network / 32,403 cosmetic / 4,612 scriptlet rules, token+host indexing, procedural filters, scriptlets, surrogates, PSL, deterministic 22/22 self-test",
+    "Hermetic framework-only build (29 files, 9,746 Kotlin lines, no AndroidX, no Gradle, no Play services) that can be rebuilt on-device with build.sh; only network destinations are pages, the GitHub model release and filter-list hosts",
+    "Rare verification culture at this scale: measured numbers with artefacts, SHA-256-pinned models, host harnesses and a user-runnable self-test instead of adb-only claims"
+  ],
+  "weaknesses": [
+    "No reading-position persistence: cold start restores only last_url; the sentence cursor lives in memory, so Android process death loses the place",
+    "No library, history, bookmarks, notes or saved highlights - only 8 recent URLs",
+    "Pause is a restart: the current sentence is re-synthesised from its start (documented and peer-consistent, but up to ~12 s of replay at 180-char chunks)",
+    "Site dialog item 'Reader mode' writes the global preference, so a control labelled per-site is not per-site (correctness/UX bug)",
+    "Speed UI allows 2.5x while both engines clamp to 2.0x - silent mismatch",
+    "No ingestion path from other apps (no ACTION_SEND/ACTION_PROCESS_TEXT filter), so text the user already has cannot be read",
+    "Single live engine with no LRU cache: every switch back to neural pays a ~100 MB model load",
+    "No WebView lifecycle: no onPause/onResume/destroy or saveState, so page JS keeps running with the screen off (battery) and the WebView leaks on activity recreation",
+    "Engine errors are terminal (playing=false, service stopped) with no retry or runtime fallback to system TTS",
+    "Doc/code drift: PcmPlayer header cites CONTENT_TYPE_MUSIC and buffer=max(pcmBytes,4096) while the code uses CONTENT_TYPE_SPEECH and a 1 s ring; OPTIMIZATIONS.md repeats the stale buffer claim",
+    "Per-line synchronous MediaStore logging on the synthesis thread (DiagLog.line at sentence start/end)",
+    "No automated coverage for Reader/engine interaction, auto-advance or PlaybackService; no CI workflows",
+    "Two duplicated hand-rolled design systems (palette + widget builders) and programmatic views, raising the cost of adaptive/tablet layouts later",
+    "Exported MediaButtonReceiver with no permission and no permission guard - needless attack surface and a store-review question",
+    "WebView permissive where not required: mixed-content COMPATIBILITY mode and third-party cookies on for all sites; NSAdBlock JS bridge attached unconditionally",
+    "allowBackup=true with no backup rules, so prefs and (within quota) filesDir models enter Android Auto Backup",
+    "No remote crash visibility (local Download file only), so field failures are invisible unless the user shares the file",
+    "Model/filter-list licences are only on disk (NOTICE.txt) - no in-app attribution surface",
+    "Verification is single-environment: one API 35 emulator plus one iqoo I2214 (Android 15); no Android 7-12, tablet, foldable or 32-bit data",
+    "Build is reproducible but not one-command: hand-fetched android.jar (API 34), sherpa AAR and R8 9.5.28"
+  ],
+  "enhancementCandidates": [
+    {
+      "title": "Persist reading position + 'Continue reading'",
+      "hook": "Prefs new keys + Reader.kt:158 setContent / :341 onSentenceDone write-behind + MainActivity.kt:136 restore",
+      "size": "S",
+      "risk": "Low - plain data, no engine change",
+      "why": "Closes the biggest gap vs paid readers; process death currently loses the place"
+    },
+    {
+      "title": "Local library + history",
+      "hook": "New Library.kt (JSON in filesDir) + MainActivity overflow menu (984-1008) + list screen",
+      "size": "S/M",
+      "risk": "Low-Med - storage and a simple screen",
+      "why": "Foundation for bookmarks, stats and sync; only way to survive process reclamation"
+    },
+    {
+      "title": "Sleep timer with fade-out",
+      "hook": "PcmPlayer.kt:186 gain ramp + Reader pause/stop + MainActivity player card (403-543)",
+      "size": "S",
+      "risk": "Low - one Handler and a gain envelope",
+      "why": "Bedtime listening is the core novel-reader use case; table stakes among competitors"
+    },
+    {
+      "title": "True per-site settings",
+      "hook": "Prefs.kt:124-132 domain-key pattern + MainActivity.kt:1010-1057 dialog + WebExtractor.kt:97",
+      "size": "S/M",
+      "risk": "Low - bug-fix-adjacent, needs pref migration",
+      "why": "Fixes a misleading global write and is README roadmap #2"
+    },
+    {
+      "title": "Chapter prefetch while playing",
+      "hook": "MainActivity.kt:1277 loadNextChapter / :1170 extractNow + Reader.kt:169 appendContent",
+      "size": "M",
+      "risk": "Med - second WebView lifecycle, memory, duplicate-finish and adblock-injection interplay",
+      "why": "Removes the network + 2.5 s gap at every chapter boundary, auto mode's weakest moment"
+    },
+    {
+      "title": "Voice-clone import UI",
+      "hook": "SettingsActivity.kt:210-230 + WavReader.kt:27 + SherpaEngine.kt:201-207 loadReference + Prefs.kt:64",
+      "size": "M",
+      "risk": "Med - SAF picker, validation UX, quality expectations, gate on Pocket installed",
+      "why": "README roadmap #1; all DSP/plumbing already exists"
+    },
+    {
+      "title": "Share-sheet text ingestion",
+      "hook": "AndroidManifest.xml intent-filter + MainActivity.kt:128-138 + SentenceSplitter.kt:28",
+      "size": "S",
+      "risk": "Low - reuses the List<Block> contract with synthetic block index",
+      "why": "Turns a browser into a reader for any app's text at very low cost"
+    },
+    {
+      "title": "EPUB import",
+      "hook": "New EpubImporter.kt (java.util.zip + framework XmlPullParser) -> Reader.kt:158, needs the library model",
+      "size": "L",
+      "risk": "Med-High - EPUB edge cases vs no-heavyweight-deps rule",
+      "why": "Core of paid competitors; only worth it after the library exists"
+    },
+    {
+      "title": "Bookmarks + highlight anchors",
+      "hook": "extract.js:64 data-ns + :402 __nsHighlight + Reader.kt:288 seek + new store",
+      "size": "M",
+      "risk": "Low-Med - reuses block tagging; handle re-extraction",
+      "why": "Converts existing read-along machinery into user-visible value"
+    },
+    {
+      "title": "Volume boost + skip-silence + pitch",
+      "hook": "PcmPlayer.kt:159 write (trim + ceiling) + AudioTrack setPlaybackParams + SettingsActivity.kt:232-255",
+      "size": "S/M",
+      "risk": "Low-Med - API 23+ params, trim must not clip words",
+      "why": "Settings users expect from any TTS reader; most plumbing exists"
+    },
+    {
+      "title": "Export spoken chapter to audio",
+      "hook": "PcmPlayer.kt:277-331 writer tee + DiagLog.kt:48-86 MediaStore pattern + Settings action",
+      "size": "M",
+      "risk": "Med - disk size (24 kHz mono 16-bit ~173 MB/h), no MP3/Opus encoder",
+      "why": "README roadmap #5; WAV is honest and framework-only"
+    },
+    {
+      "title": "Reading stats",
+      "hook": "Reader.kt:341 onSentenceDone counters + JSON store + Settings readout",
+      "size": "S",
+      "risk": "Low - counters only",
+      "why": "Cheap retention feature and real usage data without telemetry"
+    },
+    {
+      "title": "Android Auto / car support",
+      "hook": "New framework MediaBrowserService + manifest; reuse Reader.kt:107-122 and PlaybackService.kt:59-127",
+      "size": "M/L",
+      "risk": "Med - Auto distribution requires Play review; sideloaded Auto needs developer mode",
+      "why": "Differentiator for commuters; MediaSession already does most transport work"
+    },
+    {
+      "title": "Reader typography + accessibility controls",
+      "hook": "extract.js:212-227 CSS vars + WebExtractor.kt:97 setReader(config) + MainActivity.kt:1315-1349 announcements + Settings reading card",
+      "size": "S/M",
+      "risk": "Low-Med - CSS injection surface exists; must not break highlight offsets",
+      "why": "Cheapest quality signal in the category and a tablet prerequisite"
+    },
+    {
+      "title": "WebView lifecycle + backup/privacy hardening",
+      "hook": "MainActivity.kt:597-627 configureWebView, :1443-1457 onResume/onDestroy, AndroidManifest.xml:20,51-58",
+      "size": "S",
+      "risk": "Low - mechanical, verifiable by inspection",
+      "why": "Stops a WebView leak and off-screen JS drain, and closes exported-receiver/backup questions before any store listing"
+    }
+  ],
+  "metrics": {
+    "audioFloorDbFSP20": {
+      "before": -51.6,
+      "after": -80.3,
+      "source": "docs/audio-quality.md:21-25"
+    },
+    "speechP50DbFS": {
+      "before": -22.6,
+      "after": -23.3,
+      "source": "docs/audio-quality.md:24-25"
+    },
+    "sherpaTruncationBeforeFix": {
+      "truncatedGenerations": 238,
+      "totalGenerations": 269,
+      "samples": 28800,
+      "seconds": 1.2,
+      "source": "docs/reader-fixes.md:14-15,24-25"
+    },
+    "firstSentenceAfterFix": {
+      "samples": 80002,
+      "genMs": 3789,
+      "source": "docs/reader-fixes-evidence/audio-and-extraction.log:22"
+    },
+    "generationThroughputRTF": {
+      "min": 0.8,
+      "max": 1.14,
+      "basis": "computed from gen-done frames/time deltas (evidence log:22-29)",
+      "status": "Inferred"
+    },
+    "extractionEmpirenovelCh67": {
+      "blocks": 39,
+      "chars": 8172,
+      "spokenSentences": 108,
+      "source": "docs/reader-fixes-evidence/extraction-check.json; verification.txt:36-37"
+    },
+    "adblockRules": {
+      "network": 122884,
+      "cosmetic": 32403,
+      "scriptlet": 4612,
+      "hostBuckets": 111922,
+      "tokenBuckets": 3449,
+      "regexBuckets": 43,
+      "fallback": 151,
+      "source": "docs/adblocker.md:63-70"
+    },
+    "adblockBuildMs": {
+      "emulator": 114,
+      "iqoo": 365,
+      "source": "docs/adblocker.md:173-181; verification.txt:30"
+    },
+    "selfTest": {
+      "passed": 22,
+      "total": 22,
+      "source": "docs/reader-fixes.md:142; verification.txt:31"
+    },
+    "buffer": {
+      "targetSeconds": 12,
+      "hardLookaheadSentences": 8,
+      "pumpIntervalMs": 500,
+      "audioTrackRingSeconds": 1,
+      "source": "Reader.kt:305-339,381-389; PcmPlayer.kt:102-108"
+    },
+    "codesize": {
+      "kotlinFiles": 29,
+      "kotlinLines": 9746,
+      "jsFiles": 3,
+      "jsLines": 3807,
+      "source": "find/wc on 2026-10-24"
+    }
+  },
+  "sources": [
+    {
+      "path": "README.md",
+      "accessed": "2026-10-24",
+      "supports": "product scope, install/build, architecture, known limits, roadmap"
+    },
+    {
+      "path": "OPTIMIZATIONS.md",
+      "accessed": "2026-10-24",
+      "supports": "provenance of tuning constants; reference-app claims (not re-verified)"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "accessed": "2026-10-24",
+      "supports": "1.0.0/1.1.0 feature and fix inventory incl. measured audio improvement"
+    },
+    {
+      "path": "build.sh",
+      "accessed": "2026-10-24",
+      "supports": "toolchain, 7 build steps, ABI/min/target, signing"
+    },
+    {
+      "path": "app/AndroidManifest.xml",
+      "accessed": "2026-10-24",
+      "supports": "permissions, exported components, foreground service, allowBackup, cleartext flag"
+    },
+    {
+      "path": "app/src/app/novelspeak/*.kt",
+      "accessed": "2026-10-24",
+      "supports": "all code claims (29 files, 9,746 lines)"
+    },
+    {
+      "path": "app/src/app/novelspeak/adblock/*.kt",
+      "accessed": "2026-10-24",
+      "supports": "engine/parser/PSL/scriptlets/surrogates/self-test claims"
+    },
+    {
+      "path": "app/assets/extract.js",
+      "accessed": "2026-10-24",
+      "supports": "extraction, reader CSS, highlight, next-chapter, obfuscation normalisation"
+    },
+    {
+      "path": "app/assets/adblock/content.js",
+      "accessed": "2026-10-24",
+      "supports": "cosmetic/procedural/overlay/nag/window.open filtering"
+    },
+    {
+      "path": "app/assets/readability.js",
+      "accessed": "2026-10-24",
+      "supports": "vendored Mozilla Readability (Apache-2.0 header)"
+    },
+    {
+      "path": "app/assets/adblock/{easylist,easyprivacy,ublock-*}.txt, public_suffix_list.dat, NOTICE.txt",
+      "accessed": "2026-10-24",
+      "supports": "bundled list identity/size (5.14 MB) and licence pointer"
+    },
+    {
+      "path": "docs/adblocker.md",
+      "accessed": "2026-10-24",
+      "supports": "engine scale, WebView platform limits, matching precedence, device stats"
+    },
+    {
+      "path": "docs/audio-quality.md",
+      "accessed": "2026-10-24",
+      "supports": "noise-floor measurement method and before/after numbers"
+    },
+    {
+      "path": "docs/reader-fixes.md",
+      "accessed": "2026-10-24",
+      "supports": "callback-bug evidence, extraction counts, splitter changes, verification"
+    },
+    {
+      "path": "docs/media-controls.md",
+      "accessed": "2026-10-24",
+      "supports": "media-key root cause (AOSP rules), fix, on-device verification"
+    },
+    {
+      "path": "docs/permissions-and-playback.md",
+      "accessed": "2026-10-24",
+      "supports": "permission inventory, notification flow, background policy"
+    },
+    {
+      "path": "docs/tts-text-normalization.md",
+      "accessed": "2026-10-24",
+      "supports": "unsafe-sentence reproduction (40/73), upstream citations, sanitizer steps, guards"
+    },
+    {
+      "path": "docs/security-alignment-2026-10-22.md",
+      "accessed": "2026-10-24",
+      "supports": "PendingIntent/permission hardening diffs"
+    },
+    {
+      "path": "docs/reader-fixes-evidence/*",
+      "accessed": "2026-10-24",
+      "supports": "on-device numbers: APK hashes/sizes, generation frames/times, 39 blocks/8,172 chars, self-test 22/22, screenshots"
+    },
+    {
+      "path": "tools/*-test/TestMain.kt",
+      "accessed": "2026-10-24",
+      "supports": "existence and scope of host-side regression harnesses"
+    },
+    {
+      "path": "build/NovelSpeak-1.1.0-arm64-v8a.apk",
+      "accessed": "2026-10-24",
+      "supports": "artifact size/entries/dex/native/assets breakdown, SHA-256"
+    }
+  ],
+  "unknowns": [
+    "Whether the published GitHub release asset is byte-identical to the repo build/ APK (no release-asset hash comparison performed)",
+    "Real-device behaviour on Android 7-12, tablets, foldables, 32-bit ABI (only emulator API 35 + iqoo I2214 evidence exists)",
+    "How widely TTS providers support synthesizeToFile (fallback exists, no fleet data)",
+    "Memory ceiling of WebView + model + 12 s buffer on low-RAM devices",
+    "End-to-end tap-Read-to-first-audio latency (not logged as one metric)",
+    "Translation/dictionary options under the framework-only constraint"
+  ]
+}

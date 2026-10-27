@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "updated": "2026-10-24",
+  "note": "Bundled fallback catalog for NovelSpeak. Mirrors ModelManager.MODELS; no network use yet (signed OTA is roadmap P1.9). bytes are the upstream archive sizes (MB-rounded: 103 MiB / 98 MiB).",
+  "models": [
+    {
+      "id": "kokoro-int8-en-v0_19",
+      "family": "kokoro",
+      "displayName": "Kokoro int8 (English, 11 voices)",
+      "sha256": "c9f0dd393615805b0bab050c340834d5e684e732aec91c0e860cd30e982c08bd",
+      "bytes": 108003328,
+      "sampleRate": 24000,
+      "license": "Apache-2.0 (sherpa-onnx runtime; model card upstream: k2-fsa/sherpa-onnx tts-models)",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-en-v0_19.tar.bz2",
+      "enabled": true
+    },
+    {
+      "id": "sherpa-onnx-pocket-tts-int8-2026-01-26",
+      "family": "pocket",
+      "displayName": "Pocket TTS int8 (English, zero-shot clone)",
+      "sha256": "2f3b88823cbbb9bf0b2477ec8ae7b3fec417b3a87b6bb5f256dba66f2ad967cb",
+      "bytes": 102760448,
+      "sampleRate": 24000,
+      "license": "Apache-2.0 (sherpa-onnx runtime; model card upstream: k2-fsa/sherpa-onnx tts-models)",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2",
+      "enabled": true
+    }
+  ]
+}

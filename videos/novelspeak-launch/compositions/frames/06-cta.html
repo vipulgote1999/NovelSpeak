@@ -1,0 +1,201 @@
+<template>
+  <div data-hf-id="hf-dzdc" id="root" data-composition-id="06-cta" data-duration="4" data-width="1080" data-height="1920" style="position:absolute;inset:0;overflow:hidden;container-type:size;isolation:isolate;">
+    <style>
+@import url("../../assets/fonts/fonts.local.css");
+*, *::before, *::after { box-sizing: border-box; }
+#root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  container-type: size;
+  isolation: isolate;
+  color: #F1F6FA;
+  font-family: 'Inter', system-ui, sans-serif;
+  pointer-events: none;
+}
+.clip { position: absolute; }
+
+/* ground */
+#cta-ground {
+  inset: 0;
+  background: #0E1318;
+}
+#cta-bloom {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 42%, rgba(111,231,190,0.10) 0%, rgba(111,231,190,0.03) 35%, transparent 70%);
+  pointer-events: none;
+}
+#cta-grain {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* whoosh */
+#cta-whoosh {
+  inset: 0;
+  background: radial-gradient(circle at 50% 53%, rgba(241,246,250,0.22) 0%, rgba(111,231,190,0.12) 25%, transparent 60%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* card */
+#cta-card {
+  left: 65px;
+  top: 819px;
+  width: 950px;
+  border: 1px solid #2C3944;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #161D24;
+  transform-origin: center center;
+}
+#cta-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* label */
+#cta-label {
+  left: 0;
+  top: 669px;
+  width: 100%;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #6FE7BE;
+  opacity: 0;
+}
+
+/* wordmark */
+#cta-wordmark {
+  left: 0;
+  top: 799px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  font-size: 122px;
+  line-height: 1;
+  color: #F1F6FA;
+}
+.cta-lm {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  height: 1.15em;
+}
+.cta-l {
+  display: inline-block;
+}
+
+/* amber rule */
+#cta-rule {
+  left: 50%;
+  top: 989px;
+  width: 96px;
+  height: 2px;
+  margin-left: -48px;
+  background: #F4C66A;
+  transform-origin: center center;
+}
+
+/* tagline */
+#cta-tagline {
+  left: 0;
+  top: 1023px;
+  width: 100%;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 34px;
+  color: #C9D4DE;
+  opacity: 0;
+}
+
+/* url */
+#cta-url {
+  left: 0;
+  top: 1167px;
+  width: 100%;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: 0.04em;
+  color: #6FE7BE;
+  opacity: 0;
+}
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+
+    <!-- ground -->
+    <div data-hf-id="hf-0lam" id="cta-ground" class="clip" data-start="0" data-duration="4" data-track-index="0">
+      <div data-hf-id="hf-w57z" id="cta-bloom"></div>
+      <div data-hf-id="hf-anvr" id="cta-grain"></div>
+    </div>
+
+    <!-- whoosh -->
+    <div data-hf-id="hf-tv44" id="cta-whoosh" class="clip" data-start="0" data-duration="0.6" data-track-index="1"></div>
+
+    <!-- card handoff -->
+    <div data-hf-id="hf-9e3n" id="cta-card" class="clip" data-start="0" data-duration="0.6" data-track-index="2">
+      <img data-hf-id="hf-9tvy" src="../../assets/stills/media-controls.png" alt="" />
+    </div>
+
+    <!-- label -->
+    <div data-hf-id="hf-catf" id="cta-label" class="clip" data-start="0.55" data-duration="3.45" data-track-index="3">FREE · OFFLINE · NO ACCOUNT</div>
+
+    <!-- wordmark -->
+    <div data-hf-id="hf-g0u2" id="cta-wordmark" class="clip" data-start="0.85" data-duration="3.15" data-track-index="4"><span data-hf-id="hf-1l8f" class="cta-lm"><span data-hf-id="hf-u694" class="cta-l">N</span></span><span data-hf-id="hf-ofjz" class="cta-lm"><span data-hf-id="hf-6hqz" class="cta-l">o</span></span><span data-hf-id="hf-o18y" class="cta-lm"><span data-hf-id="hf-khds" class="cta-l">v</span></span><span data-hf-id="hf-nmxx" class="cta-lm"><span data-hf-id="hf-8vl5" class="cta-l">e</span></span><span data-hf-id="hf-qf34" class="cta-lm"><span data-hf-id="hf-63fy" class="cta-l">l</span></span><span data-hf-id="hf-q0s3" class="cta-lm"><span data-hf-id="hf-1q2n" class="cta-l">S</span></span><span data-hf-id="hf-pmh2" class="cta-lm"><span data-hf-id="hf-i3jm" class="cta-l">p</span></span><span data-hf-id="hf-p861" class="cta-lm"><span data-hf-id="hf-00kd" class="cta-l">e</span></span><span data-hf-id="hf-lnes" class="cta-lm"><span data-hf-id="hf-7ad1" class="cta-l">a</span></span><span data-hf-id="hf-l93r" class="cta-lm"><span data-hf-id="hf-4wiv" class="cta-l">k</span></span></div>
+
+    <!-- amber rule -->
+    <div data-hf-id="hf-21lm" id="cta-rule" class="clip" data-start="1.75" data-duration="2.25" data-track-index="5"></div>
+
+    <!-- tagline -->
+    <div data-hf-id="hf-g42a" id="cta-tagline" class="clip" data-start="1.88" data-duration="2.12" data-track-index="6">A quiet place to read.</div>
+
+    <!-- url -->
+    <div data-hf-id="hf-6ksj" id="cta-url" class="clip" data-start="1.9" data-duration="2.1" data-track-index="7">github.com/vipulgote1999/NovelSpeak</div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      // 0.0-0.6 card handoff shrink/fade + whoosh
+      tl.fromTo("#cta-card", { scale: 1, y: 0, opacity: 1 }, { scale: 0.78, y: -30, opacity: 0, duration: 0.6, ease: "power3.in" }, 0);
+      tl.fromTo("#cta-whoosh", { opacity: 0.35, scale: 0.6 }, { opacity: 0, scale: 1.4, duration: 0.6, ease: "power2.out" }, 0);
+
+      // 0.55 label fades up
+      tl.fromTo("#cta-label", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.55);
+
+      // 0.85-1.75 wordmark letters mask-rise from center
+      tl.fromTo(".cta-l", { yPercent: 100 }, { yPercent: 0, duration: 0.5, ease: "power3.out", stagger: { each: 0.025, from: "start" } }, 0.85);
+
+      // 1.75-2.15 amber rule scales X
+      tl.fromTo("#cta-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power2.out" }, 1.75);
+
+      // 1.95 tagline fades up (held 2s to the end)
+      tl.fromTo("#cta-tagline", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.88);
+
+      // 2.05 url fades up (held ~2s to the end)
+      tl.fromTo("#cta-url", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.9);
+
+      window.__timelines["06-cta"] = tl;
+      tl.seek(0);
+    })();
+  </script>
+</template>

@@ -1,0 +1,15 @@
+# Audify read aloud web browser (com.tangerinesoftwarehouse.audify) - public metadata only, no APK obtained
+accessed: 2026-10-24
+
+## Google Play page (curl, hl=en&gl=US) -> HTTP 200
+
+Observed strings from Play page render:
+  title: Audify read aloud web browser
+  description: Read aloud (text to speech, TTS) web pages, web novels, and ebooks.
+  Updated on Aug 29, 2026
+
+## APK acquisition attempts (all failed -> Unknown)
+developer site https://www.tangerinesoftwarehouse.com/download/ -> no APK link (Play-only distribution)
+Aptoide API package_name=com.tangerinesoftwarehouse.audify -> HTTP 404
+Uptodown slug audify-read-aloud-web-browser -> HTTP 404
+Google Play direct APK not distributable (Play-only).

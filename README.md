@@ -1,9 +1,47 @@
 # NovelSpeak
 
-An Android browser that reads any web page aloud — built because Chrome's *"Listen to this page"*
-fails on novel sites and stops when the screen locks.
+An Android browser that reads any serialized novel aloud — with neural voices that work offline,
+screen-off controls, and no account, meter or telemetry.
+
+<p align="center">
+  <a href="docs/media/novelspeak-launch.mp4" title="Watch the 23-second launch film">
+    <img src="docs/media/novelspeak-launch-poster.jpg" alt="NovelSpeak launch film — real reader with read-along highlight and player" width="820">
+  </a>
+</p>
+
+<p align="center">
+  <a href="docs/media/novelspeak-launch.mp4"><strong>▶&nbsp; Watch the 23-second launch film</strong></a>
+  &nbsp;·&nbsp;
+  <a href="docs/media/novelspeak-launch-contact-sheet.jpg">Contact sheet</a><br>
+  <sub>9:16 · 1080 × 1920 · real app UI · no narration</sub>
+</p>
+
+**Why it exists.** Chrome's *Listen to this page* keeps playing while the screen is locked (Google's
+help doc says so), but it is limited to supported sites: *"This feature isn't available yet on all
+websites."* It also needs the *Make searches and browsing better* data-sharing setting. NovelSpeak
+instead extracts the chapter you are actually on — on any novel site — with Readability plus a
+density fallback, keeps reading through screen-off with a foreground service, and does the voices
+on-device after a one-time model download. Free file readers (ReadEra, PocketBook, Moon+) can read
+documents but cannot open a URL; paid AI readers are good at documents but bill subscriptions and
+require accounts. This app is the combination none of them ship.
+
+**Home tab** (v1.2): opening the app lands on a quiet new-tab page — wordmark, one search field, a
+curated shortcut grid for novel sites (and Library), and *Continue reading* cards. No feed, no ads,
+no personalization profile.
+
+**Around the reader** (v1.2): local library with reading position and *Continue reading*; share-sheet
+and selected-text intake; true per-site reader mode; sleep timer (minutes or end-of-chapter); reader
+typography (font, size, family, theme, width); pronunciation dictionary applied to both engines;
+volume boost, pitch and skip-silence; offline audio capture to WAV; paywall/login **detection** with
+an honest warning (no bypass); diagnostics bundle and a privacy page; no ads, analytics or accounts.
+Also: chapter prefetch (next chapter extracted in a hidden WebView so playback never waits), word-level
+read-along, bookmarks (saved sentences with snippets), EPUB/PDF/plain-text import (PDF is text-layer
+only, no OCR), translation hand-off to the system browser, a two-pane tablet/landscape layout, and
+signed model-catalog verification (`tools/model-catalog-sign.sh`).
 
 - **Any URL**: full WebView browser with URL bar, back/forward, reload.
+- **Imports**: EPUB, PDF (text layer) and plain-text files are extracted into app-private storage,
+  shown in Library and Continue reading, reopen in the reader, and keep their playback position.
 - **Generic extraction**: Mozilla Readability + a text-density fallback; works on empirenovel and
   any similar serialized-novel site (chapter pages, next-chapter detection, append-as-you-go).
 - **Two TTS backends**, switchable in settings:

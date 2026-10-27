@@ -1,0 +1,5 @@
+Shortcut icons are the trademarks/favicons of their respective sites, bundled only to
+identify the shortcut destination (same use as a browser's bookmark/favicon bar).
+Sources (fetched 2026-10-25): google.com/s2/favicons (empirenovel, royalroad, webnovel,
+wattpad), en.wikipedia.org favicon, gutenberg.org favicon, plus generated glyphs for
+LightNovelWorld and the in-app Library shortcut. No runtime requests are made for icons.

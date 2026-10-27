@@ -365,7 +365,9 @@ class PlaybackService : Service(), Reader.Listener {
     }
 
     private fun updateSession(state: Reader.State) {
-        val speed = NovelSpeakApp.instance.prefs.speed.coerceIn(0.5f, 2.5f)
+        // Engines report their own ceiling (Kokoro/Pocket and system TTS: 3.0x). Keep the
+        // MediaSession metadata consistent with what the UI and engines actually allow.
+        val speed = NovelSpeakApp.instance.prefs.speed.coerceIn(0.5f, 3.0f)
         val playback = when {
             state.playing -> PlaybackState.STATE_PLAYING
             state.total == 0 && state.status == "Idle" -> PlaybackState.STATE_NONE

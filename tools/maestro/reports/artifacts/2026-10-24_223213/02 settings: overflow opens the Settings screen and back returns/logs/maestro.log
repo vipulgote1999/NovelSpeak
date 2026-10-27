@@ -1,0 +1,40 @@
+22:32:25.135 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+22:32:25.135 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+22:32:25.136 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+22:32:25.136 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+22:32:25.136 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "app.novelspeak" RUNNING
+22:32:25.514 [ INFO] maestro.Maestro.launchApp$lambda$5: Launching app app.novelspeak
+22:32:25.514 [ INFO] maestro.Maestro.launchApp$lambda$5: Stopping app.novelspeak app during launch
+22:32:26.070 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Launch app "app.novelspeak" COMPLETED
+22:32:26.071 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on "More options" RUNNING
+22:32:28.843 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={text=, accessibilityText=More options, hintText=, ignoreBoundsFiltering=false, resource-id=, clickable=true, bounds=[944,80][1049,185], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.widget.FrameLayout, important-for-accessibility=true, error=}, children=[TreeNode(attributes={text=, accessibilityText=, hintText=, ignoreBoundsFiltering=false, resource-id=, clickable=false, bounds=[968,104][1025,161], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.view.View, important-for-accessibility=false, error=}, children=[], clickable=false, enabled=true, focused=false, checked=false, selected=false)], clickable=true, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=944, y=80, width=105, height=105))
+22:32:37.919 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via settled hierarchy
+22:32:37.924 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Tapping at (996, 132) using hierarchy based logic for wait
+22:32:39.887 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Something has changed in the UI judging by view hierarchy. Proceed.
+22:32:39.888 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on "More options" COMPLETED
+22:32:39.888 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "NovelSpeak settings" is visible RUNNING
+22:32:40.071 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "NovelSpeak settings" is visible COMPLETED
+22:32:40.072 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on "NovelSpeak settings" RUNNING
+22:32:40.356 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={text=NovelSpeak settings, accessibilityText=, hintText=, ignoreBoundsFiltering=false, resource-id=android:id/title, clickable=false, bounds=[607,975][1038,1032], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.widget.TextView, important-for-accessibility=true, error=}, children=[], clickable=false, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=607, y=975, width=431, height=57))
+22:32:41.618 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via settled hierarchy
+22:32:41.619 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Tapping at (822, 1003) using hierarchy based logic for wait
+22:32:43.111 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Something has changed in the UI judging by view hierarchy. Proceed.
+22:32:43.111 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on "NovelSpeak settings" COMPLETED
+22:32:43.111 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Settings" is visible RUNNING
+22:32:43.227 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Settings" is visible COMPLETED
+22:32:43.228 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "SPEECH ENGINE" is visible RUNNING
+22:32:43.354 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "SPEECH ENGINE" is visible COMPLETED
+22:32:43.354 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Changes are saved instantly" is visible RUNNING
+22:32:43.474 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Changes are saved instantly" is visible COMPLETED
+22:32:43.475 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Back" is visible RUNNING
+22:32:43.592 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Back" is visible COMPLETED
+22:32:43.592 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Tap on "Back" RUNNING
+22:32:43.707 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tapping on element:  UiElement(treeNode=TreeNode(attributes={text=←, accessibilityText=Back, hintText=, ignoreBoundsFiltering=false, resource-id=, clickable=true, bounds=[21,84][136,199], enabled=true, focused=false, checked=false, scrollable=false, selected=false, class=android.widget.TextView, important-for-accessibility=true, error=}, children=[], clickable=true, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=21, y=84, width=115, height=115))
+22:32:44.967 [ INFO] maestro.Maestro.tap-HgV9Ck0: Tap aimed via settled hierarchy
+22:32:44.967 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Tapping at (78, 141) using hierarchy based logic for wait
+22:32:46.067 [ INFO] maestro.Maestro.hierarchyBasedTap-ogj28Uc: Something has changed in the UI judging by view hierarchy. Proceed.
+22:32:46.067 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Tap on "Back" COMPLETED
+22:32:46.067 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Read" is visible RUNNING
+22:32:46.166 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Read" is visible COMPLETED
+22:32:46.166 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Address bar.*" is visible RUNNING
+22:32:46.222 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Address bar.*" is visible COMPLETED

@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="MedTrail_API35" tests="8" failures="0" time="254.122" timestamp="2026-10-24T22:59:33">
+    <testcase id="07 library: opened chapter appears with progress and resumes" name="07 library: opened chapter appears with progress and resumes" classname="07 library: opened chapter appears with progress and resumes" file="tools/maestro/flows/07_library_resume.yaml" time="42.672" timestamp="2026-10-24T22:59:33" status="SUCCESS">
+      <properties>
+        <property name="tags" value="pending, library"/>
+      </properties>
+    </testcase>
+    <testcase id="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" name="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" classname="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" file="tools/maestro/flows/05_per_site.yaml" time="108.271" timestamp="2026-10-24T23:00:16" status="SUCCESS">
+      <properties>
+        <property name="tags" value="pending, per-site"/>
+      </properties>
+    </testcase>
+    <testcase id="06 sleep timer: set 15 minutes, countdown appears, Off clears it" name="06 sleep timer: set 15 minutes, countdown appears, Off clears it" classname="06 sleep timer: set 15 minutes, countdown appears, Off clears it" file="tools/maestro/flows/06_sleep_timer.yaml" time="35.776" timestamp="2026-10-24T23:02:04" status="SUCCESS">
+      <properties>
+        <property name="tags" value="pending, sleep-timer"/>
+      </properties>
+    </testcase>
+    <testcase id="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" name="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" classname="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" file="tools/maestro/flows/09_privacy_about.yaml" time="9.958" timestamp="2026-10-24T23:02:40" status="SUCCESS">
+      <properties>
+        <property name="tags" value="pending, privacy"/>
+      </properties>
+    </testcase>
+    <testcase id="03 read local chapter: URL loads, Read extracts, player shows sentence state" name="03 read local chapter: URL loads, Read extracts, player shows sentence state" classname="03 read local chapter: URL loads, Read extracts, player shows sentence state" file="tools/maestro/flows/03_read_local_chapter.yaml" time="21.169" timestamp="2026-10-24T23:02:50" status="SUCCESS">
+      <properties>
+        <property name="tags" value="reading, fixture"/>
+      </properties>
+    </testcase>
+    <testcase id="02 settings: overflow opens the Settings screen and back returns" name="02 settings: overflow opens the Settings screen and back returns" classname="02 settings: overflow opens the Settings screen and back returns" file="tools/maestro/flows/02_settings.yaml" time="9.798" timestamp="2026-10-24T23:03:11" status="SUCCESS">
+      <properties>
+        <property name="tags" value="baseline, smoke"/>
+      </properties>
+    </testcase>
+    <testcase id="01 launch: address bar and player are visible" name="01 launch: address bar and player are visible" classname="01 launch: address bar and player are visible" file="tools/maestro/flows/01_launch.yaml" time="3.411" timestamp="2026-10-24T23:03:21" status="SUCCESS">
+      <properties>
+        <property name="tags" value="baseline, smoke"/>
+      </properties>
+    </testcase>
+    <testcase id="04 next chapter: Next ch follows rel=next to chapter2" name="04 next chapter: Next ch follows rel=next to chapter2" classname="04 next chapter: Next ch follows rel=next to chapter2" file="tools/maestro/flows/04_next_chapter.yaml" time="23.04" timestamp="2026-10-24T23:03:24" status="SUCCESS">
+      <properties>
+        <property name="tags" value="reading, fixture"/>
+      </properties>
+    </testcase>
+  </testsuite>
+</testsuites>

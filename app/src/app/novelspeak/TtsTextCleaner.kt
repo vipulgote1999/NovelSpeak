@@ -31,6 +31,9 @@ import java.text.Normalizer
  * sentence prosody (`. , ! ? ; :`) are preserved. Nothing is reworded, so audio
  * quality is not traded away:
  *
+ *   0. user pronunciation rules are applied to the RAW text first (P1.2): literal,
+ *      case-insensitive, longest source first, word-boundary aware. This is the only step that
+ *      intentionally changes words, and only when the user asked for it.
  *   1. NFKC + strip control/format/zero-width characters
  *   2. unify “ ” ‘ ’ „ « » and backticks
  *   3. HTML entities (rare extraction leftovers)
@@ -64,11 +67,21 @@ object TtsTextCleaner {
 
     /**
      * Clean [raw] for neural synthesis.
+     *
+     * The single-argument form (all existing call sites) is source-compatible and applies the
+     * current [TtsOverrides.pronunciationRules] table, so a Settings change is picked up by the
+     * next sentence. Pass [rules] explicitly only in tests/tools.
+     *
      * @return speakable text, or null when the sentence must be skipped.
      */
-    fun cleanForNeural(raw: String): String? {
+    fun cleanForNeural(
+        raw: String,
+        rules: List<Pair<String, String>> = TtsOverrides.pronunciationRules
+    ): String? {
         if (raw.isBlank()) return null
-        var s = raw
+        // 0. Pronunciation dictionary (P1.2). Applied BEFORE sanitisation so a user can map a
+        //    symbol/acronym ("C++", "U.S.A.") to spoken words that would otherwise be stripped.
+        var s = applyPronunciationRules(raw, rules)
 
         // 1. Compatibility decomposition + strip invisible/control characters.
         try {
@@ -187,6 +200,87 @@ object TtsTextCleaner {
         }
 
         return s
+    }
+
+    /**
+     * Applies ONLY the user pronunciation dictionary to [raw] — no neural-specific sanitisation.
+     *
+     * The Android system TTS backend speaks arbitrary text, so it must honour the same name/acronym
+     * fixes as the neural backend (the default engine is system TTS, otherwise P1.2 would look
+     * broken out of the box) but must keep quotes, punctuation and casing exactly as extracted.
+     *
+     * @return [raw] unchanged when there are no rules.
+     */
+    fun applyPronunciation(
+        raw: String,
+        rules: List<Pair<String, String>> = TtsOverrides.pronunciationRules
+    ): String {
+        if (raw.isEmpty() || rules.isEmpty()) return raw
+        return applyPronunciationRules(raw, rules)
+    }
+
+    /**
+     * Applies user pronunciation replacements (P1.2) to [text].
+     *
+     * Semantics are intentionally identical to `PronunciationRules.apply` (the Settings preview
+     * uses that one): literal matching, case-insensitive, **longest source first**, one
+     * left-to-right pass so replacements never cascade, and a source whose first/last character is
+     * a letter or digit only matches on a word boundary (punctuation-only sources match anywhere).
+     *
+     * Robustness: [TtsOverrides.sanitized] drops blank/control-char rules and caps the table, and
+     * a malformed rule can therefore never crash the generation thread. Returns [text] itself when
+     * nothing matched (no allocation on the common no-rules path).
+     */
+    private fun applyPronunciationRules(
+        text: String,
+        rules: List<Pair<String, String>>
+    ): String {
+        if (text.isEmpty() || rules.isEmpty()) return text
+        val active = TtsOverrides.sanitized(rules)
+        if (active.isEmpty()) return text
+        // Longest source first so "Shen Wei" wins over "Shen"; stable sort keeps file order for
+        // equal lengths (the first definition in the list wins).
+        val sorted = ArrayList(active).apply { sortByDescending { it.first.length } }
+        val out = StringBuilder(text.length + 16)
+        var changed = false
+        var i = 0
+        while (i < text.length) {
+            var matchedLen = 0
+            var replacement: String? = null
+            for (rule in sorted) {
+                val from = rule.first
+                if (from.length > text.length - i) continue
+                if (!text.regionMatches(i, from, 0, from.length, ignoreCase = true)) continue
+                if (!hasRuleBoundary(text, i, from)) continue
+                matchedLen = from.length
+                replacement = rule.second
+                break
+            }
+            if (replacement != null) {
+                out.append(replacement)
+                changed = true
+                i += matchedLen
+            } else {
+                out.append(text[i])
+                i++
+            }
+        }
+        return if (changed) out.toString() else text
+    }
+
+    /**
+     * Word-boundary check for a rule source at [start] in [text]: an alphanumeric source edge may
+     * not touch another letter/digit. Punctuation-only edges are exempt ("St." matches anywhere).
+     */
+    private fun hasRuleBoundary(text: String, start: Int, from: String): Boolean {
+        val end = start + from.length
+        if (from[0].isLetterOrDigit() && start > 0 && text[start - 1].isLetterOrDigit()) return false
+        if (from[from.length - 1].isLetterOrDigit() && end < text.length &&
+            text[end].isLetterOrDigit()
+        ) {
+            return false
+        }
+        return true
     }
 
     private fun stripShell(s0: String): String {

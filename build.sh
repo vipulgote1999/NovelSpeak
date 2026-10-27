@@ -34,12 +34,23 @@ fi
 
 mkdir -p "$BUILD/stage" "$BUILD/dex" "$(dirname "$OUT_APK")"
 
-echo "==> 1/7 aapt2 link (manifest + assets)"
+# Optional compiled resources (app/res). The app is assets/WebView-first, but a few
+# framework resources (network security config, backup rules, future UI XML) need aapt2.
+RES_ARGS=()
+if [ -d "$APP/res" ]; then
+  echo "==> 0/8 aapt2 compile (resources)"
+  rm -f "$BUILD/res.zip"
+  aapt2 compile --dir "$APP/res" -o "$BUILD/res.zip"
+  RES_ARGS=("$BUILD/res.zip")
+fi
+
+echo "==> 1/8 aapt2 link (manifest + assets + resources)"
 aapt2 link \
   -o "$BUILD/base.apk" \
   -I "$ANDROID_JAR" \
   --manifest "$APP/AndroidManifest.xml" \
   -A "$APP/assets" \
+  "${RES_ARGS[@]}" \
   --min-sdk-version $MIN_SDK \
   --target-sdk-version $TARGET_SDK
 

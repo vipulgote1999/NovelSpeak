@@ -1,0 +1,19 @@
+appId: app.novelspeak
+name: "13 home: new-tab page shows wordmark, search, shortcuts, continue reading"
+tags: [home]
+---
+- launchApp
+- assertVisible: "NovelSpeak"
+- assertVisible: "Search or enter a web address"
+- assertVisible: "Shortcuts"
+- assertVisible: "EmpireNovel"
+- scrollUntilVisible:
+    element:
+      text: "Continue reading"
+    direction: DOWN
+- assertVisible: "Continue reading"
+- tapOn: "Shortcut EmpireNovel"
+- extendedWaitUntil:
+    visible: "Address bar.*empirenovel.*"
+    timeout: 20000
+- assertVisible: "Read"

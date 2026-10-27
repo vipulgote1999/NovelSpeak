@@ -1,0 +1,52 @@
+appId: app.novelspeak
+name: "16 transport: voice label, sentence nav, stop, speed, restart"
+tags:
+  - reader
+  - regression
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter1.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Read chapter"
+    timeout: 20000
+- tapOn: "Read chapter"
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+"
+    timeout: 30000
+# Voice is always exposed in the player card ("Current voice, ..." contentDescription).
+- assertVisible: "Current voice, .*"
+# Sentence navigation while playing: next then previous lands back on the same sentence.
+- tapOn: "Next sentence"
+- extendedWaitUntil:
+    visible: "Sentence 2 of [0-9]+"
+    timeout: 15000
+- tapOn: "Previous sentence"
+- extendedWaitUntil:
+    visible: "Sentence 1 of [0-9]+"
+    timeout: 15000
+# Speed control updates its accessible label.
+- tapOn: "Faster"
+- assertVisible: "Playback speed .* times"
+- tapOn: "Slower"
+# Stop then restart via Read (the bug this flow guards).
+- tapOn: "Stop"
+- extendedWaitUntil:
+    visible: "Stopped"
+    timeout: 10000
+- tapOn: "Read chapter"
+- extendedWaitUntil:
+    visible: "Restarted.*"
+    timeout: 30000
+- assertVisible: "Playing"

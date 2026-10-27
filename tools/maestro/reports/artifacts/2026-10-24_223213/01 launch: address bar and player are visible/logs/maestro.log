@@ -1,0 +1,18 @@
+22:32:19.807 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Define variables RUNNING
+22:32:19.811 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Define variables COMPLETED
+22:32:19.812 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Apply configuration RUNNING
+22:32:19.812 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Apply configuration COMPLETED
+22:32:19.813 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Launch app "app.novelspeak" RUNNING
+22:32:20.001 [ INFO] maestro.Maestro.launchApp$lambda$5: Launching app app.novelspeak
+22:32:20.002 [ INFO] maestro.Maestro.launchApp$lambda$5: Stopping app.novelspeak app during launch
+22:32:20.181 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Launch app "app.novelspeak" COMPLETED
+22:32:20.182 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Address bar.*" is visible RUNNING
+22:32:23.290 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Address bar.*" is visible COMPLETED
+22:32:23.290 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Read" is visible RUNNING
+22:32:23.739 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Read" is visible COMPLETED
+22:32:23.739 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Next ch" is visible RUNNING
+22:32:23.822 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Next ch" is visible COMPLETED
+22:32:23.823 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "Play" is visible RUNNING
+22:32:23.943 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "Play" is visible COMPLETED
+22:32:23.943 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandStart: Assert that "More options" is visible RUNNING
+22:32:24.066 [ INFO] maestro.cli.runner.CliConsoleListener.onCommandFinished: Assert that "More options" is visible COMPLETED

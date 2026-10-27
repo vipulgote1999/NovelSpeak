@@ -1,0 +1,44 @@
+appId: app.novelspeak
+name: "10 bookmark: bookmark current sentence, find it in Library, reopen it"
+tags: [bookmark, library]
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter1.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter1.html"
+    timeout: 15000
+- tapOn: "Read"
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+"
+    timeout: 30000
+- tapOn: "More options"
+- tapOn: "Bookmark sentence"
+- tapOn: "More options"
+- tapOn: "Library"
+- scrollUntilVisible:
+    element:
+      text: "BOOKMARKS"
+    direction: DOWN
+    timeout: 20000
+- assertVisible: "BOOKMARKS"
+- scrollUntilVisible:
+    element:
+      text: "Bookmark entry.*"
+    direction: DOWN
+    timeout: 20000
+- tapOn: "Bookmark entry.*"
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+"
+    timeout: 20000

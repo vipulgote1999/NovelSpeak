@@ -1,0 +1,22 @@
+# Moon+ Reader free (com.flyersoft.moonreader) 4.5.4 APK
+source: Aptoide public listing (ws75.aptoide.com/api/7/app/get/package_name=com.flyersoft.moonreader)
+sourceApk: https://pool.apk.aptoide.com/appupdater/com-flyersoft-moonreader-454001-75271506-f3b136d88cfd6e71aa341dac062445f6.apk
+e71fab6821ef8c8a497a668210a05ee44e5602e04b6a06165531dcd0ace6abeb  /tmp/apks/moonreader-free-4.5.4.apk
+sizeBytes: 12812004
+package: name='com.flyersoft.moonreader' versionCode='454001' versionName='4.5.4' platformBuildVersionName='4.5.4' platformBuildVersionCode='454001'
+targetSdkVersion:'26'
+application-label:'Moon+ Reader'
+launchable-activity: name='com.flyersoft.moonreader.ActivityMain'  label='Moon+ Reader' icon=''
+permissions:
+package: com.flyersoft.moonreader
+uses-permission: name='android.permission.GET_ACCOUNTS'
+uses-permission: name='android.permission.INTERNET'
+uses-permission: name='android.permission.ACCESS_NETWORK_STATE'
+uses-permission: name='android.permission.WRITE_EXTERNAL_STORAGE'
+uses-permission: name='android.permission.READ_EXTERNAL_STORAGE'
+uses-permission: name='com.android.vending.BILLING'
+nativeLibs:
+lib/armeabi-v7a/libimagepipeline.so
+lib/armeabi-v7a/librdpdf.so
+lib/x86/libimagepipeline.so
+lib/x86/librdpdf.so

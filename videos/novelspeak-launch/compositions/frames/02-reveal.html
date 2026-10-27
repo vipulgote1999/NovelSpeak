@@ -1,0 +1,159 @@
+<template>
+  <div data-hf-id="hf-dpan" id="root" data-composition-id="02-reveal" data-duration="4" data-width="1080" data-height="1920">
+    <style>
+@import url("../../assets/fonts/fonts.local.css");
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+#root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  container-type: size;
+  isolation: isolate;
+  background: transparent;
+  color: #F1F6FA;
+  font-family: 'Inter', sans-serif;
+  pointer-events: none;
+}
+
+#rv-ground {
+  position: absolute;
+  inset: 0;
+  background: #0E1318;
+  z-index: 0;
+}
+
+#rv-glow {
+  position: absolute;
+  left: 50%;
+  top: 700px;
+  width: 980px;
+  height: 260px;
+  margin-left: -490px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(111, 231, 190, 0.22) 0%, rgba(244, 198, 106, 0.10) 40%, rgba(14, 19, 24, 0) 72%);
+  filter: blur(22px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+#rv-plate {
+  position: absolute;
+  left: 75px;
+  top: 760px;
+  width: 930px;
+  height: 1160px;
+  border: 1px solid #2C3944;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #161D24;
+  z-index: 2;
+  will-change: transform, opacity;
+}
+
+#rv-plate img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+#rv-wordmark {
+  position: absolute;
+  left: 0;
+  top: 430px;
+  width: 100%;
+  text-align: center;
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  font-size: 104px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #F1F6FA;
+  z-index: 5;
+}
+
+.rv-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  height: 1.15em;
+  line-height: 1.1;
+}
+
+.rv-l {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+#rv-rule {
+  position: absolute;
+  left: 50%;
+  top: 560px;
+  width: 38px;
+  height: 2px;
+  margin-left: -19px;
+  background: #F4C66A;
+  transform-origin: center center;
+  z-index: 5;
+}
+
+#rv-tagline {
+  position: absolute;
+  left: 0;
+  top: 600px;
+  width: 100%;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 34px;
+  color: #C9D4DE;
+  z-index: 5;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+    </style>
+
+    <div data-hf-id="hf-lznw" id="rv-ground" class="clip" data-start="0" data-duration="4" data-track-index="0">
+      <div data-hf-id="hf-cxal" id="rv-glow"></div>
+    </div>
+
+    <div data-hf-id="hf-aorv" id="rv-plate" class="clip" data-start="0" data-duration="4" data-track-index="1" data-layout-allow-overflow>
+      <img data-hf-id="hf-z6os" src="../../assets/stills/home.png" alt="" />
+    </div>
+
+    <div data-hf-id="hf-0gyk" id="rv-wordmark" class="clip" data-start="0" data-duration="4" data-track-index="2"><span data-hf-id="hf-22py" class="rv-mask"><span data-hf-id="hf-cneo" class="rv-l">N</span></span><span data-hf-id="hf-p2yy" class="rv-mask"><span data-hf-id="hf-zjar" class="rv-l">o</span></span><span data-hf-id="hf-ph9z" class="rv-mask"><span data-hf-id="hf-qe94" class="rv-l">v</span></span><span data-hf-id="hf-pvl0" class="rv-mask"><span data-hf-id="hf-vk8h" class="rv-l">e</span></span><span data-hf-id="hf-q9w1" class="rv-mask"><span data-hf-id="hf-z4zq" class="rv-l">l</span></span><span data-hf-id="hf-qo72" class="rv-mask"><span data-hf-id="hf-14iv" class="rv-l">S</span></span><span data-hf-id="hf-r2i3" class="rv-mask"><span data-hf-id="hf-o0ey" class="rv-l">p</span></span><span data-hf-id="hf-rgt4" class="rv-mask"><span data-hf-id="hf-nf39" class="rv-l">e</span></span><span data-hf-id="hf-rv45" class="rv-mask"><span data-hf-id="hf-tz0d" class="rv-l">a</span></span><span data-hf-id="hf-s9f6" class="rv-mask"><span data-hf-id="hf-xy2n" class="rv-l">k</span></span></div>
+
+    <div data-hf-id="hf-ne67" id="rv-rule" class="clip" data-start="1.1" data-duration="2.9" data-track-index="3"></div>
+
+    <div data-hf-id="hf-huw1" id="rv-tagline" class="clip" data-start="1.2" data-duration="2.8" data-track-index="4">A quiet place to read.</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+
+        gsap.set("#rv-plate", { y: 140, opacity: 0, scale: 1 });
+        gsap.set("#rv-wordmark .rv-l", { yPercent: 100, opacity: 0 });
+        gsap.set("#rv-rule", { scaleX: 0 });
+        gsap.set("#rv-tagline", { opacity: 0, y: 18 });
+
+        tl.fromTo("#rv-plate", { y: 140, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "expo.out" }, 0);
+
+        var letters = document.querySelectorAll("#rv-wordmark .rv-l");
+        letters.forEach(function (l, i) {
+          tl.fromTo(l, { yPercent: 100, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, 0.2 + i * 0.03);
+        });
+
+        tl.fromTo("#rv-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 1.1);
+
+        tl.fromTo("#rv-tagline", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 1.2);
+
+        tl.to("#rv-plate", { scale: 1.045, duration: 1.8, ease: "power3.out" }, 2.2);
+
+        tl.seek(0);
+        window.__timelines["02-reveal"] = tl;
+      })();
+    </script>
+  </div>
+</template>

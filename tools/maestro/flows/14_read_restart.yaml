@@ -1,0 +1,37 @@
+appId: app.novelspeak
+name: "14 read restart: Read restarts the current chapter at sentence 1"
+tags:
+  - reader
+  - regression
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter1.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter1.html"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Read chapter"
+    timeout: 20000
+- tapOn: "Read chapter"
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+"
+    timeout: 30000
+- tapOn: "Next sentence"
+- tapOn: "Next sentence"
+- tapOn: "Read chapter"
+- extendedWaitUntil:
+    visible: "Restarted.*"
+    timeout: 30000
+- assertVisible: "Playing"

@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="MedTrail_API35" tests="2" failures="0" time="26.875" timestamp="2026-10-24T22:32:19">
+    <testcase id="01 launch: address bar and player are visible" name="01 launch: address bar and player are visible" classname="01 launch: address bar and player are visible" file="tools/maestro/flows/01_launch.yaml" time="5.599" timestamp="2026-10-24T22:32:19" status="SUCCESS">
+      <properties>
+        <property name="tags" value="baseline, smoke"/>
+      </properties>
+    </testcase>
+    <testcase id="02 settings: overflow opens the Settings screen and back returns" name="02 settings: overflow opens the Settings screen and back returns" classname="02 settings: overflow opens the Settings screen and back returns" file="tools/maestro/flows/02_settings.yaml" time="21.261" timestamp="2026-10-24T22:32:25" status="SUCCESS">
+      <properties>
+        <property name="tags" value="baseline, smoke"/>
+      </properties>
+    </testcase>
+  </testsuite>
+</testsuites>
