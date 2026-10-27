@@ -4,6 +4,16 @@ All notable changes to NovelSpeak are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-10-27
+
+### Fixed
+
+- Prefetched **Next ch**: when pressed near the end of a chapter, the next chapter's opening
+  sentences were submitted to the TTS engine twice (once by appending while playback was still
+  live, then again by the follow-up seek). The reader now stops before appending the cached
+  chapter, so each sentence is generated exactly once.
+- Version 1.2.1 (versionCode 18).
+
 ## [1.2.0] - 2026-10-27
 
 ### Added

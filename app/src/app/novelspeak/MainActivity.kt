@@ -2662,6 +2662,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val cacheValid = cached != null && !cachedUrl.isNullOrEmpty() &&
             cachedUrl != current && prefetchedFromUrl == current
         if (cacheValid) {
+            // Stop before appending: appendContent() pumps immediately when playback is live,
+            // which would generate the next chapter's opening sentences once, and the seek
+            // below would generate them a second time. Stop first so they are submitted once.
+            val wasPlaying = reader.state().playing
+            if (wasPlaying) reader.stop()
             val title = prefetchedTitle
             prefetchedBlocks = null
             prefetchedUrl = null
@@ -2676,7 +2681,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             reader.appendContent(cached, title.ifEmpty { "Next chapter" })
             statusView.text = "Prefetched chapter · " + cached.size + " sentences"
             val p = NovelSpeakApp.instance.prefs
-            if (p.autoMode) {
+            if (wasPlaying || p.autoMode) {
                 val start = autoAppendStart
                 autoAdvance = false
                 uiHandler.postDelayed(Runnable {
