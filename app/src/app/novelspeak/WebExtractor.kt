@@ -131,6 +131,21 @@ object WebExtractor {
         }
     }
 
+    /**
+     * Like [nextLink] but installs the page-side scripts first when the button is pressed
+     * before extraction has run (e.g. immediately after navigation). Without this, Next ch
+     * silently returned "" while the page was still loading.
+     */
+    fun nextLinkEnsured(web: WebView, onResult: (String) -> Unit) {
+        web.evaluateJavascript("typeof window.__nsNextLink === 'function'") { value ->
+            if (value == "true") {
+                nextLink(web, onResult)
+            } else {
+                install(web) { nextLink(web, onResult) }
+            }
+        }
+    }
+
     private fun readAsset(ctx: Context, name: String): String = try {
         ctx.assets.open(name).bufferedReader().use { it.readText() }
     } catch (e: Throwable) {

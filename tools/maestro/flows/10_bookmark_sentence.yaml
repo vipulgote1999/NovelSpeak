@@ -27,8 +27,17 @@ tags: [bookmark, library]
 - tapOn: "Bookmark sentence"
 - tapOn: "More options"
 - tapOn: "Library"
+- scrollUntilVisible:
+    element:
+      text: "BOOKMARKS"
+    direction: DOWN
+    timeout: 20000
 - assertVisible: "BOOKMARKS"
-- assertVisible: "Bookmark entry.*"
+- scrollUntilVisible:
+    element:
+      text: "Bookmark entry.*"
+    direction: DOWN
+    timeout: 20000
 - tapOn: "Bookmark entry.*"
 - extendedWaitUntil:
     visible: "Sentence [0-9]+ of [0-9]+"

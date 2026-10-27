@@ -33,6 +33,13 @@ All notable changes to NovelSpeak are documented here. The format follows
   coverage and the data-sharing setting.
 
 ### Fixed
+- Read now always restarts the current page from sentence 1 in every state, including auto
+  mode, paused playback, an in-flight extraction, and a verification interstitial (reloads once
+  instead of silently doing nothing). Auto-advance is cancelled while restarting.
+- Next ch now resolves the next chapter reliably: the prefetched chapter is only reused when it
+  was created from the current page (stale caches are dropped), page scripts are installed on
+  demand if Next ch is pressed before extraction, the link lookup is retried while the page
+  loads, and numbered chapter URLs fall back to +1 when no anchor exists.
 - Imported EPUB/PDF/text books are now durable: extracted sentences are stored in app-private
   files (filesDir/imports/<id>.txt + index.json), listed in Library → Imported books and Home →
   Continue reading, reopen in the reader for TTS, and save playback position. Previously they

@@ -205,35 +205,57 @@
   };
 
   function findNext() {
-    var anchors = document.querySelectorAll('a[rel~="next"], a.next, a[class*="next"], a[id*="next"]');
-    for (var i = 0; i < anchors.length; i++) {
-      var href = anchors[i].href;
-      if (href && href !== location.href) return href;
+    var here = location.href;
+    function usable(href) {
+      return href && href !== here && href.indexOf('javascript:') !== 0 && href.indexOf('mailto:') !== 0;
+    }
+    // 1. Explicit machine-readable next links.
+    var rel = document.querySelectorAll('link[rel~="next"], a[rel~="next"]');
+    for (var r = 0; r < rel.length; r++) {
+      var hr = rel[r].href;
+      if (usable(hr)) return hr;
+    }
+    // 2. Class / id / aria / title hints used by chapter themes.
+    var marked = document.querySelectorAll(
+      'a.next, a[class*="next"], a[id*="next"], a[data-next], ' +
+      'a[aria-label*="next" i], a[title*="next" i]'
+    );
+    for (var i = 0; i < marked.length; i++) {
+      var hm = marked[i].href;
+      var txt = norm(marked[i].innerText || marked[i].getAttribute('aria-label') || '');
+      if (usable(hm) && !/prev|previous|back/i.test(txt)) return hm;
     }
     var all = document.querySelectorAll('a');
-    var re = /^\s*(next(\s+chapter)?|continue(\s+reading)?|read\s+more|下一[章节頁页]?|次へ)\s*[»>→]*\s*$/i;
+    // 3. Visible label is a next/continue call to action, with decorations/icons around it.
+    var re = /^\s*(next(\s+(chapter|page|part))?|continue(\s+reading)?|read\s+(the\s+)?next|下一[章节頁页]?|次へ)\s*[»>→…\.\-]*\s*$/i;
     for (var k = 0; k < all.length; k++) {
-      var txt = norm(all[k].innerText);
-      if (txt && re.test(txt)) {
-        var h = all[k].href;
-        if (h && h.indexOf('javascript:') !== 0) return h;
+      var label = norm(all[k].innerText);
+      var hk = all[k].href;
+      if (label && re.test(label) && usable(hk)) return hk;
+    }
+    // 4. Label merely contains "next" (e.g. "Next Chapter (144)") but is not a previous link.
+    for (var k2 = 0; k2 < all.length; k2++) {
+      var label2 = norm(all[k2].innerText);
+      var hk2 = all[k2].href;
+      if (label2 && /next/i.test(label2) && !/prev|previous|back/i.test(label2) && usable(hk2)) {
+        return hk2;
       }
     }
-    // Link text is often an icon; accept an href that clearly says "next".
+    // 5. Link text is often an icon; accept an href that clearly says "next".
     for (var p = 0; p < all.length; p++) {
       var hp = all[p].href;
-      if (!hp || hp === location.href || hp.indexOf('javascript:') === 0) continue;
+      if (!usable(hp)) continue;
       if (/(^|[/_.-])next([/_.-]|$)/i.test(hp)) return hp;
     }
-    // Chapter sites usually number URLs (/.../1426). Pick the +1 sibling.
-    var here = location.href.match(/^(.*?)(\d+)(\/?)([?#].*)?$/);
-    if (here) {
-      var want = String(parseInt(here[2], 10) + 1);
+    // 6. Chapter sites usually number URLs (/.../143). Pick the +1 sibling.
+    var hereMatch = here.match(/^(.*?)(\d+)(\/?)([?#].*)?$/);
+    if (hereMatch) {
+      var want = String(parseInt(hereMatch[2], 10) + 1);
       for (var q = 0; q < all.length; q++) {
         var hq = all[q].href;
-        if (!hq || hq === location.href) continue;
+        if (!hq || hq === here) continue;
         var m = hq.match(/^(.*?)(\d+)(\/?)([?#].*)?$/);
-        if (m && m[1] === here[1] && m[2] === want && m[3] === here[3]) return hq;
+        if (m && m[1] === hereMatch[1] && m[2] === want && m[3] === hereMatch[3]) return hq;
       }
     }
     return '';

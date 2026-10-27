@@ -122,6 +122,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private var autoAdvance = false
     private var autoAdvanceCount = 0
     private var autoAppendStart = -1
+    // Explicit Read restart: survives an extraction that is already in flight or a block page.
+    private var restartRequested = false
+    private var manualRestart = false
+    private var restartAfterLoad = false
+    private var nextRetryPending = false
     private var autoPlayRunnable: Runnable? = null
     private val uiHandler = Handler(Looper.getMainLooper())
 
@@ -199,6 +204,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private var prefetchLink = ""
     private var prefetching = false
     private var prefetchedUrl: String? = null
+    private var prefetchedFromUrl: String? = null
     private var prefetchedTitle = ""
     private var prefetchedBlocks: List<Reader.Block>? = null
     private var hiddenWeb: WebView? = null
@@ -613,7 +619,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             setPadding(0, dp(4), 0, 0)
         }
         readChapterButton = textButton("Read", primary = false, widthDp = 0, heightDp = 38) {
-            extractNow(append = false)
+            restartReading()
         }
         readChapterButton.contentDescription = "Read chapter"
         actionsRow.addView(readChapterButton)
@@ -1152,7 +1158,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 setReloadGlyph(true)
                 if (!editingUrl) updateAddressDisplay(url)
                 updateNavButtons()
-                if (url != null && url != prefetchLink) cancelPrefetch()
+                cancelPrefetch()
                 AdBlocker.onPageStarted(url ?: "")
                 updateShield()
                 dismissSuggestions()
@@ -1733,6 +1739,26 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (::suggestionsPanel.isInitialized) suggestionsPanel.removeAllViews()
     }
 
+    /**
+     * The Read button always restarts the current page from sentence 1. It cancels auto-advance
+     * and prefetch, stops the old queue, and re-extracts; a verification/interstitial page is
+     * reloaded once so restart is not a silent no-op.
+     */
+    private fun restartReading() {
+        cancelAutoAdvance()
+        cancelPrefetch()
+        pendingResumeIndex = -1
+        manualRestart = true
+        restartRequested = true
+        if (reader.state().playing) reader.stop()
+        DiagLog.line(this, "read restart requested url=" + (web.url ?: ""))
+        if (extractionInFlight) {
+            DiagLog.line(this, "read restart queued behind extraction")
+            return
+        }
+        extractNow(append = false)
+    }
+
     private fun extractNow(append: Boolean) {
         if (extractionInFlight) {
             DiagLog.line(this, "extract skipped (already running) url=${web.url}")
@@ -1760,7 +1786,22 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         title.contains("cloudflare", true) ||
                         title.contains("attention required", true)
                     val p = NovelSpeakApp.instance.prefs
-                    if (append && (blocked || blocks.size < 2)) {
+                    val wantsRestart = manualRestart || restartRequested
+                    if (wantsRestart && (blocked || blocks.size < 2)) {
+                        // Restarting on a verification page: reload once, then restart when the
+                        // real chapter is available instead of doing nothing.
+                        manualRestart = false
+                        restartRequested = false
+                        restartAfterLoad = true
+                        autoAdvance = false
+                        DiagLog.line(this, "read restart deferred: page blocked, reloading")
+                        Toast.makeText(
+                            this, "Page is still verifying — reloading", Toast.LENGTH_SHORT
+                        ).show()
+                        web.reload()
+                        return@runOnUiThread
+                    }
+                    if (append && !wantsRestart && (blocked || blocks.size < 2)) {
                         // Never append a 404/Cloudflare interstitial to the reading queue.
                         appendNext = false
                         autoAdvance = false
@@ -1773,7 +1814,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         // reason to throw away the readable theme.
                         WebExtractor.setReader(web, p.readerMode)
                     } else {
-                        if (append && reader.hasContent()) {
+                        if (append && !wantsRestart && reader.hasContent()) {
                             autoAppendStart = reader.state().total
                             reader.appendContent(blocks, title.ifEmpty { web.title ?: "" })
                         } else {
@@ -1787,7 +1828,23 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         // until the site finishes verification. Reader mode resumes on
                         // the real page automatically.
                         WebExtractor.setReader(web, if (blocked) false else p.readerMode)
-                        if (p.autoMode && !blocked) {
+                        if (!append && (wantsRestart || restartAfterLoad)) {
+                            manualRestart = false
+                            restartRequested = false
+                            restartAfterLoad = false
+                            autoAdvance = false
+                            autoAdvanceCount = 0
+                            reader.seek(0)
+                            AppPermissions.requestNotificationsOnce(this)
+                            reader.play()
+                            statusView.text = "Restarted · sentence 1 / " + reader.state().total
+                            statusView.contentDescription =
+                                "Reader status, restarted at sentence 1 of " + reader.state().total
+                            Toast.makeText(
+                                this, "Restarted from the beginning", Toast.LENGTH_SHORT
+                            ).show()
+                            DiagLog.line(this, "read restarted at sentence 1")
+                        } else if (p.autoMode && !blocked) {
                             if (auto) {
                                 // New chapter: give the page a moment, then start at its
                                 // first sentence instead of continuing the old cursor.
@@ -1885,6 +1942,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         } catch (t: Throwable) {
         }
         prefetching = true
+        val origin = current
         WebExtractor.nextLink(web) { link ->
             runOnUiThread {
                 prefetching = false
@@ -1905,6 +1963,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                                     runOnUiThread {
                                         if (hiddenWeb === v && wall.isEmpty() && blocks.isNotEmpty()) {
                                             prefetchedUrl = link
+                                            prefetchedFromUrl = origin
                                             prefetchedTitle = t
                                             prefetchedBlocks = blocks
                                             DiagLog.line(
@@ -1934,6 +1993,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         prefetching = false
         prefetchLink = ""
         prefetchedUrl = null
+        prefetchedFromUrl = null
         prefetchedTitle = ""
         prefetchedBlocks = null
         val hw = hiddenWeb
@@ -2537,6 +2597,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     override fun onQueueFinished() {
+        if (manualRestart || restartRequested) return
         if (sleepTimerChapter) {
             sleepTimerChapter = false
             sleepTimerEndsAt = 0L
@@ -2576,18 +2637,25 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private fun loadNextChapter() {
         pendingResumeIndex = -1
+        val current = web.url ?: lastDisplayedUrl
         val cached = prefetchedBlocks
         val cachedUrl = prefetchedUrl
-        if (cached != null && !cachedUrl.isNullOrEmpty()) {
+        // Only reuse a prefetch made from *this* page and pointing somewhere else. A cache
+        // created on chapter N must never be used after the user navigated to N+1 (that was
+        // the "Next ch loads the same page again" bug).
+        val cacheValid = cached != null && !cachedUrl.isNullOrEmpty() &&
+            cachedUrl != current && prefetchedFromUrl == current
+        if (cacheValid) {
             val title = prefetchedTitle
             prefetchedBlocks = null
             prefetchedUrl = null
+            prefetchedFromUrl = null
             prefetchedTitle = ""
             prefetchLink = ""
             appendNext = false
             suppressNextExtract = true
             lastExtractedUrl = cachedUrl
-            lastExtractedBlocks = cached.size
+            lastExtractedBlocks = cached!!.size
             autoAppendStart = reader.state().total
             reader.appendContent(cached, title.ifEmpty { "Next chapter" })
             statusView.text = "Prefetched chapter · " + cached.size + " sentences"
@@ -2605,15 +2673,39 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             web.loadUrl(cachedUrl)
             return
         }
-        WebExtractor.nextLink(web) { link ->
-            DiagLog.line(this, "next chapter link=${link.ifEmpty { "(none)" }}")
+        if (cached != null || !prefetchedUrl.isNullOrEmpty()) {
+            DiagLog.line(
+                this,
+                "stale prefetch dropped from=" + (prefetchedFromUrl ?: "?") + " current=" + current
+            )
+            cancelPrefetch()
+        }
+        WebExtractor.nextLinkEnsured(web) { link ->
+            DiagLog.line(this, "next chapter link=" + (link.ifEmpty { "(none)" }))
             runOnUiThread {
-                if (link.isNullOrEmpty()) {
+                var target = link ?: ""
+                if (target.isEmpty() || target == current) {
+                    // No usable anchor (icon-only nav, script page, verification wall):
+                    // fall back to the numbered chapter URL when it is safe to do so.
+                    target = ChapterUrls.nextNumbered(current)
+                    if (target.isNotEmpty()) {
+                        DiagLog.line(this, "next chapter fallback=" + target)
+                    }
+                }
+                if (target.isEmpty()) {
+                    if (pageLoading && !nextRetryPending) {
+                        nextRetryPending = true
+                        uiHandler.postDelayed({
+                            nextRetryPending = false
+                            loadNextChapter()
+                        }, 900L)
+                        return@runOnUiThread
+                    }
                     autoAdvance = false
                     Toast.makeText(this, "No next-chapter link found", Toast.LENGTH_SHORT).show()
                 } else {
                     appendNext = true
-                    web.loadUrl(link)
+                    web.loadUrl(target)
                 }
             }
         }

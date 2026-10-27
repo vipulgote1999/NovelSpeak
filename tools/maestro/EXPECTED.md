@@ -144,3 +144,5 @@ flow was then updated for the new player status wording (`Playing`, not `Extract
 | intents.sh | share intake | ACTION_SEND text reaches the reader | "Shared text"/sentence state | PASS |
 
 | 13_home.yaml | home tab | wordmark/search/shortcuts/continue; shortcut opens page | PASS |
+| 14_read_restart.yaml | reader | Read restarts current chapter at sentence 1 | PASS |
+| 15_next_fallback.yaml | reader | Next ch advances numbered URL without a next anchor | PASS |
