@@ -224,13 +224,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Initialize before the first WebView navigation so document-start scriptlets and
+        // extraction can see prefs/loading state instead of racing app startup.
+        AdBlocker.init(applicationContext)
         applyWindowTheme()
         buildUi()
         configureWebView()
         reader.addListener(this)
-        // Defensive: Application.onCreate normally initializes this, but a page can finish
-        // before a slow startup reaches it. Ensure prefs/loading are set before extraction.
-        AdBlocker.init(applicationContext)
         AdBlocker.addListener(this)
         val storage = PrefsLibraryStorage(this)
         library = LibraryStore(storage)
@@ -1155,6 +1155,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             web.addJavascriptInterface(AdBlockBridge(), "NSAdBlock")
         } catch (t: Throwable) {
         }
+        AdBlocker.installDocumentStart(web, NovelSpeakApp.instance.prefs.adblockPopups)
         try {
             if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
                 WebView.setWebContentsDebuggingEnabled(true)
@@ -1228,7 +1229,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 getSharedPreferences("novelspeak", MODE_PRIVATE).edit()
                     .putString("last_url", url ?: "").apply()
                 updateNavButtons()
-                if (view != null) AdBlocker.inject(view, url ?: "")
                 // Prefetched chapter: its text was appended before the visible page loaded.
                 // Tag the live DOM only (for read-along) and never replace the queue.
                 if (suppressNextExtract) {
@@ -1991,26 +1991,44 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     hw.settings.domStorageEnabled = true
                     hw.settings.javaScriptCanOpenWindowsAutomatically = false
                     hw.settings.setSupportMultipleWindows(false)
+                    try {
+                        hw.addJavascriptInterface(AdBlockBridge(UrlTools.host(link)), "NSAdBlock")
+                    } catch (t: Throwable) {
+                    }
+                    AdBlocker.installDocumentStart(hw, NovelSpeakApp.instance.prefs.adblockPopups)
                     hiddenWeb = hw
                     hw.webViewClient = object : WebViewClient() {
+                        override fun shouldInterceptRequest(
+                            view: WebView?,
+                            request: WebResourceRequest?
+                        ): WebResourceResponse? = AdBlocker.intercept(request, link)
+
                         override fun onPageFinished(v: WebView?, u: String?) {
                             if (hiddenWeb !== v || v == null) return
-                            WebExtractor.install(v) {
-                                WebExtractor.extract(v) { t, blocks, wall ->
-                                    runOnUiThread {
-                                        if (hiddenWeb === v && wall.isEmpty() && blocks.isNotEmpty()) {
-                                            prefetchedUrl = link
-                                            prefetchedFromUrl = origin
-                                            prefetchedTitle = t
-                                            prefetchedBlocks = blocks
-                                            DiagLog.line(
-                                                this@MainActivity,
-                                                "prefetch ready blocks=" + blocks.size + " url=" + link
-                                            )
-                                        }
-                                        if (hiddenWeb === v) {
-                                            hiddenWeb = null
-                                            try { v.stopLoading(); v.destroy() } catch (e: Throwable) { }
+                            // The hidden view must run the same engine + cosmetic pipeline as
+                            // the visible page; otherwise a prefetched chapter can bypass ads.
+                            AdBlocker.whenReady(1500) {
+                                if (hiddenWeb !== v) return@whenReady
+                                AdBlocker.inject(v, link) {
+                                    if (hiddenWeb !== v) return@inject
+                                    WebExtractor.install(v) {
+                                        WebExtractor.extract(v) { t, blocks, wall ->
+                                            runOnUiThread {
+                                                if (hiddenWeb === v && wall.isEmpty() && blocks.isNotEmpty()) {
+                                                    prefetchedUrl = link
+                                                    prefetchedFromUrl = origin
+                                                    prefetchedTitle = t
+                                                    prefetchedBlocks = blocks
+                                                    DiagLog.line(
+                                                        this@MainActivity,
+                                                        "prefetch ready blocks=" + blocks.size + " url=" + link
+                                                    )
+                                                }
+                                                if (hiddenWeb === v) {
+                                                    hiddenWeb = null
+                                                    try { v.stopLoading(); v.destroy() } catch (e: Throwable) { }
+                                                }
+                                            }
                                         }
                                     }
                                 }

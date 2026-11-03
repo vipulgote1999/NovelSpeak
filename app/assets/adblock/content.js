@@ -525,7 +525,7 @@
         try {
             var bridge = window.NSAdBlock;
             if (!bridge || !bridge.lookup) return;
-            var raw = bridge.lookup(JSON.stringify({c: classes, i: ids}));
+            var raw = bridge.lookup(JSON.stringify({c: classes, i: ids}), window.location.hostname);
             var list = JSON.parse(raw);
             if (list && list.length) addCssList(list);
         } catch (e) {}

@@ -9,16 +9,19 @@ import org.json.JSONObject
  * and report a hidden-element count; it has no file, network, or reflection access. Inputs are
  * bounded because any page can call it.
  */
-class AdBlockBridge {
+class AdBlockBridge(private val documentHost: String? = null) {
 
     @JavascriptInterface
-    fun lookup(json: String): String {
+    fun lookup(json: String, pageHost: String?): String {
         if (json.length > 32_768) return "[]"
         return try {
             val obj = JSONObject(json)
             val classes = names(obj.optJSONArray("c"))
             val ids = names(obj.optJSONArray("i"))
-            val host = AdBlocker.currentDocumentHost() ?: return "[]"
+            val host = pageHost?.takeIf { it.isNotEmpty() }
+                ?: documentHost
+                ?: AdBlocker.currentDocumentHost()
+                ?: return "[]"
             val selectors = AdBlocker.genericSelectors(classes, ids, host)
             JSONArray(selectors).toString()
         } catch (t: Throwable) {

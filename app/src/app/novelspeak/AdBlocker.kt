@@ -10,6 +10,8 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.widget.Toast
 import java.lang.ref.WeakReference
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import app.novelspeak.adblock.AdBlockEngine
 import app.novelspeak.adblock.CosmeticConfig
 import app.novelspeak.adblock.FilterParser
@@ -90,6 +92,21 @@ object AdBlocker {
     @Volatile
     private var webRef: WeakReference<WebView>? = null
 
+    /** Document-start scripts are per-WebView; the main and prefetch views both need one. */
+    private val documentStartViews: MutableSet<WebView> =
+        java.util.Collections.newSetFromMap(java.util.WeakHashMap<WebView, Boolean>())
+
+    /**
+     * Coalesces concurrent cosmetic injections for one WebView/URL. The visible page triggers
+     * injection at commit-visible and again from extraction; extraction waits for the first pass
+     * instead of racing a second one. Hidden prefetch views have their own key.
+     */
+    private class InjectState(val url: String) {
+        val waiters = ArrayList<() -> Unit>()
+    }
+
+    private val injectStates = java.util.WeakHashMap<WebView, InjectState>()
+
     private val pixelGif: ByteArray by lazy {
         Base64.decode("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==", Base64.DEFAULT)
     }
@@ -134,6 +151,46 @@ object AdBlocker {
     /** Keeps a weak handle so cosmetic rules can be applied when the engine finishes after a page load. */
     fun attach(web: WebView) {
         webRef = WeakReference(web)
+    }
+
+    /**
+     * Installs an early popup guard before the page's own scripts run when the WebView supports
+     * `DOCUMENT_START_SCRIPT`. This is what stops a first-party popunder script from capturing
+     * the native `window.open` before our override. Older WebViews fall back to the existing
+     * commit-visible/page-finished injection.
+     *
+     * Keep this bootstrap independent of the full content runtime. The document-start world and
+     * the `evaluateJavascript` world are not guaranteed to share globals; loading content.js here
+     * can set `__nsAdblock.__v` in one world and suppress the later main-world initializer.
+     */
+    fun installDocumentStart(web: WebView, popups: Boolean) {
+        val p = prefs ?: return
+        if (!p.adblockEnabled || !p.adblockCosmetic) return
+        try {
+            if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                DiagLog.line(web.context, "adblock document-start unsupported")
+                return
+            }
+            if (!documentStartViews.add(web)) return
+            val guard = if (popups) {
+                "window.open=function(){return null};" +
+                    "document.addEventListener('click',function(e){" +
+                    "var a=e.target&&e.target.closest?e.target.closest('a[target=\"_blank\"]'):null;" +
+                    "if(a)a.removeAttribute('target');},true);"
+            } else {
+                ""
+            }
+            val bootstrap = "(function(){try{if(window.__nsEarlyPopupGuard)return;" +
+                "window.__nsEarlyPopupGuard=true;" + guard + "}catch(e){}})();"
+            WebViewCompat.addDocumentStartJavaScript(web, bootstrap, setOf("*"))
+            DiagLog.line(web.context, "adblock document-start installed")
+        } catch (t: Throwable) {
+            documentStartViews.remove(web)
+            DiagLog.line(
+                web.context,
+                "adblock document-start unavailable: ${t.javaClass.simpleName}: ${t.message}"
+            )
+        }
     }
 
     fun removeListener(listener: Listener) {
@@ -255,14 +312,18 @@ object AdBlocker {
     }
 
     /** Called from `WebViewClient.shouldInterceptRequest` on a background thread. */
-    fun intercept(request: WebResourceRequest?): WebResourceResponse? {
+    fun intercept(
+        request: WebResourceRequest?,
+        documentUrlOverride: String? = null
+    ): WebResourceResponse? {
         if (request == null) return null
         val url = request.url?.toString()
 
         // A main-frame request is the earliest reliable document context; onPageStarted may not
-        // have run yet for the very first subresource of a navigation.
+        // have run yet for the very first subresource of a navigation. The prefetch WebView
+        // passes its own document URL and must not overwrite the visible page's context.
         if (request.isForMainFrame) {
-            if (!url.isNullOrEmpty()) {
+            if (documentUrlOverride == null && !url.isNullOrEmpty()) {
                 currentUrl = url
                 currentHost = UrlTools.host(url)
             }
@@ -272,7 +333,7 @@ object AdBlocker {
         val p = prefs ?: return null
         if (!p.adblockEnabled) return null
         val e = engine ?: return null
-        val documentUrl = currentUrl ?: return null
+        val documentUrl = documentUrlOverride ?: currentUrl ?: return null
         val documentHost = UrlTools.host(documentUrl) ?: return null
         if (isSiteAllowed(documentHost)) return null
         if (url == null || !UrlTools.isHttpUrl(url)) return null
@@ -415,15 +476,37 @@ object AdBlocker {
     }
 
     fun inject(web: WebView, url: String, onDone: (() -> Unit)? = null) {
+        val state = InjectState(url)
+        synchronized(injectStates) {
+            val existing = injectStates[web]
+            if (existing != null && existing.url == url) {
+                if (onDone != null) existing.waiters.add(onDone)
+                return
+            }
+            injectStates[web] = state
+        }
         val timeoutHandler = Handler(Looper.getMainLooper())
         var finished = false
         fun finish() {
             if (finished) return
             finished = true
             timeoutHandler.removeCallbacksAndMessages(null)
+            val waiters = synchronized(injectStates) {
+                if (injectStates[web] === state) injectStates.remove(web)
+                val copy = ArrayList(state.waiters)
+                state.waiters.clear()
+                copy
+            }
+            DiagLog.line(web.context, "adblock inject done url=$url waiters=${waiters.size}")
             try {
                 onDone?.invoke()
             } catch (t: Throwable) {
+            }
+            for (waiter in waiters) {
+                try {
+                    waiter()
+                } catch (t: Throwable) {
+                }
             }
         }
         // evaluateJavascript should always call back, but a destroyed WebView can swallow it.
@@ -436,11 +519,13 @@ object AdBlocker {
             finish()
             return
         }
+        installDocumentStart(web, p.adblockPopups)
         val host = UrlTools.host(url)
         if (host == null || isSiteAllowed(host)) {
             finish()
             return
         }
+        DiagLog.line(web.context, "adblock inject start host=$host")
 
         try {
             val script = contentScript ?: readAssetText(web.context, "adblock/content.js")?.also { contentScript = it }
@@ -456,13 +541,20 @@ object AdBlocker {
                     // the live document. Extraction waits for this so Readability's clone
                     // cannot include an ad that is about to be display:none.
                     web.evaluateJavascript("window.__nsAdblockInit && window.__nsAdblockInit($json)") {
+                        DiagLog.line(
+                            web.context,
+                            "adblock inject init host=$host hide=${config.hideSelectors.size} " +
+                                "procedural=${config.procedural.size}"
+                        )
                         var injected = 0
                         for (js in config.scriptlets) {
                             if (injected >= 12) break
                             web.evaluateJavascript(js, null)
                             injected++
                         }
-                        finish()
+                        // Give the browser one style/layout turn after inserting the generic
+                        // cosmetic rules before allowing Readability to clone the page.
+                        timeoutHandler.postDelayed({ finish() }, 80L)
                     }
                 } catch (t: Throwable) {
                     DiagLog.line(web.context, "adblock inject failed: ${t.javaClass.simpleName}: ${t.message}")
