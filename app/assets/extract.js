@@ -98,20 +98,31 @@
   // Readability parses a detached clone, so the data-ns marks from collect() never reach the
   // visible page. Match extracted blocks back to real leaf elements by normalized text.
   function tagLive(blocks) {
-    if (!blocks.length) return;
+    if (!blocks.length) return blocks;
     var nodes = document.querySelectorAll(BLOCK_SEL);
     var used = Object.create(null);
+    var kept = [];
     for (var b = 0; b < blocks.length; b++) {
       var want = blocks[b].text;
       var best = -1, bestScore = 0;
+      var hiddenMatch = -1;
       for (var i = 0; i < nodes.length; i++) {
         if (used[i]) continue;
         var el = nodes[i];
         if (el.closest(SKIP_SEL)) continue;
         if (el.querySelector(BLOCK_SEL)) continue;
-        if (!visible(el)) continue;
-        var t = norm(el.innerText || '');
+        var isVisible = visible(el);
+        // innerText is empty on display:none nodes; textContent is the only way to
+        // recognise the hidden ad text that Readability cloned.
+        var t = norm((isVisible ? el.innerText : el.textContent) || '');
         if (!t) continue;
+        if (!isVisible) {
+          // Readability clones the document without computed styles, so an element
+          // hidden by an adblock cosmetic rule still reaches its article. Exact-match
+          // that text against the live (hidden) node and drop it before TTS sees it.
+          if (hiddenMatch < 0 && t === want) hiddenMatch = i;
+          continue;
+        }
         var score = 0;
         if (t === want) score = 100;
         else if (t.length >= 20 && want.length >= 20 &&
@@ -121,8 +132,14 @@
       if (best >= 0) {
         used[best] = 1;
         nodes[best].setAttribute('data-ns', String(blocks[b].i));
+        kept.push(blocks[b]);
+      } else if (hiddenMatch < 0) {
+        // No live counterpart at all: keep it. Readability can emit a block that the
+        // live page restructures, and dropping it would lose real chapter text.
+        kept.push(blocks[b]);
       }
     }
+    return kept;
   }
 
   function extract() {
@@ -152,7 +169,7 @@
       usedReadability = false;
       blocks = collect(bestContainer() || document.body, false);
     }
-    if (usedReadability) tagLive(blocks);
+    if (usedReadability) blocks = tagLive(blocks);
     if (blocks.length === 0) {
       // Last resort: whole body as one block so the reader still says something.
       var t = norm(document.body ? document.body.innerText : '');

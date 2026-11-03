@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Ad extraction regression</title>
+<style>
+  /* The same effect as a bundled cosmetic rule such as ##.ad--article. */
+  .ad--article { display: none !important; }
+</style>
+</head>
+<body>
+<article>
+  <h1>The Lantern</h1>
+  <p class="real">The harbour was quiet, and the lantern burned low.</p>
+  <div class="ad--article">
+    <p>SPONSORED: Buy the new miracle cream today. Click here for a special offer.</p>
+  </div>
+  <p class="real">She turned the page and kept reading until dawn.</p>
+</article>
+<pre id="out">waiting</pre>
+<script src="../../app/assets/readability.js"></script>
+<script src="../../app/assets/extract.js"></script>
+<script>
+  setTimeout(function () {
+    try {
+      document.getElementById('out').textContent = window.__nsExtract();
+    } catch (e) {
+      document.getElementById('out').textContent = 'ERROR ' + e;
+    }
+  }, 300);
+</script>
+</body>
+</html>
