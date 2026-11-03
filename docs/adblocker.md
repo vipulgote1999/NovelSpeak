@@ -300,6 +300,9 @@ first generic class/id batch is flushed synchronously in `__nsAdblockInit`, befo
 the extraction callback, rather than waiting for the previous 120 ms debounce.
 The TTS queue receives only the visible text, so the fix applies equally to the
 system engine and the sherpa engines (extraction happens before either speaks).
+The same fixture was run with both engines selected: system reported
+`tts init ok voices=442` / `tts render ok` for the two real paragraphs, and
+sherpa logged `gen start` only for “The Lantern…” and “She turned…”.
 
 ### Upstream comparison (checked 2026-11-03)
 
