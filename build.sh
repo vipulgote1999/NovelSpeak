@@ -75,9 +75,15 @@ mkdir -p "$BUILD/jni/$ABI"
 unzip -o -q -j "$DEPS/sherpa.aar" "jni/$ABI/*" -d "$BUILD/jni/$ABI"
 
 echo "==> 3/7 kotlinc"
+for dep in webkit-classes.jar annotation.jar; do
+  if [ ! -f "$DEPS/$dep" ]; then
+    echo "Missing $DEPS/$dep; run tools/fetch-webkit-deps.sh (see README)" >&2
+    exit 1
+  fi
+done
 rm -rf "$BUILD/classes"
 kotlinc "$APP/src" \
-  -classpath "$ANDROID_JAR:$DEPS/aar/classes.jar:$DEPS/commons-compress.jar:$DEPS/commons-io.jar" \
+  -classpath "$ANDROID_JAR:$DEPS/aar/classes.jar:$DEPS/commons-compress.jar:$DEPS/commons-io.jar:$DEPS/webkit-classes.jar:$DEPS/annotation.jar" \
   -jvm-target 1.8 \
   -nowarn \
   -d "$BUILD/classes"
@@ -89,7 +95,7 @@ rm -rf "$BUILD/dex"; mkdir -p "$BUILD/dex"
 # Prefer a modern R8/D8 from a jar: Termux's d8 3.3 crashes on newer libraries (commons-io).
 if [ -f "$DEPS/r8.jar" ]; then
   D8=(java -cp "$DEPS/r8.jar" com.android.tools.r8.D8)
-  LIBS=("$BUILD/classes.jar" "$DEPS/aar/classes.jar" "$DEPS/commons-compress.jar" "$DEPS/commons-io.jar" "$KOTLIN_STDLIB")
+  LIBS=("$BUILD/classes.jar" "$DEPS/aar/classes.jar" "$DEPS/commons-compress.jar" "$DEPS/commons-io.jar" "$KOTLIN_STDLIB" "$DEPS/webkit-classes.jar" "$DEPS/annotation.jar")
 else
   D8=(d8)
   # Old d8 cannot parse multi-release jars; strip module-info before feeding it.
@@ -99,7 +105,7 @@ else
       zip -q -d "$DEPS/$j-d8.jar" 'META-INF/versions/*' 'module-info.class' 2>/dev/null || true
     fi
   done
-  LIBS=("$BUILD/classes.jar" "$DEPS/aar/classes.jar" "$DEPS/commons-compress-d8.jar" "$DEPS/commons-io-d8.jar" "$KOTLIN_STDLIB")
+  LIBS=("$BUILD/classes.jar" "$DEPS/aar/classes.jar" "$DEPS/commons-compress-d8.jar" "$DEPS/commons-io-d8.jar" "$KOTLIN_STDLIB" "$DEPS/webkit-classes.jar" "$DEPS/annotation.jar")
 fi
 "${D8[@]}" --lib "$ANDROID_JAR" --min-api $MIN_SDK --output "$BUILD/dex" "${LIBS[@]}"
 

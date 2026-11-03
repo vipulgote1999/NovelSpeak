@@ -176,7 +176,7 @@ curl -LO https://repo1.maven.org/maven2/org/apache/commons/commons-compress/1.27
 curl -LO https://repo1.maven.org/maven2/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar
 # d8 9.x from Google Maven (Termux's d8 3.3 crashes on commons-io)
 curl -LO https://dl.google.com/dl/android/maven2/com/android/tools/r8/9.5.28/r8-9.5.28.jar && mv r8-9.5.28.jar r8.jar
-cd - && ./build.sh
+cd - && DEPS="$HOME/build/deps" tools/fetch-webkit-deps.sh && ./build.sh
 ```
 
 `build.sh` runs: `aapt2 link` → `kotlinc` → `d8` → package dex + `lib/arm64-v8a/*.so` → `zipalign`
@@ -187,10 +187,12 @@ Use `ABI=armeabi-v7a ./build.sh` for 32-bit devices.
 
 ### Android Studio
 
-The sources are plain Kotlin with **no AndroidX** (framework APIs only), so the project opens
+The sources are plain Kotlin. The no-Gradle build vendors only the AndroidX WebKit and
+annotation classes needed for document-start script injection, so the project opens
 anywhere. For AGP 8 remove the `package="app.novelspeak"` attribute from `app/AndroidManifest.xml`
 and set `namespace = "app.novelspeak"` in the module's `build.gradle.kts`; add
-`implementation(files("libs/sherpa-onnx.aar"))`, `implementation("org.apache.commons:commons-compress:1.27.1")`,
+`implementation(files("libs/sherpa-onnx.aar"))`, `implementation("androidx.webkit:webkit:1.14.0")`,
+`implementation("org.apache.commons:commons-compress:1.27.1")`,
 `implementation("commons-io:commons-io:2.20.0")`.
 
 ## Architecture
