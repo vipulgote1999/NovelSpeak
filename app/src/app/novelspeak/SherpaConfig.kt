@@ -67,7 +67,9 @@ internal object SherpaConfig {
                 ModelManager.findFile(dir, listOf("encoder.int8.onnx", "encoder.onnx"))!!.absolutePath,
                 ModelManager.findFile(dir, listOf("decoder.int8.onnx", "decoder.onnx"))!!.absolutePath,
                 vocoderFile.absolutePath,
-                "", // dataDir
+                // The AAR's ZipVoice frontend (v1.13.8) still needs eSpeak data for
+                // non-Chinese text; upstream 2.x deprecates it but tolerates it.
+                File(dir, "espeak-ng-data").absolutePath,
                 File(dir, "lexicon.txt").absolutePath,
                 1.0f, // featScale
                 0.5f, // tShift
