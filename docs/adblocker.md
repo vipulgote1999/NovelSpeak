@@ -368,7 +368,10 @@ parse.
 
 Older WebViews that do not advertise `DOCUMENT_START_SCRIPT` log
 `adblock document-start unsupported` and fall back to the existing
-commit-visible injection and the local `po.js` network rule.
+commit-visible injection and the local `po.js` network rule. If the popup
+setting changes, or ad blocking/cosmetic filtering is turned off, the handler
+is removed and (when re-enabled) re-added on the next resume/injection, so
+future documents follow the current setting.
 
 ### Prefetch WebView coverage
 

@@ -10,6 +10,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.widget.Toast
 import java.lang.ref.WeakReference
+import androidx.webkit.ScriptHandler
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import app.novelspeak.adblock.AdBlockEngine
@@ -92,9 +93,10 @@ object AdBlocker {
     @Volatile
     private var webRef: WeakReference<WebView>? = null
 
-    /** Document-start scripts are per-WebView; the main and prefetch views both need one. */
-    private val documentStartViews: MutableSet<WebView> =
-        java.util.Collections.newSetFromMap(java.util.WeakHashMap<WebView, Boolean>())
+    /** Document-start handlers are per-WebView; the main and prefetch views both need one. */
+    private class DocumentStartState(val handler: ScriptHandler?)
+
+    private val documentStartStates = java.util.WeakHashMap<WebView, DocumentStartState>()
 
     /**
      * Coalesces concurrent cosmetic injections for one WebView/URL. The visible page triggers
@@ -165,27 +167,32 @@ object AdBlocker {
      */
     fun installDocumentStart(web: WebView, popups: Boolean) {
         val p = prefs ?: return
-        if (!p.adblockEnabled || !p.adblockCosmetic) return
+        if (!p.adblockEnabled || !p.adblockCosmetic || !popups) {
+            val old = documentStartStates.remove(web)
+            try {
+                old?.handler?.remove()
+            } catch (t: Throwable) {
+            }
+            return
+        }
+        if (documentStartStates.containsKey(web)) return
         try {
             if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                documentStartStates[web] = DocumentStartState(null)
                 DiagLog.line(web.context, "adblock document-start unsupported")
                 return
             }
-            if (!documentStartViews.add(web)) return
-            val guard = if (popups) {
-                "window.open=function(){return null};" +
-                    "document.addEventListener('click',function(e){" +
-                    "var a=e.target&&e.target.closest?e.target.closest('a[target=\"_blank\"]'):null;" +
-                    "if(a)a.removeAttribute('target');},true);"
-            } else {
-                ""
-            }
+            val guard = "window.open=function(){return null};" +
+                "document.addEventListener('click',function(e){" +
+                "var a=e.target&&e.target.closest?e.target.closest('a[target=\"_blank\"]'):null;" +
+                "if(a)a.removeAttribute('target');},true);"
             val bootstrap = "(function(){try{if(window.__nsEarlyPopupGuard)return;" +
                 "window.__nsEarlyPopupGuard=true;" + guard + "}catch(e){}})();"
-            WebViewCompat.addDocumentStartJavaScript(web, bootstrap, setOf("*"))
+            val handler = WebViewCompat.addDocumentStartJavaScript(web, bootstrap, setOf("*"))
+            documentStartStates[web] = DocumentStartState(handler)
             DiagLog.line(web.context, "adblock document-start installed")
         } catch (t: Throwable) {
-            documentStartViews.remove(web)
+            documentStartStates.remove(web)
             DiagLog.line(
                 web.context,
                 "adblock document-start unavailable: ${t.javaClass.simpleName}: ${t.message}"
@@ -515,11 +522,11 @@ object AdBlocker {
 
         val p = prefs
         val e = engine
+        if (p != null) installDocumentStart(web, p.adblockPopups)
         if (p == null || e == null || !p.adblockEnabled || !p.adblockCosmetic) {
             finish()
             return
         }
-        installDocumentStart(web, p.adblockPopups)
         val host = UrlTools.host(url)
         if (host == null || isSiteAllowed(host)) {
             finish()
