@@ -27,15 +27,16 @@ import kotlin.math.sqrt
  * is attenuated by 16.5 dB, and the noise estimate can never *boost* anything. Speech-dominant
  * bins get gain close to 1, so speech attenuation is well under 1 dB in practice.
  *
- * Threading: [process] is @Synchronized and is called only by PcmPlayer.write() on the sherpa
- * generation thread, sequentially. [reset] is lock-free: it sets a volatile flag that the next
+ * Threading: [process] is @Synchronized and is called only by PcmPlayer's writer thread,
+ * sequentially. Moving it off the sherpa generation thread keeps sentence N+1 synthesis from
+ * waiting behind sentence N's denoise. [reset] is lock-free: it sets a volatile flag that the next
  * process() call consumes, so PcmPlayer.reset()/stop() on the UI thread can never block behind a
  * long chunk. Between the reset and the next chunk the previous audio has already been flushed
  * from the AudioTrack, so clearing at the chunk boundary is inaudible.
  *
- * Allocation: process() allocates one FloatArray of the input length per call. That is not on the
- * AudioTrack callback (writes are streamed from the generation thread), so it is acceptable, and
- * it keeps the returned buffer safe to use after the lock is released.
+ * Allocation: process() allocates one FloatArray of the input length per call. That is on the
+ * writer thread, not the AudioTrack callback, so it is acceptable, and it keeps the returned
+ * buffer safe to use after the lock is released.
  */
 class AudioDsp(sampleRateHz: Int = 24000) {
 
