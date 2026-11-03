@@ -4,6 +4,9 @@
 # Toolchain used here: Termux packages (aapt2, kotlinc, d8, apksigner, zip, openjdk-21) plus a
 # platform android.jar. The same sources build on a desktop with the Android SDK build-tools;
 # see README and RELEASING.md.
+#
+# DEBUGGABLE=1 adds android:debuggable="true" (needed by tools/tts-benchmark/run.sh). It is
+# off by default so release builds do not ship a debuggable manifest.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -16,6 +19,7 @@ PKG="app.novelspeak"
 ABI="${ABI:-arm64-v8a}"
 MIN_SDK=24
 TARGET_SDK=34
+DEBUGGABLE="${DEBUGGABLE:-0}"
 OUT_APK="${OUT_APK:-$BUILD/NovelSpeak-debug.apk}"
 if [ -n "${KEYSTORE:-}" ]; then
   KS_ALIAS="${KS_ALIAS:?KS_ALIAS is required when KEYSTORE is set}"
@@ -45,12 +49,19 @@ if [ -d "$APP/res" ]; then
 fi
 
 echo "==> 1/8 aapt2 link (manifest + assets + resources)"
+LINK_ARGS=()
+if [ "$DEBUGGABLE" = "1" ]; then
+  # The bench/debug harness uses `run-as` to pull result JSON. This stays opt-in so a
+  # release invocation (KEYSTORE=...) cannot accidentally ship a debuggable app.
+  LINK_ARGS+=(--debug-mode)
+fi
 aapt2 link \
   -o "$BUILD/base.apk" \
   -I "$ANDROID_JAR" \
   --manifest "$APP/AndroidManifest.xml" \
   -A "$APP/assets" \
   "${RES_ARGS[@]}" \
+  "${LINK_ARGS[@]}" \
   --min-sdk-version $MIN_SDK \
   --target-sdk-version $TARGET_SDK
 
