@@ -147,6 +147,21 @@ class Reader(private val app: NovelSpeakApp) {
     private var engine: TtsEngine? = null
     private var engineName = ""
 
+    // Exactly one engine prepare may run at a time. Prewarm (content load) and Play both use
+    // this path; without it an immediate Play during prewarm starts a second model load.
+    private var preparing = false
+    private var prepareWanted = ""
+    private var prepareToken = 0
+    private val prepareWaiters = ArrayList<(TtsEngine?) -> Unit>()
+
+    // Opportunistic preroll: while not playing, synthesize the first sentences into the held
+    // PcmPlayer queue. `rendered` records onRendered callbacks; `completed` records onDone
+    // callbacks so a skipped sentence ahead of the cursor cannot stall the queue.
+    private var prerolling = false
+    private var playRequested = false
+    private val rendered = HashMap<Int, Boolean>()
+    private val completed = HashSet<Int>()
+
     // Word-level read-along: the engine boundary APIs are chunk-based, so progress inside a
     // sentence is estimated from elapsed time and the current speed. Sentence highlight is
     // authoritative; word highlight is an enhancement and can be turned off in Settings.
@@ -186,6 +201,7 @@ class Reader(private val app: NovelSpeakApp) {
         status = if (sentences.isEmpty()) "No readable text found" else "Ready · ${sentences.size} sentences"
         notifyState()
         notifyHighlight()
+        if (sentences.isNotEmpty()) prepareForPlayback(forPlay = false)
     }
 
     fun appendContent(blocks: List<Block>, newTitle: String = "") {
@@ -194,7 +210,11 @@ class Reader(private val app: NovelSpeakApp) {
         sentences = sentences + blocks
         status = "Chapter appended · ${sentences.size} sentences"
         notifyState()
-        if (playing) pump()
+        if (playing) {
+            pump()
+        } else {
+            prepareForPlayback(forPlay = false)
+        }
     }
 
     fun hasContent() = sentences.isNotEmpty()
@@ -202,12 +222,28 @@ class Reader(private val app: NovelSpeakApp) {
     private fun ensureEngine(onReady: (TtsEngine?) -> Unit) {
         val wanted = app.prefs.engine
         val current = engine
-        if (current != null && engineName == wanted) { onReady(current); return }
-        current?.release()
+        if (current != null && engineName == wanted && current.isReady) {
+            onReady(current)
+            return
+        }
+        prepareWaiters.add(onReady)
+        if (preparing) {
+            // The latest preference wins. The in-flight result is discarded when it differs.
+            prepareWanted = wanted
+            return
+        }
+        startPrepare(wanted)
+    }
+
+    private fun startPrepare(wanted: String) {
+        engine?.release()
         engine = null
         engineName = wanted
+        preparing = true
+        prepareWanted = wanted
+        val token = ++prepareToken
         status = "Preparing $wanted engine…"
-        DiagLog.line(app, "engine requested=$wanted")
+        DiagLog.line(app, "engine requested=$wanted token=$token")
         notifyState()
         val e: TtsEngine = if (wanted == Prefs.ENGINE_SHERPA) {
             SherpaEngine(app, app.prefs, app.player)
@@ -215,17 +251,48 @@ class Reader(private val app: NovelSpeakApp) {
             SystemTtsEngine(app, app.prefs)
         }
         e.prepare { ok, message ->
-            if (ok) {
-                engine = e
-                status = "Ready · ${sentences.size} sentences"
-                onReady(e)
-            } else {
-                status = "Engine error: ${message ?: "unknown"}"
-                e.release()
-                onReady(null)
-            }
-            notifyState()
+            // The backends already post to the main thread; posting here keeps the state
+            // machine single-threaded even if a future backend calls back inline.
+            main.post { finishPrepare(token, wanted, e, ok, message) }
         }
+    }
+
+    private fun finishPrepare(
+        token: Int,
+        wanted: String,
+        e: TtsEngine,
+        ok: Boolean,
+        message: String?
+    ) {
+        if (token != prepareToken || wanted != prepareWanted) {
+            // Engine/model changed while the model was loading. Never let two models stay live,
+            // and start the latest request only after this one has been released.
+            try { e.release() } catch (ignored: Throwable) {}
+            val pending = prepareWanted.isNotEmpty() || prepareWaiters.isNotEmpty()
+            if (preparing && pending) {
+                val next = if (prepareWanted.isNotEmpty()) prepareWanted else app.prefs.engine
+                preparing = false
+                startPrepare(next)
+            } else {
+                preparing = false
+            }
+            return
+        }
+        preparing = false
+        if (ok) {
+            engine = e
+            engineName = wanted
+            status = "Ready · ${sentences.size} sentences"
+        } else {
+            status = "Engine error: ${message ?: "unknown"}"
+            try { e.release() } catch (ignored: Throwable) {}
+            engine = null
+            engineName = ""
+        }
+        val waiters = ArrayList(prepareWaiters)
+        prepareWaiters.clear()
+        notifyState()
+        for (w in waiters) w(if (ok) e else null)
     }
 
     private fun startWordTracking() {
@@ -270,25 +337,12 @@ class Reader(private val app: NovelSpeakApp) {
         if (sentences.isEmpty()) { status = "Nothing to read"; notifyState(); return }
         if (playing) return
         DiagLog.line(app, "play clicked engine=${app.prefs.engine} cursor=$cursor total=${sentences.size}")
-        ensureEngine { e ->
-            if (e == null) return@ensureEngine
-            try {
-                playing = true
-                status = "Playing"
-                generation++
-                submitted = cursor - 1
-                pump()
-                schedulePump()
-                startWordTracking()
-                notifyState()
-                PlaybackService.start(app)
-                DiagLog.line(app, "play started engine=${e.id} sentence=$cursor/" + sentences.size)
-            } catch (t: Throwable) {
-                playing = false
-                DiagLog.exception(app, "play FAILED", t)
-                status = "Play error: ${t.javaClass.simpleName}: ${t.message}"
-                notifyState()
-            }
+        playRequested = true
+        maybeStartPlayback()
+        if (!playing) {
+            status = if (rendered[cursor] == true) "Starting…" else "Preparing audio…"
+            notifyState()
+            prepareForPlayback(forPlay = true)
         }
     }
 
@@ -312,12 +366,11 @@ class Reader(private val app: NovelSpeakApp) {
     fun pause() {
         if (!playing) return
         playing = false
-        generation++
-        main.removeCallbacks(pumpTick)
-        stopWordTracking()
-        engine?.stop()
+        cancelPreroll()
         status = "Paused"
         notifyState()
+        // Make resume cheap: rebuild the lead at the current cursor while paused.
+        prepareForPlayback(forPlay = false)
     }
 
     fun resume() = play()
@@ -330,25 +383,43 @@ class Reader(private val app: NovelSpeakApp) {
 
     private fun stopInternal() {
         playing = false
-        generation++
-        submitted = cursor - 1
-        main.removeCallbacks(pumpTick)
-        stopWordTracking()
-        engine?.stop()
+        cancelPreroll()
         PlaybackService.stop(app)
     }
 
     fun toggle() { if (playing) pause() else play() }
 
     /**
-     * Drops the prepared engine so a changed engine/voice applies on the next play. Without
-     * this, Settings wrote the new preference but the cached engine kept the old voice.
+     * Drops the prepared engine so a changed engine/model applies on the next prepare. Voice
+     * changes use [setVoice] instead and keep the model loaded.
      */
     fun invalidateEngine() {
         stopInternal()
+        if (preparing) {
+            // The in-flight prepare is allowed to finish and release itself; its result must
+            // not be installed. A new request queued below starts after that release.
+            prepareWanted = ""
+            prepareToken++
+            prepareWaiters.clear()
+        }
         engine?.release()
         engine = null
         engineName = ""
+        status = if (sentences.isEmpty()) "Idle" else "Ready · " + sentences.size + " sentences"
+        notifyState()
+        if (sentences.isNotEmpty()) prepareForPlayback(forPlay = false)
+    }
+
+    /**
+     * Applies a voice without reloading the model. The engine reads the voice per generation,
+     * so only the queued/pre-rendered audio has to be discarded.
+     */
+    fun setVoice(id: String) {
+        val wasPlaying = playing
+        playing = false
+        cancelPreroll()
+        if (wasPlaying) PlaybackService.stop(app)
+        engine?.setVoice(id)
         status = if (sentences.isEmpty()) "Idle" else "Ready · " + sentences.size + " sentences"
         notifyState()
     }
@@ -364,32 +435,23 @@ class Reader(private val app: NovelSpeakApp) {
     fun seek(index: Int) {
         if (sentences.isEmpty()) return
         val wasPlaying = playing
+        playing = false
+        cancelPreroll()
         cursor = index.coerceIn(0, sentences.size - 1)
-        generation++
-        engine?.stop()
-        submitted = cursor - 1
         notifyHighlight()
         notifyState()
-        if (wasPlaying) {
-            pump()
-            schedulePump()
-            startWordTracking()
-        } else {
-            main.removeCallbacks(pumpTick)
-        }
+        if (wasPlaying) playRequested = true
+        prepareForPlayback(forPlay = wasPlaying)
     }
 
     private fun pump() {
         if (!playing) return
         val e = engine ?: return
         try {
-            val gen = generation
             val minAhead = app.prefs.prefetch.coerceIn(0, 5)
             // 1. Always keep the user's sentence lookahead.
             while (submitted < cursor + minAhead && submitted < sentences.size - 1) {
-                submitted++
-                val index = submitted
-                e.speak(sentences[index].text) { ok -> onSentenceDone(gen, index, ok) }
+                queueSentence(submitted + 1)
             }
             // 2. Then keep synthesizing ahead while the audio buffer is below the target,
             //    bounded by a hard cap so memory stays flat. pump() is re-run every 500 ms
@@ -398,48 +460,239 @@ class Reader(private val app: NovelSpeakApp) {
                 submitted < sentences.size - 1 &&
                 e.bufferedSeconds() < TARGET_BUFFER_SECONDS
             ) {
-                submitted++
-                val index = submitted
-                e.speak(sentences[index].text) { ok -> onSentenceDone(gen, index, ok) }
+                queueSentence(submitted + 1)
             }
-            if (submitted < cursor) {
-                submitted = cursor
-                val index = cursor
-                e.speak(sentences[index].text) { ok -> onSentenceDone(gen, index, ok) }
-            }
+            if (submitted < cursor) queueSentence(cursor)
         } catch (t: Throwable) {
             DiagLog.exception(app, "pump/speak failed at sentence $submitted", t)
-            playing = false
-            status = "Speech error: ${t.javaClass.simpleName}: ${t.message}"
-            notifyState()
+            failPlayback("Speech error: ${t.javaClass.simpleName}: ${t.message}")
+        }
+    }
+
+    /**
+     * Prewarm the engine and, for neural backends, render an opportunistic lead while playback
+     * is held. Called on content load, seek, voice change, and Play.
+     */
+    private fun prepareForPlayback(forPlay: Boolean) {
+        if (sentences.isEmpty() || playing) return
+        if (!forPlay && app.prefs.engine == Prefs.ENGINE_SHERPA &&
+            !ModelManager.isInstalled(app, app.prefs.modelId)
+        ) return
+        if (forPlay) playRequested = true
+        val gen = generation
+        val expectedCursor = cursor
+        DiagLog.line(app, "prepare requested engine=${app.prefs.engine} cursor=$cursor play=$forPlay")
+        ensureEngine { e ->
+            if (e == null) {
+                if (forPlay) {
+                    playRequested = false
+                    status = "Engine error: could not prepare"
+                    notifyState()
+                }
+                return@ensureEngine
+            }
+            if (gen != generation || playing || cursor != expectedCursor) return@ensureEngine
+            if (!e.supportsPreRender) {
+                // The system backend is already fast and its legacy path plays outside
+                // PcmPlayer. Keep the engine warm and use the normal immediate pump.
+                if (forPlay) startPlayback()
+                return@ensureEngine
+            }
+            if (!prerolling) beginPreroll()
+            if (forPlay) {
+                status = if (rendered[cursor] == true) "Starting…" else "Preparing audio…"
+                notifyState()
+            }
+            maybeStartPlayback()
+        }
+    }
+
+    private fun beginPreroll() {
+        if (playing || sentences.isEmpty()) return
+        prerolling = true
+        submitted = cursor - 1
+        rendered.clear()
+        completed.clear()
+        app.player.setPlaybackHold(true)
+        app.player.reset()
+        DiagLog.line(
+            app,
+            "preroll start cursor=$cursor total=${sentences.size} target=${PREROLL_SECONDS}s " +
+                "max=$PREROLL_MAX_SENTENCES"
+        )
+        pumpPreroll()
+        main.removeCallbacks(prerollTick)
+        main.postDelayed(prerollTick, PREROLL_TICK_MS)
+    }
+
+    private fun pumpPreroll() {
+        if (!prerolling || playing) return
+        val e = engine ?: return
+        val lastRendered = submitted < cursor || rendered.containsKey(submitted)
+        if (PrerollPolicy.shouldQueueNext(
+                submitted = submitted,
+                cursor = cursor,
+                total = sentences.size,
+                bufferedSeconds = e.bufferedSeconds(),
+                lastRendered = lastRendered,
+                maxSentences = PREROLL_MAX_SENTENCES,
+                targetSeconds = PREROLL_SECONDS
+            )
+        ) {
+            queueSentence(if (submitted < cursor) cursor else submitted + 1)
+        }
+    }
+
+    private fun prerollHasMore(): Boolean {
+        if (!prerolling || playing) return false
+        val e = engine ?: return false
+        return PrerollPolicy.shouldQueueNext(
+            submitted = submitted,
+            cursor = cursor,
+            total = sentences.size,
+            bufferedSeconds = e.bufferedSeconds(),
+            lastRendered = submitted < cursor || rendered.containsKey(submitted),
+            maxSentences = PREROLL_MAX_SENTENCES,
+            targetSeconds = PREROLL_SECONDS
+        )
+    }
+
+    private fun queueSentence(index: Int) {
+        if (index < 0 || index >= sentences.size) return
+        val e = engine ?: return
+        submitted = index
+        val gen = generation
+        e.speak(
+            sentences[index].text,
+            onDone = { ok -> onSentenceDone(gen, index, ok) },
+            onRendered = { hasAudio -> onClipRendered(gen, index, hasAudio) }
+        )
+    }
+
+    private fun onClipRendered(gen: Int, index: Int, hasAudio: Boolean) {
+        main.post {
+            if (gen != generation) return@post
+            rendered[index] = hasAudio
+            DiagLog.line(
+                app,
+                "clip rendered index=$index audio=$hasAudio buffered=" +
+                    "%.2f".format(engine?.bufferedSeconds() ?: 0f)
+            )
+            if (!playing) {
+                if (prerolling) pumpPreroll()
+                maybeStartPlayback()
+            }
+        }
+    }
+
+    private fun maybeStartPlayback() {
+        if (PrerollPolicy.canStart(
+                playRequested = playRequested,
+                playing = playing,
+                cursorRendered = rendered[cursor] == true
+            )
+        ) {
+            startPlayback()
+        }
+    }
+
+    private fun startPlayback() {
+        if (playing || sentences.isEmpty()) return
+        if (cursor >= sentences.size) {
+            finishQueue()
+            return
+        }
+        playing = true
+        playRequested = false
+        prerolling = false
+        main.removeCallbacks(prerollTick)
+        app.player.setPlaybackHold(false)
+        app.player.startIfBuffered()
+        status = "Playing"
+        notifyState()
+        schedulePump()
+        startWordTracking()
+        PlaybackService.start(app)
+        DiagLog.line(app, "play started cursor=$cursor/${sentences.size} buffered=${"%.2f".format(engine?.bufferedSeconds() ?: 0f)}s")
+        pump()
+    }
+
+    private fun cancelPreroll() {
+        generation++
+        playRequested = false
+        prerolling = false
+        main.removeCallbacks(prerollTick)
+        main.removeCallbacks(pumpTick)
+        stopWordTracking()
+        app.player.setPlaybackHold(false)
+        try { engine?.stop() } catch (ignored: Throwable) {}
+        try { app.player.stop() } catch (ignored: Throwable) {}
+        rendered.clear()
+        completed.clear()
+        submitted = cursor - 1
+    }
+
+    private fun failPlayback(message: String) {
+        playing = false
+        cancelPreroll()
+        status = message
+        notifyState()
+        PlaybackService.stop(app)
+    }
+
+    private fun finishQueue() {
+        playing = false
+        playRequested = false
+        prerolling = false
+        main.removeCallbacks(prerollTick)
+        main.removeCallbacks(pumpTick)
+        stopWordTracking()
+        app.player.setPlaybackHold(false)
+        rendered.clear()
+        completed.clear()
+        status = "Finished"
+        notifyState()
+        PlaybackService.stop(app)
+        notifyQueueFinished()
+    }
+
+    private val prerollTick = object : Runnable {
+        override fun run() {
+            if (playing) return
+            if (prerolling) pumpPreroll()
+            maybeStartPlayback()
+            if (!playing && (playRequested || prerollHasMore())) {
+                main.postDelayed(this, PREROLL_TICK_MS)
+            }
         }
     }
 
     private fun onSentenceDone(gen: Int, index: Int, ok: Boolean) {
         main.post(Runnable {
-            if (gen != generation || !playing) return@Runnable
+            if (gen != generation) return@Runnable
             if (!ok) {
-                status = "Playback stopped (engine error)"
-                playing = false
-                notifyState()
-                PlaybackService.stop(app)
+                failPlayback("Playback stopped (engine error)")
                 return@Runnable
             }
-            if (index == cursor) {
+            if (index >= cursor) completed.add(index)
+            var advanced = false
+            while (completed.remove(cursor)) {
+                advanced = true
+                rendered.remove(cursor)
                 if (cursor >= sentences.size - 1) {
-                    playing = false
-                    stopWordTracking()
-                    status = "Finished"
-                    notifyState()
-                    PlaybackService.stop(app)
-                    notifyQueueFinished()
+                    finishQueue()
                     return@Runnable
                 }
                 cursor++
                 notifyHighlight()
-                startWordTracking()
+                if (playing) startWordTracking()
                 notifyState()
+            }
+            if (advanced && !playing) maybeStartPlayback()
+            if (playing) {
                 pump()
+            } else if (prerolling) {
+                pumpPreroll()
             }
         })
     }
@@ -507,12 +760,23 @@ class Reader(private val app: NovelSpeakApp) {
 
     fun setSpeed(v: Float) {
         app.prefs.speed = v
+        // Queued/prerendered audio was generated at the old rate. Outside playback it is cheap
+        // to discard and rebuild; during playback the current lead finishes and the next
+        // sentences use the new rate.
+        if (!playing && sentences.isNotEmpty()) {
+            cancelPreroll()
+            prepareForPlayback(forPlay = false)
+        }
         // Speed is shown in the player bar; keep the status focused on playback state.
         notifyState()
     }
 
     fun release() {
         stopInternal()
+        prepareWaiters.clear()
+        preparing = false
+        prepareWanted = ""
+        prepareToken++
         engine?.release()
         engine = null
         app.player.release()
@@ -521,6 +785,14 @@ class Reader(private val app: NovelSpeakApp) {
     private companion object {
         /** Keep roughly this much synthesized audio queued ahead of the speaker. */
         const val TARGET_BUFFER_SECONDS = 12f
+
+        /** Opportunistic preroll lead; bounded so a long sentence cannot render a chapter. */
+        const val PREROLL_SECONDS = 8f
+
+        /** Maximum sentences rendered while playback is held. */
+        const val PREROLL_MAX_SENTENCES = 4
+
+        const val PREROLL_TICK_MS = 100L
 
         /** Hard cap on queued sentences, so a fast engine cannot buffer a whole chapter. */
         const val HARD_LOOKAHEAD = 8
