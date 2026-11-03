@@ -22,6 +22,10 @@ Public Suffix List
   https://publicsuffix.org/list/
   License: Mozilla Public License 2.0
 
+NovelSpeak local supplement (novelspeak.txt)
+  Original rules maintained in this repository.
+  License: same as the NovelSpeak project (see LICENSE)
+
 These files are redistributed unmodified. They are data, not part of the NovelSpeak
 source code, and remain under their own licenses.
 

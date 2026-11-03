@@ -1,0 +1,10 @@
+! Title: NovelSpeak site fixes
+! Description: Conservative fixes for reader sites where upstream lists miss a first-party ad container or popunder script.
+! Homepage: bundled with NovelSpeak
+! Expires: 7 days
+!
+! empirenovel.com: po.js is a first-party popunder/anti-adblock script, and these two
+! containers are ad slots that upstream EasyList does not cover.
+||empirenovel.com/po.js
+empirenovel.com##.pub
+empirenovel.com###reader-bottom
