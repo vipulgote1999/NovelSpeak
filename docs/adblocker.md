@@ -25,6 +25,7 @@ Verified against `WebViewClient`:
 | See `blob:` / `javascript:` | **No** |
 | Read/modify response bodies | **No** (only by substituting a whole response) |
 | Inject CSS/JS | Yes, `evaluateJavascript` / `addJavascriptInterface` |
+| Inject JS before page scripts | Yes on WebViews that support `DOCUMENT_START_SCRIPT` (AndroidX WebKit ≥ 1.9.0) |
 | Use extension APIs (uBO) | **No** |
 
 The design therefore has four layers:
@@ -35,8 +36,9 @@ The design therefore has four layers:
    asks native code for generic selectors that match the classes/ids actually on
    the page.
 3. **Behavioral filtering** — a small scriptlet library neutralises popup and
-   anti-adblock patterns; blocked tracker scripts get a surrogate stub so the
-   page's own code keeps working.
+   anti-adblock patterns; a document-start popup guard runs before any page
+   script; blocked tracker scripts get a surrogate stub so the page's own code
+   keeps working.
 4. **List lifecycle** — lists are bundled, parsed in the background at startup,
    and can be refreshed over HTTPS from Settings.
 
@@ -100,8 +102,10 @@ possibly apply:
   generic selectors;
 * selectors are inserted in batches of 120; a bad selector falls back to
   per-selector insertion and then to direct `style.display = 'none'`;
-* procedural filters (`:has-text`, `:matches-css`, `:upward`, `:xpath`) and actions
-  (`:remove`, `:style`, `:remove-attr`, `:remove-class`) run in-page;
+* procedural filters (`:has-text`, `:matches-attr`, `:matches-css`,
+  `:matches-path`, `:min-text-length`, `:upward`, `:xpath`) and actions
+  (`:remove`, `:style`, `:remove-attr`, `:remove-class`) run in-page; quoted
+  arguments and `/regex/i` values are accepted;
 * `$elemhide` / `$generichide` exceptions disable the corresponding layer;
 * a conservative overlay heuristic removes large fixed/absolute elements
   (z-index ≥ 1000, covering ≥35% × 25% of the viewport) when they contain an
@@ -226,6 +230,15 @@ java -jar /tmp/adblock-test.jar app/assets/adblock/public_suffix_list.dat
   Chromium with a fake bridge: initial hiding, `:has-text`/`:style`, dynamic
   class/id lookup via `MutationObserver`, `window.open` neutralisation, and the
   overlay heuristic all passed.
+* `tools/adblock-test/procedural.sh` is a headless-Chromium regression for the
+  procedural operators added after the upstream comparison. It checks quoted and
+  regex arguments for `:matches-attr`, `:has-text`, `:matches-css`,
+  `:matches-path` and `:min-text-length`, including negative cases:
+  `PASS {"attr-hit":true,...,"path-miss":false}`.
+* `tools/extract-test/prefetch-index.html` links to
+  `ad-hidden-adblock.html`; on the emulator the hidden WebView logged
+  `prefetch ready blocks=2`, proving the prefetched chapter ran the network,
+  cosmetic and extraction pipeline.
 
 ## 2026-11-03: TTS extraction and first-page race
 
@@ -320,33 +333,93 @@ Brave's `adblock-rust` is the closest mature reference:
   `:matches-prop`, `:matches-media`, `:not`, `:others` and `:watch-attr`.
   uBO prefers native `:has()` when Chromium supports it (Chromium 105+).
 
-NovelSpeak's engine already handles the high-volume subset: `:has-text`,
-`:matches-css`, `:upward`, `:xpath`, `:remove`, `:style`, `:remove-attr` and
+NovelSpeak's engine handles the high-volume subset plus the low-frequency
+operators: `:has-text`, `:matches-attr`, `:matches-css`, `:matches-path`,
+`:min-text-length`, `:upward`, `:xpath`, `:remove`, `:style`, `:remove-attr` and
 `:remove-class`. The bundled lists currently contain 498 `:has-text` rules, 662
-`:style`, 51 `:upward`, 26 `:xpath`, 46 `:remove`, 6 `:matches-attr` and 5
-`:matches-path`; the low-frequency operators are the next incremental win, not
-the main gap.
+`:style`, 51 `:upward`, 26 `:xpath`, 46 `:remove`, 6 `:matches-attr` and
+5 `:matches-path`.
 
-The real WebView gaps remain:
+### Document-start popup guard
 
-* **Document-start scriptlets.** Cosmetic scriptlets are injected at commit
-  visible / page finished. A first-party popunder can capture the native
-  `window.open` before the override. A future `WebViewCompat.addDocumentStartJavaScript`
-  bootstrap (AndroidX WebKit) or a native proxy is needed for true early
-  scriptlet injection. The local `po.js` rule is the safe mitigation today.
-* **Per-view/frame context.** `AdBlocker.currentUrl` is global, and the hidden
-  prefetch WebView currently does not install the interceptor. A prefetched
-  chapter therefore bypasses network and cosmetic filtering. Next step: pass an
-  explicit document URL into interception and attach the same pipeline to the
-  prefetch WebView.
-* **Response-level features.** `$csp`, `$removeparam`, `$permissions`,
-  `$replace`, `$urltransform` and response-body filtering need a proxy/MITM or
-  a Chromium fork; approximating them in `shouldInterceptRequest` would break
-  pages. They are deliberately left unsupported.
+WebView has no framework hook that runs JavaScript before a document's own
+scripts. AndroidX WebKit 1.14.0 provides
+`WebViewCompat.addDocumentStartJavaScript(web, script, setOf("*"))` behind
+`WebViewFeature.DOCUMENT_START_SCRIPT`; the build now vendors the WebKit and
+annotation classes (`tools/fetch-webkit-deps.sh`) and installs a minimal guard
+for both the visible and prefetch WebViews:
+
+```js
+window.open = function () { return null; };
+document.addEventListener('click', function (e) {
+  var a = e.target && e.target.closest ? e.target.closest('a[target="_blank"]') : null;
+  if (a) a.removeAttribute('target');
+}, true);
+```
+
+This is deliberately **not** the full `content.js`. Loading the full runtime at
+document-start set `__nsAdblock.__v` before the later main-world initializer and
+suppressed it, so cosmetic rules never applied. The guard is idempotent
+(`__nsEarlyPopupGuard`) and only does the one thing that must happen before
+first-party code can capture `window.open`. Full list scriptlets still run at
+commit-visible/page-finished; the early guard is what defeats
+`empirenovel.com/po.js`, which probes the DOM and hijacks `window.open` during
+parse.
+
+Older WebViews that do not advertise `DOCUMENT_START_SCRIPT` log
+`adblock document-start unsupported` and fall back to the existing
+commit-visible injection and the local `po.js` network rule.
+
+### Prefetch WebView coverage
+
+The hidden prefetch WebView previously ran only extraction. It now gets the same
+pipeline as the visible page:
+
+* its own `AdBlockBridge`, with the prefetch document URL passed explicitly;
+* `AdBlocker.intercept(request, link)` so network rules run against the
+  prefetched chapter, not against the visible page's global URL;
+* `AdBlocker.installDocumentStart`;
+* the engine-ready wait plus `AdBlocker.inject(v, link)` before extraction.
+
+Concurrent cosmetic injections for one WebView/URL are coalesced: extraction
+registers as a waiter instead of starting a second injection, and a 1.5 s
+watchdog releases waiters if a destroyed WebView swallows the
+`evaluateJavascript` callback. The local fixture reports
+`prefetch ready blocks=2`; the live target chapter reports:
+
+```text
+adblock document-start installed
+adblock inject init host=www.empirenovel.com hide=122 procedural=0
+prefetch ready blocks=56 url=https://www.empirenovel.com/novel/my-werewolf-system/68
+```
+
+On the visible target chapter, Chrome DevTools Protocol inspection after the
+document-start change reported `__nsEarlyPopupGuard=true`,
+`String(window.open)` overridden, `.pub` and `#reader-bottom` computed as
+`display:none`, `hidden=129`, and `window.open('https://example.com/…')`
+returning `null` without navigating. Extraction contained 39 reader blocks
+(8,210 characters), no `sponsored`/`miracle cream`/`buy now` matches, and the
+TTS `gen start` lines contained only chapter prose.
+
+### What is still impossible in a WebView
+
+* **Response-level `$removeparam`, `$csp`, `$permissions`, `$replace`,
+  `$urltransform` and body rewriting.** `shouldInterceptRequest` cannot inspect
+  or edit the response the renderer receives. A WebView can only substitute a
+  complete response, so stubbing these rules would either drop the page or ship
+  a wrong body. They need a proxy/MITM or a Chromium fork and stay deliberately
+  unsupported.
+* **Redirect-target blocking.** The interceptor sees the initial URL; it cannot
+  observe an HTTP 30x chain.
+* **Full document-start scriptlet runtime.** The document-start hook must stay
+  short and self-contained; loading the full list runtime there raced the
+  main-world initializer. Only the popup guard is installed there, and
+  list-specific scriptlets stay in the main-world runtime.
 * **Resource replacements.** Brave/uBO ship a large resource library for
   `$redirect`/`$redirect-rule`; NovelSpeak only has a handful of surrogates.
   Importing the uBO resource files would reduce more tracker breakage.
 
-Priority order: early scriptlet injection, prefetch-view coverage, then the
-low-frequency procedural operators; the extraction filter and first-page wait
-are the fixes that directly stop TTS from reading a hidden ad.
+Priority order is now response-level capabilities (proxy/MITM), a larger
+redirect-resource library, and replacing the local supplement with upstream
+rules once upstream ships them. The extraction filter, first-page wait,
+document-start guard and prefetch pipeline close the TTS-visible paths.
