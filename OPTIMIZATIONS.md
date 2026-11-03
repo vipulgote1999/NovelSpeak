@@ -9,17 +9,40 @@ so only its *architecture and constants* are reused, on top of the same Apache-2
 |---|---|---|---|
 | 1 | Sentence chunking for low first-audio latency | NekoSpeak `KokoroEngine`: split regex `(?<=[.!?])\s+\|\n+\|(?<=[;])\s+`, long first sentence re-split on commas then hard-wrapped, `MAX_TOKENS = 150` batches | `SentenceSplitter.kt`: same enders, abbreviation/decimal guards, terminal punctuation → comma → next-space boundary (never mid-word), 180-char default (setting, V4 migration) |
 | 2 | Stream while generating, never wait for full clip | NekoSpeak per-batch callbacks; HayaiTTS 2.5.1 actually calls blocking `generate()` and then `streamPcm` only re-chunks the completed float[] (no progressive synthesis; 2,000-char cap) | `SherpaEngine` writes every callback chunk straight into `PcmPlayer` and returns `1=continue / 0=stop` per sherpa-onnx `offline-tts.h`; generation of sentence *n+1* runs while *n* plays (boundary + monitor threads) |
-| 3 | Low-latency PCM playback | HayaiTTS preview player (decompiled `u8.k` / `androidx.room.w.u()`): `USAGE_MEDIA`+`CONTENT_TYPE_MUSIC`, mono 16-bit, `bufferSize = max(pcmBytes, 4096)`, `MODE_STREAM`, `PERFORMANCE_MODE_LOW_LATENCY`, max volume | `PcmPlayer.kt` uses exactly those values, plus drain tracking so highlighting follows *heard* audio |
+| 3 | Low-latency PCM playback | HayaiTTS preview player (decompiled `u8.k` / `androidx.room.w.u()`): `USAGE_MEDIA`+`CONTENT_TYPE_MUSIC`, mono 16-bit, `bufferSize = max(pcmBytes, 4096)`, `MODE_STREAM`, `PERFORMANCE_MODE_LOW_LATENCY`, max volume | `PcmPlayer.kt` uses exactly those values, plus drain tracking so highlighting follows *heard* audio. Denoise/gain/float→PCM run on the writer thread, not the generation thread. Playback can be held while a preroll is prepared. |
 | 4 | Kokoro model choice | NekoSpeak downloads `kokoro-v1.0.int8.onnx` + `voices-v1.0.bin`; HayaiTTS catalog lists `kokoro-int8-en-v0_19` (103 MB, tier "high", narration/audiobook) | Model manifest pins `kokoro-int8-en-v0_19` (same int8 bundle: `model.int8.onnx`, `voices.bin`, `tokens.txt`, `espeak-ng-data/`) |
 | 5 | Pocket-TTS runtime values | NekoSpeak `PocketTtsEngine`: 24 kHz, `LATENT_DIM=32`, `EMBED_DIM=1024`, `ODE_STEPS=20`, decode chunk 15 frames (80 ms each), LSD steps 10, temperature 0.7, frames-after-EOS 3 | Pocket handled inside sherpa-onnx (same 5 ONNX graph + SentencePiece pipeline); we pass `numSteps = 8` from HayaiTTS and `voiceEmbeddingCacheCapacity = 16` |
 | 6 | Cloning generation config | HayaiTTS `i9/l.java`: `GenerationConfig(speed=1.0, silenceScale=1.0, sid=0, referenceAudio, referenceSampleRate, referenceText, numSteps=8)`; gate `family ∈ {ZIPVOICE, POCKET}` | `SherpaEngine.generationLoop()` builds the identical config for the Pocket path; Pocket needs audio only, transcript reserved for ZipVoice |
 | 7 | Reference-clip preprocessing | NekoSpeak `loadAudioFile` + `encodeVoiceFromWav`: PCM 8/16/24/32-bit & float32, mono mix, resample 24 kHz, 80 Hz one-pole high-pass, trim silence (480-sample windows, 0.02), peak normalize, **30 s / 720 000 sample cap** | `WavReader.kt` implements the same chain with the same constants; it feeds both the bundled Pocket narrator clip and future user clones |
 | 8 | Voice-embedding caching | HayaiTTS `OfflineTtsPocketModelConfig.voiceEmbeddingCacheCapacity`; NekoSpeak persists latents to `.bin` + `.emb` and caches in memory | sherpa cache capacity 16 for Pocket; Kokoro voices are loaded once per engine instance |
-| 9 | Engine reuse instead of re-init | HayaiTTS keeps an LRU of 2 `OfflineTts` instances; NekoSpeak caches the ORT sessions per engine | one live engine per selected backend, released on switch (`Reader.ensureEngine`), so switching sentences/chapters never reloads 100 MB of weights |
+| 9 | Engine reuse instead of re-init | HayaiTTS keeps an LRU of 2 `OfflineTts` instances; NekoSpeak caches the ORT sessions per engine | one live engine per selected backend. Prewarmed when reading content is queued; retained across voice changes (`Reader.setVoice`); released only on engine/model switch or `release()`. A single in-flight prepare is shared by prewarm and Play. |
 | 10 | Thread count / session tuning | NekoSpeak `PrefsManager.getCpuThreads()` default **6**, ORT `ALL_OPT` + memory-pattern optimization; HayaiTTS exposes "Synthesis Threads" and NNAPI ("Hardware Acceleration") | `numThreads` from settings (default 4, capped at core count), `provider = "cpu"` with optional `"nnapi"` and automatic CPU retry if the provider is rejected |
 | 11 | Model delivery | HayaiTTS `VoiceDownloadWorker`: tar.bz2 from the k2-fsa `tts-models` release, SHA-256 verified, extracted to files dir; NekoSpeak: per-file download with progress state | `ModelManager.kt`: streaming download with % progress, SHA-256 verify, tar.bz2 extraction (Commons Compress), install/delete, never bundle models in the APK |
 | 12 | Keep playing with the screen off | The thing Chrome fails at. HayaiTTS/NekoSpeak both live in a TTS process/foreground service, so audio survives backgrounding | `PlaybackService`: `mediaPlayback` foreground service + `PARTIAL_WAKE_LOCK` + `MediaSession` (lock-screen play/pause/next/stop) |
 | 13 | Generic text extraction | NekoSpeak/HayaiTTS read text handed to them by other apps (they never solve page extraction) — that gap is ours | `assets/readability.js` (Mozilla Readability, Apache-2.0) + density fallback in `extract.js`, dotted-obfuscation normalization, visibility checks that skip `display:none` blocks, `data-ns` block tags for highlight/scroll, `rel=next` / “Next chapter” link detection |
+
+### 2026-11-03 prewarm + bounded preroll (project-specific)
+
+The benchmark in `docs/benchmarks/2026-11-03-tts-benchmark.md` showed Supertonic 3 is
+sentence-atomic for first audio (first PCM at the end of synthesis) and that a cold load
+plus the first sentence costs 8–13 s on the iQOO. The fix is not a model change:
+
+- `Reader` prepares the selected engine when reading content is queued, not when Play is
+  tapped. Prewarm and Play share one in-flight prepare, so an immediate Play cannot start a
+  second model load.
+- While playback is held, the Reader renders up to **8 s / 4 sentences** into `PcmPlayer`.
+  Playback starts as soon as the cursor sentence's first PCM arrives (mid-sentence for
+  Pocket, end-of-sentence for Supertonic/Kokoro) and never waits for the second sentence.
+- `PcmPlayer` processes the first preroll chunk while held, so a Play tapped after
+  pre-rendering starts the AudioTrack without a denoise wait. The writer does not write to a
+  paused track (Android returns 0 and would drop the chunk).
+- The lead removes the serial short→long underrun (60→162 chars used to leave ~4.2 s of
+  silence on the iQOO). Voice changes update the live engine and discard prerendered audio
+  instead of reloading the model.
+
+Measured on the iQOO after the change: content prewarmed and prerendered, Play tap to
+AudioTrack start **16 ms**; no duplicate `engine prepare`; no model reload on voice change.
+The engine benchmark itself is unchanged (the harness owns its own `OfflineTts`).
 
 > **2026-10-22 re-analysis correction.** HayaiTTS 2.5.1 has no streaming call site: it calls
 > blocking `generate()` and `streamPcm` only chunks the finished `float[]`; NekoSpeak's 75-char
@@ -51,8 +74,10 @@ so only its *architecture and constants* are reused, on top of the same Apache-2
 | Cloning `numSteps` | 8 | HayaiTTS |
 | `silenceScale` | 1.0 (generation) / 0.2 (engine) | HayaiTTS / sherpa default |
 | AudioTrack buffer | `max(pcmBytes, 4096)` | HayaiTTS |
+| Preroll lead | 8 s / 4 sentences (bounded) | NovelSpeak benchmark, 2026-11-03 |
 | CPU threads | 6 (NekoSpeak) → 4 default here, user-tunable | NekoSpeak / HayaiTTS |
 | Engine cache | 2 | HayaiTTS |
+| Engine lifetime | prewarm on content; retain across voice changes | NovelSpeak, 2026-11-03 |
 | Reference clip cap | 30 s (720 000 samples) | NekoSpeak |
 | High-pass / silence threshold / trim window | 80 Hz / 0.02 / 480 samples | NekoSpeak |
 | Model sizes | Kokoro int8 103 MB · Pocket int8 98 MB | HayaiTTS catalog (SHA-256 pinned here) |

@@ -225,6 +225,20 @@ The arm64 release-signed benchmark APK is `build/NovelSpeak-bench-arm64-v8a-rele
 (15,448,334 bytes). `build/NovelSpeak-bench-arm64-v8a.apk` is the debug-key-signed equivalent and
 cannot update an installed release build.
 
+## App-level preroll verification (2026-11-03)
+
+This benchmark measures synthesis only. The reader now also has a prewarm/preroll path
+(`docs/superpowers/specs/2026-11-03-tts-latency-design.md`). On the iQOO with Supertonic 3,
+4 threads, CPU, content prewarmed and prerendered before Play:
+
+- `play clicked` → `PcmPlayer play()` = **11 ms**, → `AudioTrack.start` = **16 ms**.
+- No duplicate `engine prepare` when Play was tapped during prewarm.
+- Voice change logged `sherpa setVoice` with **no** subsequent `engine prepare`/`engine ready`.
+- No `AudioTrack` underrun during steady playback once the preroll lead was present.
+
+The engine harness owns its own `OfflineTts`, so the numbers in the tables above are
+unchanged by the reader pipeline work.
+
 ## Reproduce
 
 ```bash

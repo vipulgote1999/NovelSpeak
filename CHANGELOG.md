@@ -6,6 +6,17 @@ All notable changes to NovelSpeak are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **TTS first-audio and sentence-boundary latency.** The selected neural engine is now
+  prewarmed when reading content is queued, and up to 8 s / 4 sentences are prerendered while
+  playback is held. Play starts as soon as the cursor sentence's first PCM arrives, without a
+  model reload, and the lead removes the short→long sentence gap measured on the iQOO.
+  Voice changes update the live engine instead of reloading the model. `PcmPlayer` processes
+  denoise/gain/PCM conversion on its writer thread and never writes to a paused AudioTrack.
+  The default neural model is Supertonic 3 when installed (the benchmark's speed/memory
+  winner); explicit user choices are preserved.
+
 ### Fixed
 
 - **Ad text was still read aloud by both TTS engines.** Readability parses a detached clone
