@@ -139,7 +139,8 @@
     }
 
     function firstOperator(s) {
-        var names = [':has-text(', ':matches-css(', ':upward(', ':xpath('];
+        var names = [':has-text(', ':matches-attr(', ':matches-css(', ':matches-path(',
+            ':min-text-length(', ':upward(', ':xpath('];
         var best = -1;
         for (var i = 0; i < names.length; i++) {
             var p = s.indexOf(names[i]);
@@ -150,7 +151,8 @@
 
     function parseOps(s) {
         var ops = [];
-        var names = [':has-text(', ':matches-css(', ':upward(', ':xpath('];
+        var names = [':has-text(', ':matches-attr(', ':matches-css(', ':matches-path(',
+            ':min-text-length(', ':upward(', ':xpath('];
         var i = 0;
         while (i < s.length) {
             var found = -1;
@@ -198,26 +200,85 @@
         try { return Array.prototype.slice.call(document.querySelectorAll(base)); } catch (e) { return []; }
     }
 
+    function asRegex(arg) {
+        var s = (arg || '').trim();
+        if (s.length < 3 || s.charAt(0) !== '/') return null;
+        var last = s.lastIndexOf('/');
+        if (last <= 0) return null;
+        var flags = s.substring(last + 1);
+        if (!/^[gimsuy]*$/.test(flags)) return null;
+        try {
+            return new RegExp(s.substring(1, last), flags.replace('g', ''));
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function stripOuterQuotes(s) {
+        var t = (s || '').trim();
+        if (t.length >= 2) {
+            var c = t.charAt(0);
+            if ((c === '"' || c === "'") && t.charAt(t.length - 1) === c) {
+                t = t.substring(1, t.length - 1);
+            }
+        }
+        return t;
+    }
+
     function applyOp(elements, op) {
         var out = [];
         var i;
         if (op.n === 'has-text') {
-            var needle = op.a.replace(/^["']|["']$/g, '').toLowerCase();
+            var rawNeedle = stripOuterQuotes(op.a);
+            var needleRe = asRegex(rawNeedle);
+            var needle = rawNeedle.toLowerCase();
             for (i = 0; i < elements.length; i++) {
-                var text = (elements[i].textContent || '').toLowerCase();
-                if (text.indexOf(needle) >= 0) out.push(elements[i]);
+                var text = (elements[i].textContent || '');
+                if (needleRe ? needleRe.test(text) : text.toLowerCase().indexOf(needle) >= 0) {
+                    out.push(elements[i]);
+                }
+            }
+            return out;
+        }
+        if (op.n === 'matches-attr') {
+            var rawArg = stripOuterQuotes(op.a);
+            var parsed = /^\s*["']?([A-Za-z0-9_:-]+)["']?\s*(?:=\s*(.*))?$/.exec(rawArg);
+            if (!parsed) return out;
+            var attrName = parsed[1];
+            var wantRaw = parsed[2] == null ? null : stripOuterQuotes(parsed[2]);
+            var attrRe = wantRaw ? asRegex(wantRaw) : null;
+            for (i = 0; i < elements.length; i++) {
+                var value = elements[i].getAttribute(attrName);
+                if (wantRaw == null || wantRaw === '') {
+                    if (value !== null) out.push(elements[i]);
+                } else if (attrRe ? attrRe.test(value || '') :
+                           String(value || '').indexOf(wantRaw) >= 0) {
+                    out.push(elements[i]);
+                }
+            }
+            return out;
+        }
+        if (op.n === 'matches-path') {
+            var rawPath = stripOuterQuotes(op.a);
+            var pathRe = asRegex(rawPath);
+            var here = (window.location.pathname || '') + (window.location.search || '');
+            return (pathRe ? pathRe.test(here) : here.indexOf(rawPath) >= 0) ? elements : [];
+        }
+        if (op.n === 'min-text-length') {
+            var min = parseInt(op.a, 10);
+            if (isNaN(min) || min < 0) return out;
+            for (i = 0; i < elements.length; i++) {
+                if ((elements[i].textContent || '').length >= min) out.push(elements[i]);
             }
             return out;
         }
         if (op.n === 'matches-css') {
-            var colon = op.a.indexOf(':');
+            var cssArg = stripOuterQuotes(op.a);
+            var colon = cssArg.indexOf(':');
             if (colon < 0) return elements;
-            var prop = op.a.substring(0, colon).trim();
-            var want = op.a.substring(colon + 1).trim();
-            var re = null;
-            if (want.length > 2 && want.charAt(0) === '/' && want.charAt(want.length - 1) === '/') {
-                try { re = new RegExp(want.substring(1, want.length - 1)); } catch (e) { re = null; }
-            }
+            var prop = cssArg.substring(0, colon).trim();
+            var want = stripOuterQuotes(cssArg.substring(colon + 1));
+            var re = asRegex(want);
             for (i = 0; i < elements.length; i++) {
                 try {
                     var got = window.getComputedStyle(elements[i])[prop];

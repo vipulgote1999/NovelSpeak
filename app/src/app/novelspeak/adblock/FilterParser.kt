@@ -162,8 +162,10 @@ object FilterParser {
         var actionArg = parsed.third
         if (right.isEmpty()) return null
 
-        val procedural = right.contains(":has-text(") || right.contains(":matches-css(") ||
-            right.contains(":upward(") || right.contains(":xpath(") || right.contains(":watch-attr(")
+        val procedural = right.contains(":has-text(") || right.contains(":matches-attr(") ||
+            right.contains(":matches-css(") || right.contains(":matches-path(") ||
+            right.contains(":min-text-length(") || right.contains(":upward(") ||
+            right.contains(":xpath(") || right.contains(":watch-attr(")
 
         if (action == CosmeticAction.HIDE && procedural) {
             // Keep the raw procedural selector; the in-page runtime understands the operators.

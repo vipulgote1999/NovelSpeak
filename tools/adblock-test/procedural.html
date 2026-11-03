@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Procedural cosmetic regression</title>
+<style>
+  #css-hit { color: rgb(1, 2, 3); }
+</style>
+</head>
+<body>
+<div id="attr-hit" class="sponsor" data-ad="promo">attr hit</div>
+<div id="attr-miss" class="sponsor" data-ad="news">attr miss</div>
+<div id="text-hit" class="promo">SPONSORED: buy this</div>
+<div id="text-miss" class="promo">The harbour was quiet.</div>
+<div id="long-hit" class="blurb">This promotional block has more than forty characters in total.</div>
+<div id="long-miss" class="blurb">Short.</div>
+<div id="css-hit" class="banner">style-matched ad</div>
+<div id="css-miss" class="banner">style-mismatched text</div>
+<div id="path-hit">path hit</div>
+<div id="path-miss">path miss</div>
+<pre id="out">waiting</pre>
+<script>
+  window.NSAdBlock = {
+    lookup: function () { return '[]'; },
+    hidden: function () {}
+  };
+</script>
+<script src="../../app/assets/adblock/content.js"></script>
+<script>
+  window.__nsAdblockInit({
+    hide: [],
+    procedural: [
+      { s: '.sponsor:matches-attr("data-ad=promo")', a: 0 },
+      { s: '.promo:has-text(/sponsor/i)', a: 0 },
+      { s: '.blurb:min-text-length(40)', a: 0 },
+      { s: '.banner:matches-css("color: rgb(1, 2, 3)")', a: 0 },
+      { s: '#path-hit:matches-path(/procedural\\.html/)', a: 0 },
+      { s: '#path-miss:matches-path(/never-matches/)', a: 0 }
+    ]
+  });
+  setTimeout(function () {
+    var ids = ['attr-hit', 'attr-miss', 'text-hit', 'text-miss', 'long-hit', 'long-miss',
+      'css-hit', 'css-miss', 'path-hit', 'path-miss'];
+    var hidden = {};
+    var failures = [];
+    for (var i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      hidden[ids[i]] = !!(el && el.style.display === 'none');
+    }
+    var shouldHide = ['attr-hit', 'text-hit', 'long-hit', 'css-hit', 'path-hit'];
+    var shouldKeep = ['attr-miss', 'text-miss', 'long-miss', 'css-miss', 'path-miss'];
+    for (var j = 0; j < shouldHide.length; j++) {
+      if (!hidden[shouldHide[j]]) failures.push('not hidden: ' + shouldHide[j]);
+    }
+    for (var k = 0; k < shouldKeep.length; k++) {
+      if (hidden[shouldKeep[k]]) failures.push('wrongly hidden: ' + shouldKeep[k]);
+    }
+    document.getElementById('out').textContent = failures.length
+      ? 'FAIL ' + failures.join('; ')
+      : 'PASS ' + JSON.stringify(hidden);
+  }, 250);
+</script>
+</body>
+</html>
