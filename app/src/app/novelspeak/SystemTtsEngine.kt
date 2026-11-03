@@ -50,6 +50,13 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
      */
     override val maxSpeed: Float get() = MAX_SPEED
 
+    /**
+     * The provider's legacy direct-speak path plays outside [PcmPlayer], so the Reader must not
+     * hold playback and pre-render system sentences. The file-synthesis path is fast enough
+     * without a preroll.
+     */
+    override val supportsPreRender: Boolean get() = false
+
     override var isReady = false
         private set
 
@@ -59,7 +66,11 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
     private val pending = HashMap<String, (Boolean) -> Unit>()   // legacy speak() callbacks
     private var voiceId: String? = null
 
-    private class Task(val text: String, val onDone: (Boolean) -> Unit)
+    private class Task(
+        val text: String,
+        val onDone: (Boolean) -> Unit,
+        val onRendered: ((Boolean) -> Unit)? = null
+    )
     private class Boundary(
         val endFrame: Long,
         val playerEpoch: Int,
@@ -196,6 +207,10 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
         }
     }
 
+    private fun postRendered(task: Task, hasAudio: Boolean) {
+        main.post { task.onRendered?.invoke(hasAudio) }
+    }
+
     private fun workerLoop() {
         while (true) {
             val task = try {
@@ -204,8 +219,13 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
                 null
             } ?: continue
             val epoch = stopEpoch.get()
-            if (stopFlag) { main.post { task.onDone(false) }; continue }
+            if (stopFlag) {
+                main.post { task.onRendered?.invoke(false) }
+                main.post { task.onDone(false) }
+                continue
+            }
             if (!fileSynthesisSupported) {
+                postRendered(task, false)
                 if (epoch == stopEpoch.get()) legacySpeak(task) else main.post { task.onDone(false) }
                 continue
             }
@@ -217,6 +237,7 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
                 if (speechText.isBlank()) {
                     // A pronunciation rule deleted the whole sentence: skip it (success, no
                     // audio) instead of asking the provider to synthesize "".
+                    main.post { task.onRendered?.invoke(false) }
                     main.post { task.onDone(true) }
                     continue
                 }
@@ -225,17 +246,23 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
                 } catch (e: UnsupportedOperationException) {
                     null
                 }
-                if (epoch != stopEpoch.get()) { main.post { task.onDone(false) }; continue }
+                if (epoch != stopEpoch.get()) {
+                    postRendered(task, false)
+                    main.post { task.onDone(false) }
+                    continue
+                }
                 if (pcm == null) {
                     // Provider cannot synthesize to file: fall back and stay there.
                     fileSynthesisSupported = false
                     DiagLog.line(ctx, "tts file synthesis unsupported, using direct speak")
+                    postRendered(task, false)
                     if (!stopFlag) legacySpeak(task) else main.post { task.onDone(false) }
                     continue
                 }
                 if (pcm.isEmpty()) {
                     // Provider supports files but this render failed (or was cancelled):
                     // speak directly once unless playback was stopped meanwhile.
+                    postRendered(task, false)
                     if (stopFlag || epoch != stopEpoch.get()) {
                         main.post { task.onDone(false) }
                     } else {
@@ -244,7 +271,11 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
                     }
                     continue
                 }
-                if (stopFlag) { main.post { task.onDone(false) }; continue }
+                if (stopFlag) {
+                    postRendered(task, false)
+                    main.post { task.onDone(false) }
+                    continue
+                }
                 // Ramp both edges of the rendered sentence so it neither clicks against
                 // the previous tail nor cuts off abruptly.
                 applyEdgeFade(pcm, SAMPLE_RATE)
@@ -270,18 +301,25 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
                 // neural path and keeps stop() bounded by the AudioTrack buffer, not the
                 // sentence length (stop() flushes the track from another thread).
                 if (!novelSpeakPlayer().write(pcm)) {
+                    postRendered(task, false)
                     main.post { task.onDone(false) }
                     continue
                 }
                 novelSpeakPlayer().startIfBuffered()
                 val end = novelSpeakPlayer().writtenFrames
-                if (end <= 0) { main.post { task.onDone(false) }; continue }
+                if (end <= 0) {
+                    postRendered(task, false)
+                    main.post { task.onDone(false) }
+                    continue
+                }
+                postRendered(task, true)
                 // Do not wait for playback here: record the boundary and immediately render
                 // the next queued sentence. The monitor thread reports completion when this
                 // sentence has actually been heard.
                 boundaries.put(Boundary(end, playerEpoch, epoch, task.onDone))
             } catch (e: Throwable) {
                 DiagLog.exception(ctx, "system tts render failed len=${task.text.length}", e)
+                postRendered(task, false)
                 main.post { task.onDone(false) }
             }
         }
@@ -405,13 +443,21 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
 
     // ------------------------------------------------------------------ TtsEngine
 
-    override fun speak(text: String, onDone: (Boolean) -> Unit) {
-        if (!isReady) { main.post { onDone(false) }; return }
+    override fun speak(
+        text: String,
+        onDone: (Boolean) -> Unit,
+        onRendered: ((Boolean) -> Unit)?
+    ) {
+        if (!isReady) {
+            main.post { onRendered?.invoke(false) }
+            main.post { onDone(false) }
+            return
+        }
         if (stopFlag) {
             stopFlag = false
             novelSpeakPlayer().reset()
         }
-        queue.offer(Task(text, onDone))
+        queue.offer(Task(text, onDone, onRendered))
     }
 
     override fun stop() {

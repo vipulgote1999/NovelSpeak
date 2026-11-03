@@ -147,7 +147,7 @@ class VoicePreview(private val context: Context, private val prefs: Prefs) {
             }
             report(onStatus, "Previewing " + label + "…")
             try {
-                engine.speak(sample) { done ->
+                engine.speak(sample, onDone = { done ->
                     main.post {
                         finish(
                             gen,
@@ -156,7 +156,7 @@ class VoicePreview(private val context: Context, private val prefs: Prefs) {
                             onStatus
                         )
                     }
-                }
+                })
             } catch (t: Throwable) {
                 finish(gen, "Preview failed · " + label, onStatus)
             }

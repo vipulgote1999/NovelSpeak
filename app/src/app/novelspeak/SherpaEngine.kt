@@ -60,7 +60,12 @@ class SherpaEngine(
     @Volatile private var peakLogged = false
     private val main = Handler(Looper.getMainLooper())
 
-    private class Task(val text: String, val epoch: Int, val onDone: (Boolean) -> Unit)
+    private class Task(
+        val text: String,
+        val epoch: Int,
+        val onDone: (Boolean) -> Unit,
+        val onRendered: ((Boolean) -> Unit)? = null
+    )
     private class Boundary(val endFrame: Long, val epoch: Int, val onDone: (Boolean) -> Unit)
 
     /**
@@ -68,7 +73,10 @@ class SherpaEngine(
      * compiles lambdas with invokedynamic, whose generated class only has invoke(Object), so
      * that lookup aborts the process. A named Function1 subclass keeps the specialised bridge.
      */
-    private inner class SampleSink(private val epoch: Int) : (FloatArray) -> Int {
+    private inner class SampleSink(
+        private val epoch: Int,
+        private val onFirstAudio: () -> Unit
+    ) : (FloatArray) -> Int {
         var wrote = false
         var total = 0L
 
@@ -181,12 +189,14 @@ class SherpaEngine(
                 samples
             }
             if (out.isEmpty()) return true // pure-silence chunk dropped; keep generating
-            if (!player.write(out, fadeIn = !wrote)) {
+            val first = !wrote
+            if (!player.write(out, fadeIn = first)) {
                 writeFailed = true
                 return false
             }
             wrote = true
             total += out.size
+            if (first) onFirstAudio()
             return true
         }
 
@@ -292,6 +302,10 @@ class SherpaEngine(
         }
     }
 
+    private fun postRendered(task: Task, hasAudio: Boolean) {
+        main.post { task.onRendered?.invoke(hasAudio) }
+    }
+
     private fun generationLoop() {
         while (true) {
             val task = try {
@@ -299,8 +313,13 @@ class SherpaEngine(
             } catch (e: InterruptedException) {
                 null
             } ?: continue
-            val engine = tts ?: run { main.post { task.onDone(false) }; continue }
+            val engine = tts ?: run {
+                postRendered(task, false)
+                main.post { task.onDone(false) }
+                continue
+            }
             if (stopFlag || task.epoch != cancelEpoch) {
+                postRendered(task, false)
                 main.post { task.onDone(false) }
                 continue
             }
@@ -319,6 +338,7 @@ class SherpaEngine(
             }
             if (cleaned == null) {
                 DiagLog.line(ctx, "tts skip unspeakable len=${task.text.length} raw=\"${task.text.take(48).replace('\n', ' ')}\"")
+                postRendered(task, false)
                 main.post { task.onDone(true) }
                 continue
             }
@@ -348,7 +368,7 @@ class SherpaEngine(
                     8,                  // numSteps: HayaiTTS default for cloning generation
                     emptyMap()
                 )
-                val sink = SampleSink(task.epoch)
+                val sink = SampleSink(task.epoch) { postRendered(task, true) }
                 val started = System.currentTimeMillis()
                 val label = cleaned.take(28).replace('\n', ' ')
                 DiagLog.line(ctx, "gen start \"$label\" queue=${player.queueDepth()}")
@@ -356,6 +376,7 @@ class SherpaEngine(
                 // Skip-silence: generation has ended, so the held-back last chunk can now lose
                 // its trailing silence. No-op when the feature is off (nothing was held back).
                 if (!sink.garbage && !sink.flushPending()) {
+                    if (!sink.wrote) postRendered(task, false)
                     main.post { task.onDone(false) }
                     continue
                 }
@@ -367,10 +388,12 @@ class SherpaEngine(
                         ctx,
                         "tts garbage (rail-pinned) skipped \"${cleaned.take(48)}\""
                     )
+                    if (!sink.wrote) postRendered(task, false)
                     main.post { task.onDone(true) }
                     continue
                 }
                 // Safety: make sure the track is running before tracking the drain boundary.
+                // While a prereoll hold is active this only records the start request.
                 player.startIfBuffered()
                 // Ramp the sentence tail to silence before the next one starts.
                 if (sink.wrote) player.endSentence()
@@ -386,13 +409,16 @@ class SherpaEngine(
                 } else if (sink.produced && !sink.writeFailed) {
                     // Skip-silence dropped every chunk (a sentence the vocoder rendered as pure
                     // silence). Advance without audio instead of stalling the reader.
+                    if (!sink.wrote) postRendered(task, false)
                     main.post { task.onDone(true) }
                 } else {
                     // Never advance the reader when nothing reached the audio track.
+                    if (!sink.wrote) postRendered(task, false)
                     main.post { task.onDone(false) }
                 }
             } catch (e: Throwable) {
                 DiagLog.exception(ctx, "generation failed for \"${cleaned.take(40)}…\"", e)
+                postRendered(task, false)
                 main.post { task.onDone(false) }
             }
         }
@@ -412,13 +438,21 @@ class SherpaEngine(
         }
     }
 
-    override fun speak(text: String, onDone: (Boolean) -> Unit) {
-        if (!isReady) { main.post { onDone(false) }; return }
+    override fun speak(
+        text: String,
+        onDone: (Boolean) -> Unit,
+        onRendered: ((Boolean) -> Unit)?
+    ) {
+        if (!isReady) {
+            main.post { onRendered?.invoke(false) }
+            main.post { onDone(false) }
+            return
+        }
         if (stopFlag) {
             stopFlag = false
             player.reset()
         }
-        genQueue.offer(Task(text, cancelEpoch, onDone))
+        genQueue.offer(Task(text, cancelEpoch, onDone, onRendered))
     }
 
     override fun stop() {
