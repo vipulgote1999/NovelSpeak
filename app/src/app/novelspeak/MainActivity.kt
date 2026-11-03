@@ -1787,8 +1787,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val auto = autoAdvance
         if (!auto) autoAdvanceCount = 0
         // Wait for the first engine build and cosmetic layer before Readability clones the
-        // page; otherwise a hidden ad slot can reach the TTS queue on a cold start.
-        AdBlocker.whenReady(1500) {
+        // page; otherwise a hidden ad slot can reach the TTS queue on a cold start. The
+        // physical-device cold start measured ~3.7 s for list parsing/indexing, so 1.5 s was
+        // not enough and the fixture's ad reached TTS once. Keep the wait bounded so a broken
+        // list build still cannot stall reading.
+        AdBlocker.whenReady(8000) {
             if (isFinishing || isDestroyed) {
                 extractionInFlight = false
                 return@whenReady
@@ -2007,7 +2010,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                             if (hiddenWeb !== v || v == null) return
                             // The hidden view must run the same engine + cosmetic pipeline as
                             // the visible page; otherwise a prefetched chapter can bypass ads.
-                            AdBlocker.whenReady(1500) {
+                            // Match the extraction wait so a cold-start build cannot race it.
+                            AdBlocker.whenReady(8000) {
                                 if (hiddenWeb !== v) return@whenReady
                                 AdBlocker.inject(v, link) {
                                     if (hiddenWeb !== v) return@inject

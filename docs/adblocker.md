@@ -404,6 +404,25 @@ returning `null` without navigating. Extraction contained 39 reader blocks
 (8,210 characters), no `sponsored`/`miracle cream`/`buy now` matches, and the
 TTS `gen start` lines contained only chapter prose.
 
+### iQOO I2214 cold-start result
+
+On the physical iQOO I2214 (Android 15, arm64), installed over the existing
+release-signed package with the release key so app data was preserved:
+
+* list parsing/indexing took **~3.7 s** on a cold process start, longer than the
+  original 1.5 s extraction wait. The `ad-hidden-adblock.html` fixture exposed
+  this: extraction ran at 3.25 s, before the engine was ready at 5.02 s, and the
+  TTS queue received `blocks=4` including the sponsored paragraph.
+* raising the bounded wait to 8 s fixed it. The next cold run logged
+  `adblock ready` before `extract ... blocks=2`, and the only `gen start` lines
+  were the two real paragraphs.
+* the live target chapter then logged `extract ... blocks=86`, no ad text in
+  extraction or TTS, `hidden=137`, and the same document-start popup checks.
+  Prefetch reported `prefetch ready blocks=53` for chapter 68.
+* the system TTS engine was also exercised (`tts init ok voices=473`,
+  repeated `tts render ok`) against the same cleaned extraction, then the
+  original sherpa setting was restored.
+
 ### What is still impossible in a WebView
 
 * **Response-level `$removeparam`, `$csp`, `$permissions`, `$replace`,
