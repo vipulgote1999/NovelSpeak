@@ -228,6 +228,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         buildUi()
         configureWebView()
         reader.addListener(this)
+        // Defensive: Application.onCreate normally initializes this, but a page can finish
+        // before a slow startup reaches it. Ensure prefs/loading are set before extraction.
+        AdBlocker.init(applicationContext)
         AdBlocker.addListener(this)
         val storage = PrefsLibraryStorage(this)
         library = LibraryStore(storage)
@@ -1783,6 +1786,24 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         extractionInFlight = true
         val auto = autoAdvance
         if (!auto) autoAdvanceCount = 0
+        // Wait for the first engine build and cosmetic layer before Readability clones the
+        // page; otherwise a hidden ad slot can reach the TTS queue on a cold start.
+        AdBlocker.whenReady(1500) {
+            if (isFinishing || isDestroyed) {
+                extractionInFlight = false
+                return@whenReady
+            }
+            AdBlocker.inject(web, web.url ?: "") {
+                if (isFinishing || isDestroyed) {
+                    extractionInFlight = false
+                    return@inject
+                }
+                extractPageNow(append, auto)
+            }
+        }
+    }
+
+    private fun extractPageNow(append: Boolean, auto: Boolean) {
         // install() is async; extract only once the page-side scripts have actually run.
         WebExtractor.install(web) {
             WebExtractor.extract(web) { title, blocks, wall ->

@@ -3,6 +3,7 @@ package app.novelspeak
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Base64
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -102,6 +103,12 @@ object AdBlocker {
     )
 
     /**
+     * Local fixes that are not upstream yet. Kept separate from [lists] so "Update lists"
+     * never tries to download a non-URL and never overwrites these with an upstream copy.
+     */
+    private val supplementalLists = listOf("novelspeak.txt")
+
+    /**
      * TLDs that are cheap/free and disproportionately used for throwaway ad landing pages.
      * A third-party, non-gesture navigation to one of these is treated as a popunder. This is
      * a heuristic, not a list rule; it is on the "Block popups and redirects" switch.
@@ -157,6 +164,9 @@ object AdBlocker {
                         appendAssetLines(ctx, "adblock/$name", lines)
                     }
                 }
+                for (name in supplementalLists) {
+                    appendAssetLines(ctx, "adblock/$name", lines)
+                }
 
                 val parsed = FilterParser.parse(lines)
                 val built = AdBlockEngine.build(parsed.network, parsed.cosmetic)
@@ -203,6 +213,37 @@ object AdBlocker {
             e != null -> "Ready · ${e.stats().networkRules} network · ${e.stats().cosmeticRules} cosmetic rules"
             else -> status
         }
+    }
+
+    /**
+     * Runs [onReady] after the first engine build, or after a bounded wait when the engine is
+     * still loading. Extraction uses this so the first chapter cannot be read before its
+     * cosmetic ad slots have been hidden. If blocking is disabled or failed, the callback runs
+     * immediately: a broken list must never block reading.
+     */
+    fun whenReady(timeoutMs: Long, onReady: () -> Unit) {
+        val initial = prefs
+        if (initial != null &&
+            (!initial.adblockEnabled || engine != null || loadError != null || !loading)
+        ) {
+            onReady()
+            return
+        }
+        val handler = Handler(Looper.getMainLooper())
+        val deadline = SystemClock.uptimeMillis() + timeoutMs.coerceAtLeast(0L)
+        val check = object : Runnable {
+            override fun run() {
+                val p = prefs
+                val ready = p != null &&
+                    (!p.adblockEnabled || engine != null || loadError != null || !loading)
+                if (ready || SystemClock.uptimeMillis() >= deadline) {
+                    onReady()
+                } else {
+                    handler.postDelayed(this, 50L)
+                }
+            }
+        }
+        handler.postDelayed(check, 50L)
     }
 
     fun onPageStarted(url: String) {
@@ -373,30 +414,64 @@ object AdBlocker {
         return false
     }
 
-    fun inject(web: WebView, url: String) {
-        val p = prefs ?: return
-        val e = engine ?: return
-        if (!p.adblockEnabled || !p.adblockCosmetic) return
-        val host = UrlTools.host(url) ?: return
-        if (isSiteAllowed(host)) return
+    fun inject(web: WebView, url: String, onDone: (() -> Unit)? = null) {
+        val timeoutHandler = Handler(Looper.getMainLooper())
+        var finished = false
+        fun finish() {
+            if (finished) return
+            finished = true
+            timeoutHandler.removeCallbacksAndMessages(null)
+            try {
+                onDone?.invoke()
+            } catch (t: Throwable) {
+            }
+        }
+        // evaluateJavascript should always call back, but a destroyed WebView can swallow it.
+        // Never leave extractionInFlight stuck if the page goes away mid-injection.
+        timeoutHandler.postDelayed({ finish() }, 1500L)
+
+        val p = prefs
+        val e = engine
+        if (p == null || e == null || !p.adblockEnabled || !p.adblockCosmetic) {
+            finish()
+            return
+        }
+        val host = UrlTools.host(url)
+        if (host == null || isSiteAllowed(host)) {
+            finish()
+            return
+        }
 
         try {
             val script = contentScript ?: readAssetText(web.context, "adblock/content.js")?.also { contentScript = it }
-            if (script.isNullOrEmpty()) return
-            web.evaluateJavascript(script, null)
-
-            val config = e.cosmeticFor(host)
-            val json = configJson(host, config, p.adblockPopups)
-            web.evaluateJavascript("window.__nsAdblockInit && window.__nsAdblockInit($json)", null)
-
-            var injected = 0
-            for (js in config.scriptlets) {
-                if (injected >= 12) break
-                web.evaluateJavascript(js, null)
-                injected++
+            if (script.isNullOrEmpty()) {
+                finish()
+                return
+            }
+            web.evaluateJavascript(script) {
+                try {
+                    val config = e.cosmeticFor(host)
+                    val json = configJson(host, config, p.adblockPopups)
+                    // The init callback runs after the cosmetic rules have been inserted into
+                    // the live document. Extraction waits for this so Readability's clone
+                    // cannot include an ad that is about to be display:none.
+                    web.evaluateJavascript("window.__nsAdblockInit && window.__nsAdblockInit($json)") {
+                        var injected = 0
+                        for (js in config.scriptlets) {
+                            if (injected >= 12) break
+                            web.evaluateJavascript(js, null)
+                            injected++
+                        }
+                        finish()
+                    }
+                } catch (t: Throwable) {
+                    DiagLog.line(web.context, "adblock inject failed: ${t.javaClass.simpleName}: ${t.message}")
+                    finish()
+                }
             }
         } catch (t: Throwable) {
             DiagLog.line(web.context, "adblock inject failed: ${t.javaClass.simpleName}: ${t.message}")
+            finish()
         }
     }
 

@@ -591,7 +591,10 @@
             }
             observe();
             collect(document.documentElement || document);
-            scheduleFlush();
+            // Apply the first batch of generic class/id rules synchronously. Extraction runs
+            // immediately after this init callback; waiting for the 120 ms debounce lets the
+            // first chapter's ad slot reach Readability before it is hidden.
+            flush();
         } catch (e) {}
     };
 })();
