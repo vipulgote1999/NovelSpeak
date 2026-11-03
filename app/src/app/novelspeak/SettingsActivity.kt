@@ -985,7 +985,7 @@ class SettingsActivity : Activity() {
             if (!active) {
                 actions.addView(pillButton("Use", primary = true) {
                     prefs.modelId = m.id
-                    NovelSpeakApp.instance.reader.stop()
+                    NovelSpeakApp.instance.reader.invalidateEngine()
                     status.text = "Active model: ${m.label}"
                     build()
                 })
@@ -1000,6 +1000,10 @@ class SettingsActivity : Activity() {
                     .setNegativeButton("Cancel", null)
                     .setPositiveButton("Delete") { _, _ ->
                         ModelManager.delete(this, m.id)
+                        if (prefs.modelId == m.id) {
+                            prefs.modelId = ModelManager.preferredNeuralModel(this)
+                            NovelSpeakApp.instance.reader.invalidateEngine()
+                        }
                         status.text = "Deleted ${m.label}"
                         build()
                     }
@@ -1450,8 +1454,8 @@ class SettingsActivity : Activity() {
                 id.toIntOrNull()?.let { prefs.supertonicStyle = it }
             else -> id.toIntOrNull()?.let { prefs.kokoroSid = it }
         }
-        // Drop the cached engine so the next Play uses the selected voice.
-        NovelSpeakApp.instance.reader.invalidateEngine()
+        // Update the live engine's voice and discard prerendered audio; do not reload the model.
+        NovelSpeakApp.instance.reader.setVoice(id)
     }
 
     private fun downloadModel(m: ModelManager.Model) {
@@ -1508,6 +1512,7 @@ class SettingsActivity : Activity() {
                 if (ok) {
                     prefs.modelId = m.id
                     prefs.engine = Prefs.ENGINE_SHERPA
+                    NovelSpeakApp.instance.reader.invalidateEngine()
                     status.text = "Installed ${m.label} — active"
                     build()
                 } else {

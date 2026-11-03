@@ -14,7 +14,9 @@ import android.content.SharedPreferences
  *                              AudioTrack LOW_LATENCY mono 16-bit with buffer=max(bytes,4096)
  */
 class Prefs(ctx: Context) {
+    private val appCtx = ctx.applicationContext
     private val sp: SharedPreferences = ctx.getSharedPreferences("novelspeak", Context.MODE_PRIVATE)
+    @Volatile private var defaultModel: String? = null
 
     init {
         // One-time tuning migration. Older builds persisted prefetch=2 / max=220 even when the
@@ -51,9 +53,14 @@ class Prefs(ctx: Context) {
         get() = sp.getString(K_ENGINE, ENGINE_SYSTEM) ?: ENGINE_SYSTEM
         set(v) = sp.edit().putString(K_ENGINE, v).apply()
 
-    /** Installed sherpa model id ("kokoro-int8-en-v0_19" / "sherpa-onnx-pocket-tts-int8-2026-01-26"). */
+    /**
+     * Installed sherpa model id. An explicit saved choice wins; otherwise prefer the benchmark's
+     * Supertonic winner when it is installed, then the first installed speech model.
+     */
     var modelId: String
-        get() = sp.getString(K_MODEL, MODEL_KOKORO) ?: MODEL_KOKORO
+        get() = sp.getString(K_MODEL, null)
+            ?: defaultModel
+            ?: ModelManager.preferredNeuralModel(appCtx).also { defaultModel = it }
         set(v) = sp.edit().putString(K_MODEL, v).apply()
 
     /** Selected Android system TTS voice name ("" = device default). */

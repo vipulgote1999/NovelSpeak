@@ -120,6 +120,16 @@ object ModelManager {
         }
     }
 
+    /**
+     * Default neural model when the user has not saved an explicit choice: the benchmark's
+     * speed/memory winner if installed, otherwise the first installed speech model.
+     */
+    fun preferredNeuralModel(ctx: Context): String {
+        if (isInstalled(ctx, Prefs.MODEL_SUPERTONIC)) return Prefs.MODEL_SUPERTONIC
+        return MODELS.firstOrNull { it.family != "vocoder" && isInstalled(ctx, it.id) }?.id
+            ?: Prefs.MODEL_KOKORO
+    }
+
     fun findFile(dir: File, names: List<String>): File? {
         for (n in names) {
             val f = File(dir, n)
