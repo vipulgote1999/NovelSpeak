@@ -1,0 +1,6 @@
+model,family,threads,ok,error,load_ms,gen_ms,ttfc_ms,audio_ms,rtf,xrt,rss_load_mb,rss_gen_mb,samples
+kokoro-int8-en-v0_19,kokoro,4,True,,1155,5248,5248,6675,0.7656773675762439,1.3060417033550002,372,227,6
+sherpa-onnx-pocket-tts-int8-2026-01-26,pocket,4,True,,788,3060.5,2758,5600,0.5606311274509804,1.7837521033950412,523,226,6
+sherpa-onnx-supertonic-3-tts-int8-2026-05-11,supertonic,4,True,,799,2165,2163.5,7060,0.306657223796034,3.261774421161959,336,225,6
+sherpa-onnx-zipvoice-distill-int8-zh-en-emilia,zipvoice,4,True,,1643,28342,28340,15424,1.9087999534300903,0.5255487352112143,448,79,6
+system,system,0,True,,463,141,141,6403.5,0.022495077495505868,44.48144385026738,151,191,6

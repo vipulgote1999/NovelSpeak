@@ -4,6 +4,9 @@
 # Toolchain used here: Termux packages (aapt2, kotlinc, d8, apksigner, zip, openjdk-21) plus a
 # platform android.jar. The same sources build on a desktop with the Android SDK build-tools;
 # see README and RELEASING.md.
+#
+# DEBUGGABLE=1 adds android:debuggable="true" (needed by tools/tts-benchmark/run.sh). It is
+# off by default so release builds do not ship a debuggable manifest.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -16,6 +19,7 @@ PKG="app.novelspeak"
 ABI="${ABI:-arm64-v8a}"
 MIN_SDK=24
 TARGET_SDK=34
+DEBUGGABLE="${DEBUGGABLE:-0}"
 OUT_APK="${OUT_APK:-$BUILD/NovelSpeak-debug.apk}"
 if [ -n "${KEYSTORE:-}" ]; then
   KS_ALIAS="${KS_ALIAS:?KS_ALIAS is required when KEYSTORE is set}"
@@ -45,12 +49,19 @@ if [ -d "$APP/res" ]; then
 fi
 
 echo "==> 1/8 aapt2 link (manifest + assets + resources)"
+LINK_ARGS=()
+if [ "$DEBUGGABLE" = "1" ]; then
+  # The bench/debug harness uses `run-as` to pull result JSON. This stays opt-in so a
+  # release invocation (KEYSTORE=...) cannot accidentally ship a debuggable app.
+  LINK_ARGS+=(--debug-mode)
+fi
 aapt2 link \
   -o "$BUILD/base.apk" \
   -I "$ANDROID_JAR" \
   --manifest "$APP/AndroidManifest.xml" \
   -A "$APP/assets" \
   "${RES_ARGS[@]}" \
+  "${LINK_ARGS[@]}" \
   --min-sdk-version $MIN_SDK \
   --target-sdk-version $TARGET_SDK
 
@@ -64,9 +75,15 @@ mkdir -p "$BUILD/jni/$ABI"
 unzip -o -q -j "$DEPS/sherpa.aar" "jni/$ABI/*" -d "$BUILD/jni/$ABI"
 
 echo "==> 3/7 kotlinc"
+for dep in webkit-classes.jar annotation.jar; do
+  if [ ! -f "$DEPS/$dep" ]; then
+    echo "Missing $DEPS/$dep; run tools/fetch-webkit-deps.sh (see README)" >&2
+    exit 1
+  fi
+done
 rm -rf "$BUILD/classes"
 kotlinc "$APP/src" \
-  -classpath "$ANDROID_JAR:$DEPS/aar/classes.jar:$DEPS/commons-compress.jar:$DEPS/commons-io.jar" \
+  -classpath "$ANDROID_JAR:$DEPS/aar/classes.jar:$DEPS/commons-compress.jar:$DEPS/commons-io.jar:$DEPS/webkit-classes.jar:$DEPS/annotation.jar" \
   -jvm-target 1.8 \
   -nowarn \
   -d "$BUILD/classes"
@@ -78,7 +95,7 @@ rm -rf "$BUILD/dex"; mkdir -p "$BUILD/dex"
 # Prefer a modern R8/D8 from a jar: Termux's d8 3.3 crashes on newer libraries (commons-io).
 if [ -f "$DEPS/r8.jar" ]; then
   D8=(java -cp "$DEPS/r8.jar" com.android.tools.r8.D8)
-  LIBS=("$BUILD/classes.jar" "$DEPS/aar/classes.jar" "$DEPS/commons-compress.jar" "$DEPS/commons-io.jar" "$KOTLIN_STDLIB")
+  LIBS=("$BUILD/classes.jar" "$DEPS/aar/classes.jar" "$DEPS/commons-compress.jar" "$DEPS/commons-io.jar" "$KOTLIN_STDLIB" "$DEPS/webkit-classes.jar" "$DEPS/annotation.jar")
 else
   D8=(d8)
   # Old d8 cannot parse multi-release jars; strip module-info before feeding it.
@@ -88,7 +105,7 @@ else
       zip -q -d "$DEPS/$j-d8.jar" 'META-INF/versions/*' 'module-info.class' 2>/dev/null || true
     fi
   done
-  LIBS=("$BUILD/classes.jar" "$DEPS/aar/classes.jar" "$DEPS/commons-compress-d8.jar" "$DEPS/commons-io-d8.jar" "$KOTLIN_STDLIB")
+  LIBS=("$BUILD/classes.jar" "$DEPS/aar/classes.jar" "$DEPS/commons-compress-d8.jar" "$DEPS/commons-io-d8.jar" "$KOTLIN_STDLIB" "$DEPS/webkit-classes.jar" "$DEPS/annotation.jar")
 fi
 "${D8[@]}" --lib "$ANDROID_JAR" --min-api $MIN_SDK --output "$BUILD/dex" "${LIBS[@]}"
 

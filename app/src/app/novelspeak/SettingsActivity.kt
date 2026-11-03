@@ -31,6 +31,7 @@ import android.view.WindowManager
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.Switch
@@ -59,6 +60,13 @@ class SettingsActivity : Activity() {
     private var lastMessage = ""
     private var wake: PowerManager.WakeLock? = null
     private var ticker: Runnable? = null
+
+    /** Inline per-model progress. Only one install runs at a time, so one live bar suffices. */
+    private var installModelId: String = ""
+    private var installPct: Int = -1
+    private var installPhase: String = ""
+    private var activeBar: android.widget.ProgressBar? = null
+    private var activeBarLabel: TextView? = null
     private lateinit var preview: VoicePreview
     private var systemVoices: List<Pair<String, String>> = emptyList()
     private var allSystemVoices: List<Pair<String, String>> = emptyList()
@@ -222,6 +230,9 @@ class SettingsActivity : Activity() {
         resetScroll = false
         container.removeAllViews()
         voiceRows.clear()
+        // Views belong to the previous build; drop stale handles before rebuilding.
+        activeBar = null
+        activeBarLabel = null
         pageTitle.text = page.title
 
         val previousStatus = if (::status.isInitialized) status.text?.toString() else null
@@ -253,7 +264,7 @@ class SettingsActivity : Activity() {
         engineCard.addView(divider())
         engineCard.addView(ChoiceRow(
             "Neural voices",
-            "Kokoro / Pocket via sherpa-onnx · download once",
+            "Kokoro, Supertonic, Pocket, ZipVoice via sherpa-onnx · download once",
             prefs.engine == Prefs.ENGINE_SHERPA
         ) {
             selectEngine(true)
@@ -283,42 +294,6 @@ class SettingsActivity : Activity() {
             )
         }
 
-        // Auditioning is deliberately independent of the active engine: the user can hear the
-        // offline voices without switching the reader engine or changing the selected voice.
-        if (page == Page.VOICES) {
-        section("ON-DEVICE VOICE PREVIEWS")
-        val offlinePreviewCard = card()
-        val installedModels = ModelManager.MODELS.filter {
-            ModelManager.isInstalled(this, it.id)
-        }
-        if (installedModels.isEmpty()) {
-            offlinePreviewCard.addView(note(
-                "Install Kokoro or Pocket above to audition the offline voices."
-            ))
-        } else {
-            offlinePreviewCard.addView(note(
-                "Short samples from the on-device engine. Reading pauses while a sample plays; " +
-                    "your selected voice is not changed."
-            ))
-            for (model in installedModels) {
-                if (model.family == "pocket") {
-                    addOnDevicePreviewRow(
-                        offlinePreviewCard, model.id, "",
-                        "Pocket · narrator (bria clip)", "Pocket"
-                    )
-                } else {
-                    Prefs.KOKORO_VOICES.forEachIndexed { sid, voice ->
-                        addOnDevicePreviewRow(
-                            offlinePreviewCard, model.id, sid.toString(),
-                            voice.second, "Kokoro"
-                        )
-                    }
-                }
-            }
-        }
-        container.addView(offlinePreviewCard)
-        }
-
         if (page == Page.VOICES) {
         section("VOICE")
         val voiceCard = card()
@@ -340,18 +315,50 @@ class SettingsActivity : Activity() {
             }
             voiceCard.addView(note("Current voice: " + currentVoiceLabelText()))
         } else {
+            val activeModel = ModelManager.model(prefs.modelId)
             val voices = currentVoices()
-            if (voices.isEmpty()) {
-                voiceCard.addView(note("No selectable voices for this engine."))
-            } else {
-                for ((id, label) in voices) addVoiceRow(voiceCard, id, label)
-                voiceCard.addView(note("Current voice: " + currentVoiceLabelText()))
-                if (!ModelManager.isInstalled(this, prefs.modelId)) {
-                    voiceCard.addView(note("Install the neural model to preview these voices."))
+            when {
+                activeModel == null ->
+                    voiceCard.addView(note("Choose a neural model above."))
+                !ModelManager.isInstalled(this, activeModel.id) ->
+                    voiceCard.addView(note(
+                        "Install " + activeModel.label + " above, then pick a voice here."
+                    ))
+                voices.isEmpty() ->
+                    voiceCard.addView(note("No selectable voices for this model."))
+                else -> {
+                    for ((id, label) in voices) addVoiceRow(voiceCard, id, label)
+                    voiceCard.addView(note("Current voice: " + currentVoiceLabelText()))
+                    voiceCard.addView(note(
+                        "Tap the preview button on a row to audition it. Reading pauses while " +
+                            "a sample plays; your selection changes only when you tap the row."
+                    ))
                 }
             }
         }
         container.addView(voiceCard)
+        }
+
+        // Auditioning another installed model never changes the active model or voice, and the
+        // active model is excluded so its voices are never listed twice.
+        if (page == Page.VOICES && prefs.engine == Prefs.ENGINE_SHERPA) {
+            val others = ModelManager.MODELS.filter { m ->
+                m.family != "vocoder" && m.id != prefs.modelId &&
+                    ModelManager.isInstalled(this, m.id)
+            }
+            if (others.isNotEmpty()) {
+                section("PREVIEW OTHER INSTALLED MODELS")
+                val otherCard = card()
+                otherCard.addView(note(
+                    "Hear a voice from another installed model without changing your selection."
+                ))
+                for (model in others) {
+                    for ((id, label) in voicesForModel(model)) {
+                        addOnDevicePreviewRow(otherCard, model.id, id, label, modelDisplayName(model))
+                    }
+                }
+                container.addView(otherCard)
+            }
         }
 
         if (page == Page.PLAYBACK) {
@@ -998,13 +1005,59 @@ class SettingsActivity : Activity() {
                     }
                     .show()
             })
+        } else if (installing && installModelId == m.id) {
+            actions.addView(pillButton("Installing…", primary = true) { })
         } else {
             actions.addView(pillButton("Install", primary = true) {
                 downloadModel(m)
             })
         }
         block.addView(actions)
+
+        // Inline progress for this model: determinate while downloading, indeterminate while
+        // verifying/extracting (bzip2 reports no byte total for those phases).
+        if (installing && installModelId == m.id) {
+            val bar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+                max = 100
+                progress = installPct.coerceIn(0, 100)
+                isIndeterminate = installPct < 0
+                progressTintList = ColorStateList.valueOf(Palette.ACCENT)
+                progressBackgroundTintList = ColorStateList.valueOf(Palette.SURFACE_HIGH)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, dp(6)
+                ).apply { topMargin = dp(10) }
+            }
+            val label = TextView(this).apply {
+                text = installStatusText()
+                textSize = 11.5f
+                setTextColor(Palette.MUTED)
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setPadding(0, dp(6), 0, dp(2))
+            }
+            block.addView(bar)
+            block.addView(label)
+            activeBar = bar
+            activeBarLabel = label
+        }
         return block
+    }
+
+    /** One line under the inline bar: download percent (or phase text) plus elapsed time. */
+    private fun installStatusText(): String {
+        val phase = if (installPct >= 0) "Downloading $installPct%" else installPhase.ifEmpty { "Preparing…" }
+        val s = ((System.currentTimeMillis() - installStartedAt) / 1000).toInt().coerceAtLeast(0)
+        val ss = s % 60
+        val clock = (s / 60).toString() + ":" + if (ss < 10) "0$ss" else ss.toString()
+        return phase + "  \u00b7  " + clock
+    }
+
+    /** Repaints the live inline bar without rebuilding the page. */
+    private fun updateInstallProgress() {
+        val bar = activeBar ?: return
+        bar.isIndeterminate = installPct < 0
+        if (installPct >= 0) bar.progress = installPct.coerceIn(0, 100)
+        activeBarLabel?.text = installStatusText()
     }
 
     private fun section(title: String, accessibilityLabel: String? = null) {
@@ -1186,22 +1239,41 @@ class SettingsActivity : Activity() {
         setOnClickListener { onClick() }
     }
 
-    private fun currentVoices(): List<Pair<String, String>> {
-        return if (prefs.engine == Prefs.ENGINE_SHERPA) {
-            if (prefs.modelId == Prefs.MODEL_POCKET) {
-                listOf("" to "Default narrator (bria clip bundled with the model)")
-            } else {
-                Prefs.KOKORO_VOICES.mapIndexed { i, p -> i.toString() to p.second }
-            }
-        } else {
-            systemVoices
+    /**
+     * Voices a model exposes. Mirrors [SherpaEngine.voices] so the picker never offers a speaker
+     * index the engine does not support and never shows another family's voices.
+     */
+    private fun voicesForModel(model: ModelManager.Model): List<Pair<String, String>> =
+        when (model.family) {
+            "pocket" -> listOf("" to "Default narrator (bria clip)")
+            "zipvoice" -> listOf("" to "Cloned narrator (reference clip + transcript)")
+            "supertonic" -> listOf(
+                "0" to "F1 (US female)",
+                "1" to "M1 (US male)"
+            )
+            "vocoder" -> emptyList()
+            else -> Prefs.KOKORO_CURATED.map { pair -> pair.first.toString() to pair.second }
         }
+
+    private fun modelDisplayName(model: ModelManager.Model): String = when (model.family) {
+        "pocket" -> "Pocket"
+        "zipvoice" -> "ZipVoice"
+        "supertonic" -> "Supertonic"
+        else -> "Kokoro"
+    }
+
+    private fun currentVoices(): List<Pair<String, String>> {
+        if (prefs.engine != Prefs.ENGINE_SHERPA) return systemVoices
+        val model = ModelManager.model(prefs.modelId) ?: return emptyList()
+        return voicesForModel(model)
     }
 
     private fun currentVoiceId(): String =
         when {
             prefs.engine != Prefs.ENGINE_SHERPA -> prefs.systemVoice
-            prefs.modelId == Prefs.MODEL_POCKET -> ""
+            prefs.modelId == Prefs.MODEL_POCKET || prefs.modelId == Prefs.MODEL_ZIPVOICE -> ""
+            ModelManager.model(prefs.modelId)?.family == "supertonic" ->
+                prefs.supertonicStyle.toString()
             else -> prefs.kokoroSid.toString()
         }
 
@@ -1209,8 +1281,13 @@ class SettingsActivity : Activity() {
         if (prefs.engine != Prefs.ENGINE_SHERPA) {
             return prefs.systemVoiceLabel.ifEmpty { "Device default" }
         }
-        if (prefs.modelId == Prefs.MODEL_POCKET) return "Pocket · cloned narrator"
-        return "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(prefs.kokoroSid)?.second ?: "voice")
+        return when (ModelManager.model(prefs.modelId)?.family) {
+            "pocket" -> "Pocket · cloned narrator"
+            "zipvoice" -> "ZipVoice · cloned narrator"
+            "supertonic" -> "Supertonic · " +
+                (if (prefs.supertonicStyle == 0) "F1 (US female)" else "M1 (US male)")
+            else -> "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(prefs.kokoroSid)?.second ?: "voice")
+        }
     }
 
     private fun addVoiceRow(card: LinearLayout, id: String, label: String) {
@@ -1367,7 +1444,10 @@ class SettingsActivity : Activity() {
                 prefs.systemVoiceLabel = if (id.isEmpty()) "Device default"
                     else systemVoices.firstOrNull { it.first == id }?.second ?: id
             }
-            prefs.modelId == Prefs.MODEL_POCKET -> prefs.pocketVoicePath = ""
+            prefs.modelId == Prefs.MODEL_POCKET || prefs.modelId == Prefs.MODEL_ZIPVOICE ->
+                prefs.pocketVoicePath = ""
+            ModelManager.model(prefs.modelId)?.family == "supertonic" ->
+                id.toIntOrNull()?.let { prefs.supertonicStyle = it }
             else -> id.toIntOrNull()?.let { prefs.kokoroSid = it }
         }
         // Drop the cached engine so the next Play uses the selected voice.
@@ -1380,9 +1460,13 @@ class SettingsActivity : Activity() {
             return
         }
         installing = true
+        installModelId = m.id
+        installPct = -1
+        installPhase = "Starting…"
         lastMessage = "Starting ${m.label}…"
         installStartedAt = System.currentTimeMillis()
         status.text = lastMessage
+        build()
         DiagLog.line(this, "ui install tap model=${m.id}")
 
         // Long download + single-threaded bzip2 decode: keep CPU and screen alive so the install
@@ -1402,10 +1486,16 @@ class SettingsActivity : Activity() {
             var lastUiUpdate = 0L
             val ok = ModelManager.install(this, m) { pct, msg ->
                 lastMessage = if (pct >= 0) "Downloading ${m.label}: $msg" else "${m.label}: $msg"
+                installPct = pct
+                installPhase = msg
                 val now = System.currentTimeMillis()
                 if (now - lastUiUpdate > 200) {
                     lastUiUpdate = now
-                    runOnUiThread { status.text = withElapsed(lastMessage) }
+                    runOnUiThread {
+                        if (isFinishing || isDestroyed) return@runOnUiThread
+                        updateInstallProgress()
+                        status.text = withElapsed(lastMessage)
+                    }
                 }
             }
             runOnUiThread {
@@ -1422,6 +1512,7 @@ class SettingsActivity : Activity() {
                     build()
                 } else {
                     status.text = lastMessage.ifEmpty { "Install failed" }
+                    build()
                 }
             }
         }.start()
@@ -1471,6 +1562,8 @@ class SettingsActivity : Activity() {
                     return
                 }
                 status.text = withElapsed(lastMessage)
+                // Keep the inline bar's elapsed clock moving between progress callbacks.
+                updateInstallProgress()
                 ui.postDelayed(this, 1000)
             }
         }
@@ -1484,6 +1577,11 @@ class SettingsActivity : Activity() {
     }
 
     private fun stopInstallUi() {
+        installModelId = ""
+        installPct = -1
+        installPhase = ""
+        activeBar = null
+        activeBarLabel = null
         installing = false
         stopTicker()
         try {

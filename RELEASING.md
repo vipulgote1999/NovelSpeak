@@ -41,7 +41,8 @@ Never commit the keystore, the password file, or the passwords. Both are covered
 - Android SDK build-tools (`aapt2`, `d8`, `apksigner`, `zipalign`)
 - `android.jar` for API 34
 - Dependency jars/AAR in `deps/` (see README): `sherpa.aar`, `commons-compress.jar`,
-  `commons-io.jar`; `r8.jar` is optional and preferred on Termux
+  `commons-io.jar`, `webkit-classes.jar`, `annotation.jar`; `r8.jar` is optional and preferred
+  on Termux. Fetch WebKit with `tools/fetch-webkit-deps.sh`.
 
 Set the paths for this machine:
 

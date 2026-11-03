@@ -55,6 +55,36 @@ object ModelManager {
             unpackedMb = 200,
             sampleRate = 24000,
             family = "pocket"
+        ),
+        Model(
+            id = Prefs.MODEL_SUPERTONIC,
+            label = "Supertonic 3 int8 (English, 2 curated styles)",
+            url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2",
+            sha256 = "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427",
+            sizeMb = 123,
+            unpackedMb = 180,
+            sampleRate = 24000,
+            family = "supertonic"
+        ),
+        Model(
+            id = Prefs.MODEL_ZIPVOICE,
+            label = "ZipVoice distill int8 (zh+en, transcript cloning)",
+            url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-zipvoice-distill-int8-zh-en-emilia.tar.bz2",
+            sha256 = "77219c8b40f4ee8d73a7f902305ff6c1128ef9b54461c41b4ca6ed890b6c2803",
+            sizeMb = 104,
+            unpackedMb = 160,
+            sampleRate = 24000,
+            family = "zipvoice"
+        ),
+        Model(
+            id = Prefs.MODEL_VOCOS24,
+            label = "Vocoder 24 kHz (for ZipVoice)",
+            url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/vocoder-models/vocos_24khz.onnx",
+            sha256 = "bcb3b970e384161c4d634f0bb9e999ff1c471b34c9bc0b1049a5014065ed3cc0",
+            sizeMb = 52,
+            unpackedMb = 52,
+            sampleRate = 24000,
+            family = "vocoder"
         )
     )
 
@@ -73,6 +103,19 @@ object ModelManager {
                     findFile(d, listOf("decoder.int8.onnx", "decoder.onnx")) != null &&
                     File(d, "text_conditioner.onnx").isFile &&
                     File(d, "vocab.json").isFile && File(d, "token_scores.json").isFile
+            "supertonic" -> findFile(d, listOf("duration_predictor.int8.onnx", "duration_predictor.onnx")) != null &&
+                    findFile(d, listOf("text_encoder.int8.onnx", "text_encoder.onnx")) != null &&
+                    findFile(d, listOf("vector_estimator.int8.onnx", "vector_estimator.onnx")) != null &&
+                    findFile(d, listOf("vocoder.int8.onnx", "vocoder.onnx")) != null &&
+                    File(d, "tts.json").isFile && File(d, "unicode_indexer.bin").isFile &&
+                    File(d, "voice.bin").isFile
+            "zipvoice" -> findFile(d, listOf("encoder.int8.onnx", "encoder.onnx")) != null &&
+                    findFile(d, listOf("decoder.int8.onnx", "decoder.onnx")) != null &&
+                    File(d, "tokens.txt").isFile && File(d, "lexicon.txt").isFile &&
+                    // vocoder is a separate model dir; accept if present alongside OR in vocos dir
+                    (File(d, "vocos_24khz.onnx").isFile ||
+                     File(File(d.parentFile, "vocos-24khz"), "vocos_24khz.onnx").isFile)
+            "vocoder" -> File(d, "vocos_24khz.onnx").isFile
             else -> false
         }
     }
@@ -119,7 +162,7 @@ object ModelManager {
                 return false
             }
             onProgress(0, "Connecting…")
-            val downloaded = download(model.url, tmp, model.sizeMb, onProgress)
+            val downloaded = downloadWithRetry(model.url, tmp, model.sizeMb, onProgress)
             if (downloaded != true) {
                 tmp.delete()
                 DiagLog.line(ctx, "download FAILED url=${model.url}")
@@ -176,6 +219,32 @@ object ModelManager {
 
     // ---- internals ----
 
+    /**
+     * Downloads [url] to [out]. Large bundles can stall for a while on a slow link before the
+     * first byte arrives, so a 60 s read timeout is used and one transient failure is retried
+     * from scratch instead of surfacing as a hard error.
+     */
+    private fun downloadWithRetry(
+        url: String,
+        out: File,
+        sizeMb: Int,
+        onProgress: (Int, String) -> Unit
+    ): Boolean? {
+        var lastError: Throwable? = null
+        for (attempt in 0 until 2) {
+            try {
+                return download(url, out, sizeMb, onProgress)
+            } catch (e: Throwable) {
+                lastError = e
+                out.delete()
+                if (attempt == 0) {
+                    onProgress(-1, "Network stalled — retrying…")
+                }
+            }
+        }
+        throw lastError ?: java.io.IOException("download failed")
+    }
+
     private fun download(url: String, out: File, sizeMb: Int, onProgress: (Int, String) -> Unit): Boolean? {
         var conn: HttpURLConnection? = null
         try {
@@ -183,8 +252,8 @@ object ModelManager {
             var redirects = 0
             while (redirects < 5) {
                 conn = (URL(current).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 20000
-                    readTimeout = 30000
+                    connectTimeout = 30000
+                    readTimeout = 60000
                     instanceFollowRedirects = false
                     setRequestProperty("User-Agent", "NovelSpeak/0.1")
                 }
@@ -203,14 +272,16 @@ object ModelManager {
                         val buf = ByteArray(128 * 1024)
                         var read = 0L
                         var lastPct = -1
+                        var lastReportedMb = -1L
                         while (true) {
                             val n = input.read(buf)
                             if (n <= 0) break
                             fos.write(buf, 0, n)
                             read += n
                             val pct = ((read * 100) / total).toInt().coerceIn(0, 99)
-                            if (pct != lastPct) {
+                            if (pct != lastPct || read / 1048576 - lastReportedMb >= 2) {
                                 lastPct = pct
+                                lastReportedMb = read / 1048576
                                 onProgress(pct, "$pct%  (${read / 1048576} / ${total / 1048576} MB)")
                             }
                         }

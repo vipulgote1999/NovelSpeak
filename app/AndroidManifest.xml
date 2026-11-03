@@ -82,6 +82,16 @@
             android:label="About &amp; privacy"
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
+        <!-- Dev-only benchmark harness. Not linked from the UI; launch it with adb. It has no
+             data access beyond the app's own sandbox, but exported so `am start` from a test
+             device works without adb root. -->
+        <activity
+            android:name=".BenchmarkActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="TTS Benchmark"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+
         <service
             android:name=".PlaybackService"
             android:exported="false"

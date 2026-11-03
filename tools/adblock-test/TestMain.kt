@@ -23,7 +23,8 @@ fun main(args: Array<String>) {
             "easyprivacy.txt",
             "ublock-filters.txt",
             "ublock-annoyances.txt",
-            "ublock-badware.txt"
+            "ublock-badware.txt",
+            "novelspeak.txt"
         )
         val lines = ArrayList<String>(180_000)
         for (f in files) {
@@ -50,5 +51,19 @@ fun main(args: Array<String>) {
         probe("google-analytics", "https://www.google-analytics.com/analytics.js", "https://empirenovel.com/chapter/1", app.novelspeak.adblock.ResourceType.SCRIPT)
         probe("first-party", "https://empirenovel.com/chapter/2", "https://empirenovel.com/chapter/1", app.novelspeak.adblock.ResourceType.SUBDOCUMENT)
         probe("cdn", "https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js", "https://empirenovel.com/chapter/1", app.novelspeak.adblock.ResourceType.SCRIPT)
+
+        // Target-page regression: first-party popunder script and its two ad containers.
+        val target = "https://www.empirenovel.com/novel/my-werewolf-system/67"
+        val popunder = engine.check(
+            app.novelspeak.adblock.RequestInfo(
+                "https://www.empirenovel.com/po.js", target,
+                app.novelspeak.adblock.ResourceType.SCRIPT, "GET", false
+            )
+        )
+        check(popunder.block) { "target popunder script was not blocked" }
+        val hide = engine.cosmeticFor("www.empirenovel.com").hideSelectors
+        check(hide.contains(".pub")) { "target .pub slot was not hidden" }
+        check(hide.contains("#reader-bottom")) { "target #reader-bottom slot was not hidden" }
+        println("target-page probes: ok")
     }
 }

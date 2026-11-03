@@ -71,6 +71,16 @@ class Prefs(ctx: Context) {
         get() = sp.getInt(K_SID, 0)
         set(v) = sp.edit().putInt(K_SID, v).apply()
 
+    /** Curated Supertonic style index (0 = F1 female, 1 = M1 male). */
+    var supertonicStyle: Int
+        get() = sp.getInt(K_SUPERTONIC_STYLE, 0)
+        set(v) = sp.edit().putInt(K_SUPERTONIC_STYLE, v).apply()
+
+    /** Optional transcript for ZipVoice cloning (verbatim). */
+    var zipVoiceTranscript: String
+        get() = sp.getString(K_ZIPVOICE_TRANSCRIPT, "") ?: ""
+        set(v) = sp.edit().putString(K_ZIPVOICE_TRANSCRIPT, v).apply()
+
     /** Pocket reference clip path ("" = bundled bria.wav from the model bundle). */
     var pocketVoicePath: String
         get() = sp.getString(K_POCKET_VOICE, "") ?: ""
@@ -272,6 +282,9 @@ class Prefs(ctx: Context) {
 
         const val MODEL_KOKORO = "kokoro-int8-en-v0_19"
         const val MODEL_POCKET = "sherpa-onnx-pocket-tts-int8-2026-01-26"
+        const val MODEL_SUPERTONIC = "sherpa-onnx-supertonic-3-tts-int8-2026-05-11"
+        const val MODEL_ZIPVOICE = "sherpa-onnx-zipvoice-distill-int8-zh-en-emilia"
+        const val MODEL_VOCOS24 = "vocos-24khz"
 
         /** Longer than the old 90 so clauses are not chopped; 150-220 also matches NekoSpeak. */
         const val DEFAULT_MAX_CHARS = 180
@@ -279,6 +292,8 @@ class Prefs(ctx: Context) {
         private const val K_ENGINE = "engine"
         private const val K_MODEL = "model"
         private const val K_SID = "kokoro_sid"
+        private const val K_SUPERTONIC_STYLE = "supertonic_style"
+        private const val K_ZIPVOICE_TRANSCRIPT = "zipvoice_transcript"
         private const val K_SYSTEM_VOICE = "system_voice"
         private const val K_SYSTEM_VOICE_LABEL = "system_voice_label"
         private const val K_POCKET_VOICE = "pocket_voice"
@@ -317,6 +332,15 @@ class Prefs(ctx: Context) {
 
         val FONT_FAMILIES = setOf("serif", "sans", "dyslexic")
         val READER_THEMES = setOf("dark", "sepia", "light")
+
+        /**
+         * Curated best-sounding Kokoro voices (sid to label). Kokoro ships 11 speakers but a
+         * novel reader only needs a couple of good ones; the ids are the sids in voices.bin.
+         */
+        val KOKORO_CURATED: List<Pair<Int, String>> = listOf(
+            0 to "Heart (US female)",
+            5 to "Adam (US male)"
+        )
 
         /** Kokoro en-v0_19 speakers, in the order stored in voices.bin. */
         val KOKORO_VOICES = listOf(

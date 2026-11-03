@@ -4,6 +4,21 @@ All notable changes to NovelSpeak are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Ad text was still read aloud by both TTS engines.** Readability parses a detached clone
+  without computed styles, so an element hidden by an adblock cosmetic rule could still become a
+  reader block. Extraction now drops a block when its only live match is hidden
+  (`display:none`, `visibility:hidden` or zero client rects), while keeping blocks with no live
+  counterpart. The first-page race was fixed too: extraction waits (bounded) for the filter
+  engine and the cosmetic CSS before cloning the page, and the first generic class/id batch
+  is now flushed synchronously instead of after a 120 ms debounce.
+- Added a bundled local supplement for first-party ad code and slots that upstream lists miss,
+  starting with `empirenovel.com/po.js`, `.pub` and `#reader-bottom`. The JVM adblock harness now
+  asserts those rules, and `tools/extract-test/` is a Chrome regression for the hidden-ad case.
+
 ## [1.2.1] - 2026-10-27
 
 ### Fixed
