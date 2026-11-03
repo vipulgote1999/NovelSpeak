@@ -1,0 +1,7 @@
+Starting: Intent { cmp=app.novelspeak/.BenchmarkActivity (has extras) }
+Status: ok
+LaunchState: COLD
+Activity: app.novelspeak/.BenchmarkActivity
+TotalTime: 516
+WaitTime: 527
+Complete
