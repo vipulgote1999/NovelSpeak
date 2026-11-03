@@ -60,8 +60,8 @@ and picks the least-used token per rule, with `http`, `www`, `com`, `js`, `ad`
 and similar common tokens heavily penalised. Measured on the bundled pack:
 
 ```
-network rules   122,884
-cosmetic rules   32,403
+network rules   122,885
+cosmetic rules   32,405
 scriptlet rules   4,612
 host buckets    111,922
 token buckets     3,449
@@ -159,6 +159,7 @@ NovelSpeak implements those rules in `AdBlocker.kt` and
 | `ublock-filters.txt` | uBlockOrigin/uAssets | ads + trackers |
 | `ublock-annoyances.txt` | uBlockOrigin/uAssets (`annoyances-others.txt`) | overlays/popups |
 | `ublock-badware.txt` | uBlockOrigin/uAssets | malware |
+| `novelspeak.txt` | bundled local supplement | first-party popunders and ad slots missing upstream (e.g. `empirenovel.com/po.js`, `.pub`, `#reader-bottom`) |
 
 Licences and attribution are in `app/assets/adblock/NOTICE.txt`.
 
@@ -174,7 +175,7 @@ checked.
   atomically, and requests pass through until it is ready. If a page finishes
   before the index, the engine-ready callback re-injects the cosmetic layer
   instead of waiting for a reload. On the API 35 emulator the log line was
-  `adblock ready network=122884 cosmetic=32403 scriptlets=4612 build=114ms`, and
+  `adblock ready network=122885 cosmetic=32405 scriptlets=4612 build=114ms`, and
   the engine was ready under a second after process start.
 * On the same emulator, the chapter page reported `Ad 0/129` (129 cosmetic
   selectors applied) and the large interstitial overlay was removed; the in-app
@@ -225,3 +226,124 @@ java -jar /tmp/adblock-test.jar app/assets/adblock/public_suffix_list.dat
   Chromium with a fake bridge: initial hiding, `:has-text`/`:style`, dynamic
   class/id lookup via `MutationObserver`, `window.open` neutralisation, and the
   overlay heuristic all passed.
+
+## 2026-11-03: TTS extraction and first-page race
+
+Target page: `https://www.empirenovel.com/novel/my-werewolf-system/67`.
+
+### Root cause: cosmetic-hidden text reached Readability
+
+The network rules already blocked the ad network
+(`||richeryawp.com^`), but two things were still wrong:
+
+1. `extract.js` runs Readability against a **clone** of the document. The clone
+   carries no computed styles, and the article collector deliberately ignores
+   visibility for Readability's detached holder. An element hidden by a
+   cosmetic rule (for example `##.ad--article`) was therefore extracted as
+   ordinary chapter text and spoken by both system TTS and neural TTS.
+2. Extraction could start before the adblock engine existed or before
+   `__nsAdblockInit` had inserted the cosmetic CSS. That made the first chapter
+   after a cold start especially likely to include an ad slot.
+
+The regression fixture
+[`tools/extract-test/ad-hidden.html`](../tools/extract-test/ad-hidden.html)
+reproduced it: before the fix the JSON contained
+`SPONSORED: Buy the new miracle cream…`. `tools/extract-test/run.sh` now checks
+that the hidden block is dropped while the real chapter text survives.
+
+The fix is in three places:
+
+* `extract.js` now maps each Readability block to its live DOM node. A block
+  whose only live match is hidden (`display:none`, `visibility:hidden`,
+  zero client rects) is dropped; a block with no live match is kept so a
+  DOM-restructured chapter is not lost. Hidden nodes are matched with
+  `textContent` because `innerText` is empty on `display:none`.
+* `MainActivity.extractNow` waits up to 1.5 s for the first adblock engine
+  build and for `AdBlocker.inject` to finish applying cosmetic rules before it
+  installs the extractor. If ad blocking is disabled or the list build fails,
+  the callback proceeds immediately; blocking can never stall reading.
+* `content.js` flushes its first generic class/id batch synchronously inside
+  `__nsAdblockInit`. The previous 120 ms debounce let a generic rule such as
+  `##.ad--article` miss the extraction window even when the engine was ready.
+
+### Target-page supplement
+
+`app/assets/adblock/novelspeak.txt` is loaded after the five upstream lists and
+is intentionally separate from **Update lists**:
+
+```text
+||empirenovel.com/po.js
+empirenovel.com##.pub
+empirenovel.com###reader-bottom
+```
+
+`po.js` is a first-party, obfuscated popunder/anti-adblock script (it probes an
+`ad_slot`, hijacks `window.open`, builds a form and submits it). It is not in
+EasyList because it is first-party. `.pub` and `#reader-bottom` are the two ad
+containers outside the chapter body; EasyList has no matching rule for either.
+The engine probe in `tools/adblock-test/TestMain.kt` now asserts that the script
+is blocked and both selectors are present in `cosmeticFor("www.empirenovel.com")`.
+
+Runtime check on the API 35 emulator with the fixture:
+
+```text
+adblock ready network=122885 cosmetic=32405 scriptlets=4612 build=109ms skipped=527
+extract url=http://localhost:8765/ad-hidden-adblock.html ... blocks=2
+gen start "The Lantern The harbour was " ...
+gen start "She turned the page and kept" ...
+```
+
+`blocks=2` is the two real chapter paragraphs; the `SPONSORED` paragraph is gone.
+The second fixture (`ad-hidden-adblock.html`) has no inline CSS: the ad is hidden
+only by the engine's `##.ad--article` rule. This is the important regression: the
+first generic class/id batch is flushed synchronously in `__nsAdblockInit`, before
+the extraction callback, rather than waiting for the previous 120 ms debounce.
+The TTS queue receives only the visible text, so the fix applies equally to the
+system engine and the sherpa engines (extraction happens before either speaks).
+
+### Upstream comparison (checked 2026-11-03)
+
+Brave's `adblock-rust` is the closest mature reference:
+
+* `adblock-rust` 0.13.5 (2026-10-28) supports network blocking, cosmetic
+  filtering, resource replacements, hosts syntax and uBlock syntax extensions;
+  the 0.13 line moved lists to FlatBuffers, and Brave reported a 75% engine
+  memory reduction in v1.85 (2026-01-05).
+* Brave's procedural filtering supports `:has-text`, `:matches-attr`,
+  `:matches-css`, `:matches-css-before`, `:matches-css-after`,
+  `:matches-path`, `:min-text-length`, `:upward` and `:xpath`, with CSS
+  validation during parsing.
+* uBO's static syntax (Oct 2026) defines the same operators plus `:has`,
+  `:matches-prop`, `:matches-media`, `:not`, `:others` and `:watch-attr`.
+  uBO prefers native `:has()` when Chromium supports it (Chromium 105+).
+
+NovelSpeak's engine already handles the high-volume subset: `:has-text`,
+`:matches-css`, `:upward`, `:xpath`, `:remove`, `:style`, `:remove-attr` and
+`:remove-class`. The bundled lists currently contain 498 `:has-text` rules, 662
+`:style`, 51 `:upward`, 26 `:xpath`, 46 `:remove`, 6 `:matches-attr` and 5
+`:matches-path`; the low-frequency operators are the next incremental win, not
+the main gap.
+
+The real WebView gaps remain:
+
+* **Document-start scriptlets.** Cosmetic scriptlets are injected at commit
+  visible / page finished. A first-party popunder can capture the native
+  `window.open` before the override. A future `WebViewCompat.addDocumentStartJavaScript`
+  bootstrap (AndroidX WebKit) or a native proxy is needed for true early
+  scriptlet injection. The local `po.js` rule is the safe mitigation today.
+* **Per-view/frame context.** `AdBlocker.currentUrl` is global, and the hidden
+  prefetch WebView currently does not install the interceptor. A prefetched
+  chapter therefore bypasses network and cosmetic filtering. Next step: pass an
+  explicit document URL into interception and attach the same pipeline to the
+  prefetch WebView.
+* **Response-level features.** `$csp`, `$removeparam`, `$permissions`,
+  `$replace`, `$urltransform` and response-body filtering need a proxy/MITM or
+  a Chromium fork; approximating them in `shouldInterceptRequest` would break
+  pages. They are deliberately left unsupported.
+* **Resource replacements.** Brave/uBO ship a large resource library for
+  `$redirect`/`$redirect-rule`; NovelSpeak only has a handful of surrogates.
+  Importing the uBO resource files would reduce more tracker breakage.
+
+Priority order: early scriptlet injection, prefetch-view coverage, then the
+low-frequency procedural operators; the extraction filter and first-page wait
+are the fixes that directly stop TTS from reading a hidden ad.
