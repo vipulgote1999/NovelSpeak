@@ -4,16 +4,18 @@ An Android browser that reads any serialized novel aloud — with neural voices 
 screen-off controls, and no account, meter or telemetry.
 
 <p align="center">
-  <a href="docs/media/novelspeak-launch.mp4" title="Watch the 23-second launch film (with audio)">
-    <img src="docs/media/novelspeak-launch.gif" alt="NovelSpeak launch film — real reader with read-along highlight and player" width="820">
+  <a href="docs/media/novelspeak-launch-landscape.mp4" title="Watch the 23-second launch film (with audio)">
+    <img src="docs/media/novelspeak-launch-landscape.gif" alt="NovelSpeak launch film — real reader with read-along highlight and player" width="960">
   </a>
 </p>
 
 <p align="center">
-  <a href="docs/media/novelspeak-launch.mp4"><strong>▶&nbsp; Watch the 23-second launch film (with audio)</strong></a>
+  <a href="docs/media/novelspeak-launch-landscape.mp4"><strong>▶&nbsp; Watch the 23-second launch film (with audio)</strong></a>
+  &nbsp;·&nbsp;
+  <a href="docs/media/novelspeak-launch.mp4">Portrait (9:16) original</a>
   &nbsp;·&nbsp;
   <a href="docs/media/novelspeak-launch-contact-sheet.jpg">Contact sheet</a><br>
-  <sub>9:16 · 1080 × 1920 · 23 s · real app UI · no narration · GIF autoplays inline; MP4 keeps the audio</sub>
+  <sub>16:9 · 1920 × 1080 · 23 s · real app UI · no narration · GIF autoplays inline; MP4 keeps the audio</sub>
 </p>
 
 **Why it exists.** Chrome's *Listen to this page* keeps playing while the screen is locked (Google's
