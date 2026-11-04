@@ -68,6 +68,7 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
 
     private class Task(
         val text: String,
+        val epoch: Int,
         val onDone: (Boolean) -> Unit,
         val onRendered: ((Boolean) -> Unit)? = null
     )
@@ -202,7 +203,11 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
             novelSpeakPlayer().awaitDrained(b.endFrame, b.playerEpoch) {
                 stopFlag || b.epoch != stopEpoch.get()
             }
-            val ok = !stopFlag && b.epoch == stopEpoch.get()
+            // A broken/rebuilt AudioTrack must fail the sentence, not advance the cursor
+            // silently; both the engine and player epochs must still match.
+            val ok = !stopFlag && b.epoch == stopEpoch.get() &&
+                novelSpeakPlayer().epoch() == b.playerEpoch &&
+                !novelSpeakPlayer().hasWriteError()
             main.post { b.onDone(ok) }
         }
     }
@@ -218,8 +223,11 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
             } catch (e: InterruptedException) {
                 null
             } ?: continue
-            val epoch = stopEpoch.get()
-            if (stopFlag) {
+            // The epoch belongs to the task, not to the moment the worker dequeues it. stop()
+            // can bump stopEpoch and a following speak() can clear stopFlag before this line;
+            // capturing it here would let a stale sentence render and play after resume.
+            val epoch = task.epoch
+            if (stopFlag || epoch != stopEpoch.get()) {
                 main.post { task.onRendered?.invoke(false) }
                 main.post { task.onDone(false) }
                 continue
@@ -291,6 +299,13 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
                         pcm
                     }
                     if (trimmed.isNotEmpty()) pcm = trimmed
+                }
+                // Re-check immediately before touching the shared player: a pause/seek may
+                // have landed while this sentence was rendering.
+                if (stopFlag || epoch != stopEpoch.get()) {
+                    postRendered(task, false)
+                    main.post { task.onDone(false) }
+                    continue
                 }
                 novelSpeakPlayer().ensure(sampleRate)
                 // Epoch captured before writing: a seek flushes the track and makes this
@@ -457,7 +472,7 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
             stopFlag = false
             novelSpeakPlayer().reset()
         }
-        queue.offer(Task(text, onDone, onRendered))
+        queue.offer(Task(text, stopEpoch.get(), onDone, onRendered))
     }
 
     override fun stop() {

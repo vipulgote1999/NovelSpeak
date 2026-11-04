@@ -3,6 +3,8 @@ package app.novelspeak
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import android.os.Process
+import android.os.SystemClock
 import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
@@ -40,6 +42,20 @@ class PcmPlayer {
         // output gain, so the limiter still sees the cleaned signal. Set false to A/B the raw
         // TTS path; the rest of PcmPlayer does not change.
         const val DENOISE_ENABLED = true
+
+        // A paused/flushed AudioTrack returns a short write instead of blocking. Wait this long
+        // for the owner to resume or for stop()/reset() to invalidate the epoch, then fail the
+        // chunk instead of spinning forever. Never kill the writer thread for this.
+        const val WRITE_STALL_TIMEOUT_MS = 15_000L
+
+        // Absolute watchdog for a sentence boundary. Sentences are capped at 45 s of audio, so
+        // two minutes cannot be a legitimate drain; it means the audio route lost frames.
+        const val MAX_DRAIN_WAIT_MS = 120_000L
+
+        // Two seconds of mono 16-bit PCM. The Reader keeps up to 12 s of sentences queued, but
+        // only this ring protects playback from a CPU spike (page load, screen transition,
+        // call setup). The old 1 s ring underran during those transitions on the iQOO.
+        const val BUFFER_SECONDS = 2
     }
 
     @Volatile private var track: AudioTrack? = null
@@ -92,6 +108,16 @@ class PcmPlayer {
     /** When true, writes are buffered but the AudioTrack stays paused. */
     @Volatile private var holdPlayback = false
 
+    /**
+     * The AudioTrack rejected a write (for example ERROR_DEAD_OBJECT after an audio-route
+     * change). The player reports the failure to the waiting sentence and rebuilds the track on
+     * the next ensure(), instead of leaving the writer dead or the Reader waiting forever.
+     */
+    @Volatile private var trackBroken = false
+
+    /** Epoch whose audio could not be written; -1 means the current epoch is healthy. */
+    @Volatile private var writeErrorEpoch = -1
+
     // ---- audio export (record while listening) -------------------------------
     @Volatile private var capture: WavSink? = null
     @Volatile private var captureFile: File? = null
@@ -124,22 +150,26 @@ class PcmPlayer {
 
     /** Hold or release AudioTrack playback without dropping queued PCM. */
     fun setPlaybackHold(hold: Boolean) {
+        if (holdPlayback == hold) return
         holdPlayback = hold
         if (hold) {
+            // The track may already be playing (for example a quick pause/resume race). Mark it
+            // stopped so releasing the hold explicitly starts it again instead of assuming the
+            // paused track is still running.
+            started = false
             try { track?.pause() } catch (e: Throwable) {}
+        } else {
+            startIfBuffered()
         }
     }
 
     fun ensure(sampleRateHz: Int) {
-        if (track != null && sampleRate == sampleRateHz) {
-            // A stopped/paused track rejects the first write; bring it back up only when
-            // playback has already started and pre-roll is not holding it.
+        if (track != null && sampleRate == sampleRateHz && !trackBroken) {
             stopped = false
-            val t = track
-            if (!holdPlayback && started && t != null && t.playState != AudioTrack.PLAYSTATE_PLAYING) {
-                try { t.play() } catch (e: Throwable) {}
-            }
             startWriter()
+            // A paused track returns a short write. If real frames are already buffered, make
+            // sure it is playing again; if it is empty the writer starts it on its first write.
+            if (!holdPlayback && trackFrames > 0) startTrack()
             return
         }
         // Keep an active pre-roll hold across the track rebuild; the Reader owns that state.
@@ -147,14 +177,13 @@ class PcmPlayer {
         release()
         holdPlayback = keepHold
         sampleRate = sampleRateHz
+        trackBroken = false
+        writeErrorEpoch = -1
         denoise = if (denoiseEnabled) AudioDsp(sampleRateHz) else null
         val minBytes = AudioTrack.getMinBufferSize(
             sampleRateHz, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT
         )
-        // One second of mono 16-bit PCM: enough to pre-buffer ~0.35 s and ride out a slow
-        // generation chunk. HayaiTTS uses a small buffer because it synthesizes a full clip
-        // before play; we stream, so a slightly larger ring is useful.
-        val bufferBytes = maxOf(minBytes.coerceAtLeast(4096), sampleRateHz * 2)
+        val bufferBytes = maxOf(minBytes.coerceAtLeast(4096), sampleRateHz * 2 * BUFFER_SECONDS)
         val t = AudioTrack.Builder()
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -203,10 +232,14 @@ class PcmPlayer {
         trackFrames = 0
         stopped = false
         started = false
+        trackBroken = false
+        writeErrorEpoch = -1
         playbackEpoch++
         playQueue.clear()
         // Lock-free: AudioDsp clears itself at the start of the next write.
         denoise?.reset()
+        // pause()+flush() is the documented immediate-stop pair. Keeping the track paused
+        // (instead of stop()) also keeps play()/write() restartable on every device.
         try {
             track?.pause()
             track?.flush()
@@ -222,15 +255,21 @@ class PcmPlayer {
      */
     fun write(samples: FloatArray, fadeIn: Boolean = false): Boolean {
         val t = track ?: return false
-        if (stopped) return false
-        if (writer == null) startWriter()
+        if (stopped || trackBroken) return false
+        startWriter()
         if (writtenFrames == 0L) {
             Log.i("NovelSpeak", "PcmPlayer first write samples=${samples.size} state=${t.playState}")
         }
         if (samples.isEmpty()) return true
         val copy = samples.copyOf()
-        playQueue.offer(Chunk(playbackEpoch, copy, fadeIn))
-        writtenFrames += copy.size
+        val chunk = Chunk(playbackEpoch, copy, fadeIn)
+        // Enqueue under the same lock as reset()/stop(): a chunk captured just before a seek
+        // must not inflate writtenFrames after the new epoch has cleared the queue.
+        synchronized(this) {
+            if (stopped || trackBroken || chunk.epoch != playbackEpoch) return false
+            playQueue.offer(chunk)
+            writtenFrames += copy.size
+        }
         if (writtenFrames <= copy.size) {
             Log.i(
                 "NovelSpeak",
@@ -246,10 +285,14 @@ class PcmPlayer {
      * next starting at a different value produce an audible click.
      */
     fun endSentence() {
-        if (stopped) return
+        if (stopped || trackBroken) return
         val n = fadeFrames()
-        playQueue.offer(Chunk(playbackEpoch, tailFrames = n))
-        writtenFrames += n
+        val chunk = Chunk(playbackEpoch, tailFrames = n)
+        synchronized(this) {
+            if (stopped || trackBroken || chunk.epoch != playbackEpoch) return
+            playQueue.offer(chunk)
+            writtenFrames += n
+        }
     }
 
     /** Number of sentences/chunks waiting for the writer thread (diagnostics). */
@@ -271,28 +314,36 @@ class PcmPlayer {
      * writer denoises the first sentence.
      */
     fun startIfBuffered() {
-        if (started || holdPlayback || trackFrames <= 0) return
+        if (stopped || trackBroken || holdPlayback || trackFrames <= 0) return
         startTrack()
     }
 
     private fun startTrack() {
-        if (started) return
+        if (holdPlayback) return
         val t = track ?: return
+        if (t.playState == AudioTrack.PLAYSTATE_PLAYING) {
+            started = true
+            return
+        }
         Log.i("NovelSpeak", "PcmPlayer play() queued=$writtenFrames state=${t.playState}")
         try {
             t.play()
+            started = t.playState == AudioTrack.PLAYSTATE_PLAYING
         } catch (e: Throwable) {
+            // Do not mark the track as started when play() failed: the next write/ensure()
+            // must be able to retry instead of believing audio is running.
+            started = false
             Log.w("NovelSpeak", "PcmPlayer play failed", e)
         }
-        started = true
-        Log.i("NovelSpeak", "PcmPlayer after play state=${t.playState}")
+        Log.i("NovelSpeak", "PcmPlayer after play state=${t.playState} started=$started")
     }
 
     private fun fadeFrames(): Int = (sampleRate * 6 / 1000).coerceAtLeast(24)
 
     @Synchronized
     private fun startWriter() {
-        if (writer != null) return
+        val existing = writer
+        if (existing != null && existing.isAlive) return
         writerRun = true
         writer = Thread({ writerLoop() }, "ns-pcm-writer").apply {
             isDaemon = true
@@ -308,143 +359,230 @@ class PcmPlayer {
         val w = writer
         writer = null
         try { w?.interrupt() } catch (e: Throwable) {}
-        try { w?.join(300) } catch (e: InterruptedException) {}
+        try { w?.join(1000) } catch (e: InterruptedException) {}
     }
 
+    private enum class WriteResult { DONE, ABORTED, ERROR }
+
     private fun writerLoop() {
+        // Audio output must win against page loads, WebView layout and screen transitions. The
+        // writer only converts and writes PCM; URGENT_AUDIO keeps its buffer fed.
+        try {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
+        } catch (t: Throwable) {
+        }
+
+        val me = Thread.currentThread()
         var writerEpoch = -1
         var lastWritten = 0f
         var gainNow = 0f
 
         /**
-         * AudioTrack.write returns 0 while the track is paused. A chunk is fully processed
-         * (denoise/gain/quantise) before this wait, so a released prereoll starts immediately
+         * AudioTrack.write returns a short count (including 0) while the track is paused or
+         * when pause()/flush() interrupts a blocking write. A chunk is fully processed
+         * (denoise/gain/quantise) before this wait, so a released preroll starts immediately
          * from the already-prepared bytes instead of waiting for DSP.
          */
         fun waitForHold(chunkEpoch: Int): Boolean {
-            while (holdPlayback && writerRun && !stopped && chunkEpoch == playbackEpoch) {
+            while (holdPlayback && writerRun && writer === me && !stopped &&
+                chunkEpoch == playbackEpoch
+            ) {
                 try { Thread.sleep(5) } catch (e: InterruptedException) { return false }
             }
-            return writerRun && !stopped && chunkEpoch == playbackEpoch
+            return writerRun && writer === me && !stopped && chunkEpoch == playbackEpoch
         }
 
-        fun writeAll(bytes: ByteArray, t: AudioTrack): Boolean {
+        /**
+         * Writes the whole chunk. A pause/stop is not an error: it invalidates the epoch or
+         * sets stopped, and this returns ABORTED so the writer can continue with the next
+         * chunk. Only a real AudioTrack error marks the track broken, and even then the writer
+         * thread stays alive so a later reset/ensure can rebuild and resume.
+         */
+        fun writeAll(bytes: ByteArray, t: AudioTrack): WriteResult {
             var off = 0
-            while (off < bytes.size && writerRun && !stopped && writerEpoch == playbackEpoch) {
+            var stalledMs = 0L
+            while (off < bytes.size) {
+                if (!writerRun || writer !== me) return WriteResult.ABORTED
+                if (holdPlayback) {
+                    try { Thread.sleep(5) } catch (e: InterruptedException) {
+                        return WriteResult.ABORTED
+                    }
+                    continue
+                }
                 val n = try {
                     t.write(bytes, off, bytes.size - off)
                 } catch (e: Throwable) {
                     -1
                 }
-                if (n <= 0) {
-                    if (!stopped && writerEpoch == playbackEpoch) {
-                        Log.w("NovelSpeak", "PcmPlayer writer write failed n=$n state=${t.playState}")
+                when (AudioWritePolicy.classify(
+                    returned = n,
+                    requested = bytes.size - off,
+                    written = off,
+                    stopped = stopped,
+                    epochChanged = writerEpoch != playbackEpoch
+                )) {
+                    AudioWritePolicy.Outcome.COMPLETE,
+                    AudioWritePolicy.Outcome.PROGRESS -> {
+                        off += n
+                        trackFrames += n / 2
+                        stalledMs = 0L
                     }
-                    return false
+                    AudioWritePolicy.Outcome.WAIT -> {
+                        // The track is paused/flushed or another thread interrupted the write.
+                        // Wait for resume, hold release, or stop/reset; never kill the writer.
+                        if (!started && !holdPlayback) startTrack()
+                        stalledMs += 10L
+                        if (stalledMs >= WRITE_STALL_TIMEOUT_MS) {
+                            Log.w(
+                                "NovelSpeak",
+                                "PcmPlayer write stalled ms=$stalledMs state=${t.playState} " +
+                                    "started=$started hold=$holdPlayback"
+                            )
+                            markTrackBroken("stalled write")
+                            return WriteResult.ERROR
+                        }
+                        try { Thread.sleep(10) } catch (e: InterruptedException) {
+                            return WriteResult.ABORTED
+                        }
+                    }
+                    AudioWritePolicy.Outcome.ABORT -> return WriteResult.ABORTED
+                    AudioWritePolicy.Outcome.ERROR -> {
+                        Log.w(
+                            "NovelSpeak",
+                            "PcmPlayer write error n=$n state=${t.playState} " +
+                                "hold=$holdPlayback started=$started"
+                        )
+                        markTrackBroken("write error $n")
+                        return WriteResult.ERROR
+                    }
                 }
-                off += n
-                trackFrames += n / 2
             }
-            return off == bytes.size
+            return WriteResult.DONE
         }
 
-        while (writerRun) {
-            val chunk = try {
-                playQueue.take()
-            } catch (e: InterruptedException) {
-                break
-            }
-            if (chunk.epoch < 0) continue
-            if (chunk.epoch != playbackEpoch) continue
-            if (stopped) {
-                playQueue.clear()
-                continue
-            }
-            val t = track ?: continue
-            if (chunk.epoch != writerEpoch) {
-                writerEpoch = chunk.epoch
-                lastWritten = 0f
-                gainNow = 0f
-                // A stale chunk may have advanced the DSP while a reset was racing; start every
-                // new playback epoch from a clean filter history.
-                denoise?.reset()
-            }
-
-            // Sentence tail: ramp the last written sample to zero so the next sentence
-            // cannot produce a step discontinuity (an audible click).
-            if (chunk.tailFrames > 0) {
-                val n = chunk.tailFrames
-                val tail = ByteArray(n * 2)
-                for (i in 0 until n) {
-                    val v = lastWritten * (1f - i.toFloat() / (n - 1).coerceAtLeast(1))
-                    val s = (v * 32767f).roundToInt().coerceIn(-32768, 32767)
-                    tail[i * 2] = (s and 0xFF).toByte()
-                    tail[i * 2 + 1] = ((s shr 8) and 0xFF).toByte()
+        try {
+            while (writerRun && writer === me) {
+                val chunk = try {
+                    playQueue.take()
+                } catch (e: InterruptedException) {
+                    break
                 }
-                if (!waitForHold(chunk.epoch)) continue
-                if (!started && !holdPlayback) startTrack()
-                if (!writeAll(tail, t)) break
-                try { capture?.writePcm16(tail, tail.size) } catch (t2: Throwable) { }
-                lastWritten = 0f
-                continue
-            }
-
-            val samples = chunk.samples ?: continue
-            if (samples.isEmpty()) continue
-
-            // Denoise before the output gain so the limiter sees the cleaned signal.
-            val dsp = denoise
-            val pcm = try {
-                dsp?.process(samples) ?: samples
-            } catch (e: Throwable) {
-                samples
-            }
-
-            // Peak-limit per chunk: quiet TTS chunks get the full lift, loud ones back off just
-            // enough to avoid hard clipping (Kokoro peaks ranged ~0.30-0.50 in testing).
-            var peak = 0f
-            for (s in pcm) {
-                val a = if (s < 0f) -s else s
-                if (a > peak) peak = a
-            }
-            val boost = try {
-                NovelSpeakApp.instance.prefs.ttsVolumeBoost
-            } catch (e: Throwable) {
-                1.0f
-            }
-            val gain = OUTPUT_GAIN * boost
-            val target = if (peak > 0.001f) minOf(gain, 0.98f / peak) else gain
-            if (gainNow <= 0f) gainNow = target
-            val fade = if (chunk.fadeIn) fadeFrames() else 0
-            val bytes = ByteArray(pcm.size * 2)
-            var k = 0
-            var i = 0
-            var last = 0f
-            for (s in pcm) {
-                // Gain drops immediately (clipping safety) and rises slowly, so a chunk with
-                // a different peak cannot step the level.
-                gainNow = if (target < gainNow) target else gainNow + (target - gainNow) * 0.0008f
-                var v = s * gainNow
-                if (i < fade) v *= i.toFloat() / fade
-                last = v
-                val clipped = when {
-                    v >= 1.0f -> 32767
-                    v <= -1.0f -> -32768
-                    else -> (v * 32767f).roundToInt()
+                if (chunk.epoch < 0) continue
+                if (chunk.epoch != playbackEpoch) continue
+                if (stopped) {
+                    playQueue.clear()
+                    continue
                 }
-                bytes[k++] = (clipped and 0xFF).toByte()
-                bytes[k++] = ((clipped shr 8) and 0xFF).toByte()
-                i++
+                val t = track ?: continue
+                if (chunk.epoch != writerEpoch) {
+                    writerEpoch = chunk.epoch
+                    lastWritten = 0f
+                    gainNow = 0f
+                    // A stale chunk may have advanced the DSP while a reset was racing; start
+                    // every new playback epoch from a clean filter history.
+                    denoise?.reset()
+                }
+
+                try {
+                    // Sentence tail: ramp the last written sample to zero so the next sentence
+                    // cannot produce a step discontinuity (an audible click).
+                    if (chunk.tailFrames > 0) {
+                        val n = chunk.tailFrames
+                        val tail = ByteArray(n * 2)
+                        for (i in 0 until n) {
+                            val v = lastWritten * (1f - i.toFloat() / (n - 1).coerceAtLeast(1))
+                            val s = (v * 32767f).roundToInt().coerceIn(-32768, 32767)
+                            tail[i * 2] = (s and 0xFF).toByte()
+                            tail[i * 2 + 1] = ((s shr 8) and 0xFF).toByte()
+                        }
+                        if (!waitForHold(chunk.epoch)) continue
+                        if (!started && !holdPlayback) startTrack()
+                        if (writeAll(tail, t) == WriteResult.DONE) {
+                            try { capture?.writePcm16(tail, tail.size) } catch (t2: Throwable) { }
+                            lastWritten = 0f
+                        }
+                        continue
+                    }
+
+                    val samples = chunk.samples ?: continue
+                    if (samples.isEmpty()) continue
+
+                    // Denoise before the output gain so the limiter sees the cleaned signal.
+                    val dsp = denoise
+                    val pcm = try {
+                        dsp?.process(samples) ?: samples
+                    } catch (e: Throwable) {
+                        samples
+                    }
+
+                    // Peak-limit per chunk: quiet TTS chunks get the full lift, loud ones back
+                    // off just enough to avoid hard clipping (Kokoro peaks ranged ~0.30-0.50).
+                    var peak = 0f
+                    for (s in pcm) {
+                        val a = if (s < 0f) -s else s
+                        if (a > peak) peak = a
+                    }
+                    val boost = try {
+                        NovelSpeakApp.instance.prefs.ttsVolumeBoost
+                    } catch (e: Throwable) {
+                        1.0f
+                    }
+                    val gain = OUTPUT_GAIN * boost
+                    val target = if (peak > 0.001f) minOf(gain, 0.98f / peak) else gain
+                    if (gainNow <= 0f) gainNow = target
+                    val fade = if (chunk.fadeIn) fadeFrames() else 0
+                    val bytes = ByteArray(pcm.size * 2)
+                    var k = 0
+                    var i = 0
+                    var last = 0f
+                    for (s in pcm) {
+                        // Gain drops immediately (clipping safety) and rises slowly, so a chunk
+                        // with a different peak cannot step the level.
+                        gainNow = if (target < gainNow) target
+                            else gainNow + (target - gainNow) * 0.0008f
+                        var v = s * gainNow
+                        if (i < fade) v *= i.toFloat() / fade
+                        last = v
+                        val clipped = when {
+                            v >= 1.0f -> 32767
+                            v <= -1.0f -> -32768
+                            else -> (v * 32767f).roundToInt()
+                        }
+                        bytes[k++] = (clipped and 0xFF).toByte()
+                        bytes[k++] = ((clipped shr 8) and 0xFF).toByte()
+                        i++
+                    }
+                    // A stop() that lands during DSP invalidates this chunk; keep the writer
+                    // alive so the next reset/play can reuse it.
+                    if (stopped) continue
+                    // The first chunk can be prepared while a preroll hold is active; only the
+                    // actual AudioTrack write waits for the hold to be released.
+                    if (!waitForHold(chunk.epoch)) continue
+                    if (!started && !holdPlayback) startTrack()
+                    if (writeAll(bytes, t) == WriteResult.DONE) {
+                        try { capture?.writePcm16(bytes, bytes.size) } catch (t2: Throwable) { }
+                        lastWritten = last
+                    }
+                } catch (t: Throwable) {
+                    // One malformed/oversized chunk must never take the whole writer down.
+                    Log.w("NovelSpeak", "PcmPlayer chunk failed epoch=${chunk.epoch}", t)
+                }
             }
-            if (stopped) break
-            // The first chunk can be prepared while a prereoll hold is active; only the actual
-            // AudioTrack write waits for the hold to be released.
-            if (!waitForHold(chunk.epoch)) continue
-            if (!started && !holdPlayback) startTrack()
-            if (!writeAll(bytes, t)) break
-            try { capture?.writePcm16(bytes, bytes.size) } catch (t2: Throwable) { }
-            lastWritten = last
+        } finally {
+            synchronized(this) {
+                if (writer === me) writer = null
+            }
+            Log.i(
+                "NovelSpeak",
+                "PcmPlayer writer exit run=$writerRun stopped=$stopped broken=$trackBroken"
+            )
         }
+    }
+
+    private fun markTrackBroken(reason: String) {
+        trackBroken = true
+        writeErrorEpoch = playbackEpoch
+        Log.w("NovelSpeak", "PcmPlayer track broken: $reason")
     }
 
     fun playedFrames(): Long {
@@ -455,26 +593,51 @@ class PcmPlayer {
     /** Increments on every reset/stop, so a waiter can detect that its frame target is stale. */
     fun epoch(): Int = playbackEpoch
 
+    /** True when the current epoch lost audio to an AudioTrack error (monitor must fail). */
+    fun hasWriteError(): Boolean = trackBroken && writeErrorEpoch == playbackEpoch
+
     /**
      * Blocks until the given absolute frame count has been played.
      *
      * [epochAtStart] guards against the flush race: stop()/reset() clears the AudioTrack and its
      * head position returns to 0, so a target captured before the flush can never be reached.
      * Without this, a seek during playback leaves the engine thread waiting forever.
+     *
+     * The wall-clock cap is a last-resort watchdog: if an audio route change silently loses
+     * frames without an epoch change, the sentence fails instead of leaving "Playing" forever.
      */
     fun awaitDrained(targetFrames: Long, epochAtStart: Int, stopFlag: () -> Boolean) {
-        while (!stopFlag() && playbackEpoch == epochAtStart && playedFrames() < targetFrames) {
+        val startedAt = SystemClock.elapsedRealtime()
+        while (!stopFlag() && playbackEpoch == epochAtStart &&
+            !hasWriteError() && playedFrames() < targetFrames
+        ) {
+            if (SystemClock.elapsedRealtime() - startedAt > MAX_DRAIN_WAIT_MS) {
+                Log.w(
+                    "NovelSpeak",
+                    "PcmPlayer drain timeout target=$targetFrames played=${playedFrames()} " +
+                        "state=${track?.playState} broken=$trackBroken"
+                )
+                return
+            }
             try { Thread.sleep(15) } catch (e: InterruptedException) { return }
         }
     }
 
-    fun pause() { try { track?.pause() } catch (e: Throwable) {} }
+    fun pause() {
+        started = false
+        try { track?.pause() } catch (e: Throwable) {}
+    }
+
     fun resume() {
         if (holdPlayback) return
-        try { track?.play() } catch (e: Throwable) {}
-        if (writtenFrames > 0) started = true
+        startIfBuffered()
     }
-    fun isPlaying(): Boolean = try { track?.playState == AudioTrack.PLAYSTATE_PLAYING } catch (e: Throwable) { false }
+
+    fun isPlaying(): Boolean = try {
+        track?.playState == AudioTrack.PLAYSTATE_PLAYING
+    } catch (e: Throwable) {
+        false
+    }
 
     @Synchronized
     fun stop() {
@@ -483,11 +646,14 @@ class PcmPlayer {
         playbackEpoch++
         playQueue.clear()
         denoise?.reset()
+        trackBroken = false
+        writeErrorEpoch = -1
         Log.i("NovelSpeak", "PcmPlayer stop state=${track?.playState}")
+        // pause()+flush() discards queued audio immediately and keeps the track restartable.
+        // stop() would leave a stopped track whose first write may be rejected/short.
         try {
             track?.pause()
             track?.flush()
-            track?.stop()
         } catch (e: Throwable) {}
         writtenFrames = 0
         trackFrames = 0
@@ -501,6 +667,8 @@ class PcmPlayer {
         playbackEpoch++
         stopWriter()
         denoise = null
+        trackBroken = false
+        writeErrorEpoch = -1
         writtenFrames = 0
         trackFrames = 0
         val t = track ?: return

@@ -159,6 +159,13 @@ class Reader(private val app: NovelSpeakApp) {
     // callbacks so a skipped sentence ahead of the cursor cannot stall the queue.
     private var prerolling = false
     private var playRequested = false
+
+    // Audio-focus interruption state. `pausedByFocus` is an automatic pause that should resume
+    // when Android returns focus; `waitingForFocus` is a Play request deferred because focus is
+    // held by a call/another app. A user pause clears both so a later focus gain cannot start
+    // playback the user did not ask for.
+    private var pausedByFocus = false
+    private var waitingForFocus = false
     private val rendered = HashMap<Int, Boolean>()
     private val completed = HashSet<Int>()
 
@@ -336,6 +343,17 @@ class Reader(private val app: NovelSpeakApp) {
     fun play() {
         if (sentences.isEmpty()) { status = "Nothing to read"; notifyState(); return }
         if (playing) return
+        pausedByFocus = false
+        waitingForFocus = false
+        if (PlaybackService.isFocusInterrupted()) {
+            // A call/another exclusive app owns audio. Keep the request and let the focus
+            // gain start it; starting now would play into a muted route and silently skip text.
+            waitingForFocus = true
+            playRequested = true
+            status = "Waiting for audio focus…"
+            notifyState()
+            return
+        }
         DiagLog.line(app, "play clicked engine=${app.prefs.engine} cursor=$cursor total=${sentences.size}")
         playRequested = true
         maybeStartPlayback()
@@ -364,27 +382,93 @@ class Reader(private val app: NovelSpeakApp) {
     }
 
     fun pause() {
-        if (!playing) return
+        val wasWaiting = waitingForFocus
+        pausedByFocus = false
+        waitingForFocus = false
+        // Pause must also cancel a Play that is still preparing/prerolling. Previously it
+        // returned unless audio was already playing, so a pause during "Preparing audio…"
+        // was ignored and playback started anyway.
+        if (!playing && !playRequested && !prerolling && !wasWaiting) return
+        pauseInternal("Paused", allowPreroll = true)
+    }
+
+    /** Pause caused by Android taking audio away; [onFocusGained] may resume it. */
+    fun pauseForFocus(): Boolean {
+        if (!playing && !playRequested) return false
+        pausedByFocus = true
+        waitingForFocus = false
+        pauseInternal("Paused", allowPreroll = false)
+        return true
+    }
+
+    /** Defer a Play request until audio focus is granted (call in progress, exclusive app). */
+    fun waitForFocus() {
+        if (sentences.isEmpty()) return
         playing = false
+        pausedByFocus = false
+        waitingForFocus = true
         cancelPreroll()
-        status = "Paused"
+        // Keep the intent even when the request came from a media button while the Reader was
+        // idle; otherwise a delayed focus grant would have nothing to resume.
+        playRequested = true
+        status = "Waiting for audio focus…"
         notifyState()
-        // Make resume cheap: rebuild the lead at the current cursor while paused.
-        prepareForPlayback(forPlay = false)
+    }
+
+    /** Called by PlaybackService when AUDIOFOCUS_GAIN arrives after an interruption. */
+    fun onFocusGained() {
+        if (!pausedByFocus && !waitingForFocus) return
+        pausedByFocus = false
+        waitingForFocus = false
+        play()
+    }
+
+    /** True while a user Play must not start because focus is interrupted or deferred. */
+    fun isFocusBlocked(): Boolean = pausedByFocus || waitingForFocus
+
+    /** Cancel a deferred Play (focus request failed or the service is going away). */
+    fun cancelFocusWait(message: String? = null) {
+        val wasBlocked = pausedByFocus || waitingForFocus
+        pausedByFocus = false
+        waitingForFocus = false
+        if (!wasBlocked && !playing && !playRequested && !prerolling) return
+        playing = false
+        playRequested = false
+        cancelPreroll()
+        if (message != null) status = message
+        notifyState()
     }
 
     fun resume() = play()
 
     fun stop() {
+        pausedByFocus = false
+        waitingForFocus = false
         stopInternal()
         status = "Stopped"
         notifyState()
     }
 
     private fun stopInternal() {
+        pausedByFocus = false
+        waitingForFocus = false
         playing = false
+        playRequested = false
         cancelPreroll()
         PlaybackService.stop(app)
+    }
+
+    private fun pauseInternal(statusText: String, allowPreroll: Boolean) {
+        playing = false
+        playRequested = false
+        cancelPreroll()
+        status = statusText
+        notifyState()
+        // Make resume cheap for a user pause. Do not synthesize while focus is interrupted:
+        // the call/navigation prompt owns the audio route and the CPU is better left alone.
+        if (allowPreroll && !pausedByFocus && !waitingForFocus) {
+            prepareForPlayback(forPlay = false)
+        }
     }
 
     fun toggle() { if (playing) pause() else play() }
@@ -395,6 +479,8 @@ class Reader(private val app: NovelSpeakApp) {
      */
     fun invalidateEngine() {
         stopInternal()
+        pausedByFocus = false
+        waitingForFocus = false
         if (preparing) {
             // The in-flight prepare is allowed to finish and release itself; its result must
             // not be installed. A new request queued below starts after that release.
@@ -417,6 +503,8 @@ class Reader(private val app: NovelSpeakApp) {
     fun setVoice(id: String) {
         val wasPlaying = playing
         playing = false
+        pausedByFocus = false
+        waitingForFocus = false
         cancelPreroll()
         if (wasPlaying) PlaybackService.stop(app)
         engine?.setVoice(id)
@@ -436,6 +524,8 @@ class Reader(private val app: NovelSpeakApp) {
         if (sentences.isEmpty()) return
         val wasPlaying = playing
         playing = false
+        pausedByFocus = false
+        waitingForFocus = false
         cancelPreroll()
         cursor = index.coerceIn(0, sentences.size - 1)
         notifyHighlight()
@@ -475,6 +565,10 @@ class Reader(private val app: NovelSpeakApp) {
      */
     private fun prepareForPlayback(forPlay: Boolean) {
         if (sentences.isEmpty() || playing) return
+        if (forPlay && (pausedByFocus || waitingForFocus || PlaybackService.isFocusInterrupted())) {
+            waitForFocus()
+            return
+        }
         if (!forPlay && app.prefs.engine == Prefs.ENGINE_SHERPA &&
             !ModelManager.isInstalled(app, app.prefs.modelId)
         ) return
@@ -586,6 +680,7 @@ class Reader(private val app: NovelSpeakApp) {
     }
 
     private fun maybeStartPlayback() {
+        if (pausedByFocus || waitingForFocus || PlaybackService.isFocusInterrupted()) return
         if (PrerollPolicy.canStart(
                 playRequested = playRequested,
                 playing = playing,
@@ -598,6 +693,10 @@ class Reader(private val app: NovelSpeakApp) {
 
     private fun startPlayback() {
         if (playing || sentences.isEmpty()) return
+        if (pausedByFocus || waitingForFocus || PlaybackService.isFocusInterrupted()) {
+            waitForFocus()
+            return
+        }
         if (cursor >= sentences.size) {
             finishQueue()
             return
@@ -634,6 +733,8 @@ class Reader(private val app: NovelSpeakApp) {
 
     private fun failPlayback(message: String) {
         playing = false
+        pausedByFocus = false
+        waitingForFocus = false
         cancelPreroll()
         status = message
         notifyState()
@@ -644,6 +745,8 @@ class Reader(private val app: NovelSpeakApp) {
         playing = false
         playRequested = false
         prerolling = false
+        pausedByFocus = false
+        waitingForFocus = false
         main.removeCallbacks(prerollTick)
         main.removeCallbacks(pumpTick)
         stopWordTracking()
@@ -698,7 +801,13 @@ class Reader(private val app: NovelSpeakApp) {
     }
 
     /** Engine-reported ceiling; UI clamp uses this so 2.0-3.0x is not silently dropped. */
-    fun maxSpeed(): Float = engine?.maxSpeed ?: 2.0f
+    fun maxSpeed(): Float = engine?.maxSpeed ?: when (app.prefs.engine) {
+        // Both shipped backends support 3.0x. Before the engine is prepared (for example when
+        // Settings opens on a cold start) the UI must not fall back to the old 2.0x ceiling,
+        // because the speed slider writes its displayed value back to prefs.
+        Prefs.ENGINE_SYSTEM, Prefs.ENGINE_SHERPA -> 3.0f
+        else -> 2.0f
+    }
 
     /** Index of the sentence currently being spoken (for progress persistence). */
     fun currentIndex(): Int = cursor
@@ -763,7 +872,7 @@ class Reader(private val app: NovelSpeakApp) {
         // Queued/prerendered audio was generated at the old rate. Outside playback it is cheap
         // to discard and rebuild; during playback the current lead finishes and the next
         // sentences use the new rate.
-        if (!playing && sentences.isNotEmpty()) {
+        if (!playing && sentences.isNotEmpty() && !isFocusBlocked()) {
             cancelPreroll()
             prepareForPlayback(forPlay = false)
         }

@@ -1,0 +1,43 @@
+appId: app.novelspeak
+name: "19 pause/resume: the PCM writer survives an interrupted write and the cursor advances"
+tags:
+  - reader
+  - tts
+  - regression
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter2.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Read"
+    timeout: 20000
+- tapOn: "Read"
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+"
+    timeout: 30000
+# Pause while the writer may be inside a blocking AudioTrack.write(). Before the fix this
+# returned a short transfer, the writer thread exited, and resume left "Playing" forever.
+- tapOn: "Pause"
+- extendedWaitUntil:
+    visible: "Paused"
+    timeout: 10000
+- tapOn: "Play"
+- extendedWaitUntil:
+    visible: "Playing"
+    timeout: 15000
+# The dead-writer regression showed "Playing" but the sentence never moved past the cursor.
+# Waiting for sentence 2+ proves audio is actually draining after the resume.
+- extendedWaitUntil:
+    visible: "Sentence ([2-9]|[1-9][0-9]+) of [0-9]+"
+    timeout: 30000

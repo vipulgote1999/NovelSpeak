@@ -38,16 +38,67 @@ class PlaybackService : Service(), Reader.Listener {
     private var started = false
     private var stopping = false
     private var hasAudioFocus = false
+    private var focusPending = false
     private var focusRequest: AudioFocusRequest? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    /**
+     * Focus handling has to distinguish "the user paused" from "the system interrupted us".
+     * A transient loss keeps the focus request alive so Android can deliver AUDIOFOCUS_GAIN
+     * when a call or navigation prompt ends; that is what makes playback resume instead of
+     * staying paused forever. A permanent loss abandons focus and never auto-resumes.
+     */
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
-        if (change == AudioManager.AUDIOFOCUS_LOSS ||
-            change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
-        ) {
-            hasAudioFocus = false
-            mainHandler.post { NovelSpeakApp.instance.reader.pause() }
+        mainHandler.post { handleFocusChange(change) }
+    }
+
+    private fun handleFocusChange(change: Int) {
+        val reader = NovelSpeakApp.instance.reader
+        when (change) {
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                focusInterrupted = false
+                focusPending = false
+                hasAudioFocus = true
+                val resume = reader.isFocusBlocked()
+                DiagLog.line(this, "audio focus GAIN resume=$resume")
+                mainHandler.removeCallbacks(resumeAfterFocus)
+                if (resume) {
+                    // Give the call/navigation prompt a moment to fully release the route.
+                    mainHandler.postDelayed(resumeAfterFocus, FOCUS_RESUME_DELAY_MS)
+                }
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                // A new interruption must cancel a resume that was queued by a previous gain.
+                mainHandler.removeCallbacks(resumeAfterFocus)
+                focusInterrupted = true
+                val paused = if (reader.isFocusBlocked()) {
+                    // Already paused for this interruption; keep the resume intent.
+                    true
+                } else {
+                    reader.pauseForFocus()
+                }
+                DiagLog.line(
+                    this,
+                    "audio focus transient=$change paused=$paused"
+                )
+            }
+            AudioManager.AUDIOFOCUS_LOSS -> {
+                focusInterrupted = false
+                focusPending = false
+                hasAudioFocus = false
+                DiagLog.line(this, "audio focus LOSS")
+                reader.cancelFocusWait("Paused")
+                abandonFocus()
+            }
         }
+    }
+
+    private val resumeAfterFocus = Runnable {
+        val reader = NovelSpeakApp.instance.reader
+        if (!reader.isFocusBlocked()) return@Runnable
+        DiagLog.line(this, "audio focus regained, resuming")
+        reader.onFocusGained()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -168,14 +219,19 @@ class PlaybackService : Service(), Reader.Listener {
                 )
                 ACTION_REFRESH -> {
                     val state = NovelSpeakApp.instance.reader.state()
-                    if (state.playing || state.status.startsWith("Paused")) {
+                    // "Waiting for audio focus…" is an active session even though audio has
+                    // not started; stopping the service here would drop the pending resume.
+                    if (state.playing || state.status.startsWith("Paused") ||
+                        NovelSpeakApp.instance.reader.isFocusBlocked()
+                    ) {
                         refreshNotification(state)
                     } else {
                         stopSelfSafely()
                     }
                 }
                 null -> {
-                    if (!NovelSpeakApp.instance.reader.state().playing) stopSelfSafely()
+                    val reader = NovelSpeakApp.instance.reader
+                    if (!reader.state().playing && !reader.isFocusBlocked()) stopSelfSafely()
                 }
             }
         } catch (t: Throwable) {
@@ -196,7 +252,10 @@ class PlaybackService : Service(), Reader.Listener {
                 }
             } else {
                 releaseWake()
-                abandonFocus()
+                // Keep the focus request alive while we are paused *because* of a transient
+                // interruption; abandoning it here is why AUDIOFOCUS_GAIN never arrived and
+                // playback stayed stuck after calls.
+                if (!NovelSpeakApp.instance.reader.isFocusBlocked()) abandonFocus()
             }
             updateSession(state)
             updateMetadata(state)
@@ -217,6 +276,12 @@ class PlaybackService : Service(), Reader.Listener {
         stopping = true
         try {
             NovelSpeakApp.instance.reader.removeListener(this)
+            // A destroyed service cannot receive the focus gain that would resume a deferred
+            // play; clear that intent so the Reader does not sit in "Waiting for audio focus".
+            // Do not stop ordinary playback if the system destroys the service while it plays.
+            if (NovelSpeakApp.instance.reader.isFocusBlocked()) {
+                NovelSpeakApp.instance.reader.cancelFocusWait()
+            }
         } catch (t: Throwable) {
         }
         abandonFocus()
@@ -237,8 +302,21 @@ class PlaybackService : Service(), Reader.Listener {
     // ------------------------------------------------------------------ transport
 
     private fun play() {
-        requestFocus()
-        NovelSpeakApp.instance.reader.play()
+        val reader = NovelSpeakApp.instance.reader
+        when (requestFocus()) {
+            AudioManager.AUDIOFOCUS_REQUEST_GRANTED -> reader.play()
+            AudioManager.AUDIOFOCUS_REQUEST_DELAYED -> {
+                // A call or another exclusive app owns audio right now. Keep the intent and
+                // wait for AUDIOFOCUS_GAIN instead of silently consuming the book during it.
+                focusInterrupted = true
+                DiagLog.line(this, "play deferred: audio focus delayed")
+                reader.waitForFocus()
+            }
+            else -> {
+                DiagLog.line(this, "play refused: audio focus unavailable")
+                reader.cancelFocusWait("Audio focus unavailable")
+            }
+        }
     }
 
     private fun pause() = NovelSpeakApp.instance.reader.pause()
@@ -312,8 +390,10 @@ class PlaybackService : Service(), Reader.Listener {
         )
     }
 
-    private fun requestFocus() {
-        if (hasAudioFocus) return
+    /** Returns one of the AudioManager.AUDIOFOCUS_REQUEST_* results. */
+    private fun requestFocus(): Int {
+        if (hasAudioFocus) return AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        if (focusPending) return AudioManager.AUDIOFOCUS_REQUEST_DELAYED
         try {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             if (Build.VERSION.SDK_INT >= 26) {
@@ -325,24 +405,37 @@ class PlaybackService : Service(), Reader.Listener {
                     .setAudioAttributes(attrs)
                     .setOnAudioFocusChangeListener(focusListener)
                     .setWillPauseWhenDucked(true)
+                    // A call in progress should queue the request, not fail it. Android then
+                    // delivers AUDIOFOCUS_GAIN when the call releases the route.
+                    .setAcceptsDelayedFocusGain(true)
                     .build()
                 focusRequest = req
-                hasAudioFocus = am.requestAudioFocus(req) ==
-                    AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+                val result = am.requestAudioFocus(req)
+                hasAudioFocus = result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+                focusPending = result == AudioManager.AUDIOFOCUS_REQUEST_DELAYED
+                if (focusPending) focusInterrupted = true
+                DiagLog.line(this, "audio focus request result=$result")
+                return result
             } else {
                 @Suppress("DEPRECATION")
-                hasAudioFocus = am.requestAudioFocus(
+                val granted = am.requestAudioFocus(
                     focusListener,
                     AudioManager.STREAM_MUSIC,
                     AudioManager.AUDIOFOCUS_GAIN
                 ) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+                hasAudioFocus = granted
+                return if (granted) AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+                else AudioManager.AUDIOFOCUS_REQUEST_FAILED
             }
         } catch (t: Throwable) {
             DiagLog.exception(this, "requestAudioFocus failed", t)
+            hasAudioFocus = false
+            return AudioManager.AUDIOFOCUS_REQUEST_FAILED
         }
     }
 
     private fun abandonFocus() {
+        mainHandler.removeCallbacks(resumeAfterFocus)
         try {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             if (Build.VERSION.SDK_INT >= 26) {
@@ -355,6 +448,8 @@ class PlaybackService : Service(), Reader.Listener {
         }
         focusRequest = null
         hasAudioFocus = false
+        focusPending = false
+        focusInterrupted = false
     }
 
     private fun releaseWake() {
@@ -583,6 +678,18 @@ class PlaybackService : Service(), Reader.Listener {
         const val CHANNEL = "novelspeak.playback"
         private const val NOTIF_ID = 42
 
+        /** Delay after focus gain so a call/navigation prompt can release the route cleanly. */
+        private const val FOCUS_RESUME_DELAY_MS = 250L
+
+        /**
+         * True while Android has temporarily taken audio away (call, navigation prompt,
+         * another exclusive app). The Reader uses this to defer Play instead of starting
+         * audio that would be muted and silently consumed.
+         */
+        @Volatile private var focusInterrupted = false
+
+        fun isFocusInterrupted(): Boolean = focusInterrupted
+
         const val ACTION_PLAY = "app.novelspeak.PLAY"
         const val ACTION_PAUSE = "app.novelspeak.PAUSE"
         const val ACTION_STOP = "app.novelspeak.STOP"
@@ -656,8 +763,11 @@ class PlaybackService : Service(), Reader.Listener {
          * playback session is already running. No-op when nothing is loaded.
          */
         fun refresh(ctx: Context) {
-            val state = NovelSpeakApp.instance.reader.state()
-            if (!state.playing && !state.status.startsWith("Paused")) return
+            val reader = NovelSpeakApp.instance.reader
+            val state = reader.state()
+            if (!state.playing && !state.status.startsWith("Paused") &&
+                !reader.isFocusBlocked()
+            ) return
             try {
                 ctx.startService(
                     Intent(ctx, PlaybackService::class.java).setAction(ACTION_REFRESH)

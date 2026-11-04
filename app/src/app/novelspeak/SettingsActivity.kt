@@ -370,10 +370,10 @@ class SettingsActivity : Activity() {
             .coerceIn(100, 300)
         sliderRow(
             tuningCard, "Speech speed", 50, maxSpeedPct,
-            (prefs.speed * 100).toInt().coerceIn(50, maxSpeedPct)
+            (prefs.speed * 100).toInt().coerceIn(50, maxSpeedPct),
+            format = { v -> "%.2f×".format(v / 100f) }
         ) { v ->
             prefs.speed = v / 100f
-            "%.2f×".format(prefs.speed)
         }
         tuningCard.addView(note(
             "Speech speed is capped by the active engine at " + (maxSpeedPct / 100f) + "×."
@@ -410,10 +410,10 @@ class SettingsActivity : Activity() {
         val playbackCard = card()
         sliderRow(
             playbackCard, "Volume boost", 100, 300,
-            Math.round(prefs.ttsVolumeBoost * 100f).coerceIn(100, 300)
+            Math.round(prefs.ttsVolumeBoost * 100f).coerceIn(100, 300),
+            format = { v -> if (v == 100) "100% (off)" else "$v%" }
         ) { v ->
             prefs.ttsVolumeBoost = v / 100f
-            if (v == 100) "100% (off)" else "$v%"
         }
         toggleRow(
             playbackCard, "Skip silence",
@@ -422,10 +422,10 @@ class SettingsActivity : Activity() {
         ) { prefs.ttsSkipSilence = it }
         sliderRow(
             playbackCard, "Pitch", 80, 120,
-            Math.round(prefs.ttsPitch * 100f).coerceIn(80, 120)
+            Math.round(prefs.ttsPitch * 100f).coerceIn(80, 120),
+            format = { v -> if (v == 100) "100%" else "$v%" }
         ) { v ->
             prefs.ttsPitch = v / 100f
-            if (v == 100) "100%" else "$v%"
         }
         playbackCard.addView(note(
             "Digital gain up to +9.5 dB, and pitch up/down 20% without changing speed where " +
@@ -469,10 +469,10 @@ class SettingsActivity : Activity() {
         val appearanceCard = card()
         sliderRow(
             appearanceCard, "Font size",
-            ReaderStyle.MIN_FONT_SCALE_PCT, ReaderStyle.MAX_FONT_SCALE_PCT, prefs.readerFontScale
+            ReaderStyle.MIN_FONT_SCALE_PCT, ReaderStyle.MAX_FONT_SCALE_PCT, prefs.readerFontScale,
+            format = { v -> "$v%" }
         ) { v ->
             prefs.readerFontScale = v
-            "$v%"
         }
         subLabel(appearanceCard, "Font family")
         val familyLabels: List<Pair<String, String?>> = listOf(
@@ -502,10 +502,10 @@ class SettingsActivity : Activity() {
         }
         sliderRow(
             appearanceCard, "Line spacing",
-            ReaderStyle.MIN_LINE_HEIGHT_PCT, ReaderStyle.MAX_LINE_HEIGHT_PCT, prefs.readerLineHeight
+            ReaderStyle.MIN_LINE_HEIGHT_PCT, ReaderStyle.MAX_LINE_HEIGHT_PCT, prefs.readerLineHeight,
+            format = { v -> "$v%" }
         ) { v ->
             prefs.readerLineHeight = v
-            "$v%"
         }
         subLabel(appearanceCard, "Reading width")
         val widthOptions: List<Pair<Int, String>> = listOf(
@@ -541,20 +541,24 @@ class SettingsActivity : Activity() {
                 performanceCard, "Hardware acceleration (NNAPI)",
                 "Falls back to CPU when the provider is unsupported", prefs.nnapi
             ) { prefs.nnapi = it }
-            sliderRow(performanceCard, "Sentence look-ahead", 0, 5, prefs.prefetch) { v ->
+            sliderRow(
+                performanceCard, "Sentence look-ahead", 0, 5, prefs.prefetch,
+                format = { v -> "$v sentence(s)" }
+            ) { v ->
                 prefs.prefetch = v
-                "$v sentence(s)"
             }
             sliderRow(
                 performanceCard, "Synthesis threads", 1,
-                Runtime.getRuntime().availableProcessors(), prefs.threads
+                Runtime.getRuntime().availableProcessors(), prefs.threads,
+                format = { v -> "$v thread(s)" }
             ) { v ->
                 prefs.threads = v
-                "$v thread(s)"
             }
-            sliderRow(performanceCard, "Max sentence length", 80, 400, prefs.maxSentenceChars) { v ->
+            sliderRow(
+                performanceCard, "Max sentence length", 80, 400, prefs.maxSentenceChars,
+                format = { v -> "$v chars" }
+            ) { v ->
                 prefs.maxSentenceChars = v
-                "$v chars"
             }
             container.addView(performanceCard)
         }
@@ -1101,13 +1105,22 @@ class SettingsActivity : Activity() {
         setPadding(0, dp(8), 0, 0)
     }
 
+    /**
+     * [format] is display-only. The change listener is attached after the initial progress is
+     * set, so building the screen never writes a slider value back to prefs.
+     *
+     * The old single callback ran during build() to produce the initial label, which meant
+     * opening Settings wrote every slider value back to prefs. That silently clamped a saved
+     * 3.0x speed to the 2.0x fallback whenever the engine was not prepared yet.
+     */
     private fun sliderRow(
         parent: LinearLayout,
         label: String,
         min: Int,
         max: Int,
         value: Int,
-        onChange: (Int) -> String
+        format: (Int) -> String,
+        onChange: (Int) -> Unit
     ) {
         val wrap = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -1124,7 +1137,7 @@ class SettingsActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         val valueView = TextView(this).apply {
-            text = onChange(value)
+            text = format(value)
             textSize = 13f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.ACCENT)
@@ -1143,7 +1156,9 @@ class SettingsActivity : Activity() {
             setPadding(dp(12), dp(2), dp(12), 0)
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(sb: SeekBar?, p: Int, fromUser: Boolean) {
-                    valueView.text = onChange(p + min)
+                    val v = p + min
+                    valueView.text = format(v)
+                    onChange(v)
                 }
 
                 override fun onStartTrackingTouch(sb: SeekBar?) {}

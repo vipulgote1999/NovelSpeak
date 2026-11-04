@@ -433,7 +433,9 @@ class SherpaEngine(
             } ?: continue
             if (stopFlag) { main.post { b.onDone(false) }; continue }
             player.awaitDrained(b.endFrame, b.epoch) { stopFlag }
-            val ok = !stopFlag
+            // A broken/rebuilt AudioTrack is a real failure even though stopFlag never moved;
+            // without the epoch check the Reader could advance as if the sentence was heard.
+            val ok = !stopFlag && player.epoch() == b.epoch && !player.hasWriteError()
             main.post { b.onDone(ok) }
         }
     }

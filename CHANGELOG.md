@@ -19,6 +19,25 @@ All notable changes to NovelSpeak are documented here. The format follows
 
 ### Fixed
 
+- **Pause, calls, and screen changes no longer leave TTS silent or stuck.** A blocking
+  `AudioTrack.write()` interrupted by `pause()`/`flush()` returns a short transfer count; the
+  PCM writer treated that as fatal and exited permanently, so resume showed "Playing" with no
+  audio. Short writes now abort only the current chunk, the writer thread is self-healing, and
+  `stop()`/`reset()` use `pause()`+`flush()` instead of leaving a stopped track. The writer runs
+  at urgent-audio priority and keeps a 2 s ring to survive page/screen CPU spikes.
+- **Transient audio focus loss resumes when the call/interruption ends.** The service keeps the
+  focus request alive for transient loss instead of abandoning it, resumes on `AUDIOFOCUS_GAIN`,
+  and defers Play with "Waiting for audio focus…" when a call owns the route. A user pause still
+  clears the resume intent.
+- **Pause during "Preparing audio…" is honored.** It now cancels the pending prepare/preroll
+  instead of letting playback start after the user paused.
+- **Opening Settings no longer slows the saved speech speed.** Slider rows no longer write
+  preferences while the page is being built; a cold Settings visit used to clamp a saved 3.0×
+  speed to the 2.0× fallback. Both shipped engines report their 3.0× ceiling before preparation.
+- **System TTS cannot replay a stale sentence after a quick pause/resume.** Each queued task
+  carries its cancellation epoch and is validated before rendering and before writing audio.
+  See `docs/tts-playback-resilience.md` for the root-cause analysis and regression checks.
+
 - **Ad text was still read aloud by both TTS engines.** Readability parses a detached clone
   without computed styles, so an element hidden by an adblock cosmetic rule could still become a
   reader block. Extraction now drops a block when its only live match is hidden
