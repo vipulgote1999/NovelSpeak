@@ -83,9 +83,9 @@ Tuning values are not guesses: they were reverse-engineered from two shipped app
 NekoSpeak) and are listed with their provenance in [OPTIMIZATIONS.md](OPTIMIZATIONS.md).
 The reverse-engineering notes are in [docs/re-natural-ai-voices.md](docs/re-natural-ai-voices.md).
 
-## What's new on `main`
+## What's new in 1.3.0
 
-Work on `main` is ahead of the latest release (v1.2.1). Highlights since v1.2.1:
+Highlights since v1.2.1:
 
 - **New neural voices**: Supertonic 3 (fast, 2 curated styles) and ZipVoice (transcript-based
   cloning, zh + en), alongside Kokoro and Pocket TTS. Supertonic is the default once installed.
@@ -95,9 +95,12 @@ Work on `main` is ahead of the latest release (v1.2.1). Highlights since v1.2.1:
 - **Playback resilience**: pause/calls/screen changes no longer leave TTS silent or stuck;
   transient audio-focus loss resumes automatically. See
   [docs/tts-playback-resilience.md](docs/tts-playback-resilience.md).
-- **Ad text no longer read aloud**: hidden ad blocks are dropped during extraction; bundled
-  supplement for first-party ad code.
+- **Ad text no longer read aloud**: hidden ad blocks are dropped during extraction, a
+  document-start popup guard covers both the visible and prefetch views, and a bundled
+  supplement handles first-party ad code.
 - **Settings speed fix**: a cold Settings visit no longer clamps a saved 3.0× speed.
+- **On-device TTS benchmark**: every neural engine and system TTS measured in a fresh process;
+  results are in [docs/benchmarks/2026-11-03-tts-benchmark.md](docs/benchmarks/2026-11-03-tts-benchmark.md).
 
 Full history: [CHANGELOG.md](CHANGELOG.md).
 
@@ -105,8 +108,8 @@ Full history: [CHANGELOG.md](CHANGELOG.md).
 
 Download the latest APK from [GitHub Releases](https://github.com/vipulgote1999/NovelSpeak/releases/latest):
 
-- `NovelSpeak-1.2.1-arm64-v8a.apk` — Android 7.0 (API 24)+, arm64-v8a.
-- `NovelSpeak-1.2.1-arm64-v8a.apk.sha256` — verify with `sha256sum -c`.
+- `NovelSpeak-1.3.0-arm64-v8a.apk` — Android 7.0 (API 24)+, arm64-v8a.
+- `NovelSpeak-1.3.0-arm64-v8a.apk.sha256` — verify with `sha256sum -c`.
 
 The release APK is signed with a dedicated release key. If you previously installed a
 debug-signed build, uninstall it first; that erases its settings and downloaded models.

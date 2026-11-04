@@ -4,7 +4,30 @@ All notable changes to NovelSpeak are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.0] - 2026-11-04
+
+### Added
+
+- **Supertonic 3 and ZipVoice neural voices.** Two more on-device engine families join Kokoro
+  and Pocket TTS: Supertonic 3 with two curated fast styles (F1 female, M1 male; 20 styles
+  ship upstream, 123 MB int8) and ZipVoice zero-shot cloning driven by a reference clip plus
+  its verbatim transcript (zh + en; 104 MB int8 plus the 52 MB 24 kHz vocoder). Model rows show
+  download progress inline, each family keeps a curated voice list instead of duplicated
+  entries, and the reader and benchmark now build the same sherpa-onnx graph through one
+  shared config builder.
+- **On-device TTS benchmark.** A debug-gated activity measures every installed neural engine
+  and system TTS in a fresh process: cold load, time to first audio, total synthesis, RTF,
+  peak/RMS and RSS. `tools/tts-benchmark/run.sh` is device-agnostic, and the emulator and iQOO
+  I2214 results are committed in `docs/benchmarks/2026-11-03-tts-benchmark.md`.
+- **Ad blocking before the page runs.** AndroidX WebKit is vendored for document-start
+  injection: a popup guard is installed before any page script in both the visible and
+  prefetch WebViews, the prefetched chapter runs the same network/cosmetic/behavioural
+  pipeline with its own bridge, low-frequency procedural operators (`:has-text`,
+  `:matches-attr`, `:matches-css`, …) are supported, and a bundled local supplement covers
+  first-party popunders and ad slots that upstream lists miss (for example
+  `empirenovel.com/po.js`, `.pub` and `#reader-bottom`).
+- Host regressions for the audio write policy, preroll policy, procedural operators, hidden-ad
+  extraction and the prefetch view, plus a Maestro pause/resume flow.
 
 ### Changed
 
@@ -16,6 +39,7 @@ All notable changes to NovelSpeak are documented here. The format follows
   denoise/gain/PCM conversion on its writer thread and never writes to a paused AudioTrack.
   The default neural model is Supertonic 3 when installed (the benchmark's speed/memory
   winner); explicit user choices are preserved.
+- Version 1.3.0 (versionCode 19).
 
 ### Fixed
 
@@ -37,17 +61,19 @@ All notable changes to NovelSpeak are documented here. The format follows
 - **System TTS cannot replay a stale sentence after a quick pause/resume.** Each queued task
   carries its cancellation epoch and is validated before rendering and before writing audio.
   See `docs/tts-playback-resilience.md` for the root-cause analysis and regression checks.
-
+- **ZipVoice no longer crashes when selected.** The bundled sherpa-onnx AAR exits with code 255
+  when a ZipVoice model has no data directory; the engine now points it at the bundled
+  `espeak-ng-data`.
+- **Document-start setting changes apply immediately.** Toggling document-start injection in
+  site settings used to wait for the next page; it now updates the live WebView.
 - **Ad text was still read aloud by both TTS engines.** Readability parses a detached clone
   without computed styles, so an element hidden by an adblock cosmetic rule could still become a
   reader block. Extraction now drops a block when its only live match is hidden
   (`display:none`, `visibility:hidden` or zero client rects), while keeping blocks with no live
   counterpart. The first-page race was fixed too: extraction waits (bounded) for the filter
   engine and the cosmetic CSS before cloning the page, and the first generic class/id batch
-  is now flushed synchronously instead of after a 120 ms debounce.
-- Added a bundled local supplement for first-party ad code and slots that upstream lists miss,
-  starting with `empirenovel.com/po.js`, `.pub` and `#reader-bottom`. The JVM adblock harness now
-  asserts those rules, and `tools/extract-test/` is a Chrome regression for the hidden-ad case.
+  is now flushed synchronously instead of after a 120 ms debounce. `tools/extract-test/` is a
+  Chrome regression for the hidden-ad case.
 
 ## [1.2.1] - 2026-10-27
 
