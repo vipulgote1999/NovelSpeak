@@ -4,16 +4,16 @@ An Android browser that reads any serialized novel aloud — with neural voices 
 screen-off controls, and no account, meter or telemetry.
 
 <p align="center">
-  <a href="docs/media/novelspeak-launch.mp4" title="Watch the 23-second launch film">
-    <img src="docs/media/novelspeak-launch-poster.jpg" alt="NovelSpeak launch film — real reader with read-along highlight and player" width="820">
+  <a href="docs/media/novelspeak-launch.mp4" title="Watch the 23-second launch film (with audio)">
+    <img src="docs/media/novelspeak-launch.gif" alt="NovelSpeak launch film — real reader with read-along highlight and player" width="820">
   </a>
 </p>
 
 <p align="center">
-  <a href="docs/media/novelspeak-launch.mp4"><strong>▶&nbsp; Watch the 23-second launch film</strong></a>
+  <a href="docs/media/novelspeak-launch.mp4"><strong>▶&nbsp; Watch the 23-second launch film (with audio)</strong></a>
   &nbsp;·&nbsp;
   <a href="docs/media/novelspeak-launch-contact-sheet.jpg">Contact sheet</a><br>
-  <sub>9:16 · 1080 × 1920 · real app UI · no narration</sub>
+  <sub>9:16 · 1080 × 1920 · 23 s · real app UI · no narration · GIF autoplays inline; MP4 keeps the audio</sub>
 </p>
 
 **Why it exists.** Chrome's *Listen to this page* keeps playing while the screen is locked (Google's
@@ -34,7 +34,9 @@ and selected-text intake; true per-site reader mode; sleep timer (minutes or end
 typography (font, size, family, theme, width); pronunciation dictionary applied to both engines;
 volume boost, pitch and skip-silence; offline audio capture to WAV; paywall/login **detection** with
 an honest warning (no bypass); diagnostics bundle and a privacy page; no ads, analytics or accounts.
-Also: chapter prefetch (next chapter extracted in a hidden WebView so playback never waits), word-level
+On-device voice previews (Kokoro, Supertonic, Pocket narrator) audition without disturbing the
+active engine; the current voice is shown in the player card. Also: chapter prefetch (next chapter
+extracted in a hidden WebView so playback never waits), word-level
 read-along, bookmarks (saved sentences with snippets), EPUB/PDF/plain-text import (PDF is text-layer
 only, no OCR), translation hand-off to the system browser, a two-pane tablet/landscape layout, and
 signed model-catalog verification (`tools/model-catalog-sign.sh`).
@@ -46,8 +48,13 @@ signed model-catalog verification (`tools/model-catalog-sign.sh`).
   any similar serialized-novel site (chapter pages, next-chapter detection, append-as-you-go).
 - **Two TTS backends**, switchable in settings:
   - **Android system TTS** — instant, offline, every language the device ships, no download.
-  - **Neural voices (sherpa-onnx)** — **Kokoro** (11 English voices, 103 MB int8) or
-    **Pocket TTS** (zero-shot voice cloning, 98 MB int8), downloaded on demand from upstream.
+  - **Neural voices (sherpa-onnx)** — downloaded on demand from upstream, SHA-256 verified:
+    - **Kokoro** (2 curated English voices — Heart US female, Adam US male; 103 MB int8).
+    - **Supertonic 3** (2 curated fast styles — F1 female, M1 male; 123 MB int8), the
+      benchmark's speed/memory winner and the default once installed.
+    - **Pocket TTS** (zero-shot voice cloning from a reference clip; 98 MB int8).
+    - **ZipVoice** (zero-shot cloning with a verbatim transcript, zh + en; 104 MB int8 plus a
+      52 MB 24 kHz vocoder).
 - **Screen-off playback**: media-playback foreground service + wake lock + MediaSession controls.
   Wired/Bluetooth headset buttons (play/pause, next, previous) work for both engines: system TTS is
   rendered to PCM and played in-process so Android routes media keys to NovelSpeak. See
@@ -59,6 +66,11 @@ signed model-catalog verification (`tools/model-catalog-sign.sh`).
   chapter the reader prompts, opens the next chapter, waits 2.5 s and continues. Off by default.
 - **Generation ahead of playback**: sentences are synthesized up to ~12 s of buffered audio
   while the current one plays, so sentence changes do not wait for synthesis.
+- **Prewarm + preroll**: the selected neural engine is prepared when content is queued (hiding
+  its cold load), and up to 8 s / 4 sentences are rendered while playback is held, so Play starts
+  as soon as the first PCM arrives. Voice changes update the live engine instead of reloading the
+  model. See [docs/superpowers/specs/2026-11-03-tts-latency-design.md](docs/superpowers/specs/2026-11-03-tts-latency-design.md)
+  and [docs/benchmarks/2026-11-03-tts-benchmark.md](docs/benchmarks/2026-11-03-tts-benchmark.md).
 - **Audio cleanup**: vocoder hiss is suppressed and sentence boundaries are faded, so quotes /
   dialogue boundaries do not click or hiss. See [docs/audio-quality.md](docs/audio-quality.md).
 - **Ad blocking**: EasyList/EasyPrivacy/uBlock lists, a token-indexed matcher, cosmetic filtering,
@@ -69,12 +81,30 @@ Tuning values are not guesses: they were reverse-engineered from two shipped app
 NekoSpeak) and are listed with their provenance in [OPTIMIZATIONS.md](OPTIMIZATIONS.md).
 The reverse-engineering notes are in [docs/re-natural-ai-voices.md](docs/re-natural-ai-voices.md).
 
+## What's new on `main`
+
+Work on `main` is ahead of the latest release (v1.2.1). Highlights since v1.2.1:
+
+- **New neural voices**: Supertonic 3 (fast, 2 curated styles) and ZipVoice (transcript-based
+  cloning, zh + en), alongside Kokoro and Pocket TTS. Supertonic is the default once installed.
+- **First-audio latency**: engine prewarm on content queue + preroll of up to 8 s / 4 sentences;
+  play starts as soon as the first PCM arrives. See
+  [docs/benchmarks/2026-11-03-tts-benchmark.md](docs/benchmarks/2026-11-03-tts-benchmark.md).
+- **Playback resilience**: pause/calls/screen changes no longer leave TTS silent or stuck;
+  transient audio-focus loss resumes automatically. See
+  [docs/tts-playback-resilience.md](docs/tts-playback-resilience.md).
+- **Ad text no longer read aloud**: hidden ad blocks are dropped during extraction; bundled
+  supplement for first-party ad code.
+- **Settings speed fix**: a cold Settings visit no longer clamps a saved 3.0× speed.
+
+Full history: [CHANGELOG.md](CHANGELOG.md).
+
 ## Install
 
 Download the latest APK from [GitHub Releases](https://github.com/vipulgote1999/NovelSpeak/releases/latest):
 
-- `NovelSpeak-1.1.0-arm64-v8a.apk` — Android 7.0 (API 24)+, arm64-v8a.
-- `NovelSpeak-1.1.0-arm64-v8a.apk.sha256` — verify with `sha256sum -c`.
+- `NovelSpeak-1.2.1-arm64-v8a.apk` — Android 7.0 (API 24)+, arm64-v8a.
+- `NovelSpeak-1.2.1-arm64-v8a.apk.sha256` — verify with `sha256sum -c`.
 
 The release APK is signed with a dedicated release key. If you previously installed a
 debug-signed build, uninstall it first; that erases its settings and downloaded models.
@@ -117,6 +147,10 @@ Ads are blocked at three levels, because a WebView cannot be a mini-uBO:
   removed — including nags inside same-origin `srcdoc` iframes — while real
   page content and cross-origin Cloudflare-style security widgets are left alone.
 
+Recent additions: a document-start popup guard runs before any page script; low-frequency
+procedural operators are supported; setting changes apply immediately; and the cosmetic filter
+covers prefetch views. Full details in [docs/adblocker.md](docs/adblocker.md).
+
 The **Ad** button in the URL bar disables blocking for the current site and reloads.
 Settings → **Ad blocking** has the master switch, cosmetic/popup toggles, **Update
 lists** and a deterministic **Self-test**. The lists are bundled (≈5 MB); updates
@@ -144,6 +178,18 @@ Licences and sources are in `app/assets/adblock/NOTICE.txt`.
   output chunk is dropped instead of played. See
   [docs/tts-text-normalization.md](docs/tts-text-normalization.md).
 - The reader and settings screens respect status/navigation bar insets.
+- **Playback resilience**: a blocking `AudioTrack.write()` interrupted by pause/flush no longer
+  kills the PCM writer permanently; short writes abort only the current chunk and the thread
+  is self-healing. Transient audio-focus loss resumes when the interruption ends; a user pause
+  still clears the resume intent. Pause during "Preparing audio…" cancels the pending prepare.
+- **System TTS** cannot replay a stale sentence after a quick pause/resume (each queued task
+  carries a cancellation epoch). See [docs/tts-playback-resilience.md](docs/tts-playback-resilience.md).
+- **Ad text is no longer read aloud**: extraction drops a block when its only live match is
+  hidden (`display:none`, `visibility:hidden` or zero client rects), and waits for the filter
+  engine + cosmetic CSS before cloning. A bundled local supplement covers first-party ad code
+  (`empirenovel.com/po.js`, `.pub`, `#reader-bottom`).
+- **Settings no longer slows saved speech speed**: slider rows do not write preferences while
+  the page is being built; both engines report a 3.0× ceiling before preparation.
 
 Root causes and on-device evidence: [docs/reader-fixes.md](docs/reader-fixes.md).
 
@@ -153,8 +199,11 @@ Root causes and on-device evidence: [docs/reader-fixes.md](docs/reader-fixes.md)
 
 | Model | Size | Voices |
 |---|---|---|
-| Kokoro int8 (`kokoro-int8-en-v0_19`) | 103 MB | 11 fixed English voices |
+| Kokoro int8 (`kokoro-int8-en-v0_19`) | 103 MB | 2 curated English voices (Heart US female, Adam US male; 11 shipped upstream) |
+| Supertonic 3 int8 (`sherpa-onnx-supertonic-3-tts-int8-2026-05-11`) | 123 MB | 2 curated fast styles (F1 female, M1 male; 20 shipped upstream) |
 | Pocket TTS int8 (`sherpa-onnx-pocket-tts-int8-2026-01-26`) | 98 MB | zero-shot clone from a reference clip; ships `test_wavs/bria.wav` as the default narrator |
+| ZipVoice distill int8 (`sherpa-onnx-zipvoice-distill-int8-zh-en-emilia`) | 104 MB | zero-shot cloning with a verbatim transcript (zh + en); needs the 52 MB `vocos_24khz.onnx` vocoder |
+| Vocoder 24 kHz (`vocos_24khz.onnx`) | 52 MB | dependency for ZipVoice |
 
 Nothing is bundled in the APK. Downloads come from the official
 `k2-fsa/sherpa-onnx` `tts-models` release; hashes are pinned in `ModelManager.kt`.
@@ -217,9 +266,8 @@ PlaybackService     foreground service + MediaSession + wake lock (screen-off pl
   real chapter page.
 - **Pause** stops the engine and resumes at the start of the current sentence (system TTS has no
   pause primitive; this is what all shipped readers do).
-- **ZipVoice** (transcript-based cloning) is not wired yet — Pocket already gives zero-shot cloning
-  without a transcript, which is the better fit for a reader. ZipVoice fields are documented in
-  `docs/re-natural-ai-voices.md` §3.
+- **ZipVoice** transcript-based cloning is now wired (audio + verbatim transcript, zh + en); it
+  needs the separate 24 kHz vocoder download. Pocket remains the audio-only cloning path.
 - Model downloads are large; use Wi-Fi. Settings shows download %, then per-file extraction
   progress (`Extracting model.int8.onnx 42% (56/134 MB)`). Extraction is single-threaded bzip2 and
   takes roughly 1–3 minutes on a phone; a wake lock + keep-screen-on is held during install so it
@@ -235,8 +283,8 @@ redistributed unmodified under their own licenses; see
 ## Roadmap
 
 1. Voice-clone UI (record/import clip → preview → save) using the already-implemented
-   `WavReader` chain and `GenerationConfig.referenceAudio`.
+   `WavReader` chain and `GenerationConfig.referenceAudio` (previews shipped; recording/import
+   pending).
 2. Per-site extraction rules cache + "always use reader view" toggle.
-3. Chapter prefetch (extract next chapter while the current one plays).
-4. ZipVoice int8 for multilingual cloning (transcript field already reserved in the engine).
-5. Export the spoken chapter as an audio file.
+3. Export the spoken chapter as an audio file.
+4. Kokoro multi-lang + Kitten voices (deferred; see docs/voice-research.md).
