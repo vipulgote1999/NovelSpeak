@@ -10,6 +10,8 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
+import app.novelspeak.cast.CastStore
+import app.novelspeak.cast.PrefsCastStorage
 import java.io.File
 
 class NovelSpeakApp : Application() {
@@ -19,6 +21,8 @@ class NovelSpeakApp : Application() {
     lateinit var player: PcmPlayer
         private set
     lateinit var reader: Reader
+        private set
+    lateinit var castStore: CastStore
         private set
 
     override fun onCreate() {
@@ -42,6 +46,7 @@ class NovelSpeakApp : Application() {
         prefs = Prefs(this)
         player = PcmPlayer()
         reader = Reader(this)
+        castStore = CastStore(PrefsCastStorage(this))
         AdBlocker.init(this)
         // Pronunciation dictionary: parsed once at startup; Settings re-applies on save.
         try {
@@ -110,7 +115,22 @@ class NovelSpeakApp : Application() {
  */
 class Reader(private val app: NovelSpeakApp) {
 
-    data class Block(val text: String, val blockIndex: Int)
+    /**
+     * One speakable unit. [voiceId]/[speakerId] are optional so existing extraction and imported
+     * books keep working unchanged; a cast fills them in later.
+     *
+     * [charStart]/[charEnd] are offsets inside the original block for dialogue highlighting;
+     * `-1` means "highlight the whole block".
+     */
+    data class Block(
+        val text: String,
+        val blockIndex: Int,
+        val voiceId: String? = null,
+        val speakerId: String? = null,
+        val charStart: Int = -1,
+        val charEnd: Int = -1,
+        val speakerName: String = ""
+    )
 
     interface Listener {
         fun onReaderState(state: State)
@@ -121,6 +141,12 @@ class Reader(private val app: NovelSpeakApp) {
 
         /** Approximate word-level progress inside the spoken sentence (char offsets). */
         fun onWordHighlight(blockIndex: Int, charStart: Int, charEnd: Int) {}
+
+        /**
+         * The current segment's exact source range. Used by the cast view to highlight the
+         * dialogue span (and to show who is speaking) without disturbing the sentence highlight.
+         */
+        fun onSegmentHighlight(blockIndex: Int, charStart: Int, charEnd: Int, speaker: String) {}
     }
 
     data class State(
@@ -130,7 +156,9 @@ class Reader(private val app: NovelSpeakApp) {
         val total: Int,
         val engine: String,
         val voice: String,
-        val status: String
+        val status: String,
+        val speaker: String = "",
+        val segmentVoiceId: String = ""
     )
 
     private val main = Handler(Looper.getMainLooper())
@@ -179,10 +207,15 @@ class Reader(private val app: NovelSpeakApp) {
     fun addListener(l: Listener) { if (!listeners.contains(l)) listeners.add(l) }
     fun removeListener(l: Listener) { listeners.remove(l) }
 
-    fun state() = State(
-        playing, title, cursor, sentences.size, engineName,
-        engine?.currentVoiceLabel() ?: "", status
-    )
+    fun state(): State {
+        val current = sentences.getOrNull(cursor)
+        return State(
+            playing, title, cursor, sentences.size, engineName,
+            engine?.currentVoiceLabel() ?: "", status,
+            current?.speakerName?.ifEmpty { current.speakerId } ?: "",
+            current?.voiceId ?: ""
+        )
+    }
 
     private fun notifyState() {
         val s = state()
@@ -191,7 +224,12 @@ class Reader(private val app: NovelSpeakApp) {
 
     private fun notifyHighlight() {
         val b = sentences.getOrNull(cursor) ?: return
-        main.post { for (l in ArrayList(listeners)) l.onHighlight(b.blockIndex) }
+        main.post {
+            for (l in ArrayList(listeners)) {
+                l.onHighlight(b.blockIndex)
+                l.onSegmentHighlight(b.blockIndex, b.charStart, b.charEnd, b.speakerName)
+            }
+        }
     }
 
     private fun notifyQueueFinished() {
@@ -659,7 +697,8 @@ class Reader(private val app: NovelSpeakApp) {
         e.speak(
             sentences[index].text,
             onDone = { ok -> onSentenceDone(gen, index, ok) },
-            onRendered = { hasAudio -> onClipRendered(gen, index, hasAudio) }
+            onRendered = { hasAudio -> onClipRendered(gen, index, hasAudio) },
+            voiceId = sentences[index].voiceId
         )
     }
 

@@ -65,6 +65,9 @@ import android.widget.TextView
 import android.widget.Toast
 import app.novelspeak.adblock.UrlTools
 import android.os.SystemClock
+import app.novelspeak.cast.CastBlock
+import app.novelspeak.cast.CastCoordinator
+import app.novelspeak.cast.CastIds
 import app.novelspeak.library.BookmarkStore
 import app.novelspeak.library.ImportedBook
 import app.novelspeak.library.ImportedBookStore
@@ -106,6 +109,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var speedView: TextView
     private lateinit var engineChip: TextView
     private lateinit var voiceView: TextView
+    private lateinit var speakerView: TextView
+    private lateinit var castButton: TextView
+    private var storyBlocks: List<Reader.Block> = emptyList()
+    private val castCoordinator by lazy {
+        CastCoordinator(NovelSpeakApp.instance.castStore)
+    }
     private lateinit var dotView: View
     private lateinit var seekBar: SeekBar
     private lateinit var playButton: FrameLayout
@@ -573,6 +582,18 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         card.addView(voiceView)
 
+        speakerView = TextView(this).apply {
+            text = ""
+            textSize = 11f
+            setTextColor(Palette.ACCENT)
+            setPadding(dp(2), 0, 0, 0)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            visibility = View.GONE
+            contentDescription = "Current speaker"
+        }
+        card.addView(speakerView)
+
         val progressRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -644,6 +665,17 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         nextChapterButton.contentDescription = "Next chapter"
         actionsRow.addView(nextChapterButton)
+        castButton = textButton("Cast", primary = false, widthDp = 0, heightDp = 38) {
+            toggleStoryCast()
+        }.apply {
+            textSize = 11f
+            contentDescription = "Story cast"
+            setOnLongClickListener {
+                showCastDialog()
+                true
+            }
+        }
+        actionsRow.addView(castButton)
         actionsRow.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
         actionsRow.addView(iconButton(Glyph.MINUS, "Slower", 34) { bumpSpeed(-0.05f) })
         speedView = TextView(this).apply {
@@ -1854,12 +1886,17 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         // reason to throw away the readable theme.
                         WebExtractor.setReader(web, p.readerMode)
                     } else {
+                        val chapterTitle = title.ifEmpty { web.title ?: "" }
                         if (append && !wantsRestart && reader.hasContent()) {
                             autoAppendStart = reader.state().total
-                            reader.appendContent(blocks, title.ifEmpty { web.title ?: "" })
+                            storyBlocks = storyBlocks + blocks
+                            val queue = if (p.storyCast) castChapter(chapterTitle, blocks) ?: blocks else blocks
+                            reader.appendContent(queue, chapterTitle)
                         } else {
                             autoAppendStart = 0
-                            reader.setContent(title.ifEmpty { web.title ?: "" }, blocks)
+                            storyBlocks = blocks
+                            val queue = if (p.storyCast) castChapter(chapterTitle, blocks) ?: blocks else blocks
+                            reader.setContent(chapterTitle, queue)
                         }
                         statusView.text = "Extracted " + blocks.size + " sentences"
                         onExtracted(title, wall)
@@ -2323,8 +2360,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         for (i in sentences.indices) blocks.add(Reader.Block(sentences[i], i))
         currentImportId = id
         pendingResumeIndex = -1
-        reader.setContent(book.title, blocks)
-        val start = book.position.coerceIn(0, (blocks.size - 1).coerceAtLeast(0))
+        storyBlocks = blocks
+        val queue = if (NovelSpeakApp.instance.prefs.storyCast) {
+            castChapter(book.title, blocks) ?: blocks
+        } else {
+            blocks
+        }
+        reader.setContent(book.title, queue)
+        val start = book.position.coerceIn(0, (queue.size - 1).coerceAtLeast(0))
         if (start > 0) reader.seek(start)
         hideHome()
         hideWallBanner()
@@ -2561,7 +2604,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         val blocks = ArrayList<Reader.Block>(parts.size)
         for (i in parts.indices) blocks.add(Reader.Block(parts[i], i))
-        reader.setContent("Shared text", blocks)
+        storyBlocks = blocks
+        val queue = if (NovelSpeakApp.instance.prefs.storyCast) {
+            castChapter("Shared text", blocks) ?: blocks
+        } else {
+            blocks
+        }
+        reader.setContent("Shared text", queue)
         hideWallBanner()
         statusView.text = "Shared text · " + blocks.size + " sentences"
         statusView.contentDescription = "Reader status, shared text queued"
@@ -2721,7 +2770,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             lastExtractedUrl = cachedUrl
             lastExtractedBlocks = cached!!.size
             autoAppendStart = reader.state().total
-            reader.appendContent(cached, title.ifEmpty { "Next chapter" })
+            storyBlocks = storyBlocks + cached
+            val chapterTitle = title.ifEmpty { "Next chapter" }
+            val queue = if (NovelSpeakApp.instance.prefs.storyCast) {
+                castChapter(chapterTitle, cached) ?: cached
+            } else {
+                cached
+            }
+            reader.appendContent(queue, chapterTitle)
             statusView.text = "Prefetched chapter · " + cached.size + " sentences"
             val p = NovelSpeakApp.instance.prefs
             if (wasPlaying || p.autoMode) {
@@ -2821,6 +2877,24 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         voiceView.text = if (voice.isEmpty()) "" else "Voice · " + voice
         voiceView.visibility = if (voice.isEmpty()) View.GONE else View.VISIBLE
         voiceView.contentDescription = "Current voice, " + voice
+        if (::speakerView.isInitialized) {
+            val speaker = state.speaker
+            if (speaker.isNotEmpty() && speaker != CastIds.NARRATOR) {
+                speakerView.text = "Speaking · " + speaker
+                speakerView.visibility = View.VISIBLE
+                speakerView.contentDescription = "Speaking, " + speaker
+            } else {
+                speakerView.visibility = View.GONE
+            }
+        }
+        if (::castButton.isInitialized) {
+            val castOn = NovelSpeakApp.instance.prefs.storyCast
+            castButton.text = if (castOn) "Cast on" else "Cast"
+            castButton.setTextColor(if (castOn) Palette.ACCENT else Palette.TEXT)
+            castButton.contentDescription =
+                if (castOn) "Story cast on, long press for the cast"
+                else "Story cast off, long press for details"
+        }
         progressView.text = if (total > 0) "${state.cursor + 1} / $total" else "0 / 0"
         speedView.text = "%.2f×".format(NovelSpeakApp.instance.prefs.speed)
         speedView.contentDescription =
@@ -2855,10 +2929,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (state.voice.isNotEmpty()) return state.voice
         val p = NovelSpeakApp.instance.prefs
         return if (p.engine == Prefs.ENGINE_SHERPA) {
-            if (p.modelId == Prefs.MODEL_POCKET) {
-                "Pocket · cloned narrator"
-            } else {
-                "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(p.kokoroSid)?.second ?: "voice")
+            when {
+                p.modelId == Prefs.MODEL_POCKET -> "Pocket · cloned narrator"
+                p.modelId == Prefs.MODEL_SUPERTONIC ->
+                    "Supertonic · " + VoiceCatalog.label("supertonic", p.supertonicStyle.toString())
+                else -> "Kokoro · " + VoiceCatalog.label("kokoro", p.kokoroSid.toString())
             }
         } else {
             p.systemVoiceLabel.ifEmpty { "Device default" }
@@ -2875,6 +2950,246 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
     }
 
+    // ---- story cast -----------------------------------------------------------
+
+    private fun activeNeuralFamily(): String? {
+        val p = NovelSpeakApp.instance.prefs
+        if (p.engine != Prefs.ENGINE_SHERPA) return null
+        val model = ModelManager.model(p.modelId) ?: return null
+        if (!ModelManager.isInstalled(this, model.id)) return null
+        return when (model.family) {
+            "supertonic", "kokoro" -> model.family
+            else -> null
+        }
+    }
+
+    private fun narratorVoiceId(family: String): String? {
+        val p = NovelSpeakApp.instance.prefs
+        return when (family) {
+            "supertonic" -> p.supertonicStyle.toString()
+            "kokoro" -> p.kokoroSid.toString()
+            else -> null
+        }
+    }
+
+    private fun currentBookKey(): String =
+        currentImportId?.let { "import:$it" }
+            ?: bookKeyForUrl(web.url ?: lastDisplayedUrl)
+
+    /**
+     * A series key, not a chapter key: every chapter of the same novel must share one cast.
+     * Host + the first non-generic path segments covers the common serial layouts
+     * (`/novel/<slug>/chapter-5`, `/fiction/<id>/<title>/chapter/1`, `/works/<id>/chapters/<id>`).
+     */
+    private fun bookKeyForUrl(url: String): String {
+        if (url.isBlank()) return "chapter"
+        return try {
+            val uri = Uri.parse(url)
+            val host = uri.host ?: return url
+            val generic = setOf(
+                "book", "books", "novel", "novels", "read", "reader", "story", "stories",
+                "series", "fiction", "works", "work", "chapter", "chapters"
+            )
+            val raw = uri.pathSegments.filter { it.isNotBlank() }
+            // Drop a trailing chapter number ("/novel/demo/1/") but keep numeric novel ids
+            // ("/fiction/12345/title/chapter/1").
+            val withoutChapterNumber =
+                if (raw.isNotEmpty() && raw.last().all { it.isDigit() }) raw.dropLast(1) else raw
+            val segments = withoutChapterNumber
+                .filter { it.isNotBlank() }
+                .filter { seg ->
+                    val s = seg.lowercase()
+                    s !in generic && !s.startsWith("chapter-") && !s.startsWith("chapitre-") &&
+                        !s.endsWith(".html") && !s.endsWith(".htm") && !s.endsWith(".php")
+                }
+                .take(2)
+            if (segments.isEmpty()) host else host + "/" + segments.joinToString("/")
+        } catch (t: Throwable) {
+            url
+        }
+    }
+
+    private fun currentChapterTitle(): String =
+        reader.state().title.ifEmpty { web.title ?: "" }
+
+    /**
+     * Parse [blocks] into narrator/character segments and assign voices. Returns null when the
+     * active engine cannot cast (system/Pocket/ZipVoice), so callers keep the narrator-only queue.
+     */
+    private fun castChapter(title: String, blocks: List<Reader.Block>): List<Reader.Block>? {
+        val family = activeNeuralFamily() ?: return null
+        if (blocks.isEmpty()) return null
+        val result = try {
+            castCoordinator.analyze(
+                bookKey = currentBookKey(),
+                title = title,
+                narratorVoiceId = narratorVoiceId(family),
+                family = family,
+                blocks = paragraphBlocks(blocks)
+            )
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "cast analysis failed", t)
+            return null
+        }
+        if (result.analysis.segments.isEmpty()) return null
+
+        // The parser sees whole paragraphs (so a quote with an internal period stays one turn);
+        // the TTS queue still gets sentence-sized chunks.
+        val maxChars = NovelSpeakApp.instance.prefs.maxSentenceChars
+        val out = ArrayList<Reader.Block>(result.analysis.segments.size)
+        for (segment in result.analysis.segments) {
+            val voice = if (segment.isDialogue) result.voiceFor(segment.speakerId) else null
+            val speakerName = if (segment.isDialogue) result.nameFor(segment.speakerId) else ""
+            val pieces = SentenceSplitter.split(segment.text, maxChars)
+            if (pieces.isEmpty()) continue
+            var cursor = 0
+            for (piece in pieces) {
+                val at = segment.text.indexOf(piece, cursor)
+                val startInSegment = if (at >= 0) at else cursor
+                val start = if (segment.isDialogue && segment.charStart >= 0) {
+                    segment.charStart + startInSegment
+                } else {
+                    -1
+                }
+                val end = if (start >= 0) start + piece.length else -1
+                out.add(
+                    Reader.Block(
+                        text = piece,
+                        blockIndex = segment.blockIndex,
+                        voiceId = voice,
+                        speakerId = segment.speakerId,
+                        charStart = start,
+                        charEnd = end,
+                        speakerName = speakerName
+                    )
+                )
+                cursor = startInSegment + piece.length
+            }
+        }
+        val speakers = result.cast.members.count { it.dialogueLines > 0 }
+        statusView.text = "Cast · $speakers characters" +
+            if (result.analysis.unresolved > 0) " · ${result.analysis.unresolved} to review" else ""
+        DiagLog.line(
+            this,
+            "cast chapter=$speakers speakable unresolved=${result.analysis.unresolved} " +
+                "segments=${out.size}"
+        )
+        return out
+    }
+
+    /**
+     * Rebuild paragraph-sized text from the sentence blocks the extractor returns. Each extracted
+     * paragraph shares one `blockIndex`; the 2,000-char cap keeps an imported chapter (one index)
+     * from becoming a single unbounded parser input.
+     */
+    private fun paragraphBlocks(blocks: List<Reader.Block>): List<CastBlock> {
+        val out = ArrayList<CastBlock>()
+        var currentIndex = Int.MIN_VALUE
+        val sb = StringBuilder()
+        fun flush() {
+            if (sb.isNotEmpty()) {
+                out.add(CastBlock(sb.toString(), currentIndex))
+                sb.setLength(0)
+            }
+        }
+        for (b in blocks) {
+            if (b.text.isBlank()) continue
+            if (b.blockIndex != currentIndex || sb.length + b.text.length > 2000) {
+                flush()
+                currentIndex = b.blockIndex
+            }
+            if (sb.isNotEmpty()) sb.append(' ')
+            sb.append(b.text)
+        }
+        flush()
+        return out
+    }
+
+    private fun toggleStoryCast() {
+        if (!reader.hasContent() || storyBlocks.isEmpty()) {
+            Toast.makeText(this, "Open a chapter first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val family = activeNeuralFamily()
+        if (family == null) {
+            Toast.makeText(
+                this,
+                "Story cast needs the Supertonic or Kokoro neural voice",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+        val p = NovelSpeakApp.instance.prefs
+        val wasPlaying = reader.state().playing
+        val at = reader.currentIndex()
+        val title = currentChapterTitle()
+        p.storyCast = !p.storyCast
+
+        if (p.storyCast) {
+            val casted = castChapter(title, storyBlocks)
+            if (casted == null) {
+                p.storyCast = false
+                Toast.makeText(this, "Could not cast this chapter", Toast.LENGTH_SHORT).show()
+                return
+            }
+            reader.setContent(title, casted)
+            if (at > 0) reader.seek(at.coerceAtMost(casted.size - 1))
+            if (wasPlaying) reader.play()
+            Toast.makeText(this, "Story cast on", Toast.LENGTH_SHORT).show()
+        } else {
+            reader.setContent(title, storyBlocks)
+            if (at > 0) reader.seek(at.coerceAtMost(storyBlocks.size - 1))
+            if (wasPlaying) reader.play()
+            statusView.text = "Narrator only"
+            Toast.makeText(this, "Narrator only", Toast.LENGTH_SHORT).show()
+        }
+        updateReaderButton()
+    }
+
+    private fun showCastDialog() {
+        val family = activeNeuralFamily()
+        if (family == null) {
+            Toast.makeText(
+                this,
+                "Story cast needs the Supertonic or Kokoro neural voice",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+        val cast = try {
+            NovelSpeakApp.instance.castStore.load(currentBookKey())
+        } catch (t: Throwable) {
+            null
+        }
+        val speakers = cast?.members?.filter { it.dialogueLines > 0 }.orEmpty()
+        if (speakers.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("Story cast")
+                .setMessage(
+                    "Give the narrator and every character a different on-device voice. " +
+                        "The author's words are preserved; only speaker labels are added."
+                )
+                .setPositiveButton("Cast chapter") { _, _ ->
+                    if (!NovelSpeakApp.instance.prefs.storyCast) toggleStoryCast()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+            return
+        }
+        val lines = speakers.joinToString("\n") { m ->
+            val voice = m.voiceId?.let { VoiceCatalog.label(family, it) } ?: "narrator"
+            "${m.name} · $voice"
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Cast · " + currentChapterTitle())
+            .setMessage(lines)
+            .setPositiveButton(
+                if (NovelSpeakApp.instance.prefs.storyCast) "Narrator only" else "Cast chapter"
+            ) { _, _ -> toggleStoryCast() }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
     override fun onHighlight(blockIndex: Int) {
         if (currentImportId != null) return
         if (NovelSpeakApp.instance.prefs.highlight) {
@@ -2887,6 +3202,21 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val p = NovelSpeakApp.instance.prefs
         if (!p.highlight || !p.readerWordHighlight) return
         WebExtractor.highlightWord(web, blockIndex, charStart, charEnd)
+    }
+
+    override fun onSegmentHighlight(
+        blockIndex: Int,
+        charStart: Int,
+        charEnd: Int,
+        speaker: String
+    ) {
+        if (currentImportId != null) return
+        val p = NovelSpeakApp.instance.prefs
+        if (!p.highlight) return
+        // Dialogue segments carry exact source offsets; narration keeps the whole-block mark.
+        if (charStart >= 0 && charEnd > charStart) {
+            WebExtractor.highlightWord(web, blockIndex, charStart, charEnd)
+        }
     }
 
     private fun updateShield() {

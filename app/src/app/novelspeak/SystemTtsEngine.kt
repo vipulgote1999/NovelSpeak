@@ -6,6 +6,7 @@ import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
+import app.novelspeak.cast.VoiceSelection
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
@@ -70,7 +71,8 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
         val text: String,
         val epoch: Int,
         val onDone: (Boolean) -> Unit,
-        val onRendered: ((Boolean) -> Unit)? = null
+        val onRendered: ((Boolean) -> Unit)? = null,
+        val voiceId: String? = null
     )
     private class Boundary(
         val endFrame: Long,
@@ -238,7 +240,7 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
                 continue
             }
             try {
-                applyVoiceAndRate()
+                applyVoiceAndRate(task.voiceId)
                 // P1.2: the pronunciation dictionary must work on the default (system) backend
                 // too. Rules only - system TTS keeps quotes/casing/punctuation as extracted.
                 val speechText = TtsTextCleaner.applyPronunciation(task.text)
@@ -397,7 +399,7 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
         val t = tts
         if (t == null || !isReady) { main.post { task.onDone(false) }; return }
         try {
-            applyVoiceAndRate()
+            applyVoiceAndRate(task.voiceId)
             // Same rule pass as the file-synthesis path (never double-applied: the direct path
             // only runs when no render was written).
             val speechText = TtsTextCleaner.applyPronunciation(task.text)
@@ -424,11 +426,12 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
      * therefore 1:1 inside `0.5..[maxSpeed]`. Clamping here is what makes P0.6 honest: a UI
      * value of 3.0 is actually requested instead of being silently rounded to 2.0.
      */
-    private fun applyVoiceAndRate() {
+    private fun applyVoiceAndRate(taskVoiceId: String? = null) {
         val t = tts ?: return
         try {
             t.setSpeechRate(effectiveSpeed())
-            voiceId?.let { vid ->
+            // A cast line carries its own device voice; ordinary playback keeps the saved one.
+            VoiceSelection.systemVoice(taskVoiceId, voiceId)?.let { vid ->
                 val v = t.voices?.firstOrNull { it.name == vid }
                 if (v != null) t.voice = v
             }
@@ -461,7 +464,8 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
     override fun speak(
         text: String,
         onDone: (Boolean) -> Unit,
-        onRendered: ((Boolean) -> Unit)?
+        onRendered: ((Boolean) -> Unit)?,
+        voiceId: String?
     ) {
         if (!isReady) {
             main.post { onRendered?.invoke(false) }
@@ -472,7 +476,7 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
             stopFlag = false
             novelSpeakPlayer().reset()
         }
-        queue.offer(Task(text, stopEpoch.get(), onDone, onRendered))
+        queue.offer(Task(text, stopEpoch.get(), onDone, onRendered, voiceId))
     }
 
     override fun stop() {

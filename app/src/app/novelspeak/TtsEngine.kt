@@ -19,11 +19,16 @@ interface TtsEngine {
      * [onRendered] is optional and fires once when the sentence's audio has been queued for
      * playback (before it finishes playing). `true` means at least one audio frame was queued;
      * `false` means the sentence produced no audio (skipped, empty, or failed).
+     *
+     * [voiceId] is the voice for *this sentence*. It must be captured with the task rather than
+     * read from a shared field, because the reader queues several sentences ahead. `null` keeps
+     * the engine's saved/global voice.
      */
     fun speak(
         text: String,
         onDone: (ok: Boolean) -> Unit,
-        onRendered: ((hasAudio: Boolean) -> Unit)? = null
+        onRendered: ((hasAudio: Boolean) -> Unit)? = null,
+        voiceId: String? = null
     )
 
     /**

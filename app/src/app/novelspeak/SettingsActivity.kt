@@ -1266,12 +1266,9 @@ class SettingsActivity : Activity() {
         when (model.family) {
             "pocket" -> listOf("" to "Default narrator (bria clip)")
             "zipvoice" -> listOf("" to "Cloned narrator (reference clip + transcript)")
-            "supertonic" -> listOf(
-                "0" to "F1 (US female)",
-                "1" to "M1 (US male)"
-            )
+            "supertonic" -> VoiceCatalog.SUPERTONIC.map { it.id to it.label }
             "vocoder" -> emptyList()
-            else -> Prefs.KOKORO_CURATED.map { pair -> pair.first.toString() to pair.second }
+            else -> VoiceCatalog.KOKORO.map { it.id to it.label }
         }
 
     private fun modelDisplayName(model: ModelManager.Model): String = when (model.family) {
@@ -1303,9 +1300,10 @@ class SettingsActivity : Activity() {
         return when (ModelManager.model(prefs.modelId)?.family) {
             "pocket" -> "Pocket · cloned narrator"
             "zipvoice" -> "ZipVoice · cloned narrator"
-            "supertonic" -> "Supertonic · " +
-                (if (prefs.supertonicStyle == 0) "F1 (US female)" else "M1 (US male)")
-            else -> "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(prefs.kokoroSid)?.second ?: "voice")
+            "supertonic" -> "Supertonic · " + VoiceCatalog.label(
+                "supertonic", prefs.supertonicStyle.toString()
+            )
+            else -> "Kokoro · " + VoiceCatalog.label("kokoro", prefs.kokoroSid.toString())
         }
     }
 

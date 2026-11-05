@@ -131,6 +131,16 @@ permission (needed for the playback notification).
 4. **Next ch** follows the page's own "next chapter" link and appends it to the queue.
 5. **⚙** → choose engine, install a neural model, pick a voice, tune threads/NNAPI/prefetch.
 
+### Story cast (experimental)
+
+Tap **Cast** in the player to give the narrator and characters different on-device voices. The
+analysis runs locally, preserves the author's text, and only adds speaker labels and voice ids.
+Supertonic exposes 10 speakers in one model (F1–F5, M1–M5), so a cast does not download a model per
+character. Long-press **Cast** to review the roster. Lines the parser cannot resolve stay in the
+narrator's voice and are counted as *to review* rather than given a confident wrong voice. Story
+cast currently requires Supertonic or Kokoro; system TTS, Pocket and ZipVoice fall back to a
+narrator-only queue.
+
 ### Ad blocking
 
 Ads are blocked at three levels, because a WebView cannot be a mini-uBO:
