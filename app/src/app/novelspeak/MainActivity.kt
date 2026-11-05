@@ -68,6 +68,7 @@ import android.os.SystemClock
 import app.novelspeak.cast.CastBlock
 import app.novelspeak.cast.CastCoordinator
 import app.novelspeak.cast.CastIds
+import app.novelspeak.cast.CastMember
 import app.novelspeak.library.BookmarkStore
 import app.novelspeak.library.ImportedBook
 import app.novelspeak.library.ImportedBookStore
@@ -3186,8 +3187,69 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             .setPositiveButton(
                 if (NovelSpeakApp.instance.prefs.storyCast) "Narrator only" else "Cast chapter"
             ) { _, _ -> toggleStoryCast() }
+            .setNeutralButton("Recast") { _, _ -> showRecastDialog() }
             .setNegativeButton("Close", null)
             .show()
+    }
+
+    /** Pick a character, then a voice; the choice is locked and the live queue is rebuilt. */
+    private fun showRecastDialog() {
+        val family = activeNeuralFamily() ?: return
+        val cast = try {
+            NovelSpeakApp.instance.castStore.load(currentBookKey())
+        } catch (t: Throwable) {
+            null
+        }
+        val speakers = cast?.members
+            ?.filter { it.dialogueLines > 0 }
+            ?.sortedByDescending { it.dialogueLines }
+            .orEmpty()
+        if (speakers.isEmpty()) {
+            Toast.makeText(this, "Cast this chapter first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val names = speakers.map { it.name }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("Recast a character")
+            .setItems(names) { _, which ->
+                showVoicePicker(family, cast!!.narratorVoiceId, speakers[which])
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showVoicePicker(family: String, narratorId: String?, member: CastMember) {
+        val voices = VoiceCatalog.forFamily(family).filter { it.id != narratorId }
+        if (voices.isEmpty()) {
+            Toast.makeText(this, "No character voices available", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val labels = voices.map { it.label }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("Voice for " + member.name)
+            .setItems(labels) { _, which ->
+                val voice = voices[which]
+                NovelSpeakApp.instance.castStore.setVoice(currentBookKey(), member.id, voice.id)
+                reapplyStoryCast()
+                Toast.makeText(
+                    this, member.name + " · " + voice.label, Toast.LENGTH_SHORT
+                ).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    /** Rebuild the current chapter from [storyBlocks] using the persisted cast. */
+    private fun reapplyStoryCast() {
+        if (!reader.hasContent() || storyBlocks.isEmpty()) return
+        val wasPlaying = reader.state().playing
+        val at = reader.currentIndex()
+        val title = currentChapterTitle()
+        val casted = castChapter(title, storyBlocks) ?: return
+        reader.setContent(title, casted)
+        val safe = at.coerceIn(0, (casted.size - 1).coerceAtLeast(0))
+        if (safe > 0) reader.seek(safe)
+        if (wasPlaying) reader.play()
     }
 
     override fun onHighlight(blockIndex: Int) {

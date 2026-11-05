@@ -30,6 +30,8 @@ Tomas · M2 (male, US)
 - The two remaining `unresolved` lines are the genuinely unattributable
   `"He's right here."` (a third voice) and `"Mine,"` (a voice from the yard). They are kept in the
   narrator path and counted for review, not silently given a wrong character.
+- Recast was exercised from the cast sheet: Mara `F2` → `F3`. The choice persisted as a user lock
+  and the next synthesis logged `sid=2 requested=2`, proving the live queue picked it up.
 
 ## Host checks
 
@@ -38,10 +40,10 @@ Tomas · M2 (male, US)
 | `tools/library-test` | 211 |
 | `tools/feature-test` | 130 |
 | `tools/cast-parser-test` | 34 |
-| `tools/cast-store-test` | 26 |
+| `tools/cast-store-test` | 27 |
 | `tools/voice-catalog-test` | 18 |
 | `tools/cast-voice-test` | 7 |
-| **Total** | **426** |
+| **Total** | **427** |
 
 The parser fixtures cover *Pride and Prejudice* chapter 1 (explicit tags) and the unattributed
 Rennick scene (no tags, aliases, a third voice). The auto-discovery case starts with **no

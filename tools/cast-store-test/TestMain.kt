@@ -74,6 +74,7 @@ fun main() {
     check("merge combines aliases", merged.members.first { it.id == "mrs-bennet" }.aliases.contains("the lady"))
     check("merge keeps existing voice", merged.members.first { it.id == "mrs-bennet" }.voiceId == "1")
     check("merge keeps narrator", merged.narratorVoiceId == "0")
+    check("merge does not inflate line counts", merged.members.first { it.id == "mrs-bennet" }.dialogueLines == 12, merged.members.first { it.id == "mrs-bennet" }.dialogueLines.toString())
 
     // User lock survives a merge.
     store.setVoice("book-1", "mr-bennet", "9")

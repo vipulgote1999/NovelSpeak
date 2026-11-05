@@ -65,7 +65,8 @@ class CastStore(private val storage: LibraryStorage) {
                 voiceId = old.voiceId ?: incoming.voiceId,
                 confidence = maxConfidence(old.confidence, incoming.confidence),
                 userLocked = old.userLocked,
-                dialogueLines = old.dialogueLines + incoming.dialogueLines
+                // Re-analysing the same chapter must not inflate priority forever.
+                dialogueLines = maxOf(old.dialogueLines, incoming.dialogueLines)
             )
         }
 
