@@ -89,6 +89,20 @@ class VoicePreview(private val context: Context, private val prefs: Prefs) {
         label: String,
         onStatus: (String) -> Unit
     ) {
+        previewNeuralLine(modelId, voiceId, label, sample, onStatus)
+    }
+
+    /**
+     * Audition [text] with one specific voice. Story Cast passes the character's real line so a
+     * recast can be judged in context; Settings keeps the neutral default sample.
+     */
+    fun previewNeuralLine(
+        modelId: String,
+        voiceId: String,
+        label: String,
+        text: String,
+        onStatus: (String) -> Unit
+    ) {
         if (!nativeAbiMatchesApk()) {
             listening = false
             DiagLog.line(context, "voice preview refused: ABI mismatch")
@@ -146,17 +160,26 @@ class VoicePreview(private val context: Context, private val prefs: Prefs) {
                 return@prepare
             }
             report(onStatus, "Previewing " + label + "…")
+            val line = text.ifBlank { sample }
+            DiagLog.line(context, "voice preview line chars=" + line.length)
             try {
-                engine.speak(sample, onDone = { done ->
-                    main.post {
-                        finish(
-                            gen,
-                            if (done) "Preview finished · " + label
-                            else "Preview failed · " + label,
-                            onStatus
-                        )
-                    }
-                })
+                engine.speak(
+                    text = line,
+                    onDone = { done ->
+                        main.post {
+                            finish(
+                                gen,
+                                if (done) "Preview finished · " + label
+                                else "Preview failed · " + label,
+                                onStatus
+                            )
+                        }
+                    },
+                    // A task voice is required now that queued sentences own their sid; relying
+                    // on setPreviewVoice alone would audition the saved voice instead.
+                    voiceId = voiceId,
+                    trimSilence = true
+                )
             } catch (t: Throwable) {
                 finish(gen, "Preview failed · " + label, onStatus)
             }
@@ -218,11 +241,11 @@ class VoicePreview(private val context: Context, private val prefs: Prefs) {
     private fun pauseReader() {
         try {
             val reader = NovelSpeakApp.instance.reader
-            resumeReader = reader.state().playing
-            if (resumeReader) reader.pause()
-            // Free the active engine/model before loading the auditioned model; otherwise two
-            // ONNX models can be resident at once on a phone.
-            reader.invalidateEngine()
+            resumeReader = reader.isPlaybackActive()
+            // Park instead of pause+invalidate: invalidate immediately prepares a new reader
+            // engine, which would synthesize and play underneath the preview on the shared
+            // PcmPlayer. Parking leaves only the preview engine alive; play() re-prepares it.
+            reader.parkEngine()
         } catch (t: Throwable) {
             resumeReader = false
         }

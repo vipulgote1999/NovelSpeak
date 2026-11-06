@@ -11,8 +11,12 @@ tags:
 - assertVisible: "Voices & previews"
 - assertVisible: "Playback & sleep"
 - assertVisible: "Reading & display"
-- assertVisible: "Privacy & data"
-- assertVisible: "Advanced"
+- scrollUntilVisible:
+    element:
+      text: "Story cast"
+    direction: DOWN
+    timeout: 15000
+- assertVisible: "Story cast"
 - tapOn: "Playback & sleep"
 - assertVisible: "Speed"
 - assertVisible: "Sleep timer"
@@ -20,10 +24,20 @@ tags:
 - tapOn: "Reading & display"
 - assertVisible: "Reader appearance"
 - tapOn: "Back"
+- scrollUntilVisible:
+    element:
+      text: "Advanced"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Advanced"
 - assertVisible: "Performance"
 - assertVisible: "Reset to tuned defaults"
 - tapOn: "Back"
+- scrollUntilVisible:
+    element:
+      text: "Privacy & data"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Privacy & data"
 - scrollUntilVisible:
     element:
@@ -32,4 +46,9 @@ tags:
     timeout: 20000
 - assertVisible: "Ad blocking"
 - tapOn: "Back"
+- scrollUntilVisible:
+    element:
+      text: "About NovelSpeak"
+    direction: DOWN
+    timeout: 15000
 - assertVisible: "About NovelSpeak"

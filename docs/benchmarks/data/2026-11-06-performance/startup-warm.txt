@@ -1,0 +1,25 @@
+=== warm 1
+Status: ok
+LaunchState: UNKNOWN (0)
+TotalTime: 0
+WaitTime: 4
+=== warm 2
+Status: ok
+LaunchState: UNKNOWN (0)
+TotalTime: 0
+WaitTime: 2
+=== warm 3
+Status: ok
+LaunchState: UNKNOWN (0)
+TotalTime: 0
+WaitTime: 2
+=== warm 4
+Status: ok
+LaunchState: UNKNOWN (0)
+TotalTime: 0
+WaitTime: 1
+=== warm 5
+Status: ok
+LaunchState: UNKNOWN (0)
+TotalTime: 0
+WaitTime: 2

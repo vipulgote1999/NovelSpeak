@@ -1,0 +1,33 @@
+# Perfetto queries (2026-11-06)
+
+## Frame timeline
+| frames | avg_ms | max_ms | janky |
+|---|---|---|---|
+| 1020 | 14.7 | 69.4 | 985 |
+
+## RenderThread swap
+| n | avg_ms | max_ms | total_ms |
+|---|---|---|---|
+| 511 | 14.1 | 31.1 | 7198.1 |
+
+## CPU by thread
+| name | cpu_ms |
+|---|---|
+| RenderThread | 5757.2 |
+| app.novelspeak | 316.7 |
+
+## Top RenderThread slices
+| name | ms |
+|---|---|
+| eglSwapBuffersWithDamageKHR | 31.07 |
+| eglSwapBuffersWithDamageKHR | 30.09 |
+| eglSwapBuffersWithDamageKHR | 30.05 |
+| eglSwapBuffersWithDamageKHR | 29.37 |
+| eglSwapBuffersWithDamageKHR | 27.92 |
+| eglSwapBuffersWithDamageKHR | 27.85 |
+| eglSwapBuffersWithDamageKHR | 27.55 |
+| eglSwapBuffersWithDamageKHR | 26.62 |
+| eglSwapBuffersWithDamageKHR | 25.56 |
+| eglSwapBuffersWithDamageKHR | 25.05 |
+
+(10 rows)

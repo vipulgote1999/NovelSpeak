@@ -12,6 +12,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP="$ROOT/app"
 BUILD="$ROOT/build"
+MANIFEST="${MANIFEST:-$APP/AndroidManifest.xml}"
 DEPS="${DEPS:-$HOME/build/deps}"
 ANDROID_JAR="${ANDROID_JAR:-$HOME/build/cache/sdk34/android-34/android.jar}"
 KOTLIN_STDLIB="${KOTLIN_STDLIB:-/data/data/com.termux/files/usr/opt/kotlin/lib/kotlin-stdlib.jar}"
@@ -58,7 +59,7 @@ fi
 aapt2 link \
   -o "$BUILD/base.apk" \
   -I "$ANDROID_JAR" \
-  --manifest "$APP/AndroidManifest.xml" \
+  --manifest "$MANIFEST" \
   -A "$APP/assets" \
   "${RES_ARGS[@]}" \
   "${LINK_ARGS[@]}" \

@@ -1,0 +1,506 @@
+{
+  "family": "kokoro",
+  "model": "kokoro-int8-en-v0_19",
+  "threads": 4,
+  "speed": 1.0,
+  "sample_rate": 24000,
+  "words": 104,
+  "wordsPerMinute": 189.6,
+  "chunks": 18,
+  "characters": 3,
+  "unresolvedLines": 2,
+  "modelLoadMs": 1052.1,
+  "warmupMs": 1294.6,
+  "sceneAudioSeconds": 32.92,
+  "totalSynthMs": 25293.1,
+  "overallRtf": 0.768,
+  "firstChunkLatencyMs": 2127.9,
+  "synthMs": {
+    "mean": 1405.2,
+    "p50": 1273.5,
+    "p95": 2566.1,
+    "max": 3004.0
+  },
+  "rtf": {
+    "p50": 0.883,
+    "p95": 1.137
+  },
+  "speakerSwitches": 17,
+  "controlledProbe": {
+    "text": "The lantern flickered once and the room went quiet.",
+    "sameSpeakerMeanMs": 2031.1,
+    "alternatingMeanMs": 2233.8,
+    "switchOverheadMs": 202.6,
+    "reps": 9
+  },
+  "interChunkSilenceMs": 250,
+  "clippingChunks": 0,
+  "peakMax": 0.6617,
+  "profiles": {
+    "NARRATOR": {
+      "voice": "Heart",
+      "f0_median_hz": 196.3,
+      "centroid_hz": 3522.2,
+      "rms": 0.0536,
+      "chunks": 8
+    },
+    "marshal-rennick": {
+      "voice": "Adam",
+      "f0_median_hz": 125.3,
+      "centroid_hz": 1881.2,
+      "rms": 0.0789,
+      "chunks": 4
+    },
+    "mara": {
+      "voice": "Bella",
+      "f0_median_hz": 206.0,
+      "centroid_hz": 4062.0,
+      "rms": 0.0505,
+      "chunks": 3
+    },
+    "UNKNOWN": {
+      "voice": "Heart",
+      "f0_median_hz": 213.0,
+      "centroid_hz": 2651.4,
+      "rms": 0.0437,
+      "chunks": 2
+    },
+    "tomas": {
+      "voice": "Michael",
+      "f0_median_hz": 115.4,
+      "centroid_hz": 2556.1,
+      "rms": 0.0502,
+      "chunks": 1
+    }
+  },
+  "voiceDistances": {
+    "marshal-rennick vs tomas": {
+      "f0_relative_delta": 0.079,
+      "centroid_relative_delta": 0.264
+    },
+    "mara vs marshal-rennick": {
+      "f0_relative_delta": 0.392,
+      "centroid_relative_delta": 0.537
+    },
+    "mara vs tomas": {
+      "f0_relative_delta": 0.44,
+      "centroid_relative_delta": 0.371
+    }
+  },
+  "rows": [
+    {
+      "index": 0,
+      "blockIndex": 0,
+      "type": "NARRATION",
+      "speakerId": "NARRATOR",
+      "sid": 0,
+      "voice": "Heart",
+      "text": "Marshal Rennick set the lantern on the table.",
+      "chars": 45,
+      "synth_ms": 2127.9,
+      "audio_s": 2.582,
+      "rtf": 0.824,
+      "peak": 0.3292,
+      "rms": 0.0537,
+      "f0_median": 198.3,
+      "f0_iqr": [
+        161.1,
+        228.6
+      ],
+      "centroid_hz": 3672.5,
+      "switch": false,
+      "play_start_s": 0.0
+    },
+    {
+      "index": 1,
+      "blockIndex": 0,
+      "type": "DIALOGUE",
+      "speakerId": "marshal-rennick",
+      "sid": 5,
+      "voice": "Adam",
+      "text": "\"You came alone.\"",
+      "chars": 17,
+      "synth_ms": 890.2,
+      "audio_s": 0.882,
+      "rtf": 1.009,
+      "peak": 0.5671,
+      "rms": 0.0951,
+      "f0_median": 127.3,
+      "f0_iqr": [
+        112.7,
+        141.4
+      ],
+      "centroid_hz": 1689.4,
+      "switch": true,
+      "play_start_s": 2.832
+    },
+    {
+      "index": 2,
+      "blockIndex": 1,
+      "type": "NARRATION",
+      "speakerId": "NARRATOR",
+      "sid": 0,
+      "voice": "Heart",
+      "text": "The woman in the grey coat didn't sit.",
+      "chars": 38,
+      "synth_ms": 1841.4,
+      "audio_s": 2.101,
+      "rtf": 0.876,
+      "peak": 0.337,
+      "rms": 0.0597,
+      "f0_median": 192.0,
+      "f0_iqr": [
+        169.0,
+        240.0
+      ],
+      "centroid_hz": 3371.9,
+      "switch": true,
+      "play_start_s": 3.964
+    },
+    {
+      "index": 3,
+      "blockIndex": 1,
+      "type": "DIALOGUE",
+      "speakerId": "mara",
+      "sid": 1,
+      "voice": "Bella",
+      "text": "\"You said to.\"",
+      "chars": 14,
+      "synth_ms": 862.0,
+      "audio_s": 0.791,
+      "rtf": 1.089,
+      "peak": 0.2593,
+      "rms": 0.0468,
+      "f0_median": 211.5,
+      "f0_iqr": [
+        182.2,
+        282.4
+      ],
+      "centroid_hz": 4062.0,
+      "switch": true,
+      "play_start_s": 6.315
+    },
+    {
+      "index": 4,
+      "blockIndex": 2,
+      "type": "DIALOGUE",
+      "speakerId": "marshal-rennick",
+      "sid": 5,
+      "voice": "Adam",
+      "text": "\"I said not to bring the boy.\"",
+      "chars": 30,
+      "synth_ms": 1120.2,
+      "audio_s": 1.363,
+      "rtf": 0.822,
+      "peak": 0.4632,
+      "rms": 0.0775,
+      "f0_median": 126.3,
+      "f0_iqr": [
+        99.5,
+        144.6
+      ],
+      "centroid_hz": 2073.1,
+      "switch": true,
+      "play_start_s": 7.357
+    },
+    {
+      "index": 5,
+      "blockIndex": 3,
+      "type": "DIALOGUE",
+      "speakerId": "mara",
+      "sid": 1,
+      "voice": "Bella",
+      "text": "\"He isn't a boy anymore.\"",
+      "chars": 25,
+      "synth_ms": 1162.4,
+      "audio_s": 1.24,
+      "rtf": 0.937,
+      "peak": 0.3358,
+      "rms": 0.0532,
+      "f0_median": 200.0,
+      "f0_iqr": [
+        186.1,
+        221.2
+      ],
+      "centroid_hz": 3934.7,
+      "switch": true,
+      "play_start_s": 8.969
+    },
+    {
+      "index": 6,
+      "blockIndex": 4,
+      "type": "NARRATION",
+      "speakerId": "NARRATOR",
+      "sid": 0,
+      "voice": "Heart",
+      "text": "From the doorway, a third voice:",
+      "chars": 32,
+      "synth_ms": 1529.3,
+      "audio_s": 1.768,
+      "rtf": 0.865,
+      "peak": 0.2731,
+      "rms": 0.0551,
+      "f0_median": 210.5,
+      "f0_iqr": [
+        186.0,
+        242.4
+      ],
+      "centroid_hz": 2446.1,
+      "switch": true,
+      "play_start_s": 10.46
+    },
+    {
+      "index": 7,
+      "blockIndex": 4,
+      "type": "DIALOGUE",
+      "speakerId": "UNKNOWN",
+      "sid": 0,
+      "voice": "Heart",
+      "text": "\"He's right here.\"",
+      "chars": 18,
+      "synth_ms": 1037.2,
+      "audio_s": 0.881,
+      "rtf": 1.177,
+      "peak": 0.3935,
+      "rms": 0.0633,
+      "f0_median": 224.3,
+      "f0_iqr": [
+        164.4,
+        242.4
+      ],
+      "centroid_hz": 3155.9,
+      "switch": true,
+      "play_start_s": 12.477
+    },
+    {
+      "index": 8,
+      "blockIndex": 5,
+      "type": "NARRATION",
+      "speakerId": "NARRATOR",
+      "sid": 0,
+      "voice": "Heart",
+      "text": "The marshal's hand moved to his holster.",
+      "chars": 40,
+      "synth_ms": 1744.3,
+      "audio_s": 2.202,
+      "rtf": 0.792,
+      "peak": 0.3041,
+      "rms": 0.0486,
+      "f0_median": 194.3,
+      "f0_iqr": [
+        173.9,
+        220.7
+      ],
+      "centroid_hz": 3726.6,
+      "switch": true,
+      "play_start_s": 13.608
+    },
+    {
+      "index": 9,
+      "blockIndex": 5,
+      "type": "DIALOGUE",
+      "speakerId": "marshal-rennick",
+      "sid": 5,
+      "voice": "Adam",
+      "text": "\"Tomas. I told you to wait outside.\"",
+      "chars": 36,
+      "synth_ms": 1126.6,
+      "audio_s": 1.436,
+      "rtf": 0.784,
+      "peak": 0.5114,
+      "rms": 0.0802,
+      "f0_median": 124.4,
+      "f0_iqr": [
+        105.7,
+        142.4
+      ],
+      "centroid_hz": 2550.0,
+      "switch": true,
+      "play_start_s": 16.061
+    },
+    {
+      "index": 10,
+      "blockIndex": 6,
+      "type": "NARRATION",
+      "speakerId": "NARRATOR",
+      "sid": 0,
+      "voice": "Heart",
+      "text": "The young man stepped in, rain dripping from his sleeves.",
+      "chars": 57,
+      "synth_ms": 3004.0,
+      "audio_s": 3.259,
+      "rtf": 0.922,
+      "peak": 0.3358,
+      "rms": 0.0534,
+      "f0_median": 200.0,
+      "f0_iqr": [
+        175.2,
+        240.0
+      ],
+      "centroid_hz": 3022.4,
+      "switch": true,
+      "play_start_s": 17.747
+    },
+    {
+      "index": 11,
+      "blockIndex": 6,
+      "type": "DIALOGUE",
+      "speakerId": "tomas",
+      "sid": 6,
+      "voice": "Michael",
+      "text": "\"And I told you I wouldn't.\"",
+      "chars": 28,
+      "synth_ms": 1244.4,
+      "audio_s": 1.479,
+      "rtf": 0.841,
+      "peak": 0.2913,
+      "rms": 0.0502,
+      "f0_median": 115.4,
+      "f0_iqr": [
+        107.9,
+        144.1
+      ],
+      "centroid_hz": 2556.1,
+      "switch": true,
+      "play_start_s": 21.256
+    },
+    {
+      "index": 12,
+      "blockIndex": 7,
+      "type": "NARRATION",
+      "speakerId": "NARRATOR",
+      "sid": 0,
+      "voice": "Heart",
+      "text": "Mara looked from one man to the other.",
+      "chars": 38,
+      "synth_ms": 1773.7,
+      "audio_s": 2.137,
+      "rtf": 0.83,
+      "peak": 0.3506,
+      "rms": 0.0522,
+      "f0_median": 192.0,
+      "f0_iqr": [
+        170.2,
+        235.3
+      ],
+      "centroid_hz": 3257.9,
+      "switch": true,
+      "play_start_s": 22.985
+    },
+    {
+      "index": 13,
+      "blockIndex": 7,
+      "type": "DIALOGUE",
+      "speakerId": "mara",
+      "sid": 1,
+      "voice": "Bella",
+      "text": "\"If you two are finished, there's a body in the stable.\"",
+      "chars": 56,
+      "synth_ms": 2488.8,
+      "audio_s": 2.795,
+      "rtf": 0.891,
+      "peak": 0.3055,
+      "rms": 0.0505,
+      "f0_median": 206.0,
+      "f0_iqr": [
+        184.6,
+        237.6
+      ],
+      "centroid_hz": 4121.3,
+      "switch": true,
+      "play_start_s": 25.372
+    },
+    {
+      "index": 14,
+      "blockIndex": 8,
+      "type": "NARRATION",
+      "speakerId": "NARRATOR",
+      "sid": 0,
+      "voice": "Heart",
+      "text": "Rennick turned to her.",
+      "chars": 22,
+      "synth_ms": 1302.5,
+      "audio_s": 1.294,
+      "rtf": 1.007,
+      "peak": 0.3546,
+      "rms": 0.057,
+      "f0_median": 212.4,
+      "f0_iqr": [
+        157.9,
+        240.0
+      ],
+      "centroid_hz": 3788.5,
+      "switch": true,
+      "play_start_s": 28.417
+    },
+    {
+      "index": 15,
+      "blockIndex": 8,
+      "type": "DIALOGUE",
+      "speakerId": "marshal-rennick",
+      "sid": 5,
+      "voice": "Adam",
+      "text": "\"Whose?\"",
+      "chars": 8,
+      "synth_ms": 206.5,
+      "audio_s": 0.183,
+      "rtf": 1.13,
+      "peak": 0.6617,
+      "rms": 0.0773,
+      "f0_median": 109.6,
+      "f0_iqr": [
+        104.3,
+        118.2
+      ],
+      "centroid_hz": 1652.4,
+      "switch": true,
+      "play_start_s": 29.961
+    },
+    {
+      "index": 16,
+      "blockIndex": 9,
+      "type": "DIALOGUE",
+      "speakerId": "UNKNOWN",
+      "sid": 0,
+      "voice": "Heart",
+      "text": "\"Mine,\"",
+      "chars": 7,
+      "synth_ms": 385.7,
+      "audio_s": 0.343,
+      "rtf": 1.124,
+      "peak": 0.1652,
+      "rms": 0.0241,
+      "f0_median": 201.7,
+      "f0_iqr": [
+        192.0,
+        208.7
+      ],
+      "centroid_hz": 2146.8,
+      "switch": true,
+      "play_start_s": 30.393
+    },
+    {
+      "index": 17,
+      "blockIndex": 9,
+      "type": "NARRATION",
+      "speakerId": "NARRATOR",
+      "sid": 0,
+      "voice": "Heart",
+      "text": "said a voice from the yard.",
+      "chars": 27,
+      "synth_ms": 1446.0,
+      "audio_s": 1.681,
+      "rtf": 0.86,
+      "peak": 0.2973,
+      "rms": 0.0529,
+      "f0_median": 181.8,
+      "f0_iqr": [
+        170.2,
+        231.4
+      ],
+      "centroid_hz": 3695.8,
+      "switch": true,
+      "play_start_s": 30.986
+    }
+  ]
+}

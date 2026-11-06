@@ -1,0 +1,24 @@
+appId: app.novelspeak
+name: "20 library delete: a single row asks before removing"
+tags:
+  - library
+  - regression
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Shortcut Library"
+- extendedWaitUntil:
+    visible: "Search library"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "Prefetch regression"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Delete entry: Prefetch regression"
+- assertVisible: "Remove from library?"
+- tapOn: "Cancel"
+- assertVisible: "Prefetch regression"

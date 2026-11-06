@@ -65,6 +65,12 @@ import android.widget.TextView
 import android.widget.Toast
 import app.novelspeak.adblock.UrlTools
 import android.os.SystemClock
+import app.novelspeak.cast.CastBlock
+import app.novelspeak.cast.CastChunker
+import app.novelspeak.cast.CastCoordinator
+import app.novelspeak.cast.CastIds
+import app.novelspeak.cast.CastMember
+import app.novelspeak.cast.LineFix
 import app.novelspeak.library.BookmarkStore
 import app.novelspeak.library.ImportedBook
 import app.novelspeak.library.ImportedBookStore
@@ -99,18 +105,28 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var suggestionsPopup: PopupWindow
     private lateinit var suggestionsPanel: LinearLayout
     private lateinit var notificationHint: TextView
-    private lateinit var titleView: TextView
-    private lateinit var adblockView: TextView
+    private lateinit var chapterTitleView: TextView
+    private lateinit var adblockView: FrameLayout
+    private lateinit var adblockGlyph: GlyphView
     private lateinit var statusView: TextView
     private lateinit var progressView: TextView
     private lateinit var speedView: TextView
     private lateinit var engineChip: TextView
     private lateinit var voiceView: TextView
+    private lateinit var speakerView: TextView
+    private lateinit var castButton: TextView
+    private var storyBlocks: List<Reader.Block> = emptyList()
+    private var lastUnresolved = 0
+    private val castCoordinator by lazy {
+        CastCoordinator(NovelSpeakApp.instance.castStore)
+    }
+    private lateinit var voicePreview: VoicePreview
     private lateinit var dotView: View
     private lateinit var seekBar: SeekBar
     private lateinit var playButton: FrameLayout
     private lateinit var playGlyph: GlyphView
-    private lateinit var readerBtn: TextView
+    private lateinit var readerBtn: FrameLayout
+    private lateinit var readerGlyph: GlyphView
     private lateinit var backButton: FrameLayout
     private lateinit var forwardButton: FrameLayout
 
@@ -133,13 +149,23 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private lateinit var contentRow: LinearLayout
     private lateinit var playerCard: LinearLayout
+    private lateinit var miniPlayer: LinearLayout
+    private lateinit var miniStatus: TextView
+    private lateinit var miniMeta: TextView
+    private lateinit var miniPlayButton: FrameLayout
+    private lateinit var miniPlayGlyph: GlyphView
+    private lateinit var miniProgress: ProgressBar
+    private var playerCollapsed = false
     private lateinit var readChapterButton: TextView
     private lateinit var nextChapterButton: TextView
     private lateinit var pageHolder: FrameLayout
     private lateinit var homeView: ScrollView
+    private lateinit var homeColumn: LinearLayout
     private lateinit var homeContinue: LinearLayout
-    private lateinit var titleRow: LinearLayout
+    private lateinit var homeTopSpacer: Space
     private var homeVisible = false
+    private var shieldBlocked = 0
+    private var shieldHidden = 0
 
     private data class HomeShortcut(
         val label: String,
@@ -155,7 +181,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val url: String?,
         val importId: String?,
         val position: Int,
-        val updatedAt: Long
+        val updatedAt: Long,
+        val percent: Int = 0
     )
 
     private val homeShortcuts = listOf(
@@ -228,6 +255,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         // extraction can see prefs/loading state instead of racing app startup.
         AdBlocker.init(applicationContext)
         applyWindowTheme()
+        voicePreview = VoicePreview(this, NovelSpeakApp.instance.prefs)
         buildUi()
         configureWebView()
         reader.addListener(this)
@@ -266,9 +294,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        backButton = iconButton(Glyph.BACK, "Back", 40) { navigateBack() }
-        forwardButton = iconButton(Glyph.FORWARD, "Forward", 40) { navigateForward() }
-        reloadButton = iconButton(Glyph.RELOAD, "Reload", 40) {
+        backButton = iconButton(Glyph.BACK, "Back", Design.TOUCH_DP) { navigateBack() }
+        forwardButton = iconButton(Glyph.FORWARD, "Forward", Design.TOUCH_DP) { navigateForward() }
+        // Phones trade the forward arrow for a readable address; Forward stays in the menu.
+        if (resources.configuration.screenWidthDp < 600) forwardButton.visibility = View.GONE
+        reloadButton = iconButton(Glyph.RELOAD, "Reload", Design.TOUCH_DP) {
             if (pageLoading) stopLoading() else web.reload()
         }
         reloadGlyph = reloadButton.getChildAt(0) as GlyphView
@@ -278,8 +308,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         topBar.addView(navCluster)
 
         addressBox = FrameLayout(this).apply {
-            background = rounded(Palette.SURFACE_HIGH, 21)
-            layoutParams = LinearLayout.LayoutParams(0, dp(42), 1f).apply {
+            background = rounded(Palette.SURFACE_HIGH, 23)
+            minimumHeight = dp(46)
+            layoutParams = LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
+            ).apply {
                 marginStart = dp(2)
                 marginEnd = dp(6)
             }
@@ -292,7 +325,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         urlDisplayRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), 0, dp(10), 0)
+            setPadding(dp(12), 0, dp(4), 0)
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -318,6 +351,43 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         urlDisplayRow.addView(urlDisplay)
+
+        // Reader and ad-block controls live inside the address pill. This removes the second
+        // chrome row entirely; both actions stay one tap away and keep 44 dp targets.
+        readerBtn = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(Design.DENSE_TOUCH_DP), dp(Design.DENSE_TOUCH_DP))
+                .apply { marginStart = dp(2) }
+            background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
+            contentDescription = "Turn reader mode on"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { toggleReader() }
+        }
+        readerGlyph = GlyphView(this, Glyph.BOOK, Palette.TEXT)
+        readerBtn.addView(
+            readerGlyph,
+            FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+        )
+        readerGlyph.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        urlDisplayRow.addView(readerBtn)
+
+        adblockView = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(Design.DENSE_TOUCH_DP), dp(Design.DENSE_TOUCH_DP))
+                .apply { marginStart = dp(2) }
+            background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
+            contentDescription = "Ad blocking and site settings"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { showSiteDialog() }
+        }
+        adblockGlyph = GlyphView(this, Glyph.SHIELD, Palette.MUTED)
+        adblockView.addView(
+            adblockGlyph,
+            FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+        )
+        adblockGlyph.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        urlDisplayRow.addView(adblockView)
+
         addressBox.addView(urlDisplayRow)
 
         urlBar = EditText(this).apply {
@@ -414,7 +484,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         topBar.addView(cancelEdit)
 
-        overflowButton = iconButton(Glyph.MORE, "More options", 40) {
+        homeTopSpacer = Space(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+            visibility = View.GONE
+        }
+        topBar.addView(homeTopSpacer)
+        overflowButton = iconButton(Glyph.MORE, "More options", Design.TOUCH_DP) {
             showOverflowMenu()
         }
         topBar.addView(overflowButton)
@@ -456,41 +531,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             setOnDismissListener { suggestionsPanel.removeAllViews() }
         }
 
-        // ---- chapter title + reader toggle ----
-        titleRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), 0, dp(10), dp(6))
-        }
-        titleView = TextView(this).apply {
-            text = "NovelSpeak"
-            textSize = 13f
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(Palette.TEXT)
-            maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        titleRow.addView(titleView)
-        adblockView = TextView(this).apply {
-            textSize = 10f
-            setTextColor(Palette.MUTED)
-            setPadding(dp(8), dp(4), dp(8), dp(4))
-            isClickable = true
-            isFocusable = true
-            contentDescription = "Ad blocking and site settings"
-            setOnClickListener { showSiteDialog() }
-        }
-        titleRow.addView(adblockView)
-        readerBtn = textButton("Reader", primary = false, widthDp = 0, heightDp = 32) {
-            toggleReader()
-        }.apply {
-            textSize = 11f
-            setPadding(dp(12), 0, dp(12), 0)
-        }
-        titleRow.addView(readerBtn)
-        root.addView(titleRow)
-
         wallBanner = TextView(this).apply {
             textSize = 12f
             setTextColor(Palette.BG)
@@ -531,6 +571,17 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             }
         }
 
+        // The chapter title belongs to the reading surface, not a second chrome row.
+        chapterTitleView = TextView(this).apply {
+            textSize = 11.5f
+            setTextColor(Palette.MUTED)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(dp(2), 0, 0, dp(2))
+            visibility = View.GONE
+        }
+        card.addView(chapterTitleView)
+
         val statusRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -542,10 +593,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         statusRow.addView(dotView)
         statusView = TextView(this).apply {
             text = "Open a chapter, then tap Read"
-            textSize = 13f
+            textSize = 14f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.TEXT)
-            maxLines = 1
+            maxLines = if (resources.configuration.fontScale >= 1.5f) 2 else 1
             ellipsize = TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
@@ -559,19 +610,45 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             visibility = View.GONE
         }
         statusRow.addView(engineChip)
+        val collapse = TextView(this).apply {
+            text = "▾"
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setTextColor(Palette.MUTED)
+            background = ripple(Palette.SURFACE_HIGH, 24, oval = true)
+            layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP))
+                .apply { marginStart = dp(6) }
+            contentDescription = "Collapse player"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { setPlayerCollapsed(true) }
+        }
+        statusRow.addView(collapse)
         card.addView(statusRow)
 
         voiceView = TextView(this).apply {
             text = ""
-            textSize = 10.5f
+            textSize = 12f
             setTextColor(Palette.MUTED)
             setPadding(dp(2), dp(2), 0, 0)
-            maxLines = 1
+            maxLines = if (resources.configuration.fontScale >= 1.5f) 2 else 1
             ellipsize = TextUtils.TruncateAt.END
             contentDescription = "Current voice"
             visibility = View.GONE
         }
         card.addView(voiceView)
+
+        speakerView = TextView(this).apply {
+            text = ""
+            textSize = 12f
+            setTextColor(Palette.ACCENT)
+            setPadding(dp(2), 0, 0, 0)
+            maxLines = if (resources.configuration.fontScale >= 1.5f) 2 else 1
+            ellipsize = TextUtils.TruncateAt.END
+            visibility = View.GONE
+            contentDescription = "Current speaker"
+        }
+        card.addView(speakerView)
 
         val progressRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -634,54 +711,81 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(4), 0, 0)
         }
-        readChapterButton = textButton("Read", primary = false, widthDp = 0, heightDp = 38) {
+        readChapterButton = textButton("Read", primary = false, widthDp = 0, heightDp = Design.DENSE_TOUCH_DP) {
             restartReading()
         }
         readChapterButton.contentDescription = "Read chapter"
         actionsRow.addView(readChapterButton)
-        nextChapterButton = textButton("Next ch", primary = false, widthDp = 0, heightDp = 38) {
+        nextChapterButton = textButton("Next ch", primary = false, widthDp = 0, heightDp = Design.DENSE_TOUCH_DP) {
             loadNextChapter()
         }
         nextChapterButton.contentDescription = "Next chapter"
         actionsRow.addView(nextChapterButton)
-        actionsRow.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
-        actionsRow.addView(iconButton(Glyph.MINUS, "Slower", 34) { bumpSpeed(-0.05f) })
-        speedView = TextView(this).apply {
-            text = "1.00×"
-            textSize = 13f
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(Palette.TEXT)
-            gravity = Gravity.CENTER
-            minWidth = dp(54)
+        castButton = textButton("Cast", primary = false, widthDp = 0, heightDp = Design.DENSE_TOUCH_DP) {
+            toggleStoryCast()
+        }.apply {
+            textSize = 11f
+            contentDescription = "Story cast"
+            setOnLongClickListener {
+                showCastDialog()
+                true
+            }
         }
-        actionsRow.addView(speedView)
-        actionsRow.addView(iconButton(Glyph.PLUS, "Faster", 34) { bumpSpeed(0.05f) })
-        card.addView(actionsRow)
+        actionsRow.addView(castButton)
+        val speedGroup = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(iconButton(Glyph.MINUS, "Slower", 40) { bumpSpeed(-0.05f) })
+            speedView = TextView(this@MainActivity).apply {
+                text = "1.00×"
+                textSize = 14f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                setTextColor(Palette.TEXT)
+                gravity = Gravity.CENTER
+                minWidth = dp(54)
+            }
+            addView(speedView)
+            addView(iconButton(Glyph.PLUS, "Faster", 40) { bumpSpeed(0.05f) })
+        }
+        if (resources.configuration.fontScale >= 1.2f) {
+            // At 1.3x/2x the labels and speed chip no longer share a 411 dp row without
+            // clipping the "+" control. Keep the three reading actions and move speed below.
+            actionsRow.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
+            card.addView(actionsRow)
+            card.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dp(2), 0, 0)
+                addView(Space(this@MainActivity), LinearLayout.LayoutParams(0, 1, 1f))
+                addView(speedGroup)
+            })
+        } else {
+            actionsRow.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
+            actionsRow.addView(speedGroup)
+            card.addView(actionsRow)
+        }
 
         val transportRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             setPadding(0, dp(6), 0, 0)
         }
-        transportRow.addView(iconButton(Glyph.PREV, "Previous sentence", 44) {
+        transportRow.addView(iconButton(Glyph.PREV, "Previous sentence", Design.TOUCH_DP) {
             cancelAutoAdvance()
             reader.prevSentence()
         })
         playButton = iconButton(
             Glyph.PLAY, "Play", 56, Palette.ACCENT, Palette.BG, oval = true
         ) {
-            if (reader.hasContent()) {
-                AppPermissions.requestNotificationsOnce(this)
-            }
-            reader.toggle()
+            togglePlayback()
         }
         playGlyph = playButton.getChildAt(0) as GlyphView
         transportRow.addView(playButton)
-        transportRow.addView(iconButton(Glyph.NEXT, "Next sentence", 44) {
+        transportRow.addView(iconButton(Glyph.NEXT, "Next sentence", Design.TOUCH_DP) {
             cancelAutoAdvance()
             reader.nextSentence()
         })
-        transportRow.addView(iconButton(Glyph.STOP, "Stop", 40) {
+        transportRow.addView(iconButton(Glyph.STOP, "Stop", Design.DENSE_TOUCH_DP) {
             cancelAutoAdvance()
             reader.stop()
         })
@@ -723,6 +827,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             contentRow,
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
         )
+        miniPlayer = buildMiniPlayer()
+        root.addView(
+            miniPlayer,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(dp(8), 0, dp(8), dp(6)) }
+        )
         applyAdaptiveLayout()
 
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -758,6 +869,105 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     // ---- Home / new tab -----------------------------------------------------
 
+    /** A 3 dp progress track with an accent fill; zero and 100 render correctly. */
+    private fun progressTrack(percent: Int): LinearLayout {
+        val p = percent.coerceIn(0, 100)
+        val track = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            background = rounded(Palette.SURFACE_HIGH, 2)
+        }
+        if (p > 0) {
+            track.addView(View(this).apply { background = rounded(Palette.ACCENT, 2) },
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, p.toFloat()))
+        }
+        if (p < 100) {
+            track.addView(View(this),
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, (100 - p).toFloat()))
+        }
+        return track
+    }
+
+    /**
+     * 56 dp collapsed player. It keeps status, transport and sentence progress while returning
+     * the rest of the card's height to the page. Tapping the text or the chevron expands.
+     */
+    private fun buildMiniPlayer(): LinearLayout {
+        val bar = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = roundedStroke(Palette.SURFACE, 16, Palette.BORDER, 1)
+            setPadding(dp(12), dp(8), dp(8), dp(8))
+            visibility = View.GONE
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Mini player"
+            setOnClickListener { setPlayerCollapsed(false) }
+        }
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        miniStatus = TextView(this).apply {
+            text = "Open a chapter, then tap Read"
+            textSize = 13f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+            maxLines = if (resources.configuration.fontScale >= 1.5f) 2 else 1
+            ellipsize = TextUtils.TruncateAt.END
+        }
+        texts.addView(miniStatus)
+        miniMeta = TextView(this).apply {
+            text = ""
+            textSize = 11f
+            setTextColor(Palette.MUTED)
+            maxLines = if (resources.configuration.fontScale >= 1.5f) 2 else 1
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, dp(1), 0, 0)
+        }
+        texts.addView(miniMeta)
+        row.addView(texts)
+
+        miniPlayButton = iconButton(
+            Glyph.PLAY, "Play", 48, Palette.ACCENT, Palette.BG, oval = true
+        ) { togglePlayback() }
+        miniPlayGlyph = miniPlayButton.getChildAt(0) as GlyphView
+        row.addView(miniPlayButton)
+
+        val expand = TextView(this).apply {
+            text = "▴"
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setTextColor(Palette.MUTED)
+            background = ripple(Palette.SURFACE_HIGH, 20, oval = true)
+            layoutParams = LinearLayout.LayoutParams(dp(Design.DENSE_TOUCH_DP), dp(Design.DENSE_TOUCH_DP))
+                .apply { marginStart = dp(4) }
+            contentDescription = "Expand player"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { setPlayerCollapsed(false) }
+        }
+        row.addView(expand)
+        bar.addView(row)
+
+        miniProgress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100
+            progress = 0
+            isIndeterminate = false
+            progressTintList = ColorStateList.valueOf(Palette.ACCENT)
+            progressBackgroundTintList = ColorStateList.valueOf(Palette.BORDER)
+            minimumHeight = dp(3)
+            setPadding(0, 0, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(3)
+            ).apply { topMargin = dp(6) }
+        }
+        bar.addView(miniProgress)
+        return bar
+    }
+
     private fun buildHomeView(): ScrollView {
         val scroll = ScrollView(this).apply {
             isFillViewport = true
@@ -767,13 +977,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         val col = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(24), dp(24), dp(24))
+            setPadding(0, dp(Design.SPACE_XL), 0, dp(Design.SPACE_XL))
         }
+        homeColumn = col
 
         // Wordmark: quiet serif display with one warm rule. Deliberately not a browser clone.
         col.addView(TextView(this).apply {
             text = "NovelSpeak"
-            textSize = 34f
+            textSize = 32f
             typeface = Typeface.create("serif", Typeface.BOLD)
             setTextColor(Palette.TEXT)
             letterSpacing = -0.01f
@@ -818,10 +1029,16 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         col.addView(search)
 
         col.addView(homeSectionTitle("Shortcuts"))
-        for (row in 0 until 2) {
+        // At 2x a four-column grid truncates every site name. Two columns keep the labels
+        // readable and still fits all eight shortcuts without scrolling.
+        val columns = if (resources.configuration.fontScale >= 1.5f) 2 else 4
+        val rowCount = (homeShortcuts.size + columns - 1) / columns
+        for (row in 0 until rowCount) {
             val rowView = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            for (i in 0 until 4) {
-                val shortcut = homeShortcuts[row * 4 + i]
+            for (i in 0 until columns) {
+                val index = row * columns + i
+                if (index >= homeShortcuts.size) break
+                val shortcut = homeShortcuts[index]
                 rowView.addView(
                     homeShortcutCell(shortcut),
                     LinearLayout.LayoutParams(
@@ -870,22 +1087,35 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         })
 
         scroll.addView(col)
+        applyHomeWidth()
         return scroll
+    }
+
+    /**
+     * Center the Home column inside a 720 dp measure on tablets while keeping the phone's
+     * familiar 20 dp gutters. The ScrollView stays full-width; only its child's padding changes.
+     */
+    private fun applyHomeWidth() {
+        if (!::homeColumn.isInitialized) return
+        val widthDp = resources.configuration.screenWidthDp
+        val pad = dp(Design.contentPadding(widthDp))
+        homeColumn.setPadding(pad, dp(Design.SPACE_XL), pad, dp(Design.SPACE_XL))
     }
 
     private fun homeSectionTitle(label: String): TextView = TextView(this).apply {
         text = label
-        textSize = 13f
+        textSize = 11.5f
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        letterSpacing = 0.08f
         setTextColor(Palette.MUTED)
-        setPadding(0, dp(24), 0, dp(8))
+        setPadding(0, dp(Design.SPACE_XL), 0, dp(Design.SPACE_SM))
     }
 
     private fun homeShortcutCell(shortcut: HomeShortcut): LinearLayout =
         LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(0, dp(8), 0, dp(8))
+            setPadding(0, dp(6), 0, dp(6))
             isClickable = true
             isFocusable = true
             contentDescription = "Shortcut " + shortcut.label
@@ -898,16 +1128,16 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 }
             }
             addView(FrameLayout(this@MainActivity).apply {
-                // Chrome-style light plate so site icons keep their own colors on the dark tab.
-                background = ripple(Palette.ICON_PLATE, 28, oval = true)
-                layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
+                // Soft light plate so site icons keep their own colors on the dark tab.
+                background = ripple(Palette.PLATE, 25, oval = true)
+                layoutParams = LinearLayout.LayoutParams(dp(50), dp(50))
                 val icon = loadHomeIcon(shortcut.iconAsset)
                 if (icon != null) {
                     addView(ImageView(this@MainActivity).apply {
                         setImageBitmap(icon)
                         scaleType = ImageView.ScaleType.FIT_CENTER
                         importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-                    }, FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER))
+                    }, FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER))
                 } else {
                     addView(TextView(this@MainActivity).apply {
                         text = shortcut.monogram
@@ -922,12 +1152,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             })
             addView(TextView(this@MainActivity).apply {
                 text = shortcut.label
-                textSize = 11f
+                textSize = 12f
                 setTextColor(Palette.MUTED)
                 gravity = Gravity.CENTER
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
-                setPadding(0, dp(6), 0, 0)
+                setPadding(0, dp(Design.SPACE_SM), 0, 0)
             })
         }
 
@@ -951,7 +1181,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                             url = e.url,
                             importId = null,
                             position = e.sentenceIndex,
-                            updatedAt = e.updatedAt
+                            updatedAt = e.updatedAt,
+                            percent = e.percent
                         )
                     )
                 }
@@ -969,7 +1200,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                             url = null,
                             importId = b.id,
                             position = b.position,
-                            updatedAt = b.updatedAt
+                            updatedAt = b.updatedAt,
+                            percent = b.percent
                         )
                     )
                 }
@@ -989,8 +1221,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         for (item in top) {
             homeContinue.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                background = rippleStroke(Palette.SURFACE, 14, Palette.BORDER)
-                setPadding(dp(14), dp(12), dp(14), dp(12))
+                background = rippleStroke(Palette.SURFACE, Design.RADIUS_MD, Palette.BORDER)
+                setPadding(dp(Design.SPACE_LG), dp(14), dp(Design.SPACE_LG), dp(14))
                 isClickable = true
                 isFocusable = true
                 contentDescription = "Continue reading: " + item.title
@@ -1011,7 +1243,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 }
                 addView(TextView(this@MainActivity).apply {
                     text = item.title
-                    textSize = 14.5f
+                    textSize = 15f
                     typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                     setTextColor(Palette.TEXT)
                     maxLines = 2
@@ -1023,8 +1255,81 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     setTextColor(Palette.MUTED)
                     setPadding(0, dp(3), 0, 0)
                 })
+                addView(LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(0, dp(10), 0, 0)
+                    addView(
+                        progressTrack(item.percent),
+                        LinearLayout.LayoutParams(0, dp(3), 1f)
+                    )
+                    addView(TextView(this@MainActivity).apply {
+                        text = "›"
+                        textSize = 16f
+                        setTextColor(Palette.FAINT)
+                        gravity = Gravity.CENTER
+                        setPadding(dp(10), 0, 0, 0)
+                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                    })
+                })
             })
         }
+    }
+
+    private fun togglePlayback() {
+        if (reader.hasContent()) AppPermissions.requestNotificationsOnce(this)
+        reader.toggle()
+    }
+
+    private fun setPlayerCollapsed(collapsed: Boolean) {
+        if (collapsed && !reader.hasContent()) {
+            Toast.makeText(this, "Open a chapter first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        playerCollapsed = collapsed
+        applyPlayerVisibility()
+    }
+
+    /**
+     * Single source of truth for the full card vs the collapsed bar.
+     *
+     * On Home the player only appears while audio is playing (the existing rule); in the reader it
+     * stays reachable whether paused or playing. The bar is only shown when there is content, so
+     * collapsing never strands the user without an expand affordance.
+     */
+    private fun applyPlayerVisibility() {
+        if (!::playerCard.isInitialized || !::miniPlayer.isInitialized) return
+        val state = reader.state()
+        val hasContent = state.total > 0
+        val showCard = PlayerChrome.showCard(playerCollapsed, homeVisible, state.playing)
+        val showMini = PlayerChrome.showMini(
+            playerCollapsed, homeVisible, state.playing, hasContent
+        )
+        playerCard.visibility = if (showCard) View.VISIBLE else View.GONE
+        miniPlayer.visibility = if (showMini) View.VISIBLE else View.GONE
+        if (showMini) updateMiniPlayer(state)
+    }
+
+    private fun updateMiniPlayer(state: Reader.State) {
+        if (!::miniStatus.isInitialized) return
+        miniStatus.text = state.status
+        val speaker = state.speaker
+        miniMeta.text = when {
+            speaker.isNotEmpty() && speaker != CastIds.NARRATOR -> "Speaking · " + speaker
+            state.title.isNotEmpty() -> state.title
+            else -> currentVoiceLabel(state)
+        }
+        miniPlayGlyph.glyph = if (state.playing) Glyph.PAUSE else Glyph.PLAY
+        miniPlayGlyph.invalidate()
+        miniPlayButton.contentDescription = if (state.playing) "Pause" else "Play"
+        val total = state.total
+        miniProgress.progress = if (total > 0) {
+            ((state.cursor + 1) * 100 / total).coerceIn(0, 100)
+        } else {
+            0
+        }
+        miniPlayer.contentDescription =
+            "Mini player, " + state.status + ". Tap to expand."
     }
 
     private fun showHome() {
@@ -1034,19 +1339,25 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         hideImportedMode()
         homeVisible = true
         refreshHome()
+        applyHomeWidth()
+        if (::homeTopSpacer.isInitialized) homeTopSpacer.visibility = View.VISIBLE
         homeView.visibility = View.VISIBLE
-        homeView.alpha = 0f
-        homeView.translationY = dp(12).toFloat()
-        homeView.animate().alpha(1f).translationY(0f).setDuration(220L).start()
+        val animateHome = MotionAndroid.animationsEnabled(this)
+        DiagLog.line(this, "home shown motion=$animateHome")
+        homeView.animate().cancel()
+        homeView.alpha = if (animateHome) 0f else 1f
+        homeView.translationY = if (animateHome) dp(12).toFloat() else 0f
+        if (animateHome) {
+            homeView.animate().alpha(1f).translationY(0f)
+                .setDuration(Motion.durationMs(Design.MOTION_NORMAL, 1f)).start()
+        }
         web.visibility = View.GONE
-        titleRow.visibility = View.GONE
         navCluster.visibility = View.GONE
         addressBox.visibility = View.GONE
         cancelEdit.visibility = View.GONE
         // The player bar only appears on Home while audio is actually playing; otherwise
         // the tab gets the full height (like a browser new-tab page).
-        playerCard.visibility = if (reader.state().playing) View.VISIBLE else View.GONE
-        titleView.text = "NovelSpeak"
+        applyPlayerVisibility()
         updateAddressDisplay(null)
         DiagLog.line(this, "home shown")
     }
@@ -1056,10 +1367,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         homeVisible = false
         if (homeView.visibility == View.VISIBLE) homeView.visibility = View.GONE
         web.visibility = View.VISIBLE
-        if (::titleRow.isInitialized) titleRow.visibility = View.VISIBLE
-        if (::playerCard.isInitialized) playerCard.visibility = View.VISIBLE
+        applyPlayerVisibility()
         if (::navCluster.isInitialized) navCluster.visibility = View.VISIBLE
         if (::addressBox.isInitialized) addressBox.visibility = View.VISIBLE
+        if (::homeTopSpacer.isInitialized) homeTopSpacer.visibility = View.GONE
     }
 
     /** Two-pane layout above 600dp (tablets, landscape phones); single column otherwise. */
@@ -1108,6 +1419,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         applyAdaptiveLayout()
+        applyHomeWidth()
     }
 
     /** Keep the browser bar below the status bar and the player card above the nav bar. */
@@ -1178,6 +1490,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 setReloadGlyph(true)
                 if (!editingUrl) updateAddressDisplay(url)
                 updateNavButtons()
+                updateReaderButton()
                 cancelPrefetch()
                 AdBlocker.onPageStarted(url ?: "")
                 updateShield()
@@ -1225,7 +1538,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     NovelSpeakApp.instance.prefs.rememberUrl(url)
                     if (!editingUrl) updateAddressDisplay(url)
                 }
-                titleView.text = view?.title ?: ""
+                val pageTitle = view?.title ?: ""
+                chapterTitleView.text = pageTitle
+                chapterTitleView.visibility = if (pageTitle.isEmpty()) View.GONE else View.VISIBLE
                 getSharedPreferences("novelspeak", MODE_PRIVATE).edit()
                     .putString("last_url", url ?: "").apply()
                 updateNavButtons()
@@ -1359,6 +1674,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             val canForward = web.canGoForward()
             forwardButton.isEnabled = canForward
             forwardButton.alpha = if (canForward) 1f else 0.35f
+            // On phones the forward arrow would leave no room for the address now that
+            // Reader and the shield live inside the pill; it stays in the overflow menu.
+            forwardButton.visibility = if (canForward && resources.configuration.screenWidthDp >= 600) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
         } catch (e: Throwable) {
         }
     }
@@ -1557,45 +1879,69 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     private fun showOverflowMenu() {
+        val items = ArrayList<Pair<Int, String>>()
+        items.add(MENU_HOME to "Home")
+        if (web.canGoForward()) items.add(MENU_FORWARD to "Forward")
+        items.addAll(listOf(
+            MENU_RELOAD to "Reload",
+            MENU_COPY to "Copy link",
+            MENU_SHARE to "Share link",
+            MENU_EXTERNAL to "Open in browser",
+            MENU_SITE to "Site settings",
+            MENU_IMPORT to "Import EPUB or PDF",
+            MENU_BOOKMARK to "Bookmark sentence",
+            MENU_SLEEP to "Sleep timer",
+            MENU_LIBRARY to "Library",
+            MENU_TRANSLATE to "Translate page",
+            MENU_CONTINUE to "Continue reading",
+            MENU_SETTINGS to "NovelSpeak settings",
+            MENU_PRIVACY to "About & privacy"
+        ))
+        if (resources.configuration.fontScale >= 1.5f) {
+            // A PopupMenu is anchored and cannot scroll; at 2x its last items fall off the
+            // screen. A list dialog keeps the whole menu reachable.
+            AlertDialog.Builder(this)
+                .setTitle("Menu")
+                .setItems(items.map { it.second }.toTypedArray()) { _, which ->
+                    handleOverflow(items[which].first)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+            return
+        }
         val popup = PopupMenu(this, overflowButton)
-        popup.menu.add(0, MENU_HOME, 0, "Home")
-        popup.menu.add(0, MENU_RELOAD, 1, "Reload")
-        popup.menu.add(0, MENU_COPY, 2, "Copy link")
-        popup.menu.add(0, MENU_SHARE, 3, "Share link")
-        popup.menu.add(0, MENU_EXTERNAL, 4, "Open in browser")
-        popup.menu.add(0, MENU_SITE, 5, "Site settings")
-        popup.menu.add(0, MENU_IMPORT, 6, "Import EPUB or PDF")
-        popup.menu.add(0, MENU_BOOKMARK, 7, "Bookmark sentence")
-        popup.menu.add(0, MENU_SLEEP, 8, "Sleep timer")
-        popup.menu.add(0, MENU_LIBRARY, 9, "Library")
-        popup.menu.add(0, MENU_TRANSLATE, 10, "Translate page")
-        popup.menu.add(0, MENU_CONTINUE, 11, "Continue reading")
-        popup.menu.add(0, MENU_SETTINGS, 12, "NovelSpeak settings")
-        popup.menu.add(0, MENU_PRIVACY, 13, "About & privacy")
+        items.forEachIndexed { index, (id, label) ->
+            popup.menu.add(0, id, index, label)
+        }
         popup.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                MENU_HOME -> showHome()
-                MENU_RELOAD -> web.reload()
-                MENU_COPY -> copyLink()
-                MENU_SHARE -> shareLink()
-                MENU_EXTERNAL -> openExternal()
-                MENU_SITE -> showSiteDialog()
-                MENU_LIBRARY -> startActivity(Intent(this, LibraryActivity::class.java))
-                MENU_CONTINUE -> continueReading()
-                MENU_SLEEP -> showSleepTimerDialog()
-                MENU_BOOKMARK -> bookmarkCurrentSentence()
-                MENU_SETTINGS -> startActivity(
-                    Intent(this, SettingsActivity::class.java)
-                )
-                MENU_PRIVACY -> startActivity(
-                    Intent(this, AboutPrivacyActivity::class.java)
-                )
-                MENU_TRANSLATE -> translateCurrentPage()
-                MENU_IMPORT -> pickDocumentForImport()
-            }
+            handleOverflow(item.itemId)
             true
         }
         popup.show()
+    }
+
+    private fun handleOverflow(id: Int) {
+        when (id) {
+            MENU_HOME -> showHome()
+            MENU_FORWARD -> navigateForward()
+            MENU_RELOAD -> web.reload()
+            MENU_COPY -> copyLink()
+            MENU_SHARE -> shareLink()
+            MENU_EXTERNAL -> openExternal()
+            MENU_SITE -> showSiteDialog()
+            MENU_LIBRARY -> startActivity(Intent(this, LibraryActivity::class.java))
+            MENU_CONTINUE -> continueReading()
+            MENU_SLEEP -> showSleepTimerDialog()
+            MENU_BOOKMARK -> bookmarkCurrentSentence()
+            MENU_SETTINGS -> startActivity(
+                Intent(this, SettingsActivity::class.java)
+            )
+            MENU_PRIVACY -> startActivity(
+                Intent(this, AboutPrivacyActivity::class.java)
+            )
+            MENU_TRANSLATE -> translateCurrentPage()
+            MENU_IMPORT -> pickDocumentForImport()
+        }
     }
 
     private fun showSiteDialog() {
@@ -1854,12 +2200,17 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         // reason to throw away the readable theme.
                         WebExtractor.setReader(web, p.readerMode)
                     } else {
+                        val chapterTitle = title.ifEmpty { web.title ?: "" }
                         if (append && !wantsRestart && reader.hasContent()) {
                             autoAppendStart = reader.state().total
-                            reader.appendContent(blocks, title.ifEmpty { web.title ?: "" })
+                            storyBlocks = storyBlocks + blocks
+                            val queue = if (p.storyCast) castChapter(chapterTitle, blocks) ?: blocks else blocks
+                            reader.appendContent(queue, chapterTitle)
                         } else {
                             autoAppendStart = 0
-                            reader.setContent(title.ifEmpty { web.title ?: "" }, blocks)
+                            storyBlocks = blocks
+                            val queue = if (p.storyCast) castChapter(chapterTitle, blocks) ?: blocks else blocks
+                            reader.setContent(chapterTitle, queue)
                         }
                         statusView.text = "Extracted " + blocks.size + " sentences"
                         onExtracted(title, wall)
@@ -2323,8 +2674,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         for (i in sentences.indices) blocks.add(Reader.Block(sentences[i], i))
         currentImportId = id
         pendingResumeIndex = -1
-        reader.setContent(book.title, blocks)
-        val start = book.position.coerceIn(0, (blocks.size - 1).coerceAtLeast(0))
+        storyBlocks = blocks
+        val queue = if (NovelSpeakApp.instance.prefs.storyCast) {
+            castChapter(book.title, blocks) ?: blocks
+        } else {
+            blocks
+        }
+        reader.setContent(book.title, queue)
+        val start = book.position.coerceIn(0, (queue.size - 1).coerceAtLeast(0))
         if (start > 0) reader.seek(start)
         hideHome()
         hideWallBanner()
@@ -2561,7 +2918,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         val blocks = ArrayList<Reader.Block>(parts.size)
         for (i in parts.indices) blocks.add(Reader.Block(parts[i], i))
-        reader.setContent("Shared text", blocks)
+        storyBlocks = blocks
+        val queue = if (NovelSpeakApp.instance.prefs.storyCast) {
+            castChapter("Shared text", blocks) ?: blocks
+        } else {
+            blocks
+        }
+        reader.setContent("Shared text", queue)
         hideWallBanner()
         statusView.text = "Shared text · " + blocks.size + " sentences"
         statusView.contentDescription = "Reader status, shared text queued"
@@ -2721,7 +3084,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             lastExtractedUrl = cachedUrl
             lastExtractedBlocks = cached!!.size
             autoAppendStart = reader.state().total
-            reader.appendContent(cached, title.ifEmpty { "Next chapter" })
+            storyBlocks = storyBlocks + cached
+            val chapterTitle = title.ifEmpty { "Next chapter" }
+            val queue = if (NovelSpeakApp.instance.prefs.storyCast) {
+                castChapter(chapterTitle, cached) ?: cached
+            } else {
+                cached
+            }
+            reader.appendContent(queue, chapterTitle)
             statusView.text = "Prefetched chapter · " + cached.size + " sentences"
             val p = NovelSpeakApp.instance.prefs
             if (wasPlaying || p.autoMode) {
@@ -2795,11 +3165,15 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val host = UrlTools.host(web.url ?: lastDisplayedUrl) ?: ""
         val site = app.novelspeak.adblock.PublicSuffixList.registrableDomain(host).ifEmpty { host }
         val on = prefs.readerModeForSite(site)
-        readerBtn.text = if (on) "Reader on" else "Reader"
-        readerBtn.setTextColor(if (on) Palette.ACCENT else Palette.TEXT)
-        readerBtn.background = ripple(Palette.SURFACE_HIGH, 16)
+        readerGlyph.setGlyph(Glyph.BOOK, if (on) Palette.ACCENT else Palette.TEXT)
         readerBtn.contentDescription =
-            if (on) "Turn reader mode off" else "Turn reader mode on"
+            if (on) "Reader mode on. Turn off" else "Reader mode off. Turn on"
+        // An unstyled page paints transparent, so the WebView backdrop decides its
+        // legibility. Reader mode uses the app surface; the raw page gets the web default
+        // white, otherwise black text renders on the dark app background.
+        if (::web.isInitialized) {
+            web.setBackgroundColor(if (on) Palette.BG else Color.WHITE)
+        }
     }
 
     override fun onReaderState(state: Reader.State) {
@@ -2809,10 +3183,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         persistImportedProgress(state)
         updateSleepTimerView()
         recordReadingTime(state)
-        if (homeVisible && ::playerCard.isInitialized) {
-            playerCard.visibility = if (state.playing) View.VISIBLE else View.GONE
-        }
-        titleView.text = state.title.ifEmpty { web.title ?: "" }
+        val chapter = state.title.ifEmpty { web.title ?: "" }
+        chapterTitleView.text = chapter
+        chapterTitleView.visibility = if (chapter.isEmpty()) View.GONE else View.VISIBLE
         statusView.text = state.status
         statusView.contentDescription = "Reader status, " + state.status
         engineChip.text = state.engine
@@ -2821,6 +3194,24 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         voiceView.text = if (voice.isEmpty()) "" else "Voice · " + voice
         voiceView.visibility = if (voice.isEmpty()) View.GONE else View.VISIBLE
         voiceView.contentDescription = "Current voice, " + voice
+        if (::speakerView.isInitialized) {
+            val speaker = state.speaker
+            if (speaker.isNotEmpty() && speaker != CastIds.NARRATOR) {
+                speakerView.text = "Speaking · " + speaker
+                speakerView.visibility = View.VISIBLE
+                speakerView.contentDescription = "Speaking, " + speaker
+            } else {
+                speakerView.visibility = View.GONE
+            }
+        }
+        if (::castButton.isInitialized) {
+            val castOn = NovelSpeakApp.instance.prefs.storyCast
+            castButton.text = if (castOn) "Cast on" else "Cast"
+            castButton.setTextColor(if (castOn) Palette.ACCENT else Palette.TEXT)
+            castButton.contentDescription =
+                if (castOn) "Story cast on, long press for the cast"
+                else "Story cast off, long press for details"
+        }
         progressView.text = if (total > 0) "${state.cursor + 1} / $total" else "0 / 0"
         speedView.text = "%.2f×".format(NovelSpeakApp.instance.prefs.speed)
         speedView.contentDescription =
@@ -2848,6 +3239,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         dotView.background = oval(statusColor(state))
         updateReaderButton()
         updateNotificationHint()
+        applyPlayerVisibility()
     }
 
     /** The voice the active engine will actually speak with (state first, prefs fallback). */
@@ -2855,10 +3247,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (state.voice.isNotEmpty()) return state.voice
         val p = NovelSpeakApp.instance.prefs
         return if (p.engine == Prefs.ENGINE_SHERPA) {
-            if (p.modelId == Prefs.MODEL_POCKET) {
-                "Pocket · cloned narrator"
-            } else {
-                "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(p.kokoroSid)?.second ?: "voice")
+            when {
+                p.modelId == Prefs.MODEL_POCKET -> "Pocket · cloned narrator"
+                p.modelId == Prefs.MODEL_SUPERTONIC ->
+                    "Supertonic · " + VoiceCatalog.label("supertonic", p.supertonicStyle.toString())
+                else -> "Kokoro · " + VoiceCatalog.label("kokoro", p.kokoroSid.toString())
             }
         } else {
             p.systemVoiceLabel.ifEmpty { "Device default" }
@@ -2875,6 +3268,357 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
     }
 
+    // ---- story cast -----------------------------------------------------------
+
+    private fun activeNeuralFamily(): String? {
+        val p = NovelSpeakApp.instance.prefs
+        if (p.engine != Prefs.ENGINE_SHERPA) return null
+        val model = ModelManager.model(p.modelId) ?: return null
+        if (!ModelManager.isInstalled(this, model.id)) return null
+        return when (model.family) {
+            "supertonic", "kokoro" -> model.family
+            else -> null
+        }
+    }
+
+    private fun narratorVoiceId(family: String): String? {
+        val p = NovelSpeakApp.instance.prefs
+        return when (family) {
+            "supertonic" -> p.supertonicStyle.toString()
+            "kokoro" -> p.kokoroSid.toString()
+            else -> null
+        }
+    }
+
+    private fun currentBookKey(): String =
+        currentImportId?.let { "import:$it" }
+            ?: bookKeyForUrl(web.url ?: lastDisplayedUrl)
+
+    /** Line corrections are chapter-scoped; the cast itself stays book-scoped. */
+    private fun currentChapterKey(): String =
+        currentImportId?.let { "import:$it" }
+            ?: (web.url ?: lastDisplayedUrl).ifEmpty { "chapter" }
+
+    /**
+     * A series key, not a chapter key: every chapter of the same novel must share one cast.
+     * Host + the first non-generic path segments covers the common serial layouts
+     * (`/novel/<slug>/chapter-5`, `/fiction/<id>/<title>/chapter/1`, `/works/<id>/chapters/<id>`).
+     */
+    private fun bookKeyForUrl(url: String): String {
+        if (url.isBlank()) return "chapter"
+        return try {
+            val uri = Uri.parse(url)
+            val host = uri.host ?: return url
+            val generic = setOf(
+                "book", "books", "novel", "novels", "read", "reader", "story", "stories",
+                "series", "fiction", "works", "work", "chapter", "chapters"
+            )
+            val raw = uri.pathSegments.filter { it.isNotBlank() }
+            // Drop a trailing chapter number ("/novel/demo/1/") but keep numeric novel ids
+            // ("/fiction/12345/title/chapter/1").
+            val withoutChapterNumber =
+                if (raw.isNotEmpty() && raw.last().all { it.isDigit() }) raw.dropLast(1) else raw
+            val segments = withoutChapterNumber
+                .filter { it.isNotBlank() }
+                .filter { seg ->
+                    val s = seg.lowercase()
+                    s !in generic && !s.startsWith("chapter-") && !s.startsWith("chapitre-") &&
+                        !s.endsWith(".html") && !s.endsWith(".htm") && !s.endsWith(".php")
+                }
+                .take(2)
+            if (segments.isEmpty()) host else host + "/" + segments.joinToString("/")
+        } catch (t: Throwable) {
+            url
+        }
+    }
+
+    private fun currentChapterTitle(): String =
+        reader.state().title.ifEmpty { web.title ?: "" }
+
+    /**
+     * Parse [blocks] into narrator/character segments and assign voices. Returns null when the
+     * active engine cannot cast (system/Pocket/ZipVoice), so callers keep the narrator-only queue.
+     */
+    private fun castChapter(title: String, blocks: List<Reader.Block>): List<Reader.Block>? {
+        val family = activeNeuralFamily() ?: return null
+        if (blocks.isEmpty()) return null
+        val result = try {
+            castCoordinator.analyze(
+                bookKey = currentBookKey(),
+                chapterKey = currentChapterKey(),
+                title = title,
+                narratorVoiceId = narratorVoiceId(family),
+                family = family,
+                blocks = paragraphBlocks(blocks)
+            )
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "cast analysis failed", t)
+            return null
+        }
+        if (result.analysis.segments.isEmpty()) return null
+
+        // The parser sees whole paragraphs (so a quote with an internal period stays one turn);
+        // the TTS queue still gets sentence-sized chunks.
+        val maxChars = NovelSpeakApp.instance.prefs.maxSentenceChars
+        val out = ArrayList<Reader.Block>(result.analysis.segments.size)
+        for (segment in result.analysis.segments) {
+            val voice = if (segment.isDialogue) result.voiceFor(segment.speakerId) else null
+            val speakerName = if (segment.isDialogue) result.nameFor(segment.speakerId) else ""
+            for (chunk in CastChunker.chunks(segment.text, maxChars)) {
+                val start = if (segment.isDialogue && segment.charStart >= 0) {
+                    segment.charStart + chunk.start
+                } else {
+                    -1
+                }
+                val end = if (start >= 0) start + (chunk.end - chunk.start) else -1
+                out.add(
+                    Reader.Block(
+                        text = chunk.text,
+                        blockIndex = segment.blockIndex,
+                        voiceId = voice,
+                        speakerId = segment.speakerId,
+                        charStart = start,
+                        charEnd = end,
+                        speakerName = speakerName,
+                        trimSilence = segment.isDialogue
+                    )
+                )
+            }
+        }
+        val speakers = result.cast.members.count { it.dialogueLines > 0 }
+        lastUnresolved = result.analysis.unresolved
+        statusView.text = "Cast · $speakers characters" +
+            if (result.analysis.unresolved > 0) " · ${result.analysis.unresolved} to review" else ""
+        DiagLog.line(
+            this,
+            "cast chapter=$speakers speakable unresolved=${result.analysis.unresolved} " +
+                "segments=${out.size}"
+        )
+        return out
+    }
+
+    /**
+     * Rebuild paragraph-sized text from the sentence blocks the extractor returns. Each extracted
+     * paragraph shares one `blockIndex`; the 2,000-char cap keeps an imported chapter (one index)
+     * from becoming a single unbounded parser input.
+     */
+    private fun paragraphBlocks(blocks: List<Reader.Block>): List<CastBlock> {
+        val out = ArrayList<CastBlock>()
+        var currentIndex = Int.MIN_VALUE
+        val sb = StringBuilder()
+        fun flush() {
+            if (sb.isNotEmpty()) {
+                out.add(CastBlock(sb.toString(), currentIndex))
+                sb.setLength(0)
+            }
+        }
+        for (b in blocks) {
+            if (b.text.isBlank()) continue
+            if (b.blockIndex != currentIndex || sb.length + b.text.length > 2000) {
+                flush()
+                currentIndex = b.blockIndex
+            }
+            if (sb.isNotEmpty()) sb.append(' ')
+            sb.append(b.text)
+        }
+        flush()
+        return out
+    }
+
+    private fun toggleStoryCast() {
+        if (!reader.hasContent() || storyBlocks.isEmpty()) {
+            Toast.makeText(this, "Open a chapter first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val family = activeNeuralFamily()
+        if (family == null) {
+            Toast.makeText(
+                this,
+                "Story cast needs the Supertonic or Kokoro neural voice",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+        val p = NovelSpeakApp.instance.prefs
+        val wasPlaying = reader.state().playing
+        val at = reader.currentIndex()
+        val title = currentChapterTitle()
+        p.storyCast = !p.storyCast
+
+        if (p.storyCast) {
+            val casted = castChapter(title, storyBlocks)
+            if (casted == null) {
+                p.storyCast = false
+                Toast.makeText(this, "Could not cast this chapter", Toast.LENGTH_SHORT).show()
+                return
+            }
+            reader.setContent(title, casted)
+            if (at > 0) reader.seek(at.coerceAtMost(casted.size - 1))
+            if (wasPlaying) reader.play()
+            Toast.makeText(this, "Story cast on", Toast.LENGTH_SHORT).show()
+        } else {
+            reader.setContent(title, storyBlocks)
+            if (at > 0) reader.seek(at.coerceAtMost(storyBlocks.size - 1))
+            if (wasPlaying) reader.play()
+            statusView.text = "Narrator only"
+            Toast.makeText(this, "Narrator only", Toast.LENGTH_SHORT).show()
+        }
+        updateReaderButton()
+    }
+
+    private fun showCastDialog() {
+        val family = activeNeuralFamily()
+        if (family == null) {
+            Toast.makeText(
+                this,
+                "Story cast needs the Supertonic or Kokoro neural voice",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+        val cast = try {
+            NovelSpeakApp.instance.castStore.load(currentBookKey())
+        } catch (t: Throwable) {
+            null
+        }
+        val prefs = NovelSpeakApp.instance.prefs
+        val state = reader.state()
+        CastSheet(
+            activity = this,
+            chapterTitle = currentChapterTitle(),
+            cast = cast,
+            family = family,
+            unresolved = if (prefs.storyCast) lastUnresolved else 0,
+            currentSpeakerId = state.speakerId,
+            storyCastOn = prefs.storyCast,
+            canFixLine = state.speakerId == CastIds.UNKNOWN,
+            onToggle = { toggleStoryCast() },
+            onRecast = { member ->
+                val narrator = cast?.narratorVoiceId ?: narratorVoiceId(family)
+                showVoicePicker(family, narrator, member)
+            },
+            onPreview = { member -> previewCharacter(member, family) },
+            onFixLine = { showLineFixPicker(family) },
+            onDismiss = { voicePreview.stop() }
+        ).show()
+    }
+
+    /** Audition a character's saved line with their assigned voice. */
+    private fun previewCharacter(member: CastMember, family: String) {
+        val voiceId = member.voiceId
+        if (voiceId.isNullOrEmpty()) {
+            Toast.makeText(this, "Cast this chapter first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val modelId = NovelSpeakApp.instance.prefs.modelId
+        if (modelId.isNullOrEmpty()) {
+            Toast.makeText(this, "Install a neural model first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val line = member.sampleLine.ifBlank {
+            "The lantern flickered twice, and then the harbour went dark."
+        }
+        Toast.makeText(this, "Previewing ${member.name}…", Toast.LENGTH_SHORT).show()
+        voicePreview.previewNeuralLine(
+            modelId = modelId,
+            voiceId = voiceId,
+            label = member.name + " · " + VoiceCatalog.label(family, voiceId),
+            text = line,
+            onStatus = { msg ->
+                if (msg.startsWith("Preview finished") || msg.contains("failed") ||
+                    msg.contains("Not enough") || msg.contains("unavailable") ||
+                    msg.contains("Model not ready") || msg.contains("needs this APK")
+                ) {
+                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+    }
+
+    /**
+     * Correct the speaker of the line the reader is on. The fix is chapter-scoped and persisted,
+     * so replaying the chapter or reopening the book keeps the correction.
+     */
+    private fun showLineFixPicker(family: String) {
+        val block = reader.currentBlock()
+        if (block == null || block.charStart < 0) {
+            Toast.makeText(this, "Play a dialogue line first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val cast = try {
+            NovelSpeakApp.instance.castStore.load(currentBookKey())
+        } catch (t: Throwable) {
+            null
+        }
+        val members = cast?.members
+            ?.sortedWith(compareByDescending<CastMember> { it.dialogueLines }.thenBy { it.name })
+            .orEmpty()
+        val labels = ArrayList<String>()
+        val narratorId = cast?.narratorVoiceId ?: narratorVoiceId(family)
+        labels.add(
+            "Narrator · " + VoiceCatalog.label(family, narratorId ?: "0")
+        )
+        for (member in members) {
+            val voice = member.voiceId?.let { VoiceCatalog.label(family, it) } ?: "auto-assigned"
+            labels.add(member.name + " · " + voice)
+        }
+        labels.add("Unknown · keep with narrator")
+
+        AlertDialog.Builder(this)
+            .setTitle("Who is speaking?")
+            .setItems(labels.toTypedArray()) { _, which ->
+                val speakerId = when (which) {
+                    0 -> CastIds.NARRATOR
+                    labels.size - 1 -> CastIds.UNKNOWN
+                    else -> members[which - 1].id
+                }
+                val name = labels[which].substringBefore(" · ")
+                NovelSpeakApp.instance.castStore.setLineFix(
+                    currentBookKey(),
+                    currentChapterKey(),
+                    LineFix(block.blockIndex, block.charStart, speakerId)
+                )
+                reapplyStoryCast()
+                Toast.makeText(this, "Line assigned to $name", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showVoicePicker(family: String, narratorId: String?, member: CastMember) {
+        val voices = VoiceCatalog.forFamily(family).filter { it.id != narratorId }
+        if (voices.isEmpty()) {
+            Toast.makeText(this, "No character voices available", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val labels = voices.map { it.label }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("Voice for " + member.name)
+            .setItems(labels) { _, which ->
+                val voice = voices[which]
+                NovelSpeakApp.instance.castStore.setVoice(currentBookKey(), member.id, voice.id)
+                reapplyStoryCast()
+                Toast.makeText(
+                    this, member.name + " · " + voice.label, Toast.LENGTH_SHORT
+                ).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    /** Rebuild the current chapter from [storyBlocks] using the persisted cast. */
+    private fun reapplyStoryCast() {
+        if (!reader.hasContent() || storyBlocks.isEmpty()) return
+        val wasPlaying = reader.state().playing
+        val at = reader.currentIndex()
+        val title = currentChapterTitle()
+        val casted = castChapter(title, storyBlocks) ?: return
+        reader.setContent(title, casted)
+        val safe = at.coerceIn(0, (casted.size - 1).coerceAtLeast(0))
+        if (safe > 0) reader.seek(safe)
+        if (wasPlaying) reader.play()
+    }
+
     override fun onHighlight(blockIndex: Int) {
         if (currentImportId != null) return
         if (NovelSpeakApp.instance.prefs.highlight) {
@@ -2889,32 +3633,59 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         WebExtractor.highlightWord(web, blockIndex, charStart, charEnd)
     }
 
+    override fun onSegmentHighlight(
+        blockIndex: Int,
+        charStart: Int,
+        charEnd: Int,
+        speaker: String
+    ) {
+        if (currentImportId != null) return
+        val p = NovelSpeakApp.instance.prefs
+        if (!p.highlight) return
+        // Dialogue segments carry exact source offsets; narration keeps the whole-block mark.
+        if (charStart >= 0 && charEnd > charStart) {
+            WebExtractor.highlightWord(web, blockIndex, charStart, charEnd)
+        }
+    }
+
     private fun updateShield() {
         if (!::adblockView.isInitialized) return
+        renderShield(shieldBlocked, shieldHidden)
+    }
+
+    /**
+     * The shield is an icon with its state in the accessibility description. The old "Ad 0/122"
+     * label was cryptic and cost a whole chrome row.
+     */
+    private fun renderShield(blocked: Int, hidden: Int) {
+        shieldBlocked = blocked
+        shieldHidden = hidden
         val p = NovelSpeakApp.instance.prefs
         val host = UrlTools.host(web.url ?: "") ?: ""
         val allowed = host.isNotEmpty() && AdBlocker.isSiteAllowed(host)
-        adblockView.text = when {
-            !p.adblockEnabled -> "Ads off"
-            allowed -> "Ads allowed"
-            else -> "Ads blocked"
+        val description = when {
+            !p.adblockEnabled -> "Ad blocking is off. Open site settings"
+            allowed -> "Ad blocking is allowed on this site. Open site settings"
+            blocked > 0 || hidden > 0 ->
+                "Ad blocking on. $blocked blocked, $hidden hidden on this page. Open site settings"
+            else -> "Ad blocking on. No ads blocked on this page yet. Open site settings"
         }
+        adblockGlyph.setGlyph(
+            Glyph.SHIELD,
+            when {
+                !p.adblockEnabled -> Palette.MUTED
+                allowed -> Palette.AMBER
+                else -> Palette.ACCENT
+            }
+        )
+        adblockView.contentDescription = description
     }
 
     override fun onAdBlockStats(blocked: Int, hidden: Int) {
         runOnUiThread {
             if (isFinishing || isDestroyed) return@runOnUiThread
             if (!::adblockView.isInitialized) return@runOnUiThread
-            val p = NovelSpeakApp.instance.prefs
-            val host = UrlTools.host(web.url ?: "") ?: ""
-            val allowed = host.isNotEmpty() && AdBlocker.isSiteAllowed(host)
-            adblockView.text = when {
-                !p.adblockEnabled -> "Ads off"
-                allowed -> "Ads allowed"
-                blocked > 0 || hidden > 0 ->
-                    if (hidden > 0) "Ad $blocked/$hidden" else "Ad $blocked"
-                else -> "Ads blocked"
-            }
+            renderShield(blocked, hidden)
         }
     }
 
@@ -2993,6 +3764,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     override fun onDestroy() {
+        if (::voicePreview.isInitialized) voicePreview.release()
         dismissSuggestions()
         cancelPrefetch()
         uiHandler.removeCallbacks(prefetchRunnable)
@@ -3068,14 +3840,16 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         gravity = Gravity.CENTER
         setTextColor(if (primary) Palette.BG else Palette.TEXT)
         background = ripple(if (primary) Palette.ACCENT else Palette.SURFACE_HIGH, 12)
-        setPadding(dp(12), 0, dp(12), 0)
+        setPadding(dp(12), dp(6), dp(12), dp(6))
         minWidth = 0
-        minHeight = 0
+        minimumHeight = dp(heightDp)
         isClickable = true
         isFocusable = true
+        // Wrap height instead of a hard height: at 2x font scale the label grows and would
+        // otherwise be clipped by the old fixed 32/44 dp box.
         layoutParams = LinearLayout.LayoutParams(
             if (widthDp > 0) dp(widthDp) else ViewGroup.LayoutParams.WRAP_CONTENT,
-            dp(heightDp)
+            ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { marginEnd = dp(8) }
         setOnClickListener { onClick() }
     }
@@ -3123,6 +3897,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         private const val MENU_PRIVACY = 11
         private const val MENU_TRANSLATE = 13
         private const val MENU_IMPORT = 14
+        private const val MENU_FORWARD = 15
         private const val REQ_IMPORT_DOCUMENT = 1001
         private const val PREFETCH_DELAY_MS = 12_000L
         private const val PREFETCH_MIN_FREE_BYTES = 350L * 1024 * 1024
@@ -3139,7 +3914,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
 private enum class Glyph {
     PLAY, PAUSE, STOP, PREV, NEXT, BACK, FORWARD, RELOAD, GEAR, MENU, MORE,
-    CLOSE, LOCK, GLOBE, ALERT, PLUS, MINUS
+    CLOSE, LOCK, GLOBE, ALERT, PLUS, MINUS, SHIELD, BOOK
 }
 
 private class GlyphView(
@@ -3326,6 +4101,53 @@ private class GlyphView(
                 canvas.drawLine(cx, cy - s * 0.7f, cx, cy + s * 0.7f, stroke)
             }
             Glyph.MINUS -> canvas.drawLine(cx - s * 0.7f, cy, cx + s * 0.7f, cy, stroke)
+            Glyph.SHIELD -> {
+                val p = Path()
+                p.moveTo(cx, cy - s * 0.95f)
+                p.lineTo(cx + s * 0.72f, cy - s * 0.62f)
+                p.lineTo(cx + s * 0.72f, cy + s * 0.05f)
+                p.cubicTo(
+                    cx + s * 0.72f, cy + s * 0.55f,
+                    cx + s * 0.32f, cy + s * 0.86f,
+                    cx, cy + s
+                )
+                p.cubicTo(
+                    cx - s * 0.32f, cy + s * 0.86f,
+                    cx - s * 0.72f, cy + s * 0.55f,
+                    cx - s * 0.72f, cy + s * 0.05f
+                )
+                p.lineTo(cx - s * 0.72f, cy - s * 0.62f)
+                p.close()
+                canvas.drawPath(p, stroke)
+            }
+            Glyph.BOOK -> {
+                val p = Path()
+                p.moveTo(cx, cy - s * 0.55f)
+                p.cubicTo(
+                    cx - s * 0.35f, cy - s * 0.85f,
+                    cx - s * 0.7f, cy - s * 0.85f,
+                    cx - s * 0.9f, cy - s * 0.7f
+                )
+                p.lineTo(cx - s * 0.9f, cy + s * 0.65f)
+                p.cubicTo(
+                    cx - s * 0.6f, cy + s * 0.5f,
+                    cx - s * 0.3f, cy + s * 0.55f,
+                    cx, cy + s * 0.8f
+                )
+                p.cubicTo(
+                    cx + s * 0.3f, cy + s * 0.55f,
+                    cx + s * 0.6f, cy + s * 0.5f,
+                    cx + s * 0.9f, cy + s * 0.65f
+                )
+                p.lineTo(cx + s * 0.9f, cy - s * 0.7f)
+                p.cubicTo(
+                    cx + s * 0.7f, cy - s * 0.85f,
+                    cx + s * 0.35f, cy - s * 0.85f,
+                    cx, cy - s * 0.55f
+                )
+                canvas.drawPath(p, stroke)
+                canvas.drawLine(cx, cy - s * 0.55f, cx, cy + s * 0.8f, stroke)
+            }
         }
     }
 }

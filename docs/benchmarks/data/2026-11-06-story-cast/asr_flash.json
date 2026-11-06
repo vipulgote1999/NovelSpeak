@@ -1,0 +1,160 @@
+{
+  "model": "gemini-2.5-flash",
+  "chunks": 18,
+  "meanWer": 0.166,
+  "wordErrorRate": 0.087,
+  "exactMatches": 12,
+  "bySpeaker": {
+    "NARRATOR": 0.094,
+    "marshal-rennick": 0.536,
+    "mara": 0.03,
+    "UNKNOWN": 0.0,
+    "tomas": 0.0
+  },
+  "rows": [
+    {
+      "index": 0,
+      "speakerId": "NARRATOR",
+      "reference": "Marshal Rennick set the lantern on the table.",
+      "hypothesis": "Marshall Renick set the lantern on the table.",
+      "wer": 0.25,
+      "exact": false
+    },
+    {
+      "index": 1,
+      "speakerId": "marshal-rennick",
+      "reference": "\"You came alone.\"",
+      "hypothesis": "You came alone.",
+      "wer": 0.0,
+      "exact": true
+    },
+    {
+      "index": 2,
+      "speakerId": "NARRATOR",
+      "reference": "The woman in the grey coat didn't sit.",
+      "hypothesis": "The woman in the gray coat didn't",
+      "wer": 0.25,
+      "exact": false
+    },
+    {
+      "index": 3,
+      "speakerId": "mara",
+      "reference": "\"You said to.\"",
+      "hypothesis": "You said to.",
+      "wer": 0.0,
+      "exact": true
+    },
+    {
+      "index": 4,
+      "speakerId": "marshal-rennick",
+      "reference": "\"I said not to bring the boy.\"",
+      "hypothesis": "I said not to bring the boy.",
+      "wer": 0.0,
+      "exact": true
+    },
+    {
+      "index": 5,
+      "speakerId": "mara",
+      "reference": "\"He isn't a boy anymore.\"",
+      "hypothesis": "He isn't a boy anymore.",
+      "wer": 0.0,
+      "exact": true
+    },
+    {
+      "index": 6,
+      "speakerId": "NARRATOR",
+      "reference": "From the doorway, a third voice:",
+      "hypothesis": "From the doorway, a third voice.",
+      "wer": 0.0,
+      "exact": true
+    },
+    {
+      "index": 7,
+      "speakerId": "UNKNOWN",
+      "reference": "\"He's right here.\"",
+      "hypothesis": "He's right here.",
+      "wer": 0.0,
+      "exact": true
+    },
+    {
+      "index": 8,
+      "speakerId": "NARRATOR",
+      "reference": "The marshal's hand moved to his holster.",
+      "hypothesis": "The marshal's hand moved to his holster.",
+      "wer": 0.0,
+      "exact": true
+    },
+    {
+      "index": 9,
+      "speakerId": "marshal-rennick",
+      "reference": "\"Tomas. I told you to wait outside.\"",
+      "hypothesis": "Thomas, I told you to wait outside.",
+      "wer": 0.143,
+      "exact": false
+    },
+    {
+      "index": 10,
+      "speakerId": "NARRATOR",
+      "reference": "The young man stepped in, rain dripping from his sleeves.",
+      "hypothesis": "The young man stepped in, rain dripping from his sleeves.",
+      "wer": 0.0,
+      "exact": true
+    },
+    {
+      "index": 11,
+      "speakerId": "tomas",
+      "reference": "\"And I told you I wouldn't.\"",
+      "hypothesis": "And I told you I wouldn't.",
+      "wer": 0.0,
+      "exact": true
+    },
+    {
+      "index": 12,
+      "speakerId": "NARRATOR",
+      "reference": "Mara looked from one man to the other.",
+      "hypothesis": "Mara looked from one man to the other.",
+      "wer": 0.0,
+      "exact": true
+    },
+    {
+      "index": 13,
+      "speakerId": "mara",
+      "reference": "\"If you two are finished, there's a body in the stable.\"",
+      "hypothesis": "If you too are finished, there's a body in the stable.",
+      "wer": 0.091,
+      "exact": false
+    },
+    {
+      "index": 14,
+      "speakerId": "NARRATOR",
+      "reference": "Rennick turned to her.",
+      "hypothesis": "Renick turned to her.",
+      "wer": 0.25,
+      "exact": false
+    },
+    {
+      "index": 15,
+      "speakerId": "marshal-rennick",
+      "reference": "\"Whose?\"",
+      "hypothesis": "Who's Who",
+      "wer": 2.0,
+      "exact": false
+    },
+    {
+      "index": 16,
+      "speakerId": "UNKNOWN",
+      "reference": "\"Mine,\"",
+      "hypothesis": "Mine.",
+      "wer": 0.0,
+      "exact": true
+    },
+    {
+      "index": 17,
+      "speakerId": "NARRATOR",
+      "reference": "said a voice from the yard.",
+      "hypothesis": "said a voice from the yard",
+      "wer": 0.0,
+      "exact": true
+    }
+  ]
+}

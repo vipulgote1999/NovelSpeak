@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -12,13 +13,22 @@ import android.graphics.drawable.RippleDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.text.Editable
+import android.text.InputType
 import android.text.TextUtils
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
+import android.view.inputmethod.EditorInfo
+import android.widget.AbsListView
+import android.widget.BaseAdapter
+import android.widget.EditText
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
-import android.widget.ScrollView
+import android.widget.ListView
+import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
 import app.novelspeak.library.Bookmark
@@ -26,6 +36,7 @@ import app.novelspeak.library.BookmarkStore
 import app.novelspeak.library.ImportedBook
 import app.novelspeak.library.ImportedBookStore
 import app.novelspeak.library.LibraryEntry
+import app.novelspeak.library.LibraryGrid
 import app.novelspeak.library.LibraryStore
 import app.novelspeak.library.PrefsLibraryStorage
 import java.text.SimpleDateFormat
@@ -48,8 +59,62 @@ class LibraryActivity : Activity() {
     private lateinit var store: LibraryStore
     private lateinit var bookmarks: BookmarkStore
     private lateinit var imports: ImportedBookStore
-    private lateinit var list: LinearLayout
+    private lateinit var list: ListView
     private lateinit var clearAction: TextView
+    private lateinit var searchWrap: LinearLayout
+    private lateinit var searchField: EditText
+    private var query = ""
+    private var filter = Filter.ALL
+    private val filterButtons = LinkedHashMap<Filter, TextView>()
+    private val adapter = LibraryAdapter()
+    private var renderedColumns = 1
+
+    private sealed class Row {
+        data class Header(val title: String) : Row()
+        data class Entry(val entry: LibraryEntry) : Row()
+        data class Book(val book: ImportedBook) : Row()
+        data class Mark(val mark: Bookmark) : Row()
+        data class Empty(val message: String) : Row()
+
+        /** Two cards side by side on medium/expanded windows; [right] is null for an odd tail. */
+        data class Pair(val left: Row, val right: Row?) : Row()
+    }
+
+    private inner class LibraryAdapter : BaseAdapter() {
+        var rows: List<Row> = emptyList()
+
+        override fun getCount(): Int = rows.size
+
+        override fun getItem(position: Int): Any = rows[position]
+
+        override fun getItemId(position: Int): Long = position.toLong()
+
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val row = rows[position]
+            val view = when (row) {
+                is Row.Header -> sectionHeader(row.title)
+                is Row.Entry -> entryRow(row.entry)
+                is Row.Book -> importRow(row.book)
+                is Row.Mark -> bookmarkRow(row.mark)
+                is Row.Empty -> emptyView(row.message)
+                is Row.Pair -> pairView(row.left, row.right)
+            }
+            // ListView owns row layout; ignore the LinearLayout margins used by the old
+            // ScrollView and let the 8 dp divider provide the spacing.
+            view.layoutParams = AbsListView.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            return view
+        }
+    }
+
+    private enum class Filter(val label: String) {
+        ALL("All"),
+        CHAPTERS("Chapters"),
+        IMPORTED("Imported"),
+        FINISHED("Finished")
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,23 +129,43 @@ class LibraryActivity : Activity() {
             setBackgroundColor(Palette.BG)
         }
         root.addView(buildTopBar())
+        searchWrap = buildSearchBar()
+        root.addView(searchWrap)
 
-        list = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+        list = ListView(this).apply {
+            divider = ColorDrawable(Color.TRANSPARENT)
+            dividerHeight = dp(8)
+            isVerticalScrollBarEnabled = false
+            clipToPadding = false
             setPadding(dp(16), dp(4), dp(16), dp(20))
+            adapter = this@LibraryActivity.adapter
         }
-        val scroll = ScrollView(this).apply {
-            isFillViewport = true
-            addView(list)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
-        }
-        root.addView(scroll)
+        root.addView(
+            list,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
+        )
         setContentView(root)
         applyInsets(root)
+        applyContentWidth()
+    }
+
+    /** Center the search field and rows inside a 720 dp measure on tablets. */
+    private fun applyContentWidth() {
+        val pad = dp(Design.contentPadding(resources.configuration.screenWidthDp))
+        if (::searchWrap.isInitialized) {
+            searchWrap.setPadding(pad, dp(4), pad, dp(8))
+        }
+        if (::list.isInitialized) {
+            list.setPadding(pad, dp(4), pad, dp(20))
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyContentWidth()
+        // The manifest handles screenSize without recreating the activity, so the adapter must
+        // switch between one and two columns itself when the window crosses 600 dp.
+        if (LibraryGrid.columns(newConfig.screenWidthDp) != renderedColumns) render()
     }
 
     override fun onResume() {
@@ -125,11 +210,11 @@ class LibraryActivity : Activity() {
         }
         val back = TextView(this).apply {
             text = "←"
-            textSize = 22f
+            textSize = 20f
             gravity = Gravity.CENTER
             setTextColor(Palette.TEXT)
             background = ripple(Palette.SURFACE_HIGH, 24, oval = true)
-            layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+            layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP))
             contentDescription = "Back"
             isClickable = true
             isFocusable = true
@@ -157,7 +242,7 @@ class LibraryActivity : Activity() {
             setPadding(dp(14), 0, dp(14), 0)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-                dp(38)
+                dp(Design.DENSE_TOUCH_DP)
             )
             contentDescription = "Clear library"
             isClickable = true
@@ -168,44 +253,240 @@ class LibraryActivity : Activity() {
         return bar
     }
 
-    /** Rebuilds the list from storage; safe against corrupt data (the store never throws). */
+    private fun buildSearchBar(): LinearLayout {
+        val wrap = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(4), dp(16), dp(8))
+        }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = rounded(Palette.SURFACE_HIGH, Design.RADIUS_PILL)
+            minimumHeight = dp(46)
+            setPadding(dp(16), 0, dp(6), 0)
+        }
+        var clearButton: TextView? = null
+        searchField = EditText(this).apply {
+            hint = "Search library"
+            textSize = 14f
+            setTextColor(Palette.TEXT)
+            setHintTextColor(Palette.MUTED)
+            background = null
+            includeFontPadding = false
+            setSingleLine(true)
+            inputType = InputType.TYPE_CLASS_TEXT
+            imeOptions = EditorInfo.IME_ACTION_SEARCH
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+            contentDescription = "Search library"
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    query = s?.toString().orEmpty()
+                    clearButton?.visibility = if (query.isEmpty()) View.GONE else View.VISIBLE
+                    render()
+                }
+            })
+        }
+        box.addView(searchField)
+        val clear = TextView(this).apply {
+            text = "✕"
+            textSize = 16f
+            gravity = Gravity.CENTER
+            setTextColor(Palette.MUTED)
+            background = ripple(Palette.SURFACE, 18, oval = true)
+            layoutParams = LinearLayout.LayoutParams(dp(Design.DENSE_TOUCH_DP), dp(Design.DENSE_TOUCH_DP))
+            contentDescription = "Clear search"
+            isClickable = true
+            isFocusable = true
+            visibility = View.GONE
+            setOnClickListener { searchField.setText("") }
+        }
+        clearButton = clear
+        box.addView(clear)
+        wrap.addView(box)
+
+        val largeText = resources.configuration.fontScale >= 1.5f
+        val chips = LinearLayout(this).apply {
+            orientation = if (largeText) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+            setPadding(0, dp(8), 0, 0)
+        }
+        val chipRows = if (largeText) {
+            listOf(
+                LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL },
+                LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            )
+        } else {
+            emptyList()
+        }
+        for ((index, f) in Filter.values().withIndex()) {
+            val chip = TextView(this).apply {
+                text = f.label
+                textSize = 12f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                gravity = Gravity.CENTER
+                setPadding(dp(14), dp(8), dp(14), dp(8))
+                minimumHeight = dp(Design.DENSE_TOUCH_DP)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { marginEnd = dp(8) }
+                isClickable = true
+                isFocusable = true
+                contentDescription = "Filter: " + f.label
+                setOnClickListener {
+                    filter = f
+                    updateFilterChips()
+                    render()
+                }
+            }
+            filterButtons[f] = chip
+            if (largeText) {
+                chipRows[index / 2].addView(chip)
+            } else {
+                chips.addView(chip)
+            }
+        }
+        if (largeText) {
+            chipRows.forEachIndexed { index, row ->
+                row.setPadding(0, if (index == 0) 0 else dp(6), 0, 0)
+                chips.addView(row)
+            }
+            wrap.addView(chips)
+        } else {
+            val chipScroll = HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled = false
+                addView(chips)
+            }
+            wrap.addView(chipScroll)
+        }
+        updateFilterChips()
+        return wrap
+    }
+
+    private fun updateFilterChips() {
+        for ((f, chip) in filterButtons) {
+            val on = f == filter
+            chip.setTextColor(if (on) Palette.BG else Palette.TEXT)
+            chip.background = ripple(if (on) Palette.ACCENT else Palette.SURFACE_HIGH, 17)
+            chip.isSelected = on
+        }
+    }
+
+    /** Rebuilds the list from storage, applying the search query and the active filter. */
     private fun render() {
-        list.removeAllViews()
-        val entries = try {
+        val columns = LibraryGrid.columns(resources.configuration.screenWidthDp)
+        renderedColumns = columns
+        val rawEntries = try {
             store.listEntries()
         } catch (t: Throwable) {
             emptyList<LibraryEntry>()
         }
-        val marks = try {
+        val rawMarks = try {
             bookmarks.list()
         } catch (t: Throwable) {
             emptyList<Bookmark>()
         }
-        val books = try {
+        val rawBooks = try {
             imports.list()
         } catch (t: Throwable) {
             emptyList<ImportedBook>()
         }
+        val q = query.trim().lowercase()
+        fun match(value: String): Boolean = q.isEmpty() || value.lowercase().contains(q)
+
+        val entries = rawEntries.filter { entry ->
+            val allowed = when (filter) {
+                Filter.ALL, Filter.CHAPTERS -> true
+                Filter.IMPORTED -> false
+                Filter.FINISHED -> entry.finished
+            }
+            allowed && (match(entry.title) || match(entry.site) || match(entry.url))
+        }
+        val books = rawBooks.filter { book ->
+            val allowed = when (filter) {
+                Filter.ALL, Filter.IMPORTED -> true
+                Filter.CHAPTERS -> false
+                Filter.FINISHED -> book.finished
+            }
+            allowed && (match(book.title) || match(book.author) || match(book.kind))
+        }
+        val marks = if (filter == Filter.ALL) {
+            rawMarks.filter { match(it.snippet) || match(it.title) }
+        } else {
+            emptyList()
+        }
+
+        if (::searchWrap.isInitialized) {
+            searchWrap.visibility =
+                if (rawEntries.isEmpty() && rawBooks.isEmpty()) View.GONE else View.VISIBLE
+        }
         if (entries.isEmpty() && marks.isEmpty() && books.isEmpty()) {
-            clearAction.visibility = View.GONE
-            list.addView(emptyView())
+            val noneAtAll = rawEntries.isEmpty() && rawBooks.isEmpty() && rawMarks.isEmpty()
+            clearAction.visibility = if (noneAtAll) View.GONE else View.VISIBLE
+            adapter.rows = listOf(
+                Row.Empty(
+                    if (noneAtAll) EMPTY_TEXT
+                    else "No matches. Try a different search or filter."
+                )
+            )
+            adapter.notifyDataSetChanged()
             return
         }
         clearAction.visibility = if (entries.isEmpty() && books.isEmpty()) View.GONE else View.VISIBLE
         val multipleSections = listOf(entries.isNotEmpty(), books.isNotEmpty(), marks.isNotEmpty())
             .count { it } > 1
-        if (entries.isNotEmpty()) {
-            if (multipleSections) list.addView(sectionHeader("CHAPTERS"))
-            for (entry in entries) list.addView(entryRow(entry))
+
+        // The adapter recycles rows, so opening a 200-entry library only creates the visible
+        // screen instead of 200 cards (the stress test's 250 ms frame). At 600 dp each adapter
+        // row holds two cards; headers stay full width and never share a row with a card.
+        val rows = ArrayList<Row>(entries.size + books.size + marks.size + 3)
+        fun addCards(header: String?, cards: List<Row>) {
+            if (cards.isEmpty()) return
+            if (multipleSections && header != null) rows.add(Row.Header(header))
+            if (columns == 1) {
+                rows.addAll(cards)
+            } else {
+                for (pair in LibraryGrid.pairs(cards)) {
+                    rows.add(Row.Pair(pair.first, pair.second))
+                }
+            }
         }
-        if (books.isNotEmpty()) {
-            if (multipleSections) list.addView(sectionHeader("IMPORTED BOOKS"))
-            for (book in books) list.addView(importRow(book))
+        addCards("CHAPTERS", entries.map { Row.Entry(it) })
+        addCards("IMPORTED BOOKS", books.map { Row.Book(it) })
+        addCards("BOOKMARKS", marks.map { Row.Mark(it) })
+        adapter.rows = rows
+        adapter.notifyDataSetChanged()
+        list.setSelection(0)
+    }
+
+    /** One adapter row with two cards sharing the width, or a spacer for an odd tail. */
+    private fun pairView(left: Row, right: Row?): View {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.TOP
+            isBaselineAligned = false
         }
-        if (marks.isNotEmpty()) {
-            if (multipleSections) list.addView(sectionHeader("BOOKMARKS"))
-            for (mark in marks) list.addView(bookmarkRow(mark))
+        val leftParams = LinearLayout.LayoutParams(
+            0, ViewGroup.LayoutParams.MATCH_PARENT, 1f
+        ).apply { if (right != null) marginEnd = dp(4) }
+        row.addView(cardView(left), leftParams)
+        if (right != null) {
+            row.addView(
+                cardView(right),
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+                    .apply { marginStart = dp(4) }
+            )
+        } else {
+            row.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
         }
+        return row
+    }
+
+    private fun cardView(row: Row): View = when (row) {
+        is Row.Entry -> entryRow(row.entry)
+        is Row.Book -> importRow(row.book)
+        is Row.Mark -> bookmarkRow(row.mark)
+        else -> throw IllegalArgumentException("not a library card")
     }
 
     /** EPUB/PDF/TXT imports: durable copies that reopen in the reader for TTS. */
@@ -259,14 +540,19 @@ class LibraryActivity : Activity() {
             gravity = Gravity.CENTER
             setTextColor(Palette.MUTED)
             background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
-            layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(6) }
-            contentDescription = "Delete imported book"
+            layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP)).apply { marginStart = dp(6) }
+            contentDescription = "Delete imported book: " + book.title
             isClickable = true
             isFocusable = true
             setOnClickListener {
-                imports.remove(book.id)
-                render()
-                Toast.makeText(this@LibraryActivity, "Imported book removed", Toast.LENGTH_SHORT).show()
+                confirmDelete(
+                    "Remove imported book?",
+                    "\"" + book.title + "\" and its saved text will be removed from this device."
+                ) {
+                    imports.remove(book.id)
+                    render()
+                    Toast.makeText(this@LibraryActivity, "Imported book removed", Toast.LENGTH_SHORT).show()
+                }
             }
         })
         return card
@@ -333,21 +619,26 @@ class LibraryActivity : Activity() {
             gravity = Gravity.CENTER
             setTextColor(Palette.MUTED)
             background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
-            layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(6) }
-            contentDescription = "Delete bookmark"
+            layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP)).apply { marginStart = dp(6) }
+            contentDescription = "Delete bookmark: " + mark.snippet.take(40)
             isClickable = true
             isFocusable = true
             setOnClickListener {
-                bookmarks.remove(mark.url, mark.createdAt)
-                render()
-                Toast.makeText(this@LibraryActivity, "Bookmark removed", Toast.LENGTH_SHORT).show()
+                confirmDelete(
+                    "Remove bookmark?",
+                    "The saved sentence from \"" + mark.title + "\" will be removed."
+                ) {
+                    bookmarks.remove(mark.url, mark.createdAt)
+                    render()
+                    Toast.makeText(this@LibraryActivity, "Bookmark removed", Toast.LENGTH_SHORT).show()
+                }
             }
         })
         return card
     }
 
-    private fun emptyView(): TextView = TextView(this).apply {
-        text = EMPTY_TEXT
+    private fun emptyView(message: String = EMPTY_TEXT): TextView = TextView(this).apply {
+        text = message
         textSize = 14f
         setTextColor(Palette.MUTED)
         gravity = Gravity.CENTER
@@ -436,15 +727,30 @@ class LibraryActivity : Activity() {
         gravity = Gravity.CENTER
         setTextColor(Palette.MUTED)
         background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
-        layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(6) }
-        contentDescription = "Delete entry"
+        layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP)).apply { marginStart = dp(6) }
+        contentDescription = "Delete entry: " + entry.title
         isClickable = true
         isFocusable = true
         setOnClickListener {
-            store.remove(entry.url)
-            render()
-            Toast.makeText(this@LibraryActivity, "Removed from library", Toast.LENGTH_SHORT).show()
+            confirmDelete(
+                "Remove from library?",
+                "\"" + entry.title + "\" and its reading position will be removed from this device."
+            ) {
+                store.remove(entry.url)
+                render()
+                Toast.makeText(this@LibraryActivity, "Removed from library", Toast.LENGTH_SHORT).show()
+            }
         }
+    }
+
+    /** One destructive confirmation path for chapters, imports and bookmarks. */
+    private fun confirmDelete(title: String, message: String, onDelete: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Remove") { _, _ -> onDelete() }
+            .show()
     }
 
     /**

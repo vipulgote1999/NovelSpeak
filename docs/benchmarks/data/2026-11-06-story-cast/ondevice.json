@@ -1,0 +1,470 @@
+{
+  "events": [
+    {
+      "start": "14:00:24.862",
+      "text": "Marshal Rennick set the lant",
+      "queue": 0
+    },
+    {
+      "done": "14:00:26.445",
+      "text": "Marshal Rennick set the lant",
+      "ms": 1583,
+      "frames": 141243,
+      "queue": 1
+    },
+    {
+      "start": "14:00:26.453",
+      "text": "You came alone.",
+      "queue": 1
+    },
+    {
+      "done": "14:00:27.476",
+      "text": "You came alone.",
+      "ms": 1023,
+      "frames": 207923,
+      "queue": 3
+    },
+    {
+      "start": "14:00:27.481",
+      "text": "The woman in the grey coat d",
+      "queue": 3
+    },
+    {
+      "done": "14:00:28.710",
+      "text": "The woman in the grey coat d",
+      "ms": 1228,
+      "frames": 321347,
+      "queue": 5
+    },
+    {
+      "start": "14:00:28.722",
+      "text": "You said to.",
+      "queue": 5
+    },
+    {
+      "done": "14:00:29.506",
+      "text": "You said to.",
+      "ms": 784,
+      "frames": 387046,
+      "queue": 7
+    },
+    {
+      "start": "14:00:37.962",
+      "text": "Marshal Rennick set the lant",
+      "queue": 0
+    },
+    {
+      "done": "14:00:39.384",
+      "text": "Marshal Rennick set the lant",
+      "ms": 1422,
+      "frames": 0,
+      "queue": 0
+    },
+    {
+      "start": "14:00:39.386",
+      "text": "Marshal Rennick set the lant",
+      "queue": 0
+    },
+    {
+      "done": "14:00:40.706",
+      "text": "Marshal Rennick set the lant",
+      "ms": 1320,
+      "frames": 141243,
+      "queue": 1
+    },
+    {
+      "start": "14:00:40.716",
+      "text": "You came alone.",
+      "queue": 1
+    },
+    {
+      "done": "14:00:41.769",
+      "text": "You came alone.",
+      "ms": 1053,
+      "frames": 207923,
+      "queue": 3
+    },
+    {
+      "start": "14:00:41.775",
+      "text": "The woman in the grey coat d",
+      "queue": 3
+    },
+    {
+      "done": "14:00:42.939",
+      "text": "The woman in the grey coat d",
+      "ms": 1164,
+      "frames": 321347,
+      "queue": 3
+    },
+    {
+      "start": "14:00:42.947",
+      "text": "You said to.",
+      "queue": 3
+    },
+    {
+      "done": "14:00:43.725",
+      "text": "You said to.",
+      "ms": 778,
+      "frames": 387046,
+      "queue": 3
+    },
+    {
+      "start": "14:00:43.733",
+      "text": "I said not to bring the boy.",
+      "queue": 3
+    },
+    {
+      "done": "14:00:44.816",
+      "text": "I said not to bring the boy.",
+      "ms": 1084,
+      "frames": 482319,
+      "queue": 5
+    },
+    {
+      "start": "14:00:44.821",
+      "text": "He isn't a boy anymore.",
+      "queue": 5
+    },
+    {
+      "done": "14:00:45.819",
+      "text": "He isn't a boy anymore.",
+      "ms": 998,
+      "frames": 568587,
+      "queue": 7
+    },
+    {
+      "start": "14:00:45.824",
+      "text": "From the doorway, a third vo",
+      "queue": 7
+    },
+    {
+      "done": "14:00:46.955",
+      "text": "From the doorway, a third vo",
+      "ms": 1131,
+      "frames": 687888,
+      "queue": 7
+    },
+    {
+      "start": "14:00:46.958",
+      "text": "He's right here.",
+      "queue": 7
+    },
+    {
+      "done": "14:00:47.857",
+      "text": "He's right here.",
+      "ms": 899,
+      "frames": 755260,
+      "queue": 7
+    },
+    {
+      "start": "14:00:47.859",
+      "text": "The marshal's hand moved to ",
+      "queue": 7
+    },
+    {
+      "done": "14:00:49.070",
+      "text": "The marshal's hand moved to ",
+      "ms": 1211,
+      "frames": 876405,
+      "queue": 9
+    },
+    {
+      "start": "14:00:49.080",
+      "text": "Tomas. I told you to wait ou",
+      "queue": 9
+    },
+    {
+      "done": "14:00:50.669",
+      "text": "Tomas. I told you to wait ou",
+      "ms": 1589,
+      "frames": 997825,
+      "queue": 9
+    },
+    {
+      "start": "14:00:50.673",
+      "text": "The young man stepped in, ra",
+      "queue": 9
+    },
+    {
+      "done": "14:00:52.542",
+      "text": "The young man stepped in, ra",
+      "ms": 1869,
+      "frames": 1179693,
+      "queue": 9
+    },
+    {
+      "start": "14:00:52.554",
+      "text": "And I told you I wouldn't.",
+      "queue": 9
+    },
+    {
+      "done": "14:00:53.543",
+      "text": "And I told you I wouldn't.",
+      "ms": 989,
+      "frames": 1264606,
+      "queue": 11
+    },
+    {
+      "start": "14:00:53.545",
+      "text": "Mara looked from one man to ",
+      "queue": 11
+    },
+    {
+      "done": "14:00:54.919",
+      "text": "Mara looked from one man to ",
+      "ms": 1374,
+      "frames": 1387684,
+      "queue": 11
+    },
+    {
+      "start": "14:00:54.923",
+      "text": "If you two are finished, the",
+      "queue": 11
+    },
+    {
+      "done": "14:00:56.605",
+      "text": "If you two are finished, the",
+      "ms": 1682,
+      "frames": 1551551,
+      "queue": 11
+    },
+    {
+      "start": "14:01:03.445",
+      "text": "Rennick turned to her.",
+      "queue": 7
+    },
+    {
+      "done": "14:01:04.482",
+      "text": "Rennick turned to her.",
+      "ms": 1038,
+      "frames": 1633296,
+      "queue": 9
+    },
+    {
+      "start": "14:01:04.489",
+      "text": "Whose?",
+      "queue": 9
+    },
+    {
+      "done": "14:01:05.238",
+      "text": "Whose?",
+      "ms": 749,
+      "frames": 1693002,
+      "queue": 11
+    },
+    {
+      "start": "14:01:05.242",
+      "text": "Mine.",
+      "queue": 11
+    },
+    {
+      "done": "14:01:06.051",
+      "text": "Mine.",
+      "ms": 809,
+      "frames": 1752990,
+      "queue": 11
+    },
+    {
+      "start": "14:01:06.055",
+      "text": "said a voice from the yard.",
+      "queue": 11
+    },
+    {
+      "done": "14:01:07.124",
+      "text": "said a voice from the yard.",
+      "ms": 1069,
+      "frames": 1851089,
+      "queue": 13
+    }
+  ],
+  "dones": [
+    {
+      "done": "14:00:26.445",
+      "text": "Marshal Rennick set the lant",
+      "ms": 1583,
+      "frames": 141243,
+      "queue": 1
+    },
+    {
+      "done": "14:00:27.476",
+      "text": "You came alone.",
+      "ms": 1023,
+      "frames": 207923,
+      "queue": 3
+    },
+    {
+      "done": "14:00:28.710",
+      "text": "The woman in the grey coat d",
+      "ms": 1228,
+      "frames": 321347,
+      "queue": 5
+    },
+    {
+      "done": "14:00:29.506",
+      "text": "You said to.",
+      "ms": 784,
+      "frames": 387046,
+      "queue": 7
+    },
+    {
+      "done": "14:00:39.384",
+      "text": "Marshal Rennick set the lant",
+      "ms": 1422,
+      "frames": 0,
+      "queue": 0
+    },
+    {
+      "done": "14:00:40.706",
+      "text": "Marshal Rennick set the lant",
+      "ms": 1320,
+      "frames": 141243,
+      "queue": 1
+    },
+    {
+      "done": "14:00:41.769",
+      "text": "You came alone.",
+      "ms": 1053,
+      "frames": 207923,
+      "queue": 3
+    },
+    {
+      "done": "14:00:42.939",
+      "text": "The woman in the grey coat d",
+      "ms": 1164,
+      "frames": 321347,
+      "queue": 3
+    },
+    {
+      "done": "14:00:43.725",
+      "text": "You said to.",
+      "ms": 778,
+      "frames": 387046,
+      "queue": 3
+    },
+    {
+      "done": "14:00:44.816",
+      "text": "I said not to bring the boy.",
+      "ms": 1084,
+      "frames": 482319,
+      "queue": 5
+    },
+    {
+      "done": "14:00:45.819",
+      "text": "He isn't a boy anymore.",
+      "ms": 998,
+      "frames": 568587,
+      "queue": 7
+    },
+    {
+      "done": "14:00:46.955",
+      "text": "From the doorway, a third vo",
+      "ms": 1131,
+      "frames": 687888,
+      "queue": 7
+    },
+    {
+      "done": "14:00:47.857",
+      "text": "He's right here.",
+      "ms": 899,
+      "frames": 755260,
+      "queue": 7
+    },
+    {
+      "done": "14:00:49.070",
+      "text": "The marshal's hand moved to ",
+      "ms": 1211,
+      "frames": 876405,
+      "queue": 9
+    },
+    {
+      "done": "14:00:50.669",
+      "text": "Tomas. I told you to wait ou",
+      "ms": 1589,
+      "frames": 997825,
+      "queue": 9
+    },
+    {
+      "done": "14:00:52.542",
+      "text": "The young man stepped in, ra",
+      "ms": 1869,
+      "frames": 1179693,
+      "queue": 9
+    },
+    {
+      "done": "14:00:53.543",
+      "text": "And I told you I wouldn't.",
+      "ms": 989,
+      "frames": 1264606,
+      "queue": 11
+    },
+    {
+      "done": "14:00:54.919",
+      "text": "Mara looked from one man to ",
+      "ms": 1374,
+      "frames": 1387684,
+      "queue": 11
+    },
+    {
+      "done": "14:00:56.605",
+      "text": "If you two are finished, the",
+      "ms": 1682,
+      "frames": 1551551,
+      "queue": 11
+    },
+    {
+      "done": "14:01:04.482",
+      "text": "Rennick turned to her.",
+      "ms": 1038,
+      "frames": 1633296,
+      "queue": 9
+    },
+    {
+      "done": "14:01:05.238",
+      "text": "Whose?",
+      "ms": 749,
+      "frames": 1693002,
+      "queue": 11
+    },
+    {
+      "done": "14:01:06.051",
+      "text": "Mine.",
+      "ms": 809,
+      "frames": 1752990,
+      "queue": 11
+    },
+    {
+      "done": "14:01:07.124",
+      "text": "said a voice from the yard.",
+      "ms": 1069,
+      "frames": 1851089,
+      "queue": 13
+    }
+  ],
+  "gaps_ms": [
+    8.000000001629815,
+    4.999999997380655,
+    12.000000002444722,
+    2.0000000004074536,
+    10.000000002037268,
+    6.000000001222361,
+    8.000000001629815,
+    8.000000001629815,
+    5.000000004656613,
+    4.999999997380655,
+    2.9999999969732016,
+    1.999999993131496,
+    10.000000002037268,
+    4.000000000814907,
+    11.999999995168764,
+    2.0000000004074536,
+    4.000000000814907,
+    6.999999997788109,
+    4.000000000814907,
+    4.000000000814907
+  ],
+  "sids": {
+    "tts cast voice family=supertonic sid=5 requested=5": 50426.451,
+    "tts cast voice family=supertonic sid=2 requested=2": 50428.72,
+    "tts cast voice family=supertonic sid=6 requested=6": 50452.552
+  }
+}

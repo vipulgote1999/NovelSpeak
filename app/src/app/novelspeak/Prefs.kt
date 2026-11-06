@@ -78,7 +78,10 @@ class Prefs(ctx: Context) {
         get() = sp.getInt(K_SID, 0)
         set(v) = sp.edit().putInt(K_SID, v).apply()
 
-    /** Curated Supertonic style index (0 = F1 female, 1 = M1 male). */
+    /**
+     * Supertonic speaker id. The model's `voice.bin` holds 10 speakers and the verified order is
+     * 0..4 = F1..F5, 5..9 = M1..M5. See [VoiceCatalog.SUPERTONIC].
+     */
     var supertonicStyle: Int
         get() = sp.getInt(K_SUPERTONIC_STYLE, 0)
         set(v) = sp.edit().putInt(K_SUPERTONIC_STYLE, v).apply()
@@ -118,6 +121,14 @@ class Prefs(ctx: Context) {
     var autoMode: Boolean
         get() = sp.getBoolean(K_AUTO_MODE, false)
         set(v) = sp.edit().putBoolean(K_AUTO_MODE, v).apply()
+
+    /**
+     * Story cast: analyse the chapter and give the narrator and characters distinct voices.
+     * Off by default so a single-voice listener is never surprised by a voice change.
+     */
+    var storyCast: Boolean
+        get() = sp.getBoolean(K_STORY_CAST, false)
+        set(v) = sp.edit().putBoolean(K_STORY_CAST, v).apply()
 
     var highlight: Boolean
         get() = sp.getBoolean(K_HIGHLIGHT, true)
@@ -309,6 +320,7 @@ class Prefs(ctx: Context) {
         private const val K_NNAPI = "nnapi"
         private const val K_PREFETCH = "prefetch"
         private const val K_AUTO_MODE = "auto_mode"
+        private const val K_STORY_CAST = "story_cast"
         private const val K_HIGHLIGHT = "highlight"
         private const val K_READER = "reader_mode"
         private const val K_AUTOSCROLL = "autoscroll"
@@ -341,8 +353,8 @@ class Prefs(ctx: Context) {
         val READER_THEMES = setOf("dark", "sepia", "light")
 
         /**
-         * Curated best-sounding Kokoro voices (sid to label). Kokoro ships 11 speakers but a
-         * novel reader only needs a couple of good ones; the ids are the sids in voices.bin.
+         * Legacy two-voice shortlist kept for callers that still want a compact picker. The full
+         * 11-speaker catalogue (and cast tiers) lives in [VoiceCatalog.KOKORO].
          */
         val KOKORO_CURATED: List<Pair<Int, String>> = listOf(
             0 to "Heart (US female)",

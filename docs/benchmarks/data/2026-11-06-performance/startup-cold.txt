@@ -1,0 +1,30 @@
+=== run 1
+Status: ok
+LaunchState: COLD
+Activity: app.novelspeak/.MainActivity
+TotalTime: 803
+WaitTime: 806
+=== run 2
+Status: ok
+LaunchState: COLD
+Activity: app.novelspeak/.MainActivity
+TotalTime: 795
+WaitTime: 798
+=== run 3
+Status: ok
+LaunchState: COLD
+Activity: app.novelspeak/.MainActivity
+TotalTime: 800
+WaitTime: 801
+=== run 4
+Status: ok
+LaunchState: COLD
+Activity: app.novelspeak/.MainActivity
+TotalTime: 812
+WaitTime: 813
+=== run 5
+Status: ok
+LaunchState: COLD
+Activity: app.novelspeak/.MainActivity
+TotalTime: 812
+WaitTime: 814

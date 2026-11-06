@@ -37,7 +37,12 @@ typography (font, size, family, theme, width); pronunciation dictionary applied 
 volume boost, pitch and skip-silence; offline audio capture to WAV; paywall/login **detection** with
 an honest warning (no bypass); diagnostics bundle and a privacy page; no ads, analytics or accounts.
 On-device voice previews (Kokoro, Supertonic, Pocket narrator) audition without disturbing the
-active engine; the current voice is shown in the player card. Also: chapter prefetch (next chapter
+active engine; the current voice is shown in the player card, and the card collapses to a 56 dp
+mini bar (status, play/pause, progress) when the page needs the space. Reading chrome is a single
+app bar: Reader and the ad-block shield are inline controls in the address pill, and the chapter
+title sits in the player card instead of a second row. The UI honors the system reduced-motion
+setting and reflows at 1.3×/2× text scale (two-column shortcuts, two-row filters, scrollable
+sheets and menus). Also: chapter prefetch (next chapter
 extracted in a hidden WebView so playback never waits), word-level
 read-along, bookmarks (saved sentences with snippets), EPUB/PDF/plain-text import (PDF is text-layer
 only, no OCR), translation hand-off to the system browser, a two-pane tablet/landscape layout, and
@@ -46,6 +51,8 @@ signed model-catalog verification (`tools/model-catalog-sign.sh`).
 - **Any URL**: full WebView browser with URL bar, back/forward, reload.
 - **Imports**: EPUB, PDF (text layer) and plain-text files are extracted into app-private storage,
   shown in Library and Continue reading, reopen in the reader, and keep their playback position.
+- **Library**: search, All/Chapters/Imported/Finished filters, a two-column grid at ≥600 dp, and
+  recycled rows so large libraries open without a long frame.
 - **Generic extraction**: Mozilla Readability + a text-density fallback; works on empirenovel and
   any similar serialized-novel site (chapter pages, next-chapter detection, append-as-you-go).
 - **Two TTS backends**, switchable in settings:
@@ -130,6 +137,31 @@ permission (needed for the playback notification).
 3. **▶ / ⏸**, **⏮ / ⏭** move by sentence, **■** stops, **− / +** change speed.
 4. **Next ch** follows the page's own "next chapter" link and appends it to the queue.
 5. **⚙** → choose engine, install a neural model, pick a voice, tune threads/NNAPI/prefetch.
+
+### Story cast (experimental)
+
+Tap **Cast** in the player to give the narrator and characters different on-device voices. The
+analysis runs locally, preserves the author's text, and only adds speaker labels and voice ids.
+Supertonic exposes 10 speakers in one model (F1–F5, M1–M5), so a cast does not download a model per
+character. Long-press **Cast** to review the roster. Lines the parser cannot resolve stay in the
+narrator's voice and are counted as *to review* rather than given a confident wrong voice. Story
+cast currently requires Supertonic or Kokoro; system TTS, Pocket and ZipVoice fall back to a
+narrator-only queue.
+
+Lines the parser cannot resolve stay with the narrator. While one is playing, open **Cast** and tap
+**Fix current line** to assign it to the right character; the correction is chapter-scoped and
+survives reopening the book. Tap **Preview** on any character to hear one of their real lines with
+the assigned voice. Cast dialogue also trims Supertonic's digital padding, so a one-word line is no
+longer surrounded by a second of dead air.
+
+Quality and latency are measured, not assumed: the 2026-11-06 evaluation covers host and on-device
+RTF, speaker-switch overhead, ASR word error rate, F0 separation, and an audio-capable judge.
+See [the benchmark](docs/benchmarks/2026-11-06-story-cast-quality.md) and the reproducible
+[`tools/cast-benchmark`](tools/cast-benchmark/README.md) harness. Headline: 4–5/5 voice
+distinction, 96.2% word accuracy after spelling normalisation, Supertonic RTF **0.168 host /
+~0.50 emulator**, and near-zero speaker-switch cost. Kokoro is ~3× slower in absolute synthesis but
+closer to normal audiobook pacing; it remains the quality option pending a listening test.
+Ultra-short lines and emotional range are the open quality work.
 
 ### Ad blocking
 
@@ -238,6 +270,21 @@ cd - && DEPS="$HOME/build/deps" tools/fetch-webkit-deps.sh && ./build.sh
 `build/debug.keystore` and are generated on first run. For a signed release build, set
 `KEYSTORE`, `KS_ALIAS`, `KS_PASS`, `KEY_PASS`, and `OUT_APK` — see [RELEASING.md](RELEASING.md).
 Use `ABI=armeabi-v7a ./build.sh` for 32-bit devices.
+
+### Side-by-side dev build
+
+A release-signed install cannot be replaced by a debug APK. To test a work-in-progress build
+next to the release app without erasing its library:
+
+```bash
+ABI=arm64-v8a tools/build-dev-variant.sh
+# output: build/NovelSpeak-dev-arm64-v8a.apk
+```
+
+It builds package `app.novelspeak.dev` with label **NovelSpeak Dev**, version `1.3.0-dev`, the
+debug key, and its own data, notification channels and diagnostics provider authority. Android
+treats it as a separate app, so the release app's library, settings and models are untouched.
+The dev app downloads its own models on first use.
 
 ### Android Studio
 

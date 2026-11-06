@@ -1,0 +1,40 @@
+{
+  "model": "gemini-2.5-flash",
+  "audio": "/tmp/opencode/cast-bench/scene_40s.mp3",
+  "image": "docs/media/ui-audit/phone-cast.png",
+  "usage": {
+    "completion_tokens": 386,
+    "prompt_tokens": 2090,
+    "total_tokens": 4580
+  },
+  "ratings": {
+    "naturalness": 1,
+    "character_distinction": 4,
+    "emotional_fit": 1,
+    "pacing": 2,
+    "intelligibility": 2,
+    "overall": 1,
+    "biggest_issue": "The pervasive robotic, distorted quality and unnatural prosody in all character voices make the audio difficult to listen to and completely undermine emotional delivery.",
+    "per_character": {
+      "Narrator": "The narrator's voice is the most natural but still exhibits some unnatural pauses and slightly robotic inflections.",
+      "Rennick": "Rennick's voice is deep but sounds heavily distorted and robotic, with unnaturally drawn-out words.",
+      "Mara": "Mara's voice is distinct but suffers from the same robotic distortion and elongated vowels as Rennick.",
+      "Tomas": "Tomas's voice is distinct but also sounds heavily processed and robotic, failing to convey any youthful defiance."
+    },
+    "segment_notes": [
+      {
+        "timestamp": "0:11-0:14",
+        "problem": "The word 'didn't' is abruptly cut off, making it unintelligible and disrupting the flow."
+      },
+      {
+        "timestamp": "0:38-0:39",
+        "problem": "The line 'He's right here.' is delivered by the narrator immediately after the narrator announced 'a third voice,' which is confusing as it sounds like the narrator is speaking the character's line."
+      },
+      {
+        "timestamp": "0:56-0:57",
+        "problem": "The word 'Mine,' is delivered with a very unnatural, distorted, and robotic quality, sounding more like a sound effect than a human voice."
+      }
+    ],
+    "confidence": 0.9
+  }
+}

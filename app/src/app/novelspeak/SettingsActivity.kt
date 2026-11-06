@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -120,8 +121,24 @@ class SettingsActivity : Activity() {
         root.addView(scroll)
         setContentView(root)
         applyInsets(root)
+        applyContentWidth()
 
         build()
+    }
+
+    /**
+     * Keep the settings content inside a readable 720 dp measure on tablets; the toolbar remains
+     * full-width, like a standard app bar, while the cards center beneath it.
+     */
+    private fun applyContentWidth() {
+        if (!::container.isInitialized) return
+        val pad = dp(Design.contentPadding(resources.configuration.screenWidthDp))
+        container.setPadding(pad, dp(2), pad, dp(20))
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyContentWidth()
     }
 
     /** Keep the top bar below the status bar and the footer above the nav bar. */
@@ -161,11 +178,11 @@ class SettingsActivity : Activity() {
         }
         val back = TextView(this).apply {
             text = "←"
-            textSize = 22f
+            textSize = 20f
             gravity = Gravity.CENTER
             setTextColor(Palette.TEXT)
             background = ripple(Palette.SURFACE_HIGH, 24, oval = true)
-            layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+            layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP))
             contentDescription = "Back"
             isClickable = true
             isFocusable = true
@@ -584,10 +601,7 @@ class SettingsActivity : Activity() {
                 setPadding(0, dp(8), 0, 0)
             })
         }
-        val pronunciationActions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(8), 0, dp(4))
-        }
+        val pronunciationActions = actionRow()
         pronunciationActions.addView(pillButton("Edit rules", primary = true) {
             showPronunciationDialog()
         })
@@ -662,10 +676,7 @@ class SettingsActivity : Activity() {
                 "with URLs, tokens and rules redacted, the event log and the last crash. Capped " +
                 "at 2 MB and shared only through the app you pick."
         ))
-        val diagnosticsActions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(8), 0, dp(4))
-        }
+        val diagnosticsActions = actionRow()
         diagnosticsActions.addView(pillButton(
             "Share diagnostics", primary = true, contentDescription = "Share diagnostics"
         ) {
@@ -690,10 +701,7 @@ class SettingsActivity : Activity() {
                 AudioExporter.humanSize(AudioExporter.estimatedBytes(3_600_000L)) +
                 " per hour). Tap Export once to start capturing playback, then again to save it."
         ))
-        val audioActions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(8), 0, dp(4))
-        }
+        val audioActions = actionRow()
         audioActions.addView(pillButton(
             "Export current chapter (WAV)", primary = true, contentDescription = "Export audio"
         ) {
@@ -745,10 +753,7 @@ class SettingsActivity : Activity() {
         ) { prefs.adblockPopups = it }
         adblockCard.addView(note(AdBlocker.statusText()))
 
-        val adblockActions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(8), 0, dp(4))
-        }
+        val adblockActions = actionRow()
         adblockActions.addView(pillButton("Update lists", primary = true) {
             updateAdBlockLists()
         })
@@ -780,7 +785,11 @@ class SettingsActivity : Activity() {
             setPadding(dp(4), dp(6), dp(4), dp(10))
         })
 
+        section("READING")
         hubRow("Reading aloud", engineSummary() + " · " + shortVoiceLabel(), Page.ENGINE)
+        hubRow("Reading & display", readingSummary(), Page.READING)
+
+        section("VOICE & PLAYBACK")
         hubRow("Voices & previews", voiceSummary(), Page.VOICES)
         hubRow(
             "Playback & sleep",
@@ -788,7 +797,30 @@ class SettingsActivity : Activity() {
                 if (prefs.sleepTimerMinutes > 0) prefs.sleepTimerMinutes.toString() + " min sleep" else "sleep off",
             Page.PLAYBACK
         )
-        hubRow("Reading & display", readingSummary(), Page.READING)
+
+        section("STORY")
+        val castCard = card()
+        toggleRow(
+            castCard,
+            "Story cast",
+            storyCastSummary(),
+            prefs.storyCast
+        ) { on ->
+            prefs.storyCast = on
+            status.text = if (on) {
+                "Story cast on · tap Cast in the reader"
+            } else {
+                "Story cast off · narrator only"
+            }
+            build()
+        }
+        castCard.addView(note(
+            "Tap Cast in the player to analyse the current chapter. The author's words are " +
+                "preserved; only speaker labels and voices are added."
+        ))
+        container.addView(castCard)
+
+        section("PRIVACY & APP")
         hubRow("Privacy & data", privacySummary(), Page.PRIVACY)
         hubRow("Advanced", advancedSummary(), Page.ADVANCED)
         hubRow("About NovelSpeak", "Privacy, licences and version") {
@@ -834,7 +866,7 @@ class SettingsActivity : Activity() {
             textSize = 12f
             setTextColor(Palette.MUTED)
             setPadding(0, dp(3), 0, 0)
-            maxLines = 1
+            maxLines = if (resources.configuration.fontScale >= 1.5f) 2 else 1
         })
         row.addView(texts)
         row.addView(TextView(this).apply {
@@ -861,6 +893,10 @@ class SettingsActivity : Activity() {
     }
 
     private fun voiceSummary(): String = currentVoiceLabelText()
+
+    private fun storyCastSummary(): String =
+        if (prefs.storyCast) "On · narrator + character voices"
+        else "Off · one narrator voice"
 
     private fun readingSummary(): String {
         val theme = prefs.readerTheme.replaceFirstChar { it.uppercase() }
@@ -981,10 +1017,7 @@ class SettingsActivity : Activity() {
         }
         block.addView(top)
 
-        val actions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(8), 0, 0)
-        }
+        val actions = actionRow(topPaddingDp = 0)
         if (installed) {
             if (!active) {
                 actions.addView(pillButton("Use", primary = true) {
@@ -1069,15 +1102,13 @@ class SettingsActivity : Activity() {
     }
 
     private fun section(title: String, accessibilityLabel: String? = null) {
-        val pretty = if (title.isEmpty()) title else
-            title.lowercase().replaceFirstChar { it.uppercase() }
         container.addView(TextView(this).apply {
-            text = pretty
-            textSize = 12.5f
-            letterSpacing = 0.01f
+            text = title.uppercase()
+            textSize = 11f
+            letterSpacing = 0.08f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.MUTED)
-            setPadding(dp(4), dp(18), 0, dp(8))
+            setPadding(dp(4), dp(20), 0, dp(8))
             if (accessibilityLabel != null) contentDescription = accessibilityLabel
         })
     }
@@ -1223,6 +1254,19 @@ class SettingsActivity : Activity() {
         intArrayOf(0x666EE7B7, Palette.BORDER)
     )
 
+    /**
+     * Horizontal at normal text, vertical at 1.5x/2x. A three-pill row otherwise squeezes its
+     * last button into a one-letter-wide column on the Privacy page.
+     */
+    private fun actionRow(topPaddingDp: Int = 8): LinearLayout = LinearLayout(this).apply {
+        orientation = if (resources.configuration.fontScale >= 1.5f) {
+            LinearLayout.VERTICAL
+        } else {
+            LinearLayout.HORIZONTAL
+        }
+        setPadding(0, dp(topPaddingDp), 0, dp(4))
+    }
+
     private fun pillButton(
         label: String,
         primary: Boolean = false,
@@ -1246,12 +1290,13 @@ class SettingsActivity : Activity() {
         background = ripple(
             if (primary) Palette.ACCENT else Palette.SURFACE_HIGH, 12
         )
-        setPadding(dp(14), 0, dp(14), 0)
+        setPadding(dp(14), dp(8), dp(14), dp(8))
+        minimumHeight = dp(Design.DENSE_TOUCH_DP)
         layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT, dp(38)
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply {
             marginEnd = dp(8)
-            topMargin = dp(topMarginDp)
+            topMargin = dp(topMarginDp + if (resources.configuration.fontScale >= 1.5f) 4 else 0)
         }
         isClickable = true
         isFocusable = true
@@ -1266,12 +1311,9 @@ class SettingsActivity : Activity() {
         when (model.family) {
             "pocket" -> listOf("" to "Default narrator (bria clip)")
             "zipvoice" -> listOf("" to "Cloned narrator (reference clip + transcript)")
-            "supertonic" -> listOf(
-                "0" to "F1 (US female)",
-                "1" to "M1 (US male)"
-            )
+            "supertonic" -> VoiceCatalog.SUPERTONIC.map { it.id to it.label }
             "vocoder" -> emptyList()
-            else -> Prefs.KOKORO_CURATED.map { pair -> pair.first.toString() to pair.second }
+            else -> VoiceCatalog.KOKORO.map { it.id to it.label }
         }
 
     private fun modelDisplayName(model: ModelManager.Model): String = when (model.family) {
@@ -1303,9 +1345,10 @@ class SettingsActivity : Activity() {
         return when (ModelManager.model(prefs.modelId)?.family) {
             "pocket" -> "Pocket · cloned narrator"
             "zipvoice" -> "ZipVoice · cloned narrator"
-            "supertonic" -> "Supertonic · " +
-                (if (prefs.supertonicStyle == 0) "F1 (US female)" else "M1 (US male)")
-            else -> "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(prefs.kokoroSid)?.second ?: "voice")
+            "supertonic" -> "Supertonic · " + VoiceCatalog.label(
+                "supertonic", prefs.supertonicStyle.toString()
+            )
+            else -> "Kokoro · " + VoiceCatalog.label("kokoro", prefs.kokoroSid.toString())
         }
     }
 

@@ -1,0 +1,40 @@
+{
+  "model": "gemini-2.5-flash-lite",
+  "audio": "/tmp/opencode/cast-bench/judge_montage_16k.wav",
+  "image": "",
+  "usage": {
+    "completion_tokens": 379,
+    "prompt_tokens": 1177,
+    "total_tokens": 1556
+  },
+  "ratings": {
+    "naturalness": 3.5,
+    "character_distinction": 4.0,
+    "emotional_fit": 3.0,
+    "pacing": 3.5,
+    "intelligibility": 4.0,
+    "overall": 3.5,
+    "biggest_issue": "The unresolved lines for Tomas sound slightly jarring in the narrator's voice.",
+    "per_character": {
+      "Narrator": "The narrator's voice is clear but lacks the emotional nuance of the characters.",
+      "Marshal Rennick": "Marshal Rennick's voice is appropriately gruff and authoritative.",
+      "Mara": "Mara's voice is calm and measured, fitting her role in the scene.",
+      "Tomas": "Tomas's voice is youthful and defiant, effectively conveying his character."
+    },
+    "segment_notes": [
+      {
+        "timestamp": "00:08-00:10",
+        "note": "The transition to the third voice is abrupt and the line 'He's right here.' sounds slightly out of place in the narrator's voice."
+      },
+      {
+        "timestamp": "00:18-00:19",
+        "note": "Tomas's line 'And I told you I wouldn't.' is delivered with a slight robotic flatness."
+      },
+      {
+        "timestamp": "00:20-00:21",
+        "note": "The final line 'Mine,' is also delivered in the narrator's voice and feels a bit disconnected from the preceding dialogue."
+      }
+    ],
+    "confidence": 0.9
+  }
+}

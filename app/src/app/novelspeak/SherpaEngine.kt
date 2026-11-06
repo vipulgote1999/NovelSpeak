@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import com.k2fsa.sherpa.onnx.GenerationConfig
 import com.k2fsa.sherpa.onnx.OfflineTts
+import app.novelspeak.cast.VoiceSelection
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import java.io.File
 import java.util.concurrent.LinkedBlockingQueue
@@ -64,7 +65,9 @@ class SherpaEngine(
         val text: String,
         val epoch: Int,
         val onDone: (Boolean) -> Unit,
-        val onRendered: ((Boolean) -> Unit)? = null
+        val onRendered: ((Boolean) -> Unit)? = null,
+        val voiceId: String? = null,
+        val trimSilence: Boolean = false
     )
     private class Boundary(val endFrame: Long, val epoch: Int, val onDone: (Boolean) -> Unit)
 
@@ -75,6 +78,7 @@ class SherpaEngine(
      */
     private inner class SampleSink(
         private val epoch: Int,
+        castTrim: Boolean,
         private val onFirstAudio: () -> Unit
     ) : (FloatArray) -> Int {
         var wrote = false
@@ -95,8 +99,11 @@ class SherpaEngine(
         /** PcmPlayer rejected a write (stop/reset); abort like the inline path did before. */
         var writeFailed = false
 
-        /** Skip-silence is read once per sentence so a Settings toggle cannot split a sentence. */
-        private val trim = prefs.ttsSkipSilence
+        /**
+         * Skip-silence is read once per sentence so a Settings toggle cannot split a sentence.
+         * Cast dialogue also sets it per cue, because Supertonic pads every short line.
+         */
+        private val trim = prefs.ttsSkipSilence || castTrim
         private val rate = if (sampleRate > 0) sampleRate else 24000
 
         /**
@@ -106,6 +113,7 @@ class SherpaEngine(
          * byte-for-byte the previous behaviour.
          */
         private var pending: FloatArray? = null
+        private var trimLogged = false
 
         override fun invoke(samples: FloatArray): Int {
             // sherpa-onnx offline-tts callback contract: 1 = continue generating,
@@ -187,6 +195,10 @@ class SherpaEngine(
                 }
             } else {
                 samples
+            }
+            if (trim && !trimLogged && out.size != samples.size) {
+                trimLogged = true
+                DiagLog.line(ctx, "tts trim ${samples.size} -> ${out.size} samples")
             }
             if (out.isEmpty()) return true // pure-silence chunk dropped; keep generating
             val first = !wrote
@@ -351,24 +363,32 @@ class SherpaEngine(
             }
             try {
                 player.ensure(sampleRate)
+                val requested = task.voiceId
+                val sid = when (family) {
+                    "pocket" -> 0
+                    "supertonic" -> VoiceSelection.speakerId(requested, prefs.supertonicStyle)
+                    "zipvoice" -> 0
+                    else -> VoiceSelection.speakerId(requested, prefs.kokoroSid)
+                }
+                if (requested != null) {
+                    DiagLog.line(ctx, "tts cast voice family=$family sid=$sid requested=$requested")
+                }
                 val cfg = GenerationConfig(
                     generationSpeed(), // speed from the player controls, clamped to this engine
                     1.0f,               // silenceScale: HayaiTTS value
-                    // A preview sets voiceId without touching the saved selection; normal
-                    // playback leaves voiceId empty and follows prefs.kokoroSid.
-                    when (family) {
-                        "pocket" -> 0
-                        "supertonic" -> (voiceId.toIntOrNull() ?: prefs.supertonicStyle)
-                        "zipvoice" -> 0
-                        else -> (voiceId.toIntOrNull() ?: prefs.kokoroSid)
-                    },
+                    // A task's voice wins, so queued sentences keep the voice they were queued
+                    // with. A null task voice (normal single-voice playback) follows the saved
+                    // selection; the shared `voiceId` field is only the preview/global fallback.
+                    sid,
                     reference ?: FloatArray(0),
                     referenceRate,
                     if (family == "zipvoice") prefs.zipVoiceTranscript else "",
                     8,                  // numSteps: HayaiTTS default for cloning generation
                     emptyMap()
                 )
-                val sink = SampleSink(task.epoch) { postRendered(task, true) }
+                val sink = SampleSink(task.epoch, task.trimSilence) {
+                    postRendered(task, true)
+                }
                 val started = System.currentTimeMillis()
                 val label = cleaned.take(28).replace('\n', ' ')
                 DiagLog.line(ctx, "gen start \"$label\" queue=${player.queueDepth()}")
@@ -443,7 +463,9 @@ class SherpaEngine(
     override fun speak(
         text: String,
         onDone: (Boolean) -> Unit,
-        onRendered: ((Boolean) -> Unit)?
+        onRendered: ((Boolean) -> Unit)?,
+        voiceId: String?,
+        trimSilence: Boolean
     ) {
         if (!isReady) {
             main.post { onRendered?.invoke(false) }
@@ -454,7 +476,7 @@ class SherpaEngine(
             stopFlag = false
             player.reset()
         }
-        genQueue.offer(Task(text, cancelEpoch, onDone, onRendered))
+        genQueue.offer(Task(text, cancelEpoch, onDone, onRendered, voiceId, trimSilence))
     }
 
     override fun stop() {
@@ -478,9 +500,9 @@ class SherpaEngine(
     override fun voices(): List<Pair<String, String>> {
         return when (family) {
             "pocket" -> listOf("" to "Default (bria) + imported clip")
-            "supertonic" -> listOf("0" to "F1 (female, fast)", "1" to "M1 (male, fast)")
+            "supertonic" -> VoiceCatalog.SUPERTONIC.map { it.id to it.label }
             "zipvoice" -> listOf("" to "Cloned (transcript)")
-            else -> Prefs.KOKORO_CURATED.map { pair -> pair.first.toString() to pair.second }
+            else -> VoiceCatalog.KOKORO.map { it.id to it.label }
         }
     }
 
@@ -502,12 +524,11 @@ class SherpaEngine(
     override fun currentVoiceLabel(): String {
         return when (family) {
             "pocket" -> "Pocket · cloned narrator"
-            "supertonic" -> "Supertonic · " + (if (prefs.supertonicStyle == 0) "F1 (female)" else "M1 (male)")
+            "supertonic" -> "Supertonic · " + VoiceCatalog.label(
+                "supertonic", prefs.supertonicStyle.toString()
+            )
             "zipvoice" -> "ZipVoice · cloned (transcript)"
-            else -> {
-                val sid = prefs.kokoroSid
-                "Kokoro · " + (Prefs.KOKORO_VOICES.getOrNull(sid)?.second ?: "voice $sid")
-            }
+            else -> "Kokoro · " + VoiceCatalog.label("kokoro", prefs.kokoroSid.toString())
         }
     }
 
