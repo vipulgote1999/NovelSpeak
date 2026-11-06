@@ -2154,6 +2154,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 (0 until raw.length()).map { raw.getString(it) }
             } catch (t: Throwable) { emptyList() }
             if (urls.isEmpty()) { statusView.text = "No manga images found on this page"; return@evaluateJavascript }
+            statusView.text = "Found ${urls.size} manga images, OCR…"
             Thread {
                 val prefs = NovelSpeakApp.instance.prefs
                 val ocrLang = prefs.mangaOcrLanguage
