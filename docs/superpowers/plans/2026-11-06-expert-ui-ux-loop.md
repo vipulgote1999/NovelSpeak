@@ -157,9 +157,10 @@ object Design {
   Supertonic remains the latency default.
 - **Wave 4 — in progress.** Reduced-motion support, the 1.3×/2× text-scale audit, all seven
   secondary Settings pages at 2×, and an emulator performance trace are done. Cold start is
-  **803 ms median**, warm resume is instant, and scrolling is GPU/swap-bound on SwiftShader rather
-  than UI-thread-bound. 521 host checks and Maestro 7/106 pass. Next: a physical-phone trace,
-  large-library stress test, and the remaining ASR/listening validation.
+  **803 ms median**, warm resume is instant, and scrolling is GPU/swap-bound on SwiftShader. The
+  200-entry Library stress test is complete: the recycled ListView cut open p99 from 250 ms to
+  48 ms and slow UI-thread frames from 3 to 1. 521 host checks and Maestro 7/106 pass. Next: a
+  physical-phone trace and the remaining ASR/listening validation.
 
 ## Execution notes
 

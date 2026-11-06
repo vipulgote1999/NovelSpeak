@@ -53,7 +53,37 @@ Evidence: `gfx-home-1.txt`, `gfx-home-2.txt`, `gfx-library.txt` in the same dire
 
 ---
 
-## 3. Perfetto trace: where the time goes
+## 3. 200-entry Library stress test
+
+The audit’s largest open question was the non-lazy Library. I seeded **200 chapters through the
+real `LibraryStore`**, backed up the real preferences, measured, and restored the backup. Home caps
+Continue cards at three, so this stress test is Library-specific.
+
+| Implementation | Open frames | Janky open | Open p99 | Slow UI (open) | Scroll p50 | Scroll janky | Scroll slow UI |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 200 rows built synchronously (old) | 47 | 5 (10.6%) | **250 ms** | 3 | 21 ms | 0.55% | 0 |
+| Incremental 20-row batches | 39 | 8 (20.5%) | 113 ms | 6 | 21 ms | 0.84% | 0 |
+| **Recycled ListView adapter (final)** | 19 | 2 (10.5%) | **48 ms** | **1** | 21 ms | 0.56% | **0** |
+
+- The final adapter is a **5.2× reduction in the worst open frame** (250 → 48 ms) and cuts slow
+  UI-thread frames from 3 to 1. Only visible rows are inflated now.
+- Scrolling is unchanged (~21 ms p50) because the old ScrollView also drew only what was visible;
+  a 6-entry library was 16 ms p50, so the extra 5 ms is additional visible content, not UI work.
+- The one residual 48 ms open frame is initial visible-row inflation on SwiftShader. It needs a
+  phone check before further row simplification; scrolling has **zero** slow UI-thread frames.
+- Home with 200 entries: 356 frames, 10 janky (2.81%), p99 48 ms, 4 slow UI frames. Home still
+  renders only three Continue cards; the extra cost is the 200-entry store scan/sort, not 200 views.
+
+Code: `LibraryActivity` now uses a `ListView` + `BaseAdapter` (`LibraryAdapter`) with a transparent
+8 dp divider; search/filter replaces the adapter’s row list and resets to the top. Delete, search,
+and filter Maestro flows still pass.
+
+Renders/evidence: [200-row Library](../../media/benchmarks/library-200-stress.png) ·
+`gfx-library-200-open.txt`, `gfx-library-200-scroll.txt`,
+`gfx-library-200-list-open.txt`, `gfx-library-200-list-scroll.txt`, `gfx-home-200.txt`,
+`library-200-seed.txt`.
+
+## 4. Perfetto trace: where the time goes
 
 12-second trace (`sched gfx wm am`, 64 MB buffer) covering Home and Library scrolling.
 Trace: `home-library.perfetto-trace.gz` (14.2 MB raw, 2.8 MB gzip).
@@ -80,23 +110,22 @@ Evidence query output: `docs/benchmarks/data/2026-11-06-performance/trace-querie
 
 ---
 
-## 4. Limits and next actions
+## 5. Limits and next actions
 
 - **Phone trace is still required** before making a device performance claim. The emulator’s
   software GPU dominates both absolute and relative frame numbers.
-- The library in this pass had **6 entries**, not the 200-entry stress case from the audit. A lazy
-  list/adapter or incremental rendering remains a valid follow-up if a large-library measurement
-  shows `Slow UI thread` or `Slow issue draw commands`.
+- The 200-entry Library is now recycled, but the first open still has one 48 ms frame on
+  SwiftShader. Confirm on a phone before simplifying the row further.
 - ASR validation is blocked until the router quota resets (~18 h from this run).
 - Human listening comparison is blocked on a human listener; the corrected
   `story-cast-supertonic.mp3` and `story-cast-kokoro.mp3` are ready.
 
 **Recommended order:** phone Perfetto/gfxinfo trace → decide whether Home needs a shortcut-plate
-overdraw/caching change → large-library stress test → ASR/listening.
+overdraw/caching change → ASR/listening when unblocked.
 
 ---
 
-## 5. Repro
+## 6. Repro
 
 ```bash
 # startup

@@ -22,10 +22,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.inputmethod.EditorInfo
+import android.widget.AbsListView
+import android.widget.BaseAdapter
 import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
-import android.widget.ScrollView
+import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
 import app.novelspeak.library.Bookmark
@@ -55,13 +57,50 @@ class LibraryActivity : Activity() {
     private lateinit var store: LibraryStore
     private lateinit var bookmarks: BookmarkStore
     private lateinit var imports: ImportedBookStore
-    private lateinit var list: LinearLayout
+    private lateinit var list: ListView
     private lateinit var clearAction: TextView
     private lateinit var searchWrap: LinearLayout
     private lateinit var searchField: EditText
     private var query = ""
     private var filter = Filter.ALL
     private val filterButtons = LinkedHashMap<Filter, TextView>()
+    private val adapter = LibraryAdapter()
+
+    private sealed class Row {
+        data class Header(val title: String) : Row()
+        data class Entry(val entry: LibraryEntry) : Row()
+        data class Book(val book: ImportedBook) : Row()
+        data class Mark(val mark: Bookmark) : Row()
+        data class Empty(val message: String) : Row()
+    }
+
+    private inner class LibraryAdapter : BaseAdapter() {
+        var rows: List<Row> = emptyList()
+
+        override fun getCount(): Int = rows.size
+
+        override fun getItem(position: Int): Any = rows[position]
+
+        override fun getItemId(position: Int): Long = position.toLong()
+
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val row = rows[position]
+            val view = when (row) {
+                is Row.Header -> sectionHeader(row.title)
+                is Row.Entry -> entryRow(row.entry)
+                is Row.Book -> importRow(row.book)
+                is Row.Mark -> bookmarkRow(row.mark)
+                is Row.Empty -> emptyView(row.message)
+            }
+            // ListView owns row layout; ignore the LinearLayout margins used by the old
+            // ScrollView and let the 8 dp divider provide the spacing.
+            view.layoutParams = AbsListView.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            return view
+        }
+    }
 
     private enum class Filter(val label: String) {
         ALL("All"),
@@ -86,20 +125,18 @@ class LibraryActivity : Activity() {
         searchWrap = buildSearchBar()
         root.addView(searchWrap)
 
-        list = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+        list = ListView(this).apply {
+            divider = ColorDrawable(Color.TRANSPARENT)
+            dividerHeight = dp(8)
+            isVerticalScrollBarEnabled = false
+            clipToPadding = false
             setPadding(dp(16), dp(4), dp(16), dp(20))
+            adapter = this@LibraryActivity.adapter
         }
-        val scroll = ScrollView(this).apply {
-            isFillViewport = true
-            addView(list)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
-        }
-        root.addView(scroll)
+        root.addView(
+            list,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
+        )
         setContentView(root)
         applyInsets(root)
         applyContentWidth()
@@ -327,7 +364,6 @@ class LibraryActivity : Activity() {
 
     /** Rebuilds the list from storage, applying the search query and the active filter. */
     private fun render() {
-        list.removeAllViews()
         val rawEntries = try {
             store.listEntries()
         } catch (t: Throwable) {
@@ -375,27 +411,37 @@ class LibraryActivity : Activity() {
         if (entries.isEmpty() && marks.isEmpty() && books.isEmpty()) {
             val noneAtAll = rawEntries.isEmpty() && rawBooks.isEmpty() && rawMarks.isEmpty()
             clearAction.visibility = if (noneAtAll) View.GONE else View.VISIBLE
-            list.addView(
-                if (noneAtAll) emptyView()
-                else emptyView("No matches. Try a different search or filter.")
+            adapter.rows = listOf(
+                Row.Empty(
+                    if (noneAtAll) EMPTY_TEXT
+                    else "No matches. Try a different search or filter."
+                )
             )
+            adapter.notifyDataSetChanged()
             return
         }
         clearAction.visibility = if (entries.isEmpty() && books.isEmpty()) View.GONE else View.VISIBLE
         val multipleSections = listOf(entries.isNotEmpty(), books.isNotEmpty(), marks.isNotEmpty())
             .count { it } > 1
+
+        // The adapter recycles rows, so opening a 200-entry library only creates the visible
+        // screen instead of 200 cards (the stress test's 250 ms frame).
+        val rows = ArrayList<Row>(entries.size + books.size + marks.size + 3)
         if (entries.isNotEmpty()) {
-            if (multipleSections) list.addView(sectionHeader("CHAPTERS"))
-            for (entry in entries) list.addView(entryRow(entry))
+            if (multipleSections) rows.add(Row.Header("CHAPTERS"))
+            for (entry in entries) rows.add(Row.Entry(entry))
         }
         if (books.isNotEmpty()) {
-            if (multipleSections) list.addView(sectionHeader("IMPORTED BOOKS"))
-            for (book in books) list.addView(importRow(book))
+            if (multipleSections) rows.add(Row.Header("IMPORTED BOOKS"))
+            for (book in books) rows.add(Row.Book(book))
         }
         if (marks.isNotEmpty()) {
-            if (multipleSections) list.addView(sectionHeader("BOOKMARKS"))
-            for (mark in marks) list.addView(bookmarkRow(mark))
+            if (multipleSections) rows.add(Row.Header("BOOKMARKS"))
+            for (mark in marks) rows.add(Row.Mark(mark))
         }
+        adapter.rows = rows
+        adapter.notifyDataSetChanged()
+        list.setSelection(0)
     }
 
     /** EPUB/PDF/TXT imports: durable copies that reopen in the reader for TTS. */

@@ -190,9 +190,10 @@ two-pane; the card becomes a side panel with a sticky mini bar on compact.
 
 ## 5. Performance & accessibility
 
-- **Library/Home view cost.** Both use `ScrollView` + `LinearLayout` and rebuild every child on
-  resume/show. At 200 library entries this is measurable. Use a platform `ListView`/adapter or a
-  bounded lazy pattern; keep the data layer unchanged.
+- **Library/Home view cost.** Library now uses a platform **ListView + recycled adapter**; a
+  200-entry stress test reduced the initial-render p99 from **250 ms to 48 ms** and slow UI-thread
+  frames from 3 to 1. Scrolling is 21 ms p50 with 0 slow UI-thread frames. Home still renders only
+  three Continue cards; its remaining cost is the 200-entry store scan/sort, not 200 views.
 - **Home refresh.** `refreshHome()` rebuilds all continue cards on every `showHome`; cache the
   rendered state and diff by id/updatedAt.
 - **Images.** Home icons are loaded from assets and cached in a `HashMap`; library covers are
@@ -372,18 +373,20 @@ Renders: [hub](../../media/ui-audit/settings2x-hub.png) ·
 
 **Performance trace.** On the 60 Hz SwiftShader emulator: cold start **803 ms median**
 (795–812 ms), warm resume **0 ms total / 1–4 ms wait**. Library scroll is **16 ms p50, 0.56%
-modern jank**; Home is **25–26 ms p50, 0.8–1.0% modern jank**. A 12-second Perfetto trace shows
-**5.76 s RenderThread CPU vs 0.32 s UI-thread CPU**, with 511 swaps averaging 14.1 ms. The
-bottleneck is software-GPU swap/overdraw, not app layout or text work. A phone trace is required
-before changing the hierarchy. Full report:
+modern jank** (6 entries) and 21 ms p50 / 0.56% with 200 entries; Home is **25–26 ms p50,
+0.8–1.0% modern jank**. A 12-second Perfetto trace shows **5.76 s RenderThread CPU vs 0.32 s
+UI-thread CPU**, with 511 swaps averaging 14.1 ms — software-GPU swap/overdraw, not app layout.
+The 200-entry Library was then converted from a ScrollView of 200 cards to a recycled ListView:
+open p99 **250 → 48 ms**, slow UI-thread frames **3 → 1**, scroll unchanged. A phone trace is
+still required before changing the hierarchy. Full report:
 `docs/benchmarks/2026-11-06-performance.md`.
 
 **Verification:** **521 host checks** (motion 5, player chrome 9, audio DSP 32, parser 42, store 42,
 library 211, feature 130, design 15, catalog 18, selection 7, chunker 10) and **Maestro 7 flows /
 106 commands** pass at 1.0× with animator scale 1.
 
-Remaining Wave 4: phone performance trace, large-library stress test, and the remaining
-ASR/listening validation.
+Remaining Wave 4: physical-phone performance trace and the remaining ASR/listening validation.
+The large-library stress test is complete.
 
 ## 11. Acceptance metrics
 
