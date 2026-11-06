@@ -232,6 +232,23 @@ A Kokoro comparison was **not** run in this pass; it is the next benchmark, not 
 
 ---
 
+## 9a. Fixes shipped after this benchmark
+
+- **Short-fragment cueing** (`CastChunker`): `"Tomas. I told you…"` is now one TTS cue instead of
+  two. The cast scene is 18 cues, not 19.
+- **Per-line Fix speaker**: the cast sheet exposes **Fix current line** for unresolved cues. On
+  device, `"He's right here."` was assigned to Tomas, `unresolved` fell from 2 to 1, synthesis
+  switched to `sid 6`, and the correction persisted across a process restart.
+- **Dialogue silence trim**: Supertonic pads every short line to ~1.35 s regardless of
+  `silence_scale` (0.4 s lead + 0.6 s tail). Cast dialogue now trims that padding per cue through
+  the existing DSP trimmer; one measured line dropped from 59,724 to 24,102 samples. This reduces
+  the dead air that made `"Whose?"` and `"Mine,"` feel like pauses rather than turns. It does not
+  prove the pronunciation fix: a fresh ASR pass is still needed once the router quota resets.
+- **Verification**: 500 host checks and Maestro 7 flows / 106 commands pass on the new build.
+
+The original top-three list is otherwise unchanged: the truncated `"…didn't sit."` tail and the
+emotional range still need work, and Kokoro has not been benchmarked yet.
+
 ## 10. Limitations
 
 - The on-device run is an **x86_64 emulator**, not a phone. Host RTF 0.12 and emulator RTF 0.21

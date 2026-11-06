@@ -151,8 +151,9 @@ object Design {
 - **Parallel — done.** Story Cast quality/latency benchmark with Supertonic 3, ASR and an
   audio-capable judge; `CastChunker` fix for short same-speaker fragments. See
   `docs/benchmarks/2026-11-06-story-cast-quality.md`.
-- **Wave 3 — next.** Mini player + expanded sheet; branded cast sheet; confidence; per-line Fix
-  speaker; voice preview; short-line TTS guard.
+- **Wave 3 — in progress.** Branded cast sheet, confidence, per-line **Fix speaker**, and
+  per-dialogue silence trim are done and verified on device. Next: mini player + expanded sheet,
+  character voice preview from a real line, and an ASR re-check of one-word lines.
 
 ## Execution notes
 

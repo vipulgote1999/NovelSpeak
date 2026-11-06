@@ -141,6 +141,11 @@ narrator's voice and are counted as *to review* rather than given a confident wr
 cast currently requires Supertonic or Kokoro; system TTS, Pocket and ZipVoice fall back to a
 narrator-only queue.
 
+Lines the parser cannot resolve stay with the narrator. While one is playing, open **Cast** and tap
+**Fix current line** to assign it to the right character; the correction is chapter-scoped and
+survives reopening the book. Cast dialogue also trims Supertonic's digital padding, so a one-word
+line is no longer surrounded by a second of dead air.
+
 Quality and latency are measured, not assumed: the 2026-11-06 evaluation covers host and on-device
 RTF, speaker-switch overhead, ASR word error rate, F0 separation, and an audio-capable judge.
 See [the benchmark](docs/benchmarks/2026-11-06-story-cast-quality.md) and the reproducible

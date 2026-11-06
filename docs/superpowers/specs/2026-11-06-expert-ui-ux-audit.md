@@ -276,12 +276,22 @@ of two. Remaining quality work: one-word lines (`"Whose?"` → `"Who's Who"`), o
 - The parser now promotes a member’s confidence from the best evidence among their lines, and
   `CastStore` persists it. Before this, every character loaded as “Review” even when the parser
   was confident.
-- **455 host checks** pass (parser 36, store 28, library 211, feature 130, design 15, catalog 18,
-  selection 7, chunker 10).
-- Render: [Wave 3 cast sheet](../../media/ui-audit/wave3-cast-phone.png).
+- **Per-line Fix speaker** is live. The unresolved banner exposes **Fix current line**, opens a
+  narrator/character picker, persists a chapter-scoped `LineFix`, and rebuilds the queue. On-device:
+  `"He's right here."` → Tomas, `unresolved 2 → 1`, `sid 6`, and the correction survived a process
+  restart. Render: [Fix current line](../../media/ui-audit/wave3-cast-fixline.png) ·
+  [after fix](../../media/ui-audit/wave3-cast-fixed.png).
+- **Dialogue silence trim.** Supertonic pads every short line to ~1.35 s (0.4 s lead + 0.6 s
+  tail). Cast dialogue now trims that padding per cue; a measured short line went from 59,724 to
+  24,102 samples (1.6 s less dead air). Ordinary playback and the user’s skip-silence setting are
+  unchanged.
+- **500 host checks** pass (parser 36, store 41, library 211, feature 130, design 15, catalog 18,
+  selection 7, chunker 10, audio DSP 32).
+- **Maestro 7 flows / 106 commands** pass on the new build (launch, home, settings, library delete,
+  library search, read, transport).
 
-Still open: mini player/expanded sheet, per-line **Fix speaker** (the unresolved banner is the
-entry point), and voice preview from a character’s real line.
+Still open: mini player/expanded sheet, a voice preview from a character’s real line, and an ASR
+re-check of one-word lines after the trim.
 
 ## 10. Acceptance metrics
 
