@@ -296,6 +296,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         backButton = iconButton(Glyph.BACK, "Back", Design.TOUCH_DP) { navigateBack() }
         forwardButton = iconButton(Glyph.FORWARD, "Forward", Design.TOUCH_DP) { navigateForward() }
+        // Phones trade the forward arrow for a readable address; Forward stays in the menu.
+        if (resources.configuration.screenWidthDp < 600) forwardButton.visibility = View.GONE
         reloadButton = iconButton(Glyph.RELOAD, "Reload", Design.TOUCH_DP) {
             if (pageLoading) stopLoading() else web.reload()
         }
@@ -1672,9 +1674,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             val canForward = web.canGoForward()
             forwardButton.isEnabled = canForward
             forwardButton.alpha = if (canForward) 1f else 0.35f
-            // Hide the disabled forward arrow so the compact chrome keeps a usable address
-            // width now that Reader and the ad shield live inside the pill.
-            forwardButton.visibility = if (canForward) View.VISIBLE else View.GONE
+            // On phones the forward arrow would leave no room for the address now that
+            // Reader and the shield live inside the pill; it stays in the overflow menu.
+            forwardButton.visibility = if (canForward && resources.configuration.screenWidthDp >= 600) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
         } catch (e: Throwable) {
         }
     }
@@ -1873,8 +1879,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     private fun showOverflowMenu() {
-        val items = listOf(
-            MENU_HOME to "Home",
+        val items = ArrayList<Pair<Int, String>>()
+        items.add(MENU_HOME to "Home")
+        if (web.canGoForward()) items.add(MENU_FORWARD to "Forward")
+        items.addAll(listOf(
             MENU_RELOAD to "Reload",
             MENU_COPY to "Copy link",
             MENU_SHARE to "Share link",
@@ -1888,7 +1896,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             MENU_CONTINUE to "Continue reading",
             MENU_SETTINGS to "NovelSpeak settings",
             MENU_PRIVACY to "About & privacy"
-        )
+        ))
         if (resources.configuration.fontScale >= 1.5f) {
             // A PopupMenu is anchored and cannot scroll; at 2x its last items fall off the
             // screen. A list dialog keeps the whole menu reachable.
@@ -1915,6 +1923,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private fun handleOverflow(id: Int) {
         when (id) {
             MENU_HOME -> showHome()
+            MENU_FORWARD -> navigateForward()
             MENU_RELOAD -> web.reload()
             MENU_COPY -> copyLink()
             MENU_SHARE -> shareLink()
@@ -3888,6 +3897,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         private const val MENU_PRIVACY = 11
         private const val MENU_TRANSLATE = 13
         private const val MENU_IMPORT = 14
+        private const val MENU_FORWARD = 15
         private const val REQ_IMPORT_DOCUMENT = 1001
         private const val PREFETCH_DELAY_MS = 12_000L
         private const val PREFETCH_MIN_FREE_BYTES = 350L * 1024 * 1024

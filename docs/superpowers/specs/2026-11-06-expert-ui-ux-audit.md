@@ -389,18 +389,21 @@ library 211, feature 130, design 15, catalog 18, selection 7, chunker 10) and **
 **Compact reader chrome.** The title row is gone. The chapter title now sits at the top of the
 player card (and in the mini bar when no character is speaking); Reader is a book icon with an
 on/off accent and state description; the ad control is a shield whose description carries the
-blocked/hidden counts. Both are 44 dp targets inside the address pill. Forward is hidden when the
-WebView cannot go forward, so the address keeps a usable width. Measured at 1.0×/1.3×/2.0× and
-tablet width. Turning Reader off also exposed a legibility bug: unstyled pages painted dark text
-on the app’s dark WebView backdrop. The WebView now uses the web-default white when Reader is off
-and the app surface when it is on.
+blocked/hidden counts. Both are 44 dp targets inside the address pill. On phones Forward moves to
+the overflow menu when history exists (a visible arrow left almost no address width); on tablets
+it stays inline. Measured at 1.0×/1.3×/2.0× and tablet width. Turning Reader off also exposed a
+legibility bug: unstyled pages painted dark text on the app’s dark WebView backdrop. The WebView
+now uses the web-default white when Reader is off and the app surface when it is on.
 
 Renders: [phone](../../media/ui-audit/chrome-compact-phone.png) ·
 [1.3×](../../media/ui-audit/chrome-compact-13.png) ·
 [2.0×](../../media/ui-audit/chrome-compact-20.png) ·
 [tablet](../../media/ui-audit/chrome-compact-tablet.png) ·
 [mini bar title](../../media/ui-audit/chrome-compact-mini.png) ·
-[reader off, readable](../../media/ui-audit/chrome-reader-off.png).
+[reader off, readable](../../media/ui-audit/chrome-reader-off.png) ·
+[phone with Forward history](../../media/ui-audit/chrome-forward-overflow.png) ·
+[Forward in the overflow](../../media/ui-audit/chrome-forward-menu.png) ·
+[tablet inline Forward](../../media/ui-audit/chrome-tablet-forward.png).
 
 Remaining Wave 4: physical-phone performance trace and the remaining ASR/listening validation.
 The large-library stress test is complete.
