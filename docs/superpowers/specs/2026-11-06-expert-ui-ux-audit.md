@@ -340,11 +340,41 @@ Renders: [1.3 Home](../../media/ui-audit/scale13-home.png) ·
 [2.0 Cast](../../media/ui-audit/scale20-cast.png) ·
 [2.0 Cast scrolled](../../media/ui-audit/scale20-cast-scrolled.png).
 
+**Secondary Settings pages (2×).** All seven pages were opened and captured at the top and bottom:
+Reading aloud, Voices & previews, Playback & sleep, Reading & display, Privacy & data, Advanced,
+and About NovelSpeak. The audit found two more real failures:
+
+- **Export current chapter** clipped its second line because every Settings action used a fixed
+  38 dp height. `pillButton` now uses a 44 dp minimum with wrap-content height and vertical
+  padding; the export label shows “Export current chapter (WAV)” in full.
+- **Privacy’s three-pill row** squeezed “Status” into a one-letter-wide vertical column at 2×.
+  Action groups now stack vertically at ≥1.5×; Update lists, Self-test and Status are all
+  full-width and readable. The same guard covers diagnostics, audio, pronunciation and model
+  actions.
+
+No control was unreachable: engine/model cards, voice preview buttons, sliders, reading-width
+choices, permissions, advanced sliders, reset, and the full About page all scroll correctly. The
+long unbroken `FOREGROUND_SERVICE_MEDIA_PLAYBACK` identifier wraps mid-token, which is expected for
+an underscore identifier; it is fully visible.
+
+Renders: [hub](../../media/ui-audit/settings2x-hub.png) ·
+[engine top](../../media/ui-audit/settings2x-engine-top.png) ·
+[engine bottom](../../media/ui-audit/settings2x-engine-bottom.png) ·
+[voices](../../media/ui-audit/settings2x-voices-top.png) ·
+[playback](../../media/ui-audit/settings2x-playback-bottom.png) ·
+[reading](../../media/ui-audit/settings2x-reading-bottom.png) ·
+[privacy top](../../media/ui-audit/settings2x-privacy-top.png) ·
+[privacy bottom](../../media/ui-audit/settings2x-privacy-bottom.png) ·
+[advanced top](../../media/ui-audit/settings2x-advanced-top.png) ·
+[advanced bottom](../../media/ui-audit/settings2x-advanced-bottom.png) ·
+[about top](../../media/ui-audit/settings2x-about-top.png) ·
+[about bottom](../../media/ui-audit/settings2x-about-bottom.png).
+
 **Verification:** **521 host checks** (motion 5, player chrome 9, audio DSP 32, parser 42, store 42,
 library 211, feature 130, design 15, catalog 18, selection 7, chunker 10) and **Maestro 7 flows /
 106 commands** pass at 1.0× with animator scale 1.
 
-Remaining Wave 4: performance tracing and the secondary Settings pages at 2×.
+Remaining Wave 4: performance tracing and the remaining ASR/listening validation.
 
 ## 11. Acceptance metrics
 

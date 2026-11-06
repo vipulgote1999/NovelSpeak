@@ -601,10 +601,7 @@ class SettingsActivity : Activity() {
                 setPadding(0, dp(8), 0, 0)
             })
         }
-        val pronunciationActions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(8), 0, dp(4))
-        }
+        val pronunciationActions = actionRow()
         pronunciationActions.addView(pillButton("Edit rules", primary = true) {
             showPronunciationDialog()
         })
@@ -679,10 +676,7 @@ class SettingsActivity : Activity() {
                 "with URLs, tokens and rules redacted, the event log and the last crash. Capped " +
                 "at 2 MB and shared only through the app you pick."
         ))
-        val diagnosticsActions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(8), 0, dp(4))
-        }
+        val diagnosticsActions = actionRow()
         diagnosticsActions.addView(pillButton(
             "Share diagnostics", primary = true, contentDescription = "Share diagnostics"
         ) {
@@ -707,10 +701,7 @@ class SettingsActivity : Activity() {
                 AudioExporter.humanSize(AudioExporter.estimatedBytes(3_600_000L)) +
                 " per hour). Tap Export once to start capturing playback, then again to save it."
         ))
-        val audioActions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(8), 0, dp(4))
-        }
+        val audioActions = actionRow()
         audioActions.addView(pillButton(
             "Export current chapter (WAV)", primary = true, contentDescription = "Export audio"
         ) {
@@ -762,10 +753,7 @@ class SettingsActivity : Activity() {
         ) { prefs.adblockPopups = it }
         adblockCard.addView(note(AdBlocker.statusText()))
 
-        val adblockActions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(8), 0, dp(4))
-        }
+        val adblockActions = actionRow()
         adblockActions.addView(pillButton("Update lists", primary = true) {
             updateAdBlockLists()
         })
@@ -1029,10 +1017,7 @@ class SettingsActivity : Activity() {
         }
         block.addView(top)
 
-        val actions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(8), 0, 0)
-        }
+        val actions = actionRow(topPaddingDp = 0)
         if (installed) {
             if (!active) {
                 actions.addView(pillButton("Use", primary = true) {
@@ -1269,6 +1254,19 @@ class SettingsActivity : Activity() {
         intArrayOf(0x666EE7B7, Palette.BORDER)
     )
 
+    /**
+     * Horizontal at normal text, vertical at 1.5x/2x. A three-pill row otherwise squeezes its
+     * last button into a one-letter-wide column on the Privacy page.
+     */
+    private fun actionRow(topPaddingDp: Int = 8): LinearLayout = LinearLayout(this).apply {
+        orientation = if (resources.configuration.fontScale >= 1.5f) {
+            LinearLayout.VERTICAL
+        } else {
+            LinearLayout.HORIZONTAL
+        }
+        setPadding(0, dp(topPaddingDp), 0, dp(4))
+    }
+
     private fun pillButton(
         label: String,
         primary: Boolean = false,
@@ -1292,12 +1290,13 @@ class SettingsActivity : Activity() {
         background = ripple(
             if (primary) Palette.ACCENT else Palette.SURFACE_HIGH, 12
         )
-        setPadding(dp(14), 0, dp(14), 0)
+        setPadding(dp(14), dp(8), dp(14), dp(8))
+        minimumHeight = dp(Design.DENSE_TOUCH_DP)
         layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT, dp(38)
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply {
             marginEnd = dp(8)
-            topMargin = dp(topMarginDp)
+            topMargin = dp(topMarginDp + if (resources.configuration.fontScale >= 1.5f) 4 else 0)
         }
         isClickable = true
         isFocusable = true
