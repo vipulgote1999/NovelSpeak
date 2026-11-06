@@ -128,13 +128,20 @@ speaker changes are not the bottleneck; the queue is pre-rendered ahead of playb
 | Rennick WER | 53.6% (dominated by one short line; see below) |
 
 Name normalisation maps `Renick → Rennick`, `Marshall → Marshal`, `Thomas → Tomas`, `gray → grey`.
-Those are spelling variants, not intelligibility failures. After normalisation only three real
-differences remain:
+Those are spelling variants, not intelligibility failures. After normalisation only three
+differences remain, and waveform inspection changes how two of them should be read:
 
-1. **`"The woman in the grey coat didn't sit."` → `"… didn't"`.** The final word is missing from
-   the audio, not just the transcript. This is a real truncation bug.
-2. **`"Whose?"` → `"Who's Who"`.** A one-word line is unstable and gains an extra word.
+1. **`"The woman in the grey coat didn't sit."` → `"… didn't"`.** This is **not a truncation**:
+   the waveform contains **8 voiced bursts**, one per word, and the final burst is present at
+   −22.9 dBFS. The ASR simply omitted the last word. It still shows that the final word is easy
+   to miss, so it is an intelligibility risk rather than missing speech.
+2. **`"Whose?"` → `"Who's Who"`.** The waveform has one main voiced burst plus a −35 dBFS tail;
+   it does **not** contain a second word. The ASR hallucinated on a 0.2 s word. The real defect is
+   the ~0.6 s of padding around it, now trimmed for cast dialogue.
 3. **`"two"` → `"too"`.** A homophone; the least serious of the three.
+
+Waveform evidence: `docs/media/benchmarks/` stores the scene waveform; the burst counts above were
+computed from the exact synthesized cues (`didnt_sit.wav`, `whose_q.wav`) with a −40 dBFS gate.
 
 The full WER table and per-cue references are in
 `docs/benchmarks/data/2026-11-06-story-cast/asr_flash.json`.
@@ -210,9 +217,10 @@ Judge comments worth keeping:
   tension is not carried.
 - Ultra-short dialogue is unstable: `"Whose?"` became `"Who's Who"` and `"Mine,"` was called
   robotic. This is the single biggest quality defect.
-- One narration cue loses its final word (`… didn't sit.`).
-- Unresolved lines on the narrator voice are audibly confusing; the cast UI needs the planned
-  per-line fix.
+- ASR missed the final word of one narration cue (`… didn't sit.`) even though the waveform shows
+  it is present; the final word is quiet enough to be an intelligibility risk.
+- Unresolved lines on the narrator voice are audibly confusing; the cast UI now has the per-line
+  **Fix speaker** control.
 
 ---
 
@@ -221,9 +229,9 @@ Judge comments worth keeping:
 1. **Guard one-word dialogue.** Synthesize short lines with a neutral carrier phrase and trim it
    (or explicitly pad them), then add an ASR regression for `"Whose?"`, `"Mine,"` and `"Gary!"`.
    Do not let a line under ~3 words go straight to Supertonic.
-2. **Fix the truncated tail.** `"The woman in the grey coat didn't sit."` lost `sit`. Add a
-   trailing-space/punctuation check and an end-of-audio energy assertion in the TTS regression
-   harness; re-run the ASR table until the cue is exact.
+2. **Protect final-word salience.** The waveform shows `sit` is present, but the ASR missed it.
+   Add a final-word energy check to the harness and test whether the per-cue trim or a slower
+   delivery improves recognition. Do not call it a truncation; the audio is there.
 3. **Raise emotional delivery.** Supertonic's fixed styles are the ceiling here. Benchmark Kokoro
    (the app's quality option, 11 voices) on the same scene, and expose per-character rate/pitch
    only if it measurably helps. In parallel, ship **Fix speaker** for the two unresolved lines.
@@ -246,7 +254,7 @@ A Kokoro comparison was **not** run in this pass; it is the next benchmark, not 
   prove the pronunciation fix: a fresh ASR pass is still needed once the router quota resets.
 - **Verification**: 500 host checks and Maestro 7 flows / 106 commands pass on the new build.
 
-The original top-three list is otherwise unchanged: the truncated `"…didn't sit."` tail and the
+The original top-three list is otherwise unchanged: final-word salience, one-word delivery and the
 emotional range still need work, and Kokoro has not been benchmarked yet.
 
 ## 10. Limitations

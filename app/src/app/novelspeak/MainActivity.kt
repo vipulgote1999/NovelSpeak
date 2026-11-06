@@ -146,6 +146,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private lateinit var contentRow: LinearLayout
     private lateinit var playerCard: LinearLayout
+    private lateinit var miniPlayer: LinearLayout
+    private lateinit var miniStatus: TextView
+    private lateinit var miniMeta: TextView
+    private lateinit var miniPlayButton: FrameLayout
+    private lateinit var miniPlayGlyph: GlyphView
+    private lateinit var miniProgress: ProgressBar
+    private var playerCollapsed = false
     private lateinit var readChapterButton: TextView
     private lateinit var nextChapterButton: TextView
     private lateinit var pageHolder: FrameLayout
@@ -580,6 +587,19 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             visibility = View.GONE
         }
         statusRow.addView(engineChip)
+        val collapse = TextView(this).apply {
+            text = "▾"
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setTextColor(Palette.MUTED)
+            background = ripple(Palette.SURFACE_HIGH, 20, oval = true)
+            layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(6) }
+            contentDescription = "Collapse player"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { setPlayerCollapsed(true) }
+        }
+        statusRow.addView(collapse)
         card.addView(statusRow)
 
         voiceView = TextView(this).apply {
@@ -714,10 +734,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         playButton = iconButton(
             Glyph.PLAY, "Play", 56, Palette.ACCENT, Palette.BG, oval = true
         ) {
-            if (reader.hasContent()) {
-                AppPermissions.requestNotificationsOnce(this)
-            }
-            reader.toggle()
+            togglePlayback()
         }
         playGlyph = playButton.getChildAt(0) as GlyphView
         transportRow.addView(playButton)
@@ -766,6 +783,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         root.addView(
             contentRow,
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
+        )
+        miniPlayer = buildMiniPlayer()
+        root.addView(
+            miniPlayer,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(dp(8), 0, dp(8), dp(6)) }
         )
         applyAdaptiveLayout()
 
@@ -818,6 +842,87 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, (100 - p).toFloat()))
         }
         return track
+    }
+
+    /**
+     * 56 dp collapsed player. It keeps status, transport and sentence progress while returning
+     * the rest of the card's height to the page. Tapping the text or the chevron expands.
+     */
+    private fun buildMiniPlayer(): LinearLayout {
+        val bar = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = roundedStroke(Palette.SURFACE, 16, Palette.BORDER, 1)
+            setPadding(dp(12), dp(8), dp(8), dp(8))
+            visibility = View.GONE
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Mini player"
+            setOnClickListener { setPlayerCollapsed(false) }
+        }
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        miniStatus = TextView(this).apply {
+            text = "Open a chapter, then tap Read"
+            textSize = 13f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+        }
+        texts.addView(miniStatus)
+        miniMeta = TextView(this).apply {
+            text = ""
+            textSize = 11f
+            setTextColor(Palette.MUTED)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, dp(1), 0, 0)
+        }
+        texts.addView(miniMeta)
+        row.addView(texts)
+
+        miniPlayButton = iconButton(
+            Glyph.PLAY, "Play", 48, Palette.ACCENT, Palette.BG, oval = true
+        ) { togglePlayback() }
+        miniPlayGlyph = miniPlayButton.getChildAt(0) as GlyphView
+        row.addView(miniPlayButton)
+
+        val expand = TextView(this).apply {
+            text = "▴"
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setTextColor(Palette.MUTED)
+            background = ripple(Palette.SURFACE_HIGH, 20, oval = true)
+            layoutParams = LinearLayout.LayoutParams(dp(Design.DENSE_TOUCH_DP), dp(Design.DENSE_TOUCH_DP))
+                .apply { marginStart = dp(4) }
+            contentDescription = "Expand player"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { setPlayerCollapsed(false) }
+        }
+        row.addView(expand)
+        bar.addView(row)
+
+        miniProgress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100
+            progress = 0
+            isIndeterminate = false
+            progressTintList = ColorStateList.valueOf(Palette.ACCENT)
+            progressBackgroundTintList = ColorStateList.valueOf(Palette.BORDER)
+            minimumHeight = dp(3)
+            setPadding(0, 0, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(3)
+            ).apply { topMargin = dp(6) }
+        }
+        bar.addView(miniProgress)
+        return bar
     }
 
     private fun buildHomeView(): ScrollView {
@@ -1122,6 +1227,62 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
     }
 
+    private fun togglePlayback() {
+        if (reader.hasContent()) AppPermissions.requestNotificationsOnce(this)
+        reader.toggle()
+    }
+
+    private fun setPlayerCollapsed(collapsed: Boolean) {
+        if (collapsed && !reader.hasContent()) {
+            Toast.makeText(this, "Open a chapter first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        playerCollapsed = collapsed
+        applyPlayerVisibility()
+    }
+
+    /**
+     * Single source of truth for the full card vs the collapsed bar.
+     *
+     * On Home the player only appears while audio is playing (the existing rule); in the reader it
+     * stays reachable whether paused or playing. The bar is only shown when there is content, so
+     * collapsing never strands the user without an expand affordance.
+     */
+    private fun applyPlayerVisibility() {
+        if (!::playerCard.isInitialized || !::miniPlayer.isInitialized) return
+        val state = reader.state()
+        val hasContent = state.total > 0
+        val showCard = PlayerChrome.showCard(playerCollapsed, homeVisible, state.playing)
+        val showMini = PlayerChrome.showMini(
+            playerCollapsed, homeVisible, state.playing, hasContent
+        )
+        playerCard.visibility = if (showCard) View.VISIBLE else View.GONE
+        miniPlayer.visibility = if (showMini) View.VISIBLE else View.GONE
+        if (showMini) updateMiniPlayer(state)
+    }
+
+    private fun updateMiniPlayer(state: Reader.State) {
+        if (!::miniStatus.isInitialized) return
+        miniStatus.text = state.status
+        val speaker = state.speaker
+        miniMeta.text = if (speaker.isNotEmpty() && speaker != CastIds.NARRATOR) {
+            "Speaking · " + speaker
+        } else {
+            currentVoiceLabel(state)
+        }
+        miniPlayGlyph.glyph = if (state.playing) Glyph.PAUSE else Glyph.PLAY
+        miniPlayGlyph.invalidate()
+        miniPlayButton.contentDescription = if (state.playing) "Pause" else "Play"
+        val total = state.total
+        miniProgress.progress = if (total > 0) {
+            ((state.cursor + 1) * 100 / total).coerceIn(0, 100)
+        } else {
+            0
+        }
+        miniPlayer.contentDescription =
+            "Mini player, " + state.status + ". Tap to expand."
+    }
+
     private fun showHome() {
         if (!::homeView.isInitialized) return
         if (editingUrl) exitEditMode()
@@ -1142,7 +1303,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         cancelEdit.visibility = View.GONE
         // The player bar only appears on Home while audio is actually playing; otherwise
         // the tab gets the full height (like a browser new-tab page).
-        playerCard.visibility = if (reader.state().playing) View.VISIBLE else View.GONE
+        applyPlayerVisibility()
         titleView.text = "NovelSpeak"
         updateAddressDisplay(null)
         DiagLog.line(this, "home shown")
@@ -1154,7 +1315,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (homeView.visibility == View.VISIBLE) homeView.visibility = View.GONE
         web.visibility = View.VISIBLE
         if (::titleRow.isInitialized) titleRow.visibility = View.VISIBLE
-        if (::playerCard.isInitialized) playerCard.visibility = View.VISIBLE
+        applyPlayerVisibility()
         if (::navCluster.isInitialized) navCluster.visibility = View.VISIBLE
         if (::addressBox.isInitialized) addressBox.visibility = View.VISIBLE
         if (::homeTopSpacer.isInitialized) homeTopSpacer.visibility = View.GONE
@@ -2932,9 +3093,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         persistImportedProgress(state)
         updateSleepTimerView()
         recordReadingTime(state)
-        if (homeVisible && ::playerCard.isInitialized) {
-            playerCard.visibility = if (state.playing) View.VISIBLE else View.GONE
-        }
         titleView.text = state.title.ifEmpty { web.title ?: "" }
         statusView.text = state.status
         statusView.contentDescription = "Reader status, " + state.status
@@ -2989,6 +3147,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         dotView.background = oval(statusColor(state))
         updateReaderButton()
         updateNotificationHint()
+        applyPlayerVisibility()
     }
 
     /** The voice the active engine will actually speak with (state first, prefs fallback). */

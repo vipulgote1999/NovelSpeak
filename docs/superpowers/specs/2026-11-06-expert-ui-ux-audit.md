@@ -285,13 +285,20 @@ of two. Remaining quality work: one-word lines (`"Whose?"` → `"Who's Who"`), o
   tail). Cast dialogue now trims that padding per cue; a measured short line went from 59,724 to
   24,102 samples (1.6 s less dead air). Ordinary playback and the user’s skip-silence setting are
   unchanged.
-- **500 host checks** pass (parser 36, store 41, library 211, feature 130, design 15, catalog 18,
-  selection 7, chunker 10, audio DSP 32).
-- **Maestro 7 flows / 106 commands** pass on the new build (launch, home, settings, library delete,
-  library search, read, transport).
+- **Mini player.** The full card collapses to a 56 dp bar (status, voice/speaker, play/pause,
+  sentence progress, expand). On phones it returns ~350 dp to the page; on tablets the page gets
+  the full width with the bar across the bottom. Player visibility rules are host-tested
+  (`PlayerChrome`). Renders: [phone collapsed](../../media/ui-audit/wave3-mini-phone.png) ·
+  [phone playing](../../media/ui-audit/wave3-mini-playing.png) ·
+  [tablet collapsed](../../media/ui-audit/wave3-mini-tablet.png).
+- **509 host checks** pass (parser 36, store 41, library 211, feature 130, design 15, catalog 18,
+  selection 7, chunker 10, audio DSP 32, player chrome 9).
+- **Maestro 7 flows / 106 commands** pass on the mini-player build (launch, home, settings,
+  library delete, library search, read, transport). Mini-player states were also verified on phone
+  and tablet, including play/pause from the bar.
 
-Still open: mini player/expanded sheet, a voice preview from a character’s real line, and an ASR
-re-check of one-word lines after the trim.
+Still open: a voice preview from a character’s real line, an ASR re-check of one-word lines after
+the trim, and the Kokoro quality comparison.
 
 ## 10. Acceptance metrics
 
