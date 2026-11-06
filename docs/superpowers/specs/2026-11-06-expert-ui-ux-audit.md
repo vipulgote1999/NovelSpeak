@@ -96,12 +96,13 @@ transport. `Read`, `Next ch`, `Cast on` are 38 dp high; speed buttons are 34 dp;
 compact 1.0× chip with −/+ on either side, and add a collapse affordance that leaves a 56 dp mini
 bar (status + play/pause + progress). Keep all controls reachable.
 
-**I3. Reader chrome repeats itself.**
+**I3. Reader chrome repeats itself. ✅ Fixed (Wave 4).**
 Top bar (50 dp) + title row + `Ad 0/122` + `Reader on` competes with the page. The title is shown
 twice (browser title and WebView title), and the ad string is cryptic.
-**Fix:** one reader app bar: back/forward/reload, compact address, shield icon with count in the
-content description, Reader toggle as an icon+state. Move the chapter title into the player card
-or a small subtitle under the app bar. Target 44 dp total chrome, not 80+.
+**Fix shipped:** one app bar. Reader and the ad shield are 44 dp inline controls inside the
+address pill, the chapter title moved into the player card (and the mini bar), Forward hides when
+there is no history, and the cryptic ad string became a shield state in the content description.
+The second chrome row is gone; the page gains its ~32 dp back.
 
 **I4. Library is a flat file-manager list.**
 `LibraryActivity` renders every entry as a full-width card with title, meta, progress and a bare ✕.
@@ -384,6 +385,22 @@ still required before changing the hierarchy. Full report:
 **Verification:** **521 host checks** (motion 5, player chrome 9, audio DSP 32, parser 42, store 42,
 library 211, feature 130, design 15, catalog 18, selection 7, chunker 10) and **Maestro 7 flows /
 106 commands** pass at 1.0× with animator scale 1.
+
+**Compact reader chrome.** The title row is gone. The chapter title now sits at the top of the
+player card (and in the mini bar when no character is speaking); Reader is a book icon with an
+on/off accent and state description; the ad control is a shield whose description carries the
+blocked/hidden counts. Both are 44 dp targets inside the address pill. Forward is hidden when the
+WebView cannot go forward, so the address keeps a usable width. Measured at 1.0×/1.3×/2.0× and
+tablet width. Turning Reader off also exposed a legibility bug: unstyled pages painted dark text
+on the app’s dark WebView backdrop. The WebView now uses the web-default white when Reader is off
+and the app surface when it is on.
+
+Renders: [phone](../../media/ui-audit/chrome-compact-phone.png) ·
+[1.3×](../../media/ui-audit/chrome-compact-13.png) ·
+[2.0×](../../media/ui-audit/chrome-compact-20.png) ·
+[tablet](../../media/ui-audit/chrome-compact-tablet.png) ·
+[mini bar title](../../media/ui-audit/chrome-compact-mini.png) ·
+[reader off, readable](../../media/ui-audit/chrome-reader-off.png).
 
 Remaining Wave 4: physical-phone performance trace and the remaining ASR/listening validation.
 The large-library stress test is complete.

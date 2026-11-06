@@ -105,8 +105,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var suggestionsPopup: PopupWindow
     private lateinit var suggestionsPanel: LinearLayout
     private lateinit var notificationHint: TextView
-    private lateinit var titleView: TextView
-    private lateinit var adblockView: TextView
+    private lateinit var chapterTitleView: TextView
+    private lateinit var adblockView: FrameLayout
+    private lateinit var adblockGlyph: GlyphView
     private lateinit var statusView: TextView
     private lateinit var progressView: TextView
     private lateinit var speedView: TextView
@@ -124,7 +125,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var seekBar: SeekBar
     private lateinit var playButton: FrameLayout
     private lateinit var playGlyph: GlyphView
-    private lateinit var readerBtn: TextView
+    private lateinit var readerBtn: FrameLayout
+    private lateinit var readerGlyph: GlyphView
     private lateinit var backButton: FrameLayout
     private lateinit var forwardButton: FrameLayout
 
@@ -161,8 +163,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var homeColumn: LinearLayout
     private lateinit var homeContinue: LinearLayout
     private lateinit var homeTopSpacer: Space
-    private lateinit var titleRow: LinearLayout
     private var homeVisible = false
+    private var shieldBlocked = 0
+    private var shieldHidden = 0
 
     private data class HomeShortcut(
         val label: String,
@@ -320,7 +323,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         urlDisplayRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), 0, dp(10), 0)
+            setPadding(dp(12), 0, dp(4), 0)
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -346,6 +349,43 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         urlDisplayRow.addView(urlDisplay)
+
+        // Reader and ad-block controls live inside the address pill. This removes the second
+        // chrome row entirely; both actions stay one tap away and keep 44 dp targets.
+        readerBtn = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(Design.DENSE_TOUCH_DP), dp(Design.DENSE_TOUCH_DP))
+                .apply { marginStart = dp(2) }
+            background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
+            contentDescription = "Turn reader mode on"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { toggleReader() }
+        }
+        readerGlyph = GlyphView(this, Glyph.BOOK, Palette.TEXT)
+        readerBtn.addView(
+            readerGlyph,
+            FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+        )
+        readerGlyph.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        urlDisplayRow.addView(readerBtn)
+
+        adblockView = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(Design.DENSE_TOUCH_DP), dp(Design.DENSE_TOUCH_DP))
+                .apply { marginStart = dp(2) }
+            background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
+            contentDescription = "Ad blocking and site settings"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { showSiteDialog() }
+        }
+        adblockGlyph = GlyphView(this, Glyph.SHIELD, Palette.MUTED)
+        adblockView.addView(
+            adblockGlyph,
+            FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+        )
+        adblockGlyph.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        urlDisplayRow.addView(adblockView)
+
         addressBox.addView(urlDisplayRow)
 
         urlBar = EditText(this).apply {
@@ -489,41 +529,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             setOnDismissListener { suggestionsPanel.removeAllViews() }
         }
 
-        // ---- chapter title + reader toggle ----
-        titleRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), 0, dp(10), dp(6))
-        }
-        titleView = TextView(this).apply {
-            text = "NovelSpeak"
-            textSize = 13f
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setTextColor(Palette.TEXT)
-            maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        titleRow.addView(titleView)
-        adblockView = TextView(this).apply {
-            textSize = 10f
-            setTextColor(Palette.MUTED)
-            setPadding(dp(8), dp(4), dp(8), dp(4))
-            isClickable = true
-            isFocusable = true
-            contentDescription = "Ad blocking and site settings"
-            setOnClickListener { showSiteDialog() }
-        }
-        titleRow.addView(adblockView)
-        readerBtn = textButton("Reader", primary = false, widthDp = 0, heightDp = 32) {
-            toggleReader()
-        }.apply {
-            textSize = 11f
-            setPadding(dp(12), 0, dp(12), 0)
-        }
-        titleRow.addView(readerBtn)
-        root.addView(titleRow)
-
         wallBanner = TextView(this).apply {
             textSize = 12f
             setTextColor(Palette.BG)
@@ -563,6 +568,17 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 setMargins(dp(8), dp(4), dp(8), dp(8))
             }
         }
+
+        // The chapter title belongs to the reading surface, not a second chrome row.
+        chapterTitleView = TextView(this).apply {
+            textSize = 11.5f
+            setTextColor(Palette.MUTED)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(dp(2), 0, 0, dp(2))
+            visibility = View.GONE
+        }
+        card.addView(chapterTitleView)
 
         val statusRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -1296,10 +1312,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (!::miniStatus.isInitialized) return
         miniStatus.text = state.status
         val speaker = state.speaker
-        miniMeta.text = if (speaker.isNotEmpty() && speaker != CastIds.NARRATOR) {
-            "Speaking · " + speaker
-        } else {
-            currentVoiceLabel(state)
+        miniMeta.text = when {
+            speaker.isNotEmpty() && speaker != CastIds.NARRATOR -> "Speaking · " + speaker
+            state.title.isNotEmpty() -> state.title
+            else -> currentVoiceLabel(state)
         }
         miniPlayGlyph.glyph = if (state.playing) Glyph.PAUSE else Glyph.PLAY
         miniPlayGlyph.invalidate()
@@ -1334,14 +1350,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 .setDuration(Motion.durationMs(Design.MOTION_NORMAL, 1f)).start()
         }
         web.visibility = View.GONE
-        titleRow.visibility = View.GONE
         navCluster.visibility = View.GONE
         addressBox.visibility = View.GONE
         cancelEdit.visibility = View.GONE
         // The player bar only appears on Home while audio is actually playing; otherwise
         // the tab gets the full height (like a browser new-tab page).
         applyPlayerVisibility()
-        titleView.text = "NovelSpeak"
         updateAddressDisplay(null)
         DiagLog.line(this, "home shown")
     }
@@ -1351,7 +1365,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         homeVisible = false
         if (homeView.visibility == View.VISIBLE) homeView.visibility = View.GONE
         web.visibility = View.VISIBLE
-        if (::titleRow.isInitialized) titleRow.visibility = View.VISIBLE
         applyPlayerVisibility()
         if (::navCluster.isInitialized) navCluster.visibility = View.VISIBLE
         if (::addressBox.isInitialized) addressBox.visibility = View.VISIBLE
@@ -1475,6 +1488,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 setReloadGlyph(true)
                 if (!editingUrl) updateAddressDisplay(url)
                 updateNavButtons()
+                updateReaderButton()
                 cancelPrefetch()
                 AdBlocker.onPageStarted(url ?: "")
                 updateShield()
@@ -1522,7 +1536,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     NovelSpeakApp.instance.prefs.rememberUrl(url)
                     if (!editingUrl) updateAddressDisplay(url)
                 }
-                titleView.text = view?.title ?: ""
+                val pageTitle = view?.title ?: ""
+                chapterTitleView.text = pageTitle
+                chapterTitleView.visibility = if (pageTitle.isEmpty()) View.GONE else View.VISIBLE
                 getSharedPreferences("novelspeak", MODE_PRIVATE).edit()
                     .putString("last_url", url ?: "").apply()
                 updateNavButtons()
@@ -1656,6 +1672,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             val canForward = web.canGoForward()
             forwardButton.isEnabled = canForward
             forwardButton.alpha = if (canForward) 1f else 0.35f
+            // Hide the disabled forward arrow so the compact chrome keeps a usable address
+            // width now that Reader and the ad shield live inside the pill.
+            forwardButton.visibility = if (canForward) View.VISIBLE else View.GONE
         } catch (e: Throwable) {
         }
     }
@@ -3137,11 +3156,15 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val host = UrlTools.host(web.url ?: lastDisplayedUrl) ?: ""
         val site = app.novelspeak.adblock.PublicSuffixList.registrableDomain(host).ifEmpty { host }
         val on = prefs.readerModeForSite(site)
-        readerBtn.text = if (on) "Reader on" else "Reader"
-        readerBtn.setTextColor(if (on) Palette.ACCENT else Palette.TEXT)
-        readerBtn.background = ripple(Palette.SURFACE_HIGH, 16)
+        readerGlyph.setGlyph(Glyph.BOOK, if (on) Palette.ACCENT else Palette.TEXT)
         readerBtn.contentDescription =
-            if (on) "Turn reader mode off" else "Turn reader mode on"
+            if (on) "Reader mode on. Turn off" else "Reader mode off. Turn on"
+        // An unstyled page paints transparent, so the WebView backdrop decides its
+        // legibility. Reader mode uses the app surface; the raw page gets the web default
+        // white, otherwise black text renders on the dark app background.
+        if (::web.isInitialized) {
+            web.setBackgroundColor(if (on) Palette.BG else Color.WHITE)
+        }
     }
 
     override fun onReaderState(state: Reader.State) {
@@ -3151,7 +3174,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         persistImportedProgress(state)
         updateSleepTimerView()
         recordReadingTime(state)
-        titleView.text = state.title.ifEmpty { web.title ?: "" }
+        val chapter = state.title.ifEmpty { web.title ?: "" }
+        chapterTitleView.text = chapter
+        chapterTitleView.visibility = if (chapter.isEmpty()) View.GONE else View.VISIBLE
         statusView.text = state.status
         statusView.contentDescription = "Reader status, " + state.status
         engineChip.text = state.engine
@@ -3616,30 +3641,42 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private fun updateShield() {
         if (!::adblockView.isInitialized) return
+        renderShield(shieldBlocked, shieldHidden)
+    }
+
+    /**
+     * The shield is an icon with its state in the accessibility description. The old "Ad 0/122"
+     * label was cryptic and cost a whole chrome row.
+     */
+    private fun renderShield(blocked: Int, hidden: Int) {
+        shieldBlocked = blocked
+        shieldHidden = hidden
         val p = NovelSpeakApp.instance.prefs
         val host = UrlTools.host(web.url ?: "") ?: ""
         val allowed = host.isNotEmpty() && AdBlocker.isSiteAllowed(host)
-        adblockView.text = when {
-            !p.adblockEnabled -> "Ads off"
-            allowed -> "Ads allowed"
-            else -> "Ads blocked"
+        val description = when {
+            !p.adblockEnabled -> "Ad blocking is off. Open site settings"
+            allowed -> "Ad blocking is allowed on this site. Open site settings"
+            blocked > 0 || hidden > 0 ->
+                "Ad blocking on. $blocked blocked, $hidden hidden on this page. Open site settings"
+            else -> "Ad blocking on. No ads blocked on this page yet. Open site settings"
         }
+        adblockGlyph.setGlyph(
+            Glyph.SHIELD,
+            when {
+                !p.adblockEnabled -> Palette.MUTED
+                allowed -> Palette.AMBER
+                else -> Palette.ACCENT
+            }
+        )
+        adblockView.contentDescription = description
     }
 
     override fun onAdBlockStats(blocked: Int, hidden: Int) {
         runOnUiThread {
             if (isFinishing || isDestroyed) return@runOnUiThread
             if (!::adblockView.isInitialized) return@runOnUiThread
-            val p = NovelSpeakApp.instance.prefs
-            val host = UrlTools.host(web.url ?: "") ?: ""
-            val allowed = host.isNotEmpty() && AdBlocker.isSiteAllowed(host)
-            adblockView.text = when {
-                !p.adblockEnabled -> "Ads off"
-                allowed -> "Ads allowed"
-                blocked > 0 || hidden > 0 ->
-                    if (hidden > 0) "Ad $blocked/$hidden" else "Ad $blocked"
-                else -> "Ads blocked"
-            }
+            renderShield(blocked, hidden)
         }
     }
 
@@ -3867,7 +3904,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
 private enum class Glyph {
     PLAY, PAUSE, STOP, PREV, NEXT, BACK, FORWARD, RELOAD, GEAR, MENU, MORE,
-    CLOSE, LOCK, GLOBE, ALERT, PLUS, MINUS
+    CLOSE, LOCK, GLOBE, ALERT, PLUS, MINUS, SHIELD, BOOK
 }
 
 private class GlyphView(
@@ -4054,6 +4091,53 @@ private class GlyphView(
                 canvas.drawLine(cx, cy - s * 0.7f, cx, cy + s * 0.7f, stroke)
             }
             Glyph.MINUS -> canvas.drawLine(cx - s * 0.7f, cy, cx + s * 0.7f, cy, stroke)
+            Glyph.SHIELD -> {
+                val p = Path()
+                p.moveTo(cx, cy - s * 0.95f)
+                p.lineTo(cx + s * 0.72f, cy - s * 0.62f)
+                p.lineTo(cx + s * 0.72f, cy + s * 0.05f)
+                p.cubicTo(
+                    cx + s * 0.72f, cy + s * 0.55f,
+                    cx + s * 0.32f, cy + s * 0.86f,
+                    cx, cy + s
+                )
+                p.cubicTo(
+                    cx - s * 0.32f, cy + s * 0.86f,
+                    cx - s * 0.72f, cy + s * 0.55f,
+                    cx - s * 0.72f, cy + s * 0.05f
+                )
+                p.lineTo(cx - s * 0.72f, cy - s * 0.62f)
+                p.close()
+                canvas.drawPath(p, stroke)
+            }
+            Glyph.BOOK -> {
+                val p = Path()
+                p.moveTo(cx, cy - s * 0.55f)
+                p.cubicTo(
+                    cx - s * 0.35f, cy - s * 0.85f,
+                    cx - s * 0.7f, cy - s * 0.85f,
+                    cx - s * 0.9f, cy - s * 0.7f
+                )
+                p.lineTo(cx - s * 0.9f, cy + s * 0.65f)
+                p.cubicTo(
+                    cx - s * 0.6f, cy + s * 0.5f,
+                    cx - s * 0.3f, cy + s * 0.55f,
+                    cx, cy + s * 0.8f
+                )
+                p.cubicTo(
+                    cx + s * 0.3f, cy + s * 0.55f,
+                    cx + s * 0.6f, cy + s * 0.5f,
+                    cx + s * 0.9f, cy + s * 0.65f
+                )
+                p.lineTo(cx + s * 0.9f, cy - s * 0.7f)
+                p.cubicTo(
+                    cx + s * 0.7f, cy - s * 0.85f,
+                    cx + s * 0.35f, cy - s * 0.85f,
+                    cx, cy - s * 0.55f
+                )
+                canvas.drawPath(p, stroke)
+                canvas.drawLine(cx, cy - s * 0.55f, cx, cy + s * 0.8f, stroke)
+            }
         }
     }
 }

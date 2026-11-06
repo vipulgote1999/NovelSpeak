@@ -5,8 +5,9 @@ tags:
   - per-site
 ---
 # Targets the per-site reader fix. The dialog checkbox (checked attr) is the
-# authoritative state; the top-bar "Reader/Reader on" label still reads the
-# GLOBAL pref in 1.2.0-dev, so it is deliberately not asserted here.
+# authoritative state. The top bar exposes Reader as an icon plus state
+# ("Reader mode on. Turn off" / "Reader mode off. Turn on"), so there is no
+# separate "Reader/Reader on" text label to assert.
 - launchApp
 - runFlow:
     when:
