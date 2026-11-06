@@ -51,6 +51,8 @@ signed model-catalog verification (`tools/model-catalog-sign.sh`).
 - **Any URL**: full WebView browser with URL bar, back/forward, reload.
 - **Imports**: EPUB, PDF (text layer) and plain-text files are extracted into app-private storage,
   shown in Library and Continue reading, reopen in the reader, and keep their playback position.
+- **Library**: search, All/Chapters/Imported/Finished filters, a two-column grid at ≥600 dp, and
+  recycled rows so large libraries open without a long frame.
 - **Generic extraction**: Mozilla Readability + a text-density fallback; works on empirenovel and
   any similar serialized-novel site (chapter pages, next-chapter detection, append-as-you-go).
 - **Two TTS backends**, switchable in settings:

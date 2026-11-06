@@ -161,9 +161,10 @@ object Design {
   200-entry Library stress test is complete: the recycled ListView cut open p99 from 250 ms to
   48 ms and slow UI-thread frames from 3 to 1. The reader chrome is now a single app bar with the
   Reader and shield controls inside the address pill and the chapter title in the player card;
-  Reader-off pages now use a white WebView backdrop so default-black text stays legible.
-  521 host checks and Maestro 7/106 pass. Next: a physical-phone trace and the remaining
-  ASR/listening validation.
+  Reader-off pages now use a white WebView backdrop so default-black text stays legible. The
+  Library now pairs cards into two columns at ≥600 dp inside the recycled adapter. 531 host
+  checks and Maestro 7/103 pass. Next: a physical-phone trace and the remaining ASR/listening
+  validation.
 
 ## Execution notes
 

@@ -104,13 +104,14 @@ address pill, the chapter title moved into the player card (and the mini bar), F
 there is no history, and the cryptic ad string became a shield state in the content description.
 The second chrome row is gone; the page gains its ~32 dp back.
 
-**I4. Library is a flat file-manager list.**
-`LibraryActivity` renders every entry as a full-width card with title, meta, progress and a bare ✕.
-There is no search, filter, cover/initial, grouping, or empty-state illustration. On tablet the
-rows remain full-width.
-**Fix:** search field + segmented filter (All / Chapters / Imported / Finished), 2-column grid at
-≥600 dp, 48 dp overflow per row with confirm, and a designed empty state (“Nothing here yet — open
-a chapter or import a book”).
+**I4. Library is a flat file-manager list. ✅ Fixed (Waves 2–4).**
+`LibraryActivity` rendered every entry as a full-width card with title, meta, progress and a bare ✕,
+with no search, filter, grouping, or empty-state illustration; tablets kept full-width rows.
+**Shipped:** search, All / Chapters / Imported / Finished filters, a designed empty state, 48 dp
+delete targets with confirmation, a recycled `ListView` (open p99 250 → 48 ms on a 200-entry
+stress test), and a **two-column grid at ≥600 dp**. Cards pair inside one recycled adapter row, so
+a tablet still inflates only the visible screen. Headers stay full width; an odd tail leaves a
+spacer instead of stretching the last card.
 
 **I5. Settings is not adaptive and lacks icons/sectioning.**
 The hub rows (`SettingsActivity.kt:806`) are full-width 64 dp cards with no icon column. On tablet
@@ -405,8 +406,18 @@ Renders: [phone](../../media/ui-audit/chrome-compact-phone.png) ·
 [Forward in the overflow](../../media/ui-audit/chrome-forward-menu.png) ·
 [tablet inline Forward](../../media/ui-audit/chrome-tablet-forward.png).
 
+**Adaptive Library grid.** At ≥600 dp the Library pairs cards into two columns inside the same
+recycled `ListView` adapter (`LibraryGrid.columns/pairs`). Headers span the full width, an odd
+tail leaves a spacer, and `onConfigurationChanged` re-renders when the window crosses the
+breakpoint. Verified on an 800 dp tablet at 1.0× and 2.0×: cards share equal heights with no
+clipping; a phone still renders one full-width column. The grid rule has 10 host checks.
+
+Renders: [tablet 1.0×](../../media/ui-audit/library-grid-tablet.png) ·
+[tablet 2.0×](../../media/ui-audit/library-grid-tablet-2x.png) ·
+[phone one column](../../media/ui-audit/library-grid-phone.png).
+
 Remaining Wave 4: physical-phone performance trace and the remaining ASR/listening validation.
-The large-library stress test is complete.
+The large-library stress test and adaptive Library grid are complete.
 
 ## 11. Acceptance metrics
 

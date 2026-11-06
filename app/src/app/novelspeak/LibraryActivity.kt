@@ -28,6 +28,7 @@ import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ListView
+import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
 import app.novelspeak.library.Bookmark
@@ -35,6 +36,7 @@ import app.novelspeak.library.BookmarkStore
 import app.novelspeak.library.ImportedBook
 import app.novelspeak.library.ImportedBookStore
 import app.novelspeak.library.LibraryEntry
+import app.novelspeak.library.LibraryGrid
 import app.novelspeak.library.LibraryStore
 import app.novelspeak.library.PrefsLibraryStorage
 import java.text.SimpleDateFormat
@@ -65,6 +67,7 @@ class LibraryActivity : Activity() {
     private var filter = Filter.ALL
     private val filterButtons = LinkedHashMap<Filter, TextView>()
     private val adapter = LibraryAdapter()
+    private var renderedColumns = 1
 
     private sealed class Row {
         data class Header(val title: String) : Row()
@@ -72,6 +75,9 @@ class LibraryActivity : Activity() {
         data class Book(val book: ImportedBook) : Row()
         data class Mark(val mark: Bookmark) : Row()
         data class Empty(val message: String) : Row()
+
+        /** Two cards side by side on medium/expanded windows; [right] is null for an odd tail. */
+        data class Pair(val left: Row, val right: Row?) : Row()
     }
 
     private inner class LibraryAdapter : BaseAdapter() {
@@ -91,6 +97,7 @@ class LibraryActivity : Activity() {
                 is Row.Book -> importRow(row.book)
                 is Row.Mark -> bookmarkRow(row.mark)
                 is Row.Empty -> emptyView(row.message)
+                is Row.Pair -> pairView(row.left, row.right)
             }
             // ListView owns row layout; ignore the LinearLayout margins used by the old
             // ScrollView and let the 8 dp divider provide the spacing.
@@ -156,6 +163,9 @@ class LibraryActivity : Activity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         applyContentWidth()
+        // The manifest handles screenSize without recreating the activity, so the adapter must
+        // switch between one and two columns itself when the window crosses 600 dp.
+        if (LibraryGrid.columns(newConfig.screenWidthDp) != renderedColumns) render()
     }
 
     override fun onResume() {
@@ -364,6 +374,8 @@ class LibraryActivity : Activity() {
 
     /** Rebuilds the list from storage, applying the search query and the active filter. */
     private fun render() {
+        val columns = LibraryGrid.columns(resources.configuration.screenWidthDp)
+        renderedColumns = columns
         val rawEntries = try {
             store.listEntries()
         } catch (t: Throwable) {
@@ -425,23 +437,56 @@ class LibraryActivity : Activity() {
             .count { it } > 1
 
         // The adapter recycles rows, so opening a 200-entry library only creates the visible
-        // screen instead of 200 cards (the stress test's 250 ms frame).
+        // screen instead of 200 cards (the stress test's 250 ms frame). At 600 dp each adapter
+        // row holds two cards; headers stay full width and never share a row with a card.
         val rows = ArrayList<Row>(entries.size + books.size + marks.size + 3)
-        if (entries.isNotEmpty()) {
-            if (multipleSections) rows.add(Row.Header("CHAPTERS"))
-            for (entry in entries) rows.add(Row.Entry(entry))
+        fun addCards(header: String?, cards: List<Row>) {
+            if (cards.isEmpty()) return
+            if (multipleSections && header != null) rows.add(Row.Header(header))
+            if (columns == 1) {
+                rows.addAll(cards)
+            } else {
+                for (pair in LibraryGrid.pairs(cards)) {
+                    rows.add(Row.Pair(pair.first, pair.second))
+                }
+            }
         }
-        if (books.isNotEmpty()) {
-            if (multipleSections) rows.add(Row.Header("IMPORTED BOOKS"))
-            for (book in books) rows.add(Row.Book(book))
-        }
-        if (marks.isNotEmpty()) {
-            if (multipleSections) rows.add(Row.Header("BOOKMARKS"))
-            for (mark in marks) rows.add(Row.Mark(mark))
-        }
+        addCards("CHAPTERS", entries.map { Row.Entry(it) })
+        addCards("IMPORTED BOOKS", books.map { Row.Book(it) })
+        addCards("BOOKMARKS", marks.map { Row.Mark(it) })
         adapter.rows = rows
         adapter.notifyDataSetChanged()
         list.setSelection(0)
+    }
+
+    /** One adapter row with two cards sharing the width, or a spacer for an odd tail. */
+    private fun pairView(left: Row, right: Row?): View {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.TOP
+            isBaselineAligned = false
+        }
+        val leftParams = LinearLayout.LayoutParams(
+            0, ViewGroup.LayoutParams.MATCH_PARENT, 1f
+        ).apply { if (right != null) marginEnd = dp(4) }
+        row.addView(cardView(left), leftParams)
+        if (right != null) {
+            row.addView(
+                cardView(right),
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+                    .apply { marginStart = dp(4) }
+            )
+        } else {
+            row.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
+        }
+        return row
+    }
+
+    private fun cardView(row: Row): View = when (row) {
+        is Row.Entry -> entryRow(row.entry)
+        is Row.Book -> importRow(row.book)
+        is Row.Mark -> bookmarkRow(row.mark)
+        else -> throw IllegalArgumentException("not a library card")
     }
 
     /** EPUB/PDF/TXT imports: durable copies that reopen in the reader for TTS. */
