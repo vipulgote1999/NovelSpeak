@@ -370,11 +370,20 @@ Renders: [hub](../../media/ui-audit/settings2x-hub.png) ·
 [about top](../../media/ui-audit/settings2x-about-top.png) ·
 [about bottom](../../media/ui-audit/settings2x-about-bottom.png).
 
+**Performance trace.** On the 60 Hz SwiftShader emulator: cold start **803 ms median**
+(795–812 ms), warm resume **0 ms total / 1–4 ms wait**. Library scroll is **16 ms p50, 0.56%
+modern jank**; Home is **25–26 ms p50, 0.8–1.0% modern jank**. A 12-second Perfetto trace shows
+**5.76 s RenderThread CPU vs 0.32 s UI-thread CPU**, with 511 swaps averaging 14.1 ms. The
+bottleneck is software-GPU swap/overdraw, not app layout or text work. A phone trace is required
+before changing the hierarchy. Full report:
+`docs/benchmarks/2026-11-06-performance.md`.
+
 **Verification:** **521 host checks** (motion 5, player chrome 9, audio DSP 32, parser 42, store 42,
 library 211, feature 130, design 15, catalog 18, selection 7, chunker 10) and **Maestro 7 flows /
 106 commands** pass at 1.0× with animator scale 1.
 
-Remaining Wave 4: performance tracing and the remaining ASR/listening validation.
+Remaining Wave 4: phone performance trace, large-library stress test, and the remaining
+ASR/listening validation.
 
 ## 11. Acceptance metrics
 

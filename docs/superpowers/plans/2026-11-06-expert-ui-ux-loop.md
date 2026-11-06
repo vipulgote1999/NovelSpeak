@@ -155,10 +155,11 @@ object Design {
   trim, the 56 dp mini player, character preview from a real line, and the Kokoro comparison are
   complete. Kokoro is ~3× slower in absolute synthesis but closer to normal audiobook pacing;
   Supertonic remains the latency default.
-- **Wave 4 — in progress.** Reduced-motion support, the 1.3×/2× text-scale audit, and all seven
-  secondary Settings pages at 2× are done: wrap-height pills, stacked action groups, a scrollable
-  overflow/sheet, and two-column/two-row layouts where needed. 521 host checks and Maestro 7/106
-  pass. Next: performance tracing and the remaining ASR/listening validation.
+- **Wave 4 — in progress.** Reduced-motion support, the 1.3×/2× text-scale audit, all seven
+  secondary Settings pages at 2×, and an emulator performance trace are done. Cold start is
+  **803 ms median**, warm resume is instant, and scrolling is GPU/swap-bound on SwiftShader rather
+  than UI-thread-bound. 521 host checks and Maestro 7/106 pass. Next: a physical-phone trace,
+  large-library stress test, and the remaining ASR/listening validation.
 
 ## Execution notes
 
