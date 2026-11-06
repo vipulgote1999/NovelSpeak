@@ -2141,9 +2141,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         statusView.text = "Collecting manga images…"
         web.evaluateJavascript(
             "(function(){var imgs=Array.from(document.querySelectorAll('img')); " +
-            "var urls=[]; imgs.forEach(function(i){var u=i.getAttribute('data-src')||i.getAttribute('data-lazy-src')||i.src; " +
-            "if(u && u.indexOf('http')===0){var w=i.naturalWidth||i.width||0; var h=i.naturalHeight||i.height||0; " +
-            "if(w>=200 && h>=200) urls.push(u);} }); return JSON.stringify(urls.slice(0,60));})()"
+            "var urls=[]; var seen={}; imgs.forEach(function(i){var u=i.getAttribute('data-src')||i.getAttribute('data-lazy-src')||i.getAttribute('data-original')||i.getAttribute('srcset')||i.src; " +
+            "if(u && u.indexOf('http')!==0 && u.indexOf('//')===0) u=location.protocol+u; " +
+            "if(u && u.indexOf('http')!==0 && u.charAt(0)==='/') u=location.origin+u; " +
+            "if(u && u.indexOf(' ')>=0) u=u.split(' ')[0]; " +
+            "if(u && u.indexOf('http')===0 && !seen[u] && u.indexOf('logo')<0 && u.indexOf('icon')<0 && u.indexOf('avatar')<0){seen[u]=1; urls.push(u);} }); " +
+            "if(urls.length===0){var bg=document.querySelectorAll('[style*=\"background-image\"]'); bg.forEach(function(e){var m=e.style.backgroundImage.match(/url\\([\\\"']?([^\\\"')]+)[\\\"']?\\)/); if(m){var u=m[1]; if(u.indexOf('http')!==0 && u.charAt(0)==='/') u=location.origin+u; if(u.indexOf('http')===0 && !seen[u] && u.indexOf('logo')<0){seen[u]=1; urls.push(u);}}});} " +
+            "return JSON.stringify(urls.slice(0,80));})()"
         ) { value ->
             val urls = try {
                 val raw = try { org.json.JSONObject("{\"v\":$value}").getJSONArray("v") } catch (t: Throwable) { org.json.JSONArray("[]") }
