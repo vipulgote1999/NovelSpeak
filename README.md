@@ -38,7 +38,9 @@ volume boost, pitch and skip-silence; offline audio capture to WAV; paywall/logi
 an honest warning (no bypass); diagnostics bundle and a privacy page; no ads, analytics or accounts.
 On-device voice previews (Kokoro, Supertonic, Pocket narrator) audition without disturbing the
 active engine; the current voice is shown in the player card, and the card collapses to a 56 dp
-mini bar (status, play/pause, progress) when the page needs the space. Also: chapter prefetch (next chapter
+mini bar (status, play/pause, progress) when the page needs the space. The UI honors the system
+reduced-motion setting and reflows at 1.3×/2× text scale (two-column shortcuts, two-row filters,
+scrollable sheets and menus). Also: chapter prefetch (next chapter
 extracted in a hidden WebView so playback never waits), word-level
 read-along, bookmarks (saved sentences with snippets), EPUB/PDF/plain-text import (PDF is text-layer
 only, no OCR), translation hand-off to the system browser, a two-pane tablet/landscape layout, and

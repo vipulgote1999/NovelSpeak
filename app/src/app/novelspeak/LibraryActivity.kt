@@ -163,11 +163,11 @@ class LibraryActivity : Activity() {
         }
         val back = TextView(this).apply {
             text = "←"
-            textSize = 22f
+            textSize = 20f
             gravity = Gravity.CENTER
             setTextColor(Palette.TEXT)
             background = ripple(Palette.SURFACE_HIGH, 24, oval = true)
-            layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+            layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP))
             contentDescription = "Back"
             isClickable = true
             isFocusable = true
@@ -259,19 +259,29 @@ class LibraryActivity : Activity() {
         box.addView(clear)
         wrap.addView(box)
 
+        val largeText = resources.configuration.fontScale >= 1.5f
         val chips = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+            orientation = if (largeText) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
             setPadding(0, dp(8), 0, 0)
         }
-        for (f in Filter.values()) {
+        val chipRows = if (largeText) {
+            listOf(
+                LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL },
+                LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            )
+        } else {
+            emptyList()
+        }
+        for ((index, f) in Filter.values().withIndex()) {
             val chip = TextView(this).apply {
                 text = f.label
                 textSize = 12f
                 typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                 gravity = Gravity.CENTER
-                setPadding(dp(14), dp(6), dp(14), dp(6))
+                setPadding(dp(14), dp(8), dp(14), dp(8))
+                minimumHeight = dp(Design.DENSE_TOUCH_DP)
                 layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, dp(Design.DENSE_TOUCH_DP)
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { marginEnd = dp(8) }
                 isClickable = true
                 isFocusable = true
@@ -283,13 +293,25 @@ class LibraryActivity : Activity() {
                 }
             }
             filterButtons[f] = chip
-            chips.addView(chip)
+            if (largeText) {
+                chipRows[index / 2].addView(chip)
+            } else {
+                chips.addView(chip)
+            }
         }
-        val chipScroll = HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            addView(chips)
+        if (largeText) {
+            chipRows.forEachIndexed { index, row ->
+                row.setPadding(0, if (index == 0) 0 else dp(6), 0, 0)
+                chips.addView(row)
+            }
+            wrap.addView(chips)
+        } else {
+            val chipScroll = HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled = false
+                addView(chips)
+            }
+            wrap.addView(chipScroll)
         }
-        wrap.addView(chipScroll)
         updateFilterChips()
         return wrap
     }

@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import app.novelspeak.cast.BookCast
 import app.novelspeak.cast.CastIds
@@ -52,6 +53,8 @@ class CastSheet(
 
     fun show() {
         val dialog = Dialog(activity).apply { requestWindowFeature(Window.FEATURE_NO_TITLE) }
+        val motion = MotionAndroid.animationsEnabled(activity)
+        DiagLog.line(activity, "cast sheet motion=$motion")
         dialog.setOnDismissListener { onDismiss() }
         val sheet = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -154,31 +157,49 @@ class CastSheet(
             onToggle()
         }
         sheet.addView(primary, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, dp(Design.TOUCH_DP)
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dp(12) })
 
         val close = actionButton("Close", primary = false)
         close.setOnClickListener { dialog.dismiss() }
         sheet.addView(close, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, dp(Design.DENSE_TOUCH_DP)
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dp(6) })
 
-        dialog.setContentView(sheet)
+        // A 2x font scale can make the full roster taller than the screen. Scroll the sheet
+        // rather than clipping the footer or the last character row.
+        val scroll = ScrollView(activity).apply {
+            isFillViewport = false
+            isVerticalScrollBarEnabled = false
+            addView(sheet)
+        }
+        dialog.setContentView(scroll)
+        val dialogWidth = minOf(
+            activity.resources.displayMetrics.widthPixels - dp(16),
+            dp(560)
+        )
         dialog.window?.let { window ->
             window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             window.setGravity(Gravity.BOTTOM)
             window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
             val params = window.attributes
             params.dimAmount = 0.58f
-            params.width = minOf(
-                activity.resources.displayMetrics.widthPixels - dp(16),
-                dp(560)
-            )
+            params.width = dialogWidth
             params.height = WindowManager.LayoutParams.WRAP_CONTENT
             window.attributes = params
-            window.setWindowAnimations(android.R.style.Animation_Dialog)
+            window.setWindowAnimations(
+                if (motion) android.R.style.Animation_Dialog else 0
+            )
         }
         dialog.show()
+        dialog.window?.let { window ->
+            val maxHeight = (activity.resources.displayMetrics.heightPixels * 0.92f).toInt()
+            val widthSpec = View.MeasureSpec.makeMeasureSpec(
+                dialogWidth, View.MeasureSpec.EXACTLY
+            )
+            sheet.measure(widthSpec, View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+            window.setLayout(dialogWidth, minOf(sheet.measuredHeight, maxHeight))
+        }
     }
 
     private fun row(
@@ -191,6 +212,7 @@ class CastSheet(
         onPreview: (() -> Unit)?,
         onChange: (() -> Unit)?
     ): LinearLayout {
+        val largeText = activity.resources.configuration.fontScale >= 1.5f
         val row = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -232,11 +254,11 @@ class CastSheet(
         }
         texts.addView(label(title, 15f, if (current) Palette.ACCENT else Palette.TEXT).apply {
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
-            maxLines = 1
+            maxLines = if (largeText) 2 else 1
             ellipsize = TextUtils.TruncateAt.END
         })
         texts.addView(label(subtitle, 12f, Palette.MUTED).apply {
-            maxLines = 1
+            maxLines = if (largeText) 2 else 1
             ellipsize = TextUtils.TruncateAt.END
             setPadding(0, dp(2), 0, 0)
         })
@@ -247,10 +269,19 @@ class CastSheet(
             gravity = Gravity.END
         }
         if (confidence != null) {
-            right.addView(label(confidenceLabel(confidence), 10.5f, confidenceColor(confidence)))
+            val text = if (largeText) {
+                when (confidence) {
+                    Confidence.HIGH -> "High"
+                    Confidence.MEDIUM -> "Medium"
+                    Confidence.LOW -> "Review"
+                }
+            } else {
+                confidenceLabel(confidence)
+            }
+            right.addView(label(text, 10.5f, confidenceColor(confidence)))
         }
         val actions = LinearLayout(activity).apply {
-            orientation = LinearLayout.HORIZONTAL
+            orientation = if (largeText) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
             gravity = Gravity.END
             setPadding(0, dp(2), 0, 0)
         }
@@ -286,11 +317,12 @@ class CastSheet(
         gravity = Gravity.CENTER
         setTextColor(Palette.ACCENT)
         background = ripple(Palette.SURFACE_HIGH, 12)
-        setPadding(dp(8), 0, dp(8), 0)
+        setPadding(dp(8), dp(6), dp(8), dp(6))
         minWidth = dp(62)
+        minimumHeight = dp(Design.DENSE_TOUCH_DP)
         layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT, dp(Design.DENSE_TOUCH_DP)
-        ).apply { marginStart = dp(4) }
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { marginStart = dp(4); topMargin = dp(2) }
         contentDescription = description
         isClickable = true
         isFocusable = true
@@ -361,6 +393,8 @@ class CastSheet(
         gravity = Gravity.CENTER
         setTextColor(if (primary) Palette.BG else Palette.TEXT)
         background = ripple(if (primary) Palette.ACCENT else Palette.SURFACE_HIGH, Design.RADIUS_MD)
+        setPadding(dp(12), dp(8), dp(12), dp(8))
+        minimumHeight = dp(Design.TOUCH_DP)
         isClickable = true
         isFocusable = true
         contentDescription = text

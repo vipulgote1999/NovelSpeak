@@ -151,11 +151,15 @@ object Design {
 - **Parallel — done.** Story Cast quality/latency benchmark with Supertonic 3, ASR and an
   audio-capable judge; `CastChunker` fix for short same-speaker fragments. See
   `docs/benchmarks/2026-11-06-story-cast-quality.md`.
-- **Wave 3 — in progress.** Branded cast sheet, confidence, per-line **Fix speaker**, per-dialogue
-  silence trim, the 56 dp mini player, character preview from a real line, and the Kokoro
-  comparison are done. Kokoro is ~3× slower in absolute synthesis but closer to normal audiobook
-  pacing; Supertonic remains the latency default. Next: an ASR re-check of one-word lines, a human
-  listening comparison, and Wave 4 motion/accessibility/performance.
+- **Wave 3 — done.** Branded cast sheet, confidence, per-line **Fix speaker**, per-dialogue silence
+  trim, the 56 dp mini player, character preview from a real line, and the Kokoro comparison are
+  complete. Kokoro is ~3× slower in absolute synthesis but closer to normal audiobook pacing;
+  Supertonic remains the latency default.
+- **Wave 4 — in progress.** Reduced-motion support and the 1.3×/2× text-scale audit are done:
+  two-column shortcuts, two-row filters, a scrollable overflow, wrap-height text controls, a
+  scrollable cast sheet, and a large-text player speed row. 521 host checks and Maestro 7/106
+  pass. Next: performance tracing, secondary Settings pages at 2×, and the remaining ASR/listening
+  validation.
 
 ## Execution notes
 

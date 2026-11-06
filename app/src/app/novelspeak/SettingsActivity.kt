@@ -178,11 +178,11 @@ class SettingsActivity : Activity() {
         }
         val back = TextView(this).apply {
             text = "←"
-            textSize = 22f
+            textSize = 20f
             gravity = Gravity.CENTER
             setTextColor(Palette.TEXT)
             background = ripple(Palette.SURFACE_HIGH, 24, oval = true)
-            layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+            layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP))
             contentDescription = "Back"
             isClickable = true
             isFocusable = true
@@ -878,7 +878,7 @@ class SettingsActivity : Activity() {
             textSize = 12f
             setTextColor(Palette.MUTED)
             setPadding(0, dp(3), 0, 0)
-            maxLines = 1
+            maxLines = if (resources.configuration.fontScale >= 1.5f) 2 else 1
         })
         row.addView(texts)
         row.addView(TextView(this).apply {

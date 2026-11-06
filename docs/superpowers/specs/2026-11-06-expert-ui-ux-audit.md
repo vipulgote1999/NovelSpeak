@@ -308,15 +308,51 @@ emotional range.
   delete, library search, read, transport). Mini-player states were also verified on phone and
   tablet, including play/pause from the bar.
 
-Still open: an ASR re-check of one-word lines after the trim, and the Kokoro quality comparison.
+Still open: an ASR re-check of one-word lines after the trim, a human listening pass, and Wave 4
+performance tracing.
 
-## 10. Acceptance metrics
+## 10. Wave 4 result (partial): reduced motion and text scale (2026-11-06)
+
+**Reduced motion.** `Motion` holds the pure decision and `MotionAndroid` reads the system animator
+duration scale; `areAnimatorsEnabled()` is used on API 26+, with the Settings fallback below that.
+Home entry and the cast-sheet window animation are gated. With the system scale at 0 the device log
+shows `home shown motion=false` and `cast sheet motion=false`; with the scale restored it shows
+`home shown motion=true`.
+
+**1.3× / 2× text scale.** The audit found and fixed:
+
+- Four-column shortcut labels truncated at 2× (“Empire…”, “Royal …”). Home now uses **two
+  columns above 1.5×**, so all eight labels fit.
+- The Library filter strip cut “Finished” at 2×. It now uses **two rows of two** above 1.5×.
+- The anchored `PopupMenu` fell off the screen at 2×. Above 1.5× the overflow is a **scrollable
+  list dialog**, so “NovelSpeak settings” and “About & privacy” remain reachable.
+- Fixed-height text buttons/chips (32/44/48 dp) clipped at 2×. Text controls now use a minimum
+  height with wrap-content height; the player’s speed controls move to their own row at ≥1.2×.
+- The cast sheet exceeded the screen at 2×. It is now a **measured, scrollable sheet** with a
+  visible footer; confidence labels shorten to High/Medium/Review at large text.
+
+Renders: [1.3 Home](../../media/ui-audit/scale13-home.png) ·
+[1.3 Library](../../media/ui-audit/scale13-library.png) ·
+[2.0 Home](../../media/ui-audit/scale20-home.png) ·
+[2.0 Library](../../media/ui-audit/scale20-library.png) ·
+[2.0 Settings](../../media/ui-audit/scale20-settings.png) ·
+[2.0 Reader](../../media/ui-audit/scale20-reader.png) ·
+[2.0 Cast](../../media/ui-audit/scale20-cast.png) ·
+[2.0 Cast scrolled](../../media/ui-audit/scale20-cast-scrolled.png).
+
+**Verification:** **521 host checks** (motion 5, player chrome 9, audio DSP 32, parser 42, store 42,
+library 211, feature 130, design 15, catalog 18, selection 7, chunker 10) and **Maestro 7 flows /
+106 commands** pass at 1.0× with animator scale 1.
+
+Remaining Wave 4: performance tracing and the secondary Settings pages at 2×.
+
+## 11. Acceptance metrics
 
 - No blocking finding remains on phone or tablet.
 - Every interactive target ≥48 dp (dense ≥44 dp).
 - Home/Settings/Library content is centered and capped at 720 dp on tablet.
 - The reader chrome is ≤48 dp tall; the player has a mini and expanded state.
 - Cast sheet is branded and exposes confidence + Fix line.
-- All existing host checks (427) and Maestro reader/transport flows pass.
-- Text at 1.3×/2× does not clip.
+- All existing host checks (521) and Maestro reader/transport flows pass.
+- Text at 1.3×/2× does not clip on Home, Library, Settings, reader, or the cast sheet.
 - No color-only status.
