@@ -426,6 +426,6 @@ The large-library stress test and adaptive Library grid are complete.
 - Home/Settings/Library content is centered and capped at 720 dp on tablet.
 - The reader chrome is ≤48 dp tall; the player has a mini and expanded state.
 - Cast sheet is branded and exposes confidence + Fix line.
-- All existing host checks (521) and Maestro reader/transport flows pass.
+- All host checks (531) and Maestro reader/transport flows pass.
 - Text at 1.3×/2× does not clip on Home, Library, Settings, reader, or the cast sheet.
 - No color-only status.
