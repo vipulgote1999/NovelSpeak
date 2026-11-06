@@ -11,12 +11,14 @@ tags:
     commands:
       - tapOn: "Shortcut Library"
 - extendedWaitUntil:
-    visible: "CHAPTERS|IMPORTED BOOKS|BOOKMARKS"
+    visible: "Search library"
     timeout: 15000
-- tapOn: "Delete entry: Adblock race regression"
+- scrollUntilVisible:
+    element:
+      text: "Prefetch regression"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Delete entry: Prefetch regression"
 - assertVisible: "Remove from library?"
 - tapOn: "Cancel"
-- assertVisible: "Adblock race regression"
-- tapOn: "Delete entry: Adblock race regression"
-- tapOn: "Remove"
-- assertNotVisible: "Adblock race regression"
+- assertVisible: "Prefetch regression"

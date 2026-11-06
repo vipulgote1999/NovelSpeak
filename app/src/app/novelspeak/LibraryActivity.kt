@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -12,11 +13,17 @@ import android.graphics.drawable.RippleDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.text.Editable
+import android.text.InputType
 import android.text.TextUtils
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
+import android.view.inputmethod.EditorInfo
+import android.widget.EditText
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -50,6 +57,18 @@ class LibraryActivity : Activity() {
     private lateinit var imports: ImportedBookStore
     private lateinit var list: LinearLayout
     private lateinit var clearAction: TextView
+    private lateinit var searchWrap: LinearLayout
+    private lateinit var searchField: EditText
+    private var query = ""
+    private var filter = Filter.ALL
+    private val filterButtons = LinkedHashMap<Filter, TextView>()
+
+    private enum class Filter(val label: String) {
+        ALL("All"),
+        CHAPTERS("Chapters"),
+        IMPORTED("Imported"),
+        FINISHED("Finished")
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +83,8 @@ class LibraryActivity : Activity() {
             setBackgroundColor(Palette.BG)
         }
         root.addView(buildTopBar())
+        searchWrap = buildSearchBar()
+        root.addView(searchWrap)
 
         list = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -81,6 +102,23 @@ class LibraryActivity : Activity() {
         root.addView(scroll)
         setContentView(root)
         applyInsets(root)
+        applyContentWidth()
+    }
+
+    /** Center the search field and rows inside a 720 dp measure on tablets. */
+    private fun applyContentWidth() {
+        val pad = dp(Design.contentPadding(resources.configuration.screenWidthDp))
+        if (::searchWrap.isInitialized) {
+            searchWrap.setPadding(pad, dp(4), pad, dp(8))
+        }
+        if (::list.isInitialized) {
+            list.setPadding(pad, dp(4), pad, dp(20))
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyContentWidth()
     }
 
     override fun onResume() {
@@ -157,7 +195,7 @@ class LibraryActivity : Activity() {
             setPadding(dp(14), 0, dp(14), 0)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-                dp(38)
+                dp(Design.DENSE_TOUCH_DP)
             )
             contentDescription = "Clear library"
             isClickable = true
@@ -168,27 +206,157 @@ class LibraryActivity : Activity() {
         return bar
     }
 
-    /** Rebuilds the list from storage; safe against corrupt data (the store never throws). */
+    private fun buildSearchBar(): LinearLayout {
+        val wrap = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(4), dp(16), dp(8))
+        }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = rounded(Palette.SURFACE_HIGH, Design.RADIUS_PILL)
+            minimumHeight = dp(46)
+            setPadding(dp(16), 0, dp(6), 0)
+        }
+        var clearButton: TextView? = null
+        searchField = EditText(this).apply {
+            hint = "Search library"
+            textSize = 14f
+            setTextColor(Palette.TEXT)
+            setHintTextColor(Palette.MUTED)
+            background = null
+            includeFontPadding = false
+            setSingleLine(true)
+            inputType = InputType.TYPE_CLASS_TEXT
+            imeOptions = EditorInfo.IME_ACTION_SEARCH
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+            contentDescription = "Search library"
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    query = s?.toString().orEmpty()
+                    clearButton?.visibility = if (query.isEmpty()) View.GONE else View.VISIBLE
+                    render()
+                }
+            })
+        }
+        box.addView(searchField)
+        val clear = TextView(this).apply {
+            text = "✕"
+            textSize = 16f
+            gravity = Gravity.CENTER
+            setTextColor(Palette.MUTED)
+            background = ripple(Palette.SURFACE, 18, oval = true)
+            layoutParams = LinearLayout.LayoutParams(dp(Design.DENSE_TOUCH_DP), dp(Design.DENSE_TOUCH_DP))
+            contentDescription = "Clear search"
+            isClickable = true
+            isFocusable = true
+            visibility = View.GONE
+            setOnClickListener { searchField.setText("") }
+        }
+        clearButton = clear
+        box.addView(clear)
+        wrap.addView(box)
+
+        val chips = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(8), 0, 0)
+        }
+        for (f in Filter.values()) {
+            val chip = TextView(this).apply {
+                text = f.label
+                textSize = 12f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                gravity = Gravity.CENTER
+                setPadding(dp(14), dp(6), dp(14), dp(6))
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, dp(Design.DENSE_TOUCH_DP)
+                ).apply { marginEnd = dp(8) }
+                isClickable = true
+                isFocusable = true
+                contentDescription = "Filter: " + f.label
+                setOnClickListener {
+                    filter = f
+                    updateFilterChips()
+                    render()
+                }
+            }
+            filterButtons[f] = chip
+            chips.addView(chip)
+        }
+        val chipScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(chips)
+        }
+        wrap.addView(chipScroll)
+        updateFilterChips()
+        return wrap
+    }
+
+    private fun updateFilterChips() {
+        for ((f, chip) in filterButtons) {
+            val on = f == filter
+            chip.setTextColor(if (on) Palette.BG else Palette.TEXT)
+            chip.background = ripple(if (on) Palette.ACCENT else Palette.SURFACE_HIGH, 17)
+            chip.isSelected = on
+        }
+    }
+
+    /** Rebuilds the list from storage, applying the search query and the active filter. */
     private fun render() {
         list.removeAllViews()
-        val entries = try {
+        val rawEntries = try {
             store.listEntries()
         } catch (t: Throwable) {
             emptyList<LibraryEntry>()
         }
-        val marks = try {
+        val rawMarks = try {
             bookmarks.list()
         } catch (t: Throwable) {
             emptyList<Bookmark>()
         }
-        val books = try {
+        val rawBooks = try {
             imports.list()
         } catch (t: Throwable) {
             emptyList<ImportedBook>()
         }
+        val q = query.trim().lowercase()
+        fun match(value: String): Boolean = q.isEmpty() || value.lowercase().contains(q)
+
+        val entries = rawEntries.filter { entry ->
+            val allowed = when (filter) {
+                Filter.ALL, Filter.CHAPTERS -> true
+                Filter.IMPORTED -> false
+                Filter.FINISHED -> entry.finished
+            }
+            allowed && (match(entry.title) || match(entry.site) || match(entry.url))
+        }
+        val books = rawBooks.filter { book ->
+            val allowed = when (filter) {
+                Filter.ALL, Filter.IMPORTED -> true
+                Filter.CHAPTERS -> false
+                Filter.FINISHED -> book.finished
+            }
+            allowed && (match(book.title) || match(book.author) || match(book.kind))
+        }
+        val marks = if (filter == Filter.ALL) {
+            rawMarks.filter { match(it.snippet) || match(it.title) }
+        } else {
+            emptyList()
+        }
+
+        if (::searchWrap.isInitialized) {
+            searchWrap.visibility =
+                if (rawEntries.isEmpty() && rawBooks.isEmpty()) View.GONE else View.VISIBLE
+        }
         if (entries.isEmpty() && marks.isEmpty() && books.isEmpty()) {
-            clearAction.visibility = View.GONE
-            list.addView(emptyView())
+            val noneAtAll = rawEntries.isEmpty() && rawBooks.isEmpty() && rawMarks.isEmpty()
+            clearAction.visibility = if (noneAtAll) View.GONE else View.VISIBLE
+            list.addView(
+                if (noneAtAll) emptyView()
+                else emptyView("No matches. Try a different search or filter.")
+            )
             return
         }
         clearAction.visibility = if (entries.isEmpty() && books.isEmpty()) View.GONE else View.VISIBLE
@@ -356,8 +524,8 @@ class LibraryActivity : Activity() {
         return card
     }
 
-    private fun emptyView(): TextView = TextView(this).apply {
-        text = EMPTY_TEXT
+    private fun emptyView(message: String = EMPTY_TEXT): TextView = TextView(this).apply {
+        text = message
         textSize = 14f
         setTextColor(Palette.MUTED)
         gravity = Gravity.CENTER

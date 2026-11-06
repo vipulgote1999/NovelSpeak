@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -120,8 +121,24 @@ class SettingsActivity : Activity() {
         root.addView(scroll)
         setContentView(root)
         applyInsets(root)
+        applyContentWidth()
 
         build()
+    }
+
+    /**
+     * Keep the settings content inside a readable 720 dp measure on tablets; the toolbar remains
+     * full-width, like a standard app bar, while the cards center beneath it.
+     */
+    private fun applyContentWidth() {
+        if (!::container.isInitialized) return
+        val pad = dp(Design.contentPadding(resources.configuration.screenWidthDp))
+        container.setPadding(pad, dp(2), pad, dp(20))
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyContentWidth()
     }
 
     /** Keep the top bar below the status bar and the footer above the nav bar. */
@@ -780,7 +797,11 @@ class SettingsActivity : Activity() {
             setPadding(dp(4), dp(6), dp(4), dp(10))
         })
 
+        section("READING")
         hubRow("Reading aloud", engineSummary() + " · " + shortVoiceLabel(), Page.ENGINE)
+        hubRow("Reading & display", readingSummary(), Page.READING)
+
+        section("VOICE & PLAYBACK")
         hubRow("Voices & previews", voiceSummary(), Page.VOICES)
         hubRow(
             "Playback & sleep",
@@ -788,7 +809,30 @@ class SettingsActivity : Activity() {
                 if (prefs.sleepTimerMinutes > 0) prefs.sleepTimerMinutes.toString() + " min sleep" else "sleep off",
             Page.PLAYBACK
         )
-        hubRow("Reading & display", readingSummary(), Page.READING)
+
+        section("STORY")
+        val castCard = card()
+        toggleRow(
+            castCard,
+            "Story cast",
+            storyCastSummary(),
+            prefs.storyCast
+        ) { on ->
+            prefs.storyCast = on
+            status.text = if (on) {
+                "Story cast on · tap Cast in the reader"
+            } else {
+                "Story cast off · narrator only"
+            }
+            build()
+        }
+        castCard.addView(note(
+            "Tap Cast in the player to analyse the current chapter. The author's words are " +
+                "preserved; only speaker labels and voices are added."
+        ))
+        container.addView(castCard)
+
+        section("PRIVACY & APP")
         hubRow("Privacy & data", privacySummary(), Page.PRIVACY)
         hubRow("Advanced", advancedSummary(), Page.ADVANCED)
         hubRow("About NovelSpeak", "Privacy, licences and version") {
@@ -861,6 +905,10 @@ class SettingsActivity : Activity() {
     }
 
     private fun voiceSummary(): String = currentVoiceLabelText()
+
+    private fun storyCastSummary(): String =
+        if (prefs.storyCast) "On · narrator + character voices"
+        else "Off · one narrator voice"
 
     private fun readingSummary(): String {
         val theme = prefs.readerTheme.replaceFirstChar { it.uppercase() }
@@ -1069,15 +1117,13 @@ class SettingsActivity : Activity() {
     }
 
     private fun section(title: String, accessibilityLabel: String? = null) {
-        val pretty = if (title.isEmpty()) title else
-            title.lowercase().replaceFirstChar { it.uppercase() }
         container.addView(TextView(this).apply {
-            text = pretty
-            textSize = 12.5f
-            letterSpacing = 0.01f
+            text = title.uppercase()
+            textSize = 11f
+            letterSpacing = 0.08f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.MUTED)
-            setPadding(dp(4), dp(18), 0, dp(8))
+            setPadding(dp(4), dp(20), 0, dp(8))
             if (accessibilityLabel != null) contentDescription = accessibilityLabel
         })
     }

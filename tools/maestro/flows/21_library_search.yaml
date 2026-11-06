@@ -1,0 +1,39 @@
+appId: app.novelspeak
+name: "21 library search: query and filter narrow the list"
+tags:
+  - library
+  - regression
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Shortcut Library"
+- extendedWaitUntil:
+    visible: "Search library"
+    timeout: 15000
+- tapOn: "Search library"
+- eraseText: 100
+- inputText: "Lantern"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "The Lantern — A Short Chapter"
+    timeout: 10000
+- assertNotVisible: "The Salt Road — The Wick Chronicle"
+- tapOn: "Clear search"
+- scrollUntilVisible:
+    element:
+      text: "The Salt Road — The Wick Chronicle"
+    direction: DOWN
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "Filter: Chapters"
+    direction: UP
+    timeout: 15000
+- tapOn: "Filter: Chapters"
+- extendedWaitUntil:
+    visible: "The Lantern — A Short Chapter"
+    timeout: 10000
+- tapOn: "Filter: All"
