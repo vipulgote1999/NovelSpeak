@@ -172,7 +172,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val monogram: String,
         val url: String,
         val iconAsset: String,
-        val opensLibrary: Boolean = false
+        val opensLibrary: Boolean = false,
+        val opensManga: Boolean = false
     )
 
     private data class HomeResume(
@@ -193,7 +194,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         HomeShortcut("Wattpad", "WP", "https://www.wattpad.com/", "wattpad"),
         HomeShortcut("Gutenberg", "PG", "https://www.gutenberg.org/", "gutenberg"),
         HomeShortcut("Wikipedia", "WI", "https://en.m.wikipedia.org/", "wikipedia"),
-        HomeShortcut("Library", "L", "", "library", opensLibrary = true)
+        HomeShortcut("Library", "L", "", "library", opensLibrary = true),
+        HomeShortcut("Manga", "M", "", "manga", opensManga = true)
     )
 
     private val homeIconCache = HashMap<String, Bitmap?>()
@@ -1122,6 +1124,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             setOnClickListener {
                 if (shortcut.opensLibrary) {
                     startActivity(Intent(this@MainActivity, LibraryActivity::class.java))
+                } else if (shortcut.opensManga) {
+                    startActivity(Intent(this@MainActivity, MangaReaderActivity::class.java))
                 } else {
                     hideHome()
                     web.loadUrl(shortcut.url)

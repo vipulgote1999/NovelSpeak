@@ -1,0 +1,13 @@
+appId: app.novelspeak
+name: "22 manga: home shortcut opens manga reader"
+tags:
+  - manga
+  - smoke
+---
+- launchApp
+- assertVisible: "NovelSpeak"
+- scrollUntilVisible:
+    element: "Manga"
+    direction: DOWN
+- tapOn: "Manga"
+- assertVisible: "OCR + READ"

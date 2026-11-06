@@ -82,6 +82,13 @@
             android:label="About &amp; privacy"
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
+        <activity
+            android:name=".MangaReaderActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="Manga reader"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
         <!-- Dev-only benchmark harness. Not linked from the UI; launch it with adb. It has no
              data access beyond the app's own sandbox, but exported so `am start` from a test
              device works without adb root. -->
