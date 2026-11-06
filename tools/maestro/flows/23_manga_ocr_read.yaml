@@ -1,0 +1,15 @@
+appId: app.novelspeak
+name: "23 manga: sample OCR + chunk tracking"
+tags:
+  - manga
+---
+- launchApp
+- assertVisible: "NovelSpeak"
+- scrollUntilVisible:
+    element: "Manga"
+    direction: DOWN
+- tapOn: "Manga"
+- assertVisible: "OCR + READ"
+- tapOn: "SAMPLE"
+- tapOn: "OCR + READ"
+- assertVisible: "OCR + READ"

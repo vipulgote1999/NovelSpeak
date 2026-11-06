@@ -87,11 +87,31 @@ class MangaReaderActivity : Activity(), Reader.Listener {
                 startActivityForResult(pick, REQ_PICK)
             }
         }
+        val sampleButton = Button(this).apply {
+            text = "Sample"
+            setOnClickListener {
+                try {
+                    val bmp = BitmapFactory.decodeStream(assets.open("manga-sample.png"))
+                    if (bmp != null) {
+                        image.setImageBitmap(bmp)
+                        pageUri = null
+                        // Save to cache file so OCR can read it via file path.
+                        val f = java.io.File(cacheDir, "manga-sample.png")
+                        java.io.FileOutputStream(f).use { out -> assets.open("manga-sample.png").copyTo(out) }
+                        pageUri = Uri.fromFile(f)
+                        status.text = "Sample loaded. Tap OCR + READ."
+                    }
+                } catch (t: Throwable) {
+                    status.text = "Sample load failed: ${t.message}"
+                }
+            }
+        }
         readButton = Button(this).apply { text = "OCR + Read"; setOnClickListener { runOcrAndRead() } }
         prevButton = Button(this).apply { text = "◀"; setOnClickListener { reader.prevSentence() } }
         nextButton = Button(this).apply { text = "▶"; setOnClickListener { reader.nextSentence() } }
         val settingsButton = Button(this).apply { text = "⚙"; setOnClickListener { showSettingsDialog() } }
         controls.addView(openButton)
+        controls.addView(sampleButton)
         controls.addView(readButton)
         controls.addView(prevButton)
         controls.addView(nextButton)

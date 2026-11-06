@@ -1,6 +1,25 @@
 
 Waiting for flows to complete...
-[Passed] 10 bookmark: bookmark current sentence, find it in Library, reopen it (47s)
+[Failed] 07 library: opened chapter appears with progress and resumes (101ms)
+[Failed] 05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch (2ms)
+[Failed] 11 import: overflow opens the document picker for EPUB/PDF (1ms)
+[Failed] 10 bookmark: bookmark current sentence, find it in Library, reopen it (1ms)
+[Failed] 17 voice preview: Voices page previews a sample (1ms)
+[Failed] 06 sleep timer: set 15 minutes, countdown appears, Off clears it (1ms)
+[Failed] 09 privacy: About & privacy -> Privacy & licences -> back (1ms)
+[Failed] 14 read restart: Read restarts the current chapter at sentence 1 (1ms)
+[Failed] 19 pause/resume: the PCM writer survives an interrupted write and the cursor advances (1ms)
+[Failed] 03 read local chapter: URL loads, Read extracts, player shows sentence state (1ms)
+[Failed] 16 transport: voice label, sentence nav, stop, speed, restart (1ms)
+[Failed] 21 library search: query and filter narrow the list (1ms)
+[Failed] 22 manga: home shortcut opens manga reader (0s)
+[Failed] 02 settings: hub categories open a subpage and back returns (1ms)
+[Failed] 01 launch: home tab is visible with search and shortcuts (1ms)
+[Failed] 13 home: new-tab page shows wordmark, search, shortcuts, continue reading (1ms)
+[Failed] 04 next chapter: Next ch follows rel=next to chapter2 (0s)
+[Failed] 15 next fallback: chapter URLs without a next anchor still advance (0s)
+[Failed] 18 settings hub: every category opens and returns (1ms)
+[Failed] 20 library delete: a single row asks before removing (1ms)
 
-1/1 Flow Passed in 47s
+20/20 Flows Failed
 

@@ -1,10 +1,167 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <testsuites>
-  <testsuite name="Test Suite" device="MedTrail_API35" tests="1" failures="0" time="46.632" timestamp="2026-10-27T10:31:32">
-    <testcase id="10 bookmark: bookmark current sentence, find it in Library, reopen it" name="10 bookmark: bookmark current sentence, find it in Library, reopen it" classname="10 bookmark: bookmark current sentence, find it in Library, reopen it" file="tools/maestro/flows/10_bookmark_sentence.yaml" time="46.625" timestamp="2026-10-27T10:31:32" status="SUCCESS">
+  <testsuite name="Test Suite" device="MedTrail_API35" tests="20" failures="19" time="209.335" timestamp="2026-11-06T23:21:39">
+    <testcase id="07 library: opened chapter appears with progress and resumes" name="07 library: opened chapter appears with progress and resumes" classname="07 library: opened chapter appears with progress and resumes" file="tools/maestro/flows/07_library_resume.yaml" time="52.226" timestamp="2026-11-06T23:21:39" status="ERROR">
+      <properties>
+        <property name="tags" value="pending, library"/>
+      </properties>
+      <failure>Assertion is false: "Address bar, http://localhost:8765/chapter1.html" is visible</failure>
+    </testcase>
+    <testcase id="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" name="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" classname="05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch" file="tools/maestro/flows/05_per_site.yaml" time="50.785" timestamp="2026-11-06T23:22:31" status="ERROR">
+      <properties>
+        <property name="tags" value="pending, per-site"/>
+      </properties>
+      <failure>Assertion is false: "Address bar, http://localhost:8765/chapter1.html" is visible</failure>
+    </testcase>
+    <testcase id="11 import: overflow opens the document picker for EPUB/PDF" name="11 import: overflow opens the document picker for EPUB/PDF" classname="11 import: overflow opens the document picker for EPUB/PDF" file="tools/maestro/flows/11_import_picker.yaml" time="8.242" timestamp="2026-11-06T23:23:22" status="SUCCESS">
+      <properties>
+        <property name="tags" value="import"/>
+      </properties>
+    </testcase>
+    <testcase id="10 bookmark: bookmark current sentence, find it in Library, reopen it" name="10 bookmark: bookmark current sentence, find it in Library, reopen it" classname="10 bookmark: bookmark current sentence, find it in Library, reopen it" file="tools/maestro/flows/10_bookmark_sentence.yaml" time="47.845" timestamp="2026-11-06T23:23:30" status="ERROR">
       <properties>
         <property name="tags" value="bookmark, library"/>
       </properties>
+      <failure>Assertion is false: "Address bar, http://localhost:8765/chapter1.html" is visible</failure>
+    </testcase>
+    <testcase id="17 voice preview: Voices page previews a sample" name="17 voice preview: Voices page previews a sample" classname="17 voice preview: Voices page previews a sample" file="tools/maestro/flows/17_voice_preview.yaml" time="47.227" timestamp="2026-11-06T23:24:18" status="ERROR">
+      <properties>
+        <property name="tags" value="settings, voice"/>
+      </properties>
+      <failure>Assertion is false: "Preview (finished|failed).*" is visible</failure>
+    </testcase>
+    <testcase id="06 sleep timer: set 15 minutes, countdown appears, Off clears it" name="06 sleep timer: set 15 minutes, countdown appears, Off clears it" classname="06 sleep timer: set 15 minutes, countdown appears, Off clears it" file="tools/maestro/flows/06_sleep_timer.yaml" time="2.802" timestamp="2026-11-06T23:25:05" status="ERROR">
+      <properties>
+        <property name="tags" value="pending, sleep-timer"/>
+      </properties>
+      <failure>maestro.android.DeviceServerDiedException: Device server died during 'viewHierarchy' on emulator-5554 (1873ms since last byte, connection age 210301ms): StatusRuntimeException: UNAVAILABLE
+	at maestro.android.AndroidDeviceConnection.onGrpcDeath(AndroidDeviceConnection.kt:319)
+	at maestro.android.AndroidDeviceConnection.mapTransport(AndroidDeviceConnection.kt:306)
+	at maestro.android.AndroidDeviceConnection.execute(AndroidDeviceConnection.kt:122)
+	at maestro.drivers.AndroidDriver.callViewHierarchy(AndroidDriver.kt:368)
+	at maestro.drivers.AndroidDriver.contentDescriptor$lambda$16(AndroidDriver.kt:329)
+	at maestro.utils.Metrics.measured(Metrics.kt:48)
+	at maestro.drivers.AndroidDriver.contentDescriptor(AndroidDriver.kt:328)
+	at maestro.ViewHierarchy$Companion.from-8JJjmZI(ViewHierarchy.kt:29)
+	at maestro.Maestro$findElementWithTimeout$found$1$1.invoke-prqvCes(Maestro.kt:543)
+	at maestro.Maestro$findElementWithTimeout$found$1$1.invoke(Maestro.kt:542)
+	at kotlinx.coroutines.InterruptibleKt.runInterruptibleInExpectedContext(Interruptible.kt:48)
+	at kotlinx.coroutines.InterruptibleKt.access$runInterruptibleInExpectedContext(Interruptible.kt:1)
+	at kotlinx.coroutines.InterruptibleKt$runInterruptible$2.invokeSuspend(Interruptible.kt:40)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+Caused by: io.grpc.StatusRuntimeException: UNAVAILABLE
+	at io.grpc.stub.ClientCalls.toStatusRuntimeException(ClientCalls.java:275)
+	at io.grpc.stub.ClientCalls.getUnchecked(ClientCalls.java:256)
+	at io.grpc.stub.ClientCalls.blockingUnaryCall(ClientCalls.java:169)
+	at maestro_android.MaestroDriverGrpc$MaestroDriverBlockingStub.viewHierarchy(MaestroDriverGrpc.java:747)
+	at maestro.drivers.AndroidDriver.callViewHierarchy$lambda$19(AndroidDriver.kt:368)
+	at maestro.android.AndroidDeviceConnection.execute(AndroidDeviceConnection.kt:120)
+	... 18 more
+Caused by: java.io.IOException: Command failed (host:transport:emulator-5554): device offline
+	at dadb.adbserver.AdbServer.send$dadb(AdbServer.kt:103)
+	at dadb.adbserver.AdbServerDadb.open(AdbServer.kt:148)
+	at maestro.android.AndroidDeviceConnection.buildChannel$lambda$2(AndroidDeviceConnection.kt:98)
+	at maestro.android.RawAdbSocket.connect(AdbSocketFactory.kt:206)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at maestro.android.AdbSocketFactory.createSocket(AdbSocketFactory.kt:57)
+	at maestro.android.AdbSocketFactory.createSocket(AdbSocketFactory.kt:63)
+	at io.grpc.okhttp.OkHttpClientTransport$3.run(OkHttpClientTransport.java:535)
+	at io.grpc.internal.SerializingExecutor.run(SerializingExecutor.java:133)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+    </testcase>
+    <testcase id="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" name="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" classname="09 privacy: About &amp; privacy -> Privacy &amp; licences -> back" file="tools/maestro/flows/09_privacy_about.yaml" time="0.009" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="pending, privacy"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="14 read restart: Read restarts the current chapter at sentence 1" name="14 read restart: Read restarts the current chapter at sentence 1" classname="14 read restart: Read restarts the current chapter at sentence 1" file="tools/maestro/flows/14_read_restart.yaml" time="0.014" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="reader, regression"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="19 pause/resume: the PCM writer survives an interrupted write and the cursor advances" name="19 pause/resume: the PCM writer survives an interrupted write and the cursor advances" classname="19 pause/resume: the PCM writer survives an interrupted write and the cursor advances" file="tools/maestro/flows/19_pause_resume.yaml" time="0.012" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="reader, tts, regression"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="03 read local chapter: URL loads, Read extracts, player shows sentence state" name="03 read local chapter: URL loads, Read extracts, player shows sentence state" classname="03 read local chapter: URL loads, Read extracts, player shows sentence state" file="tools/maestro/flows/03_read_local_chapter.yaml" time="0.009" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="reading, fixture"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="16 transport: voice label, sentence nav, stop, speed, restart" name="16 transport: voice label, sentence nav, stop, speed, restart" classname="16 transport: voice label, sentence nav, stop, speed, restart" file="tools/maestro/flows/16_transport.yaml" time="0.012" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="reader, regression"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="21 library search: query and filter narrow the list" name="21 library search: query and filter narrow the list" classname="21 library search: query and filter narrow the list" file="tools/maestro/flows/21_library_search.yaml" time="0.011" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="library, regression"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="22 manga: home shortcut opens manga reader" name="22 manga: home shortcut opens manga reader" classname="22 manga: home shortcut opens manga reader" file="tools/maestro/flows/22_manga_launch.yaml" time="0.022" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="manga, smoke"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="02 settings: hub categories open a subpage and back returns" name="02 settings: hub categories open a subpage and back returns" classname="02 settings: hub categories open a subpage and back returns" file="tools/maestro/flows/02_settings.yaml" time="0.021" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="baseline, smoke"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="01 launch: home tab is visible with search and shortcuts" name="01 launch: home tab is visible with search and shortcuts" classname="01 launch: home tab is visible with search and shortcuts" file="tools/maestro/flows/01_launch.yaml" time="0.012" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="baseline, smoke"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" name="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" classname="13 home: new-tab page shows wordmark, search, shortcuts, continue reading" file="tools/maestro/flows/13_home.yaml" time="0.009" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="home"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="04 next chapter: Next ch follows rel=next to chapter2" name="04 next chapter: Next ch follows rel=next to chapter2" classname="04 next chapter: Next ch follows rel=next to chapter2" file="tools/maestro/flows/04_next_chapter.yaml" time="0.009" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="reading, fixture"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="15 next fallback: chapter URLs without a next anchor still advance" name="15 next fallback: chapter URLs without a next anchor still advance" classname="15 next fallback: chapter URLs without a next anchor still advance" file="tools/maestro/flows/15_next_fallback.yaml" time="0.01" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="reader, regression"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="18 settings hub: every category opens and returns" name="18 settings hub: every category opens and returns" classname="18 settings hub: every category opens and returns" file="tools/maestro/flows/18_settings_hub.yaml" time="0.009" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="settings, regression"/>
+      </properties>
+      <failure>Unknown error</failure>
+    </testcase>
+    <testcase id="20 library delete: a single row asks before removing" name="20 library delete: a single row asks before removing" classname="20 library delete: a single row asks before removing" file="tools/maestro/flows/20_library_delete_confirm.yaml" time="0.009" timestamp="2026-11-06T23:25:08" status="ERROR">
+      <properties>
+        <property name="tags" value="library, regression"/>
+      </properties>
+      <failure>Unknown error</failure>
     </testcase>
   </testsuite>
 </testsuites>
