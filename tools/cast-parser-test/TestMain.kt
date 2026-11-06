@@ -72,6 +72,13 @@ fun main() {
     check("austen tiresome is Mrs Bennet", speakerOf(pp, "how can you be so tiresome") == "Mrs. Bennet", speakerOf(pp, "how can you be so tiresome"))
     check("austen design is Mrs Bennet", speakerOf(pp, "Design! nonsense") == "Mrs. Bennet", speakerOf(pp, "Design! nonsense"))
     check("austen no-occasion is Mr Bennet", speakerOf(pp, "I see no occasion") == "Mr. Bennet", speakerOf(pp, "I see no occasion"))
+    check(
+        "austen characters are confidently attributed",
+        ppDialogue.map { it.speakerId }.distinct().all { id ->
+            pp.members.firstOrNull { it.id == id }?.confidence != Confidence.LOW
+        },
+        pp.members.joinToString { "${it.name}=${it.confidence}" }
+    )
 
     // ------------------------------------------------------------------ unattributed / aliases
     val cast = listOf(
@@ -106,6 +113,11 @@ fun main() {
     check("auto scene wouldn't is Tomas", speakerOf(auto, "And I told you I wouldn't") == "Tomas", speakerOf(auto, "And I told you I wouldn't"))
     check("auto scene unresolved is two", auto.unresolved == 2, auto.unresolved.toString())
     check("auto scene coverage", coversInput(auto, blocks(scenePath)))
+    check(
+        "auto scene confidence is promoted",
+        auto.members.filter { it.dialogueLines > 0 }.all { it.confidence != Confidence.LOW },
+        auto.members.joinToString { "${it.name}=${it.confidence}" }
+    )
 
     // ------------------------------------------------------------------ alias resolution
     val mara = scene.members.firstOrNull { it.id == "mara" }

@@ -56,6 +56,8 @@ fun main() {
     check("cast alias round-trip", loaded?.members?.first { it.id == "mrs-bennet" }?.aliases?.contains("his wife") == true)
     check("cast voice round-trip", loaded?.members?.first { it.id == "mr-bennet" }?.voiceId == "5")
     check("cast dialogue count round-trips", loaded?.members?.first { it.id == "mr-bennet" }?.dialogueLines == 9)
+    check("cast confidence round-trips", loaded?.members?.first { it.id == "mr-bennet" }?.confidence == Confidence.HIGH,
+        loaded?.members?.first { it.id == "mr-bennet" }?.confidence.toString())
 
     // Merge a chapter analysis into the stored cast.
     val analysis = CastAnalysis(

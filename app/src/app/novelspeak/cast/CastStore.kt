@@ -10,7 +10,7 @@ import app.novelspeak.library.LibraryStorage
  *
  * `v1`
  * `book<TAB>bookKey<TAB>narratorVoiceId<TAB>title`
- * `member<TAB>bookKey<TAB>id<TAB>name<TAB>gender<TAB>voiceId<TAB>userLocked<TAB>aliases<TAB>dialogueLines`
+ * `member<TAB>bookKey<TAB>id<TAB>name<TAB>gender<TAB>voiceId<TAB>userLocked<TAB>aliases<TAB>dialogueLines<TAB>confidence`
  */
 class CastStore(private val storage: LibraryStorage) {
 
@@ -150,7 +150,7 @@ class CastStore(private val storage: LibraryStorage) {
                         aliases = aliases,
                         gender = parseGender(f[4]),
                         voiceId = clean(f[5]).ifEmpty { null },
-                        confidence = Confidence.LOW,
+                        confidence = if (f.size >= 10) parseConfidence(f[9]) else Confidence.LOW,
                         userLocked = f[6] == "1",
                         dialogueLines = if (f.size >= 9) f[8].toIntOrNull() ?: 0 else 0
                     )
@@ -175,7 +175,8 @@ class CastStore(private val storage: LibraryStorage) {
                     .append(clean(m.voiceId ?: "")).append('\t')
                     .append(if (m.userLocked) "1" else "0").append('\t')
                     .append(m.aliases.joinToString("\u001f") { clean(it) }).append('\t')
-                    .append(m.dialogueLines)
+                    .append(m.dialogueLines).append('\t')
+                    .append(m.confidence.name.lowercase())
                     .append('\n')
             }
         }
@@ -193,6 +194,12 @@ class CastStore(private val storage: LibraryStorage) {
         "female" -> Gender.FEMALE
         "male" -> Gender.MALE
         else -> Gender.UNKNOWN
+    }
+
+    private fun parseConfidence(value: String): Confidence = when (value.lowercase()) {
+        "high" -> Confidence.HIGH
+        "medium" -> Confidence.MEDIUM
+        else -> Confidence.LOW
     }
 
     private fun maxConfidence(a: Confidence, b: Confidence): Confidence {

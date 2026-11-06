@@ -1,0 +1,356 @@
+package app.novelspeak
+
+import android.app.Activity
+import android.app.Dialog
+import android.content.res.ColorStateList
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
+import android.text.TextUtils
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.view.Window
+import android.view.WindowManager
+import android.widget.LinearLayout
+import android.widget.TextView
+import app.novelspeak.cast.BookCast
+import app.novelspeak.cast.CastIds
+import app.novelspeak.cast.CastMember
+import app.novelspeak.cast.Confidence
+
+/**
+ * Branded bottom sheet for Story Cast.
+ *
+ * The platform `AlertDialog` made the feature's front door look like a system prompt. This sheet
+ * uses the same Harbor-ink surface as the rest of the app, shows who speaks with which voice and
+ * how confident the attribution is, and keeps every action at a 44–48 dp target. It works on a
+ * phone and caps at 560 dp on a tablet.
+ */
+class CastSheet(
+    private val activity: Activity,
+    private val chapterTitle: String,
+    private val cast: BookCast?,
+    private val family: String,
+    private val unresolved: Int,
+    private val currentSpeakerId: String,
+    private val storyCastOn: Boolean,
+    private val onToggle: () -> Unit,
+    private val onRecast: (CastMember) -> Unit
+) {
+
+    private val density = activity.resources.displayMetrics.density
+    private val speakers = cast?.members
+        ?.filter { it.dialogueLines > 0 }
+        ?.sortedWith(compareByDescending<CastMember> { it.dialogueLines }.thenBy { it.name })
+        .orEmpty()
+
+    fun show() {
+        val dialog = Dialog(activity).apply { requestWindowFeature(Window.FEATURE_NO_TITLE) }
+        val sheet = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(Palette.SURFACE, 20, Palette.BORDER)
+            setPadding(dp(20), dp(10), dp(20), dp(22))
+        }
+
+        sheet.addView(LinearLayout(activity).apply {
+            gravity = Gravity.CENTER_HORIZONTAL
+            addView(View(activity).apply {
+                background = rounded(Palette.BORDER, 2)
+                layoutParams = LinearLayout.LayoutParams(dp(36), dp(4))
+            })
+        })
+
+        sheet.addView(label("STORY CAST", 11f, Palette.ACCENT).apply {
+            letterSpacing = 0.08f
+            setPadding(0, dp(14), 0, dp(4))
+        })
+        sheet.addView(label("Cast", 23f, Palette.TEXT).apply {
+            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+        })
+        sheet.addView(label(chapterTitle.ifEmpty { "Current chapter" }, 12f, Palette.MUTED).apply {
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, dp(3), 0, 0)
+        })
+
+        val count = speakers.size
+        val summary = if (cast == null || count == 0) {
+            "Not cast yet"
+        } else {
+            "Narrator + $count character" + (if (count == 1) "" else "s")
+        }
+        sheet.addView(label(summary, 13f, Palette.TEXT_SECONDARY).apply {
+            setPadding(0, dp(10), 0, dp(6))
+        })
+
+        if (unresolved > 0) {
+            sheet.addView(unresolvedBanner(unresolved))
+        }
+
+        sheet.addView(divider())
+
+        val narratorVoice = cast?.narratorVoiceId?.let { VoiceCatalog.label(family, it) }
+            ?: "Current narrator voice"
+        sheet.addView(
+            row(
+                initial = "N",
+                title = "Narrator",
+                subtitle = narratorVoice,
+                confidence = null,
+                lines = 0,
+                current = currentSpeakerId == CastIds.NARRATOR,
+                onChange = null
+            )
+        )
+
+        if (speakers.isEmpty()) {
+            sheet.addView(label(
+                "Cast this chapter to give the narrator and every character a different on-device " +
+                    "voice. The author's words are preserved; only speaker labels and voices are added.",
+                13f,
+                Palette.TEXT_SECONDARY
+            ).apply {
+                setLineSpacing(dp(3).toFloat(), 1f)
+                setPadding(0, dp(6), 0, dp(10))
+            })
+        } else {
+            for (member in speakers) {
+                sheet.addView(
+                    row(
+                        initial = member.name.take(1).uppercase(),
+                        title = member.name,
+                        subtitle = member.voiceId?.let { VoiceCatalog.label(family, it) }
+                            ?: "Auto-assigned",
+                        confidence = member.confidence,
+                        lines = member.dialogueLines,
+                        current = currentSpeakerId == member.id,
+                        onChange = { onRecast(member) }
+                    )
+                )
+            }
+        }
+
+        sheet.addView(divider())
+
+        val primary = actionButton(
+            if (storyCastOn) "Narrator only" else "Cast chapter",
+            primary = true
+        )
+        primary.setOnClickListener {
+            dialog.dismiss()
+            onToggle()
+        }
+        sheet.addView(primary, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(Design.TOUCH_DP)
+        ).apply { topMargin = dp(12) })
+
+        val close = actionButton("Close", primary = false)
+        close.setOnClickListener { dialog.dismiss() }
+        sheet.addView(close, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(Design.DENSE_TOUCH_DP)
+        ).apply { topMargin = dp(6) })
+
+        dialog.setContentView(sheet)
+        dialog.window?.let { window ->
+            window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            window.setGravity(Gravity.BOTTOM)
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            val params = window.attributes
+            params.dimAmount = 0.58f
+            params.width = minOf(
+                activity.resources.displayMetrics.widthPixels - dp(16),
+                dp(560)
+            )
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT
+            window.attributes = params
+            window.setWindowAnimations(android.R.style.Animation_Dialog)
+        }
+        dialog.show()
+    }
+
+    private fun row(
+        initial: String,
+        title: String,
+        subtitle: String,
+        confidence: Confidence?,
+        lines: Int,
+        current: Boolean,
+        onChange: (() -> Unit)?
+    ): LinearLayout {
+        val row = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = dp(64)
+            setPadding(dp(10), dp(8), dp(6), dp(8))
+            background = if (current) {
+                rounded(withAlpha(Palette.ACCENT, 0.10f), Design.RADIUS_MD)
+            } else {
+                ripple(Palette.SURFACE, Design.RADIUS_MD)
+            }
+            isClickable = onChange != null
+            isFocusable = onChange != null
+            contentDescription = buildString {
+                append(title)
+                append(", ")
+                append(subtitle)
+                if (confidence != null) append(", ").append(confidenceLabel(confidence))
+                if (lines > 0) append(", ").append(lines).append(" lines")
+                if (current) append(", current speaker")
+            }
+            if (onChange != null) setOnClickListener { onChange() }
+        }
+
+        row.addView(TextView(activity).apply {
+            text = initial
+            textSize = 15f
+            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+            gravity = Gravity.CENTER
+            setTextColor(if (current) Palette.BG else Palette.ACCENT)
+            background = rounded(if (current) Palette.ACCENT else Palette.SURFACE_HIGH, 18, oval = true)
+            layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        })
+
+        val texts = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), 0, dp(8), 0)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        texts.addView(label(title, 15f, if (current) Palette.ACCENT else Palette.TEXT).apply {
+            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+        })
+        texts.addView(label(subtitle, 12f, Palette.MUTED).apply {
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, dp(2), 0, 0)
+        })
+        row.addView(texts)
+
+        val right = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.END
+        }
+        if (confidence != null) {
+            right.addView(label(confidenceLabel(confidence), 10.5f, confidenceColor(confidence)))
+        }
+        if (onChange != null) {
+            val change = TextView(activity).apply {
+                text = "Change"
+                textSize = 12f
+                typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+                gravity = Gravity.CENTER
+                setTextColor(Palette.ACCENT)
+                background = ripple(Palette.SURFACE_HIGH, 12)
+                setPadding(dp(10), 0, dp(10), 0)
+                minWidth = dp(64)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, dp(Design.DENSE_TOUCH_DP)
+                ).apply { topMargin = dp(2) }
+                contentDescription = "Change voice for $title"
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { onChange() }
+            }
+            right.addView(change)
+        } else {
+            right.addView(label("From settings", 10.5f, Palette.FAINT))
+        }
+        row.addView(right)
+        return row
+    }
+
+    private fun unresolvedBanner(count: Int): LinearLayout = LinearLayout(activity).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        background = rounded(withAlpha(Palette.AMBER, 0.12f), Design.RADIUS_MD)
+        setPadding(dp(12), dp(10), dp(12), dp(10))
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(6) }
+        addView(TextView(activity).apply {
+            text = "●"
+            textSize = 12f
+            setTextColor(Palette.AMBER)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        })
+        val plural = count != 1
+        addView(label(
+            "$count line" + (if (plural) "s" else "") + " had no confident speaker and " +
+                (if (plural) "stay" else "stays") + " with the narrator.",
+            12f,
+            Palette.AMBER
+        ).apply {
+            setPadding(dp(8), 0, 0, 0)
+            setLineSpacing(dp(2).toFloat(), 1f)
+        })
+        contentDescription = "$count line" + (if (plural) "s" else "") +
+            " had no confident speaker and " + (if (plural) "stay" else "stays") +
+            " with the narrator"
+    }
+
+    private fun actionButton(text: String, primary: Boolean): TextView = TextView(activity).apply {
+        this.text = text
+        textSize = 14f
+        typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+        gravity = Gravity.CENTER
+        setTextColor(if (primary) Palette.BG else Palette.TEXT)
+        background = ripple(if (primary) Palette.ACCENT else Palette.SURFACE_HIGH, Design.RADIUS_MD)
+        isClickable = true
+        isFocusable = true
+        contentDescription = text
+    }
+
+    private fun label(text: String, size: Float, color: Int): TextView = TextView(activity).apply {
+        this.text = text
+        textSize = size
+        setTextColor(color)
+        includeFontPadding = false
+    }
+
+    private fun divider(): View = View(activity).apply {
+        setBackgroundColor(Palette.BORDER)
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(1)
+        ).apply { setMargins(0, dp(8), 0, dp(2)) }
+    }
+
+    private fun confidenceLabel(confidence: Confidence): String = when (confidence) {
+        Confidence.HIGH -> "High confidence"
+        Confidence.MEDIUM -> "Medium confidence"
+        Confidence.LOW -> "Review"
+    }
+
+    private fun confidenceColor(confidence: Confidence): Int = when (confidence) {
+        Confidence.HIGH -> Palette.ACCENT
+        Confidence.MEDIUM -> Palette.AMBER
+        Confidence.LOW -> Palette.FAINT
+    }
+
+    private fun withAlpha(color: Int, alpha: Float): Int = Color.argb(
+        (alpha.coerceIn(0f, 1f) * 255).toInt(),
+        Color.red(color),
+        Color.green(color),
+        Color.blue(color)
+    )
+
+    private fun rounded(color: Int, radiusDp: Int, stroke: Int? = null, oval: Boolean = false): GradientDrawable =
+        GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            setColor(color)
+            cornerRadius = if (oval) dp(radiusDp).toFloat() else dp(radiusDp).toFloat()
+            if (stroke != null) setStroke(dp(1), stroke)
+        }
+
+    private fun ripple(color: Int, radiusDp: Int, oval: Boolean = false): RippleDrawable =
+        RippleDrawable(
+            ColorStateList.valueOf(Palette.RIPPLE),
+            rounded(color, radiusDp, oval = oval),
+            null
+        )
+
+    private fun dp(v: Int): Int = (v * density).toInt()
+}

@@ -158,7 +158,8 @@ class Reader(private val app: NovelSpeakApp) {
         val voice: String,
         val status: String,
         val speaker: String = "",
-        val segmentVoiceId: String = ""
+        val segmentVoiceId: String = "",
+        val speakerId: String = ""
     )
 
     private val main = Handler(Looper.getMainLooper())
@@ -213,7 +214,8 @@ class Reader(private val app: NovelSpeakApp) {
             playing, title, cursor, sentences.size, engineName,
             engine?.currentVoiceLabel() ?: "", status,
             current?.speakerName?.ifEmpty { current.speakerId } ?: "",
-            current?.voiceId ?: ""
+            current?.voiceId ?: "",
+            current?.speakerId ?: ""
         )
     }
 

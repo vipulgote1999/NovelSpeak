@@ -146,9 +146,29 @@ object DialogueParser {
         val counts = segments.filter { it.isDialogue }
             .groupingBy { it.speakerId }
             .eachCount()
-        val rawMembers = state.members().map { it.copy(dialogueLines = counts[it.id] ?: 0) }
+        // A member's confidence is the best evidence any of their lines produced. Without this,
+        // every member stayed LOW forever and the cast sheet asked the user to review all of them.
+        val best = HashMap<String, Confidence>()
+        for (segment in segments) {
+            if (!segment.isDialogue) continue
+            best[segment.speakerId] = maxConfidence(
+                best[segment.speakerId] ?: Confidence.LOW,
+                segment.confidence
+            )
+        }
+        val rawMembers = state.members().map {
+            it.copy(
+                dialogueLines = counts[it.id] ?: 0,
+                confidence = best[it.id] ?: it.confidence
+            )
+        }
         val merged = mergeDescriptions(segments, rawMembers)
         return CastAnalysis(merged.first, merged.second, state.unresolved)
+    }
+
+    private fun maxConfidence(a: Confidence, b: Confidence): Confidence {
+        val rank = mapOf(Confidence.LOW to 0, Confidence.MEDIUM to 1, Confidence.HIGH to 2)
+        return if ((rank[a] ?: 0) >= (rank[b] ?: 0)) a else b
     }
 
     // ------------------------------------------------------------------ quotes
@@ -215,7 +235,8 @@ object DialogueParser {
                 aliases = (target.aliases + d.name + d.aliases)
                     .distinctBy { CastIds.normalize(it) },
                 gender = if (target.gender == Gender.UNKNOWN) d.gender else target.gender,
-                dialogueLines = target.dialogueLines + d.dialogueLines
+                dialogueLines = target.dialogueLines + d.dialogueLines,
+                confidence = maxConfidence(target.confidence, d.confidence)
             )
             byId.remove(d.id)
         }

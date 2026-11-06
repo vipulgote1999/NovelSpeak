@@ -114,6 +114,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var speakerView: TextView
     private lateinit var castButton: TextView
     private var storyBlocks: List<Reader.Block> = emptyList()
+    private var lastUnresolved = 0
     private val castCoordinator by lazy {
         CastCoordinator(NovelSpeakApp.instance.castStore)
     }
@@ -3126,6 +3127,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             }
         }
         val speakers = result.cast.members.count { it.dialogueLines > 0 }
+        lastUnresolved = result.analysis.unresolved
         statusView.text = "Cast · $speakers characters" +
             if (result.analysis.unresolved > 0) " · ${result.analysis.unresolved} to review" else ""
         DiagLog.line(
@@ -3220,60 +3222,21 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         } catch (t: Throwable) {
             null
         }
-        val speakers = cast?.members?.filter { it.dialogueLines > 0 }.orEmpty()
-        if (speakers.isEmpty()) {
-            AlertDialog.Builder(this)
-                .setTitle("Story cast")
-                .setMessage(
-                    "Give the narrator and every character a different on-device voice. " +
-                        "The author's words are preserved; only speaker labels are added."
-                )
-                .setPositiveButton("Cast chapter") { _, _ ->
-                    if (!NovelSpeakApp.instance.prefs.storyCast) toggleStoryCast()
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-            return
-        }
-        val lines = speakers.joinToString("\n") { m ->
-            val voice = m.voiceId?.let { VoiceCatalog.label(family, it) } ?: "narrator"
-            "${m.name} · $voice"
-        }
-        AlertDialog.Builder(this)
-            .setTitle("Cast · " + currentChapterTitle())
-            .setMessage(lines)
-            .setPositiveButton(
-                if (NovelSpeakApp.instance.prefs.storyCast) "Narrator only" else "Cast chapter"
-            ) { _, _ -> toggleStoryCast() }
-            .setNeutralButton("Recast") { _, _ -> showRecastDialog() }
-            .setNegativeButton("Close", null)
-            .show()
-    }
-
-    /** Pick a character, then a voice; the choice is locked and the live queue is rebuilt. */
-    private fun showRecastDialog() {
-        val family = activeNeuralFamily() ?: return
-        val cast = try {
-            NovelSpeakApp.instance.castStore.load(currentBookKey())
-        } catch (t: Throwable) {
-            null
-        }
-        val speakers = cast?.members
-            ?.filter { it.dialogueLines > 0 }
-            ?.sortedByDescending { it.dialogueLines }
-            .orEmpty()
-        if (speakers.isEmpty()) {
-            Toast.makeText(this, "Cast this chapter first", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val names = speakers.map { it.name }.toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle("Recast a character")
-            .setItems(names) { _, which ->
-                showVoicePicker(family, cast!!.narratorVoiceId, speakers[which])
+        val prefs = NovelSpeakApp.instance.prefs
+        CastSheet(
+            activity = this,
+            chapterTitle = currentChapterTitle(),
+            cast = cast,
+            family = family,
+            unresolved = if (prefs.storyCast) lastUnresolved else 0,
+            currentSpeakerId = reader.state().speakerId,
+            storyCastOn = prefs.storyCast,
+            onToggle = { toggleStoryCast() },
+            onRecast = { member ->
+                val narrator = cast?.narratorVoiceId ?: narratorVoiceId(family)
+                showVoicePicker(family, narrator, member)
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        ).show()
     }
 
     private fun showVoicePicker(family: String, narratorId: String?, member: CastMember) {
