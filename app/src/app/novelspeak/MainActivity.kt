@@ -147,7 +147,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var nextChapterButton: TextView
     private lateinit var pageHolder: FrameLayout
     private lateinit var homeView: ScrollView
+    private lateinit var homeColumn: LinearLayout
     private lateinit var homeContinue: LinearLayout
+    private lateinit var homeTopSpacer: Space
     private lateinit var titleRow: LinearLayout
     private var homeVisible = false
 
@@ -165,7 +167,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val url: String?,
         val importId: String?,
         val position: Int,
-        val updatedAt: Long
+        val updatedAt: Long,
+        val percent: Int = 0
     )
 
     private val homeShortcuts = listOf(
@@ -276,9 +279,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        backButton = iconButton(Glyph.BACK, "Back", 40) { navigateBack() }
-        forwardButton = iconButton(Glyph.FORWARD, "Forward", 40) { navigateForward() }
-        reloadButton = iconButton(Glyph.RELOAD, "Reload", 40) {
+        backButton = iconButton(Glyph.BACK, "Back", Design.TOUCH_DP) { navigateBack() }
+        forwardButton = iconButton(Glyph.FORWARD, "Forward", Design.TOUCH_DP) { navigateForward() }
+        reloadButton = iconButton(Glyph.RELOAD, "Reload", Design.TOUCH_DP) {
             if (pageLoading) stopLoading() else web.reload()
         }
         reloadGlyph = reloadButton.getChildAt(0) as GlyphView
@@ -288,8 +291,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         topBar.addView(navCluster)
 
         addressBox = FrameLayout(this).apply {
-            background = rounded(Palette.SURFACE_HIGH, 21)
-            layoutParams = LinearLayout.LayoutParams(0, dp(42), 1f).apply {
+            background = rounded(Palette.SURFACE_HIGH, 23)
+            layoutParams = LinearLayout.LayoutParams(0, dp(46), 1f).apply {
                 marginStart = dp(2)
                 marginEnd = dp(6)
             }
@@ -424,7 +427,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         topBar.addView(cancelEdit)
 
-        overflowButton = iconButton(Glyph.MORE, "More options", 40) {
+        homeTopSpacer = Space(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+            visibility = View.GONE
+        }
+        topBar.addView(homeTopSpacer)
+        overflowButton = iconButton(Glyph.MORE, "More options", Design.TOUCH_DP) {
             showOverflowMenu()
         }
         topBar.addView(overflowButton)
@@ -552,7 +560,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         statusRow.addView(dotView)
         statusView = TextView(this).apply {
             text = "Open a chapter, then tap Read"
-            textSize = 13f
+            textSize = 14f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.TEXT)
             maxLines = 1
@@ -573,7 +581,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
         voiceView = TextView(this).apply {
             text = ""
-            textSize = 10.5f
+            textSize = 12f
             setTextColor(Palette.MUTED)
             setPadding(dp(2), dp(2), 0, 0)
             maxLines = 1
@@ -585,7 +593,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
         speakerView = TextView(this).apply {
             text = ""
-            textSize = 11f
+            textSize = 12f
             setTextColor(Palette.ACCENT)
             setPadding(dp(2), 0, 0, 0)
             maxLines = 1
@@ -656,17 +664,17 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(4), 0, 0)
         }
-        readChapterButton = textButton("Read", primary = false, widthDp = 0, heightDp = 38) {
+        readChapterButton = textButton("Read", primary = false, widthDp = 0, heightDp = Design.DENSE_TOUCH_DP) {
             restartReading()
         }
         readChapterButton.contentDescription = "Read chapter"
         actionsRow.addView(readChapterButton)
-        nextChapterButton = textButton("Next ch", primary = false, widthDp = 0, heightDp = 38) {
+        nextChapterButton = textButton("Next ch", primary = false, widthDp = 0, heightDp = Design.DENSE_TOUCH_DP) {
             loadNextChapter()
         }
         nextChapterButton.contentDescription = "Next chapter"
         actionsRow.addView(nextChapterButton)
-        castButton = textButton("Cast", primary = false, widthDp = 0, heightDp = 38) {
+        castButton = textButton("Cast", primary = false, widthDp = 0, heightDp = Design.DENSE_TOUCH_DP) {
             toggleStoryCast()
         }.apply {
             textSize = 11f
@@ -678,17 +686,17 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         actionsRow.addView(castButton)
         actionsRow.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
-        actionsRow.addView(iconButton(Glyph.MINUS, "Slower", 34) { bumpSpeed(-0.05f) })
+        actionsRow.addView(iconButton(Glyph.MINUS, "Slower", 40) { bumpSpeed(-0.05f) })
         speedView = TextView(this).apply {
             text = "1.00×"
-            textSize = 13f
+            textSize = 14f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.TEXT)
             gravity = Gravity.CENTER
             minWidth = dp(54)
         }
         actionsRow.addView(speedView)
-        actionsRow.addView(iconButton(Glyph.PLUS, "Faster", 34) { bumpSpeed(0.05f) })
+        actionsRow.addView(iconButton(Glyph.PLUS, "Faster", 40) { bumpSpeed(0.05f) })
         card.addView(actionsRow)
 
         val transportRow = LinearLayout(this).apply {
@@ -696,7 +704,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             gravity = Gravity.CENTER
             setPadding(0, dp(6), 0, 0)
         }
-        transportRow.addView(iconButton(Glyph.PREV, "Previous sentence", 44) {
+        transportRow.addView(iconButton(Glyph.PREV, "Previous sentence", Design.TOUCH_DP) {
             cancelAutoAdvance()
             reader.prevSentence()
         })
@@ -710,11 +718,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         playGlyph = playButton.getChildAt(0) as GlyphView
         transportRow.addView(playButton)
-        transportRow.addView(iconButton(Glyph.NEXT, "Next sentence", 44) {
+        transportRow.addView(iconButton(Glyph.NEXT, "Next sentence", Design.TOUCH_DP) {
             cancelAutoAdvance()
             reader.nextSentence()
         })
-        transportRow.addView(iconButton(Glyph.STOP, "Stop", 40) {
+        transportRow.addView(iconButton(Glyph.STOP, "Stop", Design.DENSE_TOUCH_DP) {
             cancelAutoAdvance()
             reader.stop()
         })
@@ -791,6 +799,24 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     // ---- Home / new tab -----------------------------------------------------
 
+    /** A 3 dp progress track with an accent fill; zero and 100 render correctly. */
+    private fun progressTrack(percent: Int): LinearLayout {
+        val p = percent.coerceIn(0, 100)
+        val track = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            background = rounded(Palette.SURFACE_HIGH, 2)
+        }
+        if (p > 0) {
+            track.addView(View(this).apply { background = rounded(Palette.ACCENT, 2) },
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, p.toFloat()))
+        }
+        if (p < 100) {
+            track.addView(View(this),
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, (100 - p).toFloat()))
+        }
+        return track
+    }
+
     private fun buildHomeView(): ScrollView {
         val scroll = ScrollView(this).apply {
             isFillViewport = true
@@ -800,13 +826,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         val col = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(24), dp(24), dp(24))
+            setPadding(0, dp(Design.SPACE_XL), 0, dp(Design.SPACE_XL))
         }
+        homeColumn = col
 
         // Wordmark: quiet serif display with one warm rule. Deliberately not a browser clone.
         col.addView(TextView(this).apply {
             text = "NovelSpeak"
-            textSize = 34f
+            textSize = 32f
             typeface = Typeface.create("serif", Typeface.BOLD)
             setTextColor(Palette.TEXT)
             letterSpacing = -0.01f
@@ -903,22 +930,35 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         })
 
         scroll.addView(col)
+        applyHomeWidth()
         return scroll
+    }
+
+    /**
+     * Center the Home column inside a 720 dp measure on tablets while keeping the phone's
+     * familiar 20 dp gutters. The ScrollView stays full-width; only its child's padding changes.
+     */
+    private fun applyHomeWidth() {
+        if (!::homeColumn.isInitialized) return
+        val widthDp = resources.configuration.screenWidthDp
+        val pad = dp(Design.contentPadding(widthDp))
+        homeColumn.setPadding(pad, dp(Design.SPACE_XL), pad, dp(Design.SPACE_XL))
     }
 
     private fun homeSectionTitle(label: String): TextView = TextView(this).apply {
         text = label
-        textSize = 13f
+        textSize = 11.5f
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        letterSpacing = 0.08f
         setTextColor(Palette.MUTED)
-        setPadding(0, dp(24), 0, dp(8))
+        setPadding(0, dp(Design.SPACE_XL), 0, dp(Design.SPACE_SM))
     }
 
     private fun homeShortcutCell(shortcut: HomeShortcut): LinearLayout =
         LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(0, dp(8), 0, dp(8))
+            setPadding(0, dp(6), 0, dp(6))
             isClickable = true
             isFocusable = true
             contentDescription = "Shortcut " + shortcut.label
@@ -931,16 +971,16 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 }
             }
             addView(FrameLayout(this@MainActivity).apply {
-                // Chrome-style light plate so site icons keep their own colors on the dark tab.
-                background = ripple(Palette.ICON_PLATE, 28, oval = true)
-                layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
+                // Soft light plate so site icons keep their own colors on the dark tab.
+                background = ripple(Palette.PLATE, 25, oval = true)
+                layoutParams = LinearLayout.LayoutParams(dp(50), dp(50))
                 val icon = loadHomeIcon(shortcut.iconAsset)
                 if (icon != null) {
                     addView(ImageView(this@MainActivity).apply {
                         setImageBitmap(icon)
                         scaleType = ImageView.ScaleType.FIT_CENTER
                         importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-                    }, FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER))
+                    }, FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER))
                 } else {
                     addView(TextView(this@MainActivity).apply {
                         text = shortcut.monogram
@@ -955,12 +995,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             })
             addView(TextView(this@MainActivity).apply {
                 text = shortcut.label
-                textSize = 11f
+                textSize = 12f
                 setTextColor(Palette.MUTED)
                 gravity = Gravity.CENTER
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
-                setPadding(0, dp(6), 0, 0)
+                setPadding(0, dp(Design.SPACE_SM), 0, 0)
             })
         }
 
@@ -984,7 +1024,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                             url = e.url,
                             importId = null,
                             position = e.sentenceIndex,
-                            updatedAt = e.updatedAt
+                            updatedAt = e.updatedAt,
+                            percent = e.percent
                         )
                     )
                 }
@@ -1002,7 +1043,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                             url = null,
                             importId = b.id,
                             position = b.position,
-                            updatedAt = b.updatedAt
+                            updatedAt = b.updatedAt,
+                            percent = b.percent
                         )
                     )
                 }
@@ -1022,8 +1064,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         for (item in top) {
             homeContinue.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                background = rippleStroke(Palette.SURFACE, 14, Palette.BORDER)
-                setPadding(dp(14), dp(12), dp(14), dp(12))
+                background = rippleStroke(Palette.SURFACE, Design.RADIUS_MD, Palette.BORDER)
+                setPadding(dp(Design.SPACE_LG), dp(14), dp(Design.SPACE_LG), dp(14))
                 isClickable = true
                 isFocusable = true
                 contentDescription = "Continue reading: " + item.title
@@ -1044,7 +1086,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 }
                 addView(TextView(this@MainActivity).apply {
                     text = item.title
-                    textSize = 14.5f
+                    textSize = 15f
                     typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                     setTextColor(Palette.TEXT)
                     maxLines = 2
@@ -1055,6 +1097,23 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     textSize = 12f
                     setTextColor(Palette.MUTED)
                     setPadding(0, dp(3), 0, 0)
+                })
+                addView(LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(0, dp(10), 0, 0)
+                    addView(
+                        progressTrack(item.percent),
+                        LinearLayout.LayoutParams(0, dp(3), 1f)
+                    )
+                    addView(TextView(this@MainActivity).apply {
+                        text = "›"
+                        textSize = 16f
+                        setTextColor(Palette.FAINT)
+                        gravity = Gravity.CENTER
+                        setPadding(dp(10), 0, 0, 0)
+                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                    })
                 })
             })
         }
@@ -1067,6 +1126,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         hideImportedMode()
         homeVisible = true
         refreshHome()
+        applyHomeWidth()
+        if (::homeTopSpacer.isInitialized) homeTopSpacer.visibility = View.VISIBLE
         homeView.visibility = View.VISIBLE
         homeView.alpha = 0f
         homeView.translationY = dp(12).toFloat()
@@ -1093,6 +1154,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (::playerCard.isInitialized) playerCard.visibility = View.VISIBLE
         if (::navCluster.isInitialized) navCluster.visibility = View.VISIBLE
         if (::addressBox.isInitialized) addressBox.visibility = View.VISIBLE
+        if (::homeTopSpacer.isInitialized) homeTopSpacer.visibility = View.GONE
     }
 
     /** Two-pane layout above 600dp (tablets, landscape phones); single column otherwise. */
@@ -1141,6 +1203,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         applyAdaptiveLayout()
+        applyHomeWidth()
     }
 
     /** Keep the browser bar below the status bar and the player card above the nav bar. */

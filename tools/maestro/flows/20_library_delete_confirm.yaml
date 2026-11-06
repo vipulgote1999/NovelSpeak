@@ -1,0 +1,22 @@
+appId: app.novelspeak
+name: "20 library delete: a single row asks before removing"
+tags:
+  - library
+  - regression
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Shortcut Library"
+- extendedWaitUntil:
+    visible: "CHAPTERS|IMPORTED BOOKS|BOOKMARKS"
+    timeout: 15000
+- tapOn: "Delete entry: Adblock race regression"
+- assertVisible: "Remove from library?"
+- tapOn: "Cancel"
+- assertVisible: "Adblock race regression"
+- tapOn: "Delete entry: Adblock race regression"
+- tapOn: "Remove"
+- assertNotVisible: "Adblock race regression"

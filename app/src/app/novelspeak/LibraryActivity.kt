@@ -259,14 +259,19 @@ class LibraryActivity : Activity() {
             gravity = Gravity.CENTER
             setTextColor(Palette.MUTED)
             background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
-            layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(6) }
-            contentDescription = "Delete imported book"
+            layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP)).apply { marginStart = dp(6) }
+            contentDescription = "Delete imported book: " + book.title
             isClickable = true
             isFocusable = true
             setOnClickListener {
-                imports.remove(book.id)
-                render()
-                Toast.makeText(this@LibraryActivity, "Imported book removed", Toast.LENGTH_SHORT).show()
+                confirmDelete(
+                    "Remove imported book?",
+                    "\"" + book.title + "\" and its saved text will be removed from this device."
+                ) {
+                    imports.remove(book.id)
+                    render()
+                    Toast.makeText(this@LibraryActivity, "Imported book removed", Toast.LENGTH_SHORT).show()
+                }
             }
         })
         return card
@@ -333,14 +338,19 @@ class LibraryActivity : Activity() {
             gravity = Gravity.CENTER
             setTextColor(Palette.MUTED)
             background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
-            layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(6) }
-            contentDescription = "Delete bookmark"
+            layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP)).apply { marginStart = dp(6) }
+            contentDescription = "Delete bookmark: " + mark.snippet.take(40)
             isClickable = true
             isFocusable = true
             setOnClickListener {
-                bookmarks.remove(mark.url, mark.createdAt)
-                render()
-                Toast.makeText(this@LibraryActivity, "Bookmark removed", Toast.LENGTH_SHORT).show()
+                confirmDelete(
+                    "Remove bookmark?",
+                    "The saved sentence from \"" + mark.title + "\" will be removed."
+                ) {
+                    bookmarks.remove(mark.url, mark.createdAt)
+                    render()
+                    Toast.makeText(this@LibraryActivity, "Bookmark removed", Toast.LENGTH_SHORT).show()
+                }
             }
         })
         return card
@@ -436,15 +446,30 @@ class LibraryActivity : Activity() {
         gravity = Gravity.CENTER
         setTextColor(Palette.MUTED)
         background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
-        layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(6) }
-        contentDescription = "Delete entry"
+        layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP)).apply { marginStart = dp(6) }
+        contentDescription = "Delete entry: " + entry.title
         isClickable = true
         isFocusable = true
         setOnClickListener {
-            store.remove(entry.url)
-            render()
-            Toast.makeText(this@LibraryActivity, "Removed from library", Toast.LENGTH_SHORT).show()
+            confirmDelete(
+                "Remove from library?",
+                "\"" + entry.title + "\" and its reading position will be removed from this device."
+            ) {
+                store.remove(entry.url)
+                render()
+                Toast.makeText(this@LibraryActivity, "Removed from library", Toast.LENGTH_SHORT).show()
+            }
         }
+    }
+
+    /** One destructive confirmation path for chapters, imports and bookmarks. */
+    private fun confirmDelete(title: String, message: String, onDelete: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Remove") { _, _ -> onDelete() }
+            .show()
     }
 
     /**
