@@ -245,7 +245,28 @@ Before/after: [phone home](../../media/ui-audit/wave1-home-phone.png) ·
 Still open from the audit: the reader chrome/title row, the stock cast dialog, Library search/
 grid, and Settings icons/two-column layout. Those are Wave 2–3.
 
-## 8. Acceptance metrics
+## 8. Wave 2 result (2026-11-06)
+
+- **Settings** — centered 720 dp frame, sectioned hub (READING / VOICE & PLAYBACK / STORY /
+  PRIVACY & APP), eyebrow typography, working **Story cast** toggle with an on/off summary.
+- **Library** — search field, All/Chapters/Imported/Finished filters, filtered empty state,
+  centered frame, 44 dp chips and clear action. Search/filter are covered by a new Maestro flow.
+- **Regression** — Maestro `01`, `13`, `18`, `20`, `21`, `03`, `16` pass (106 commands).
+
+Still open: the reader chrome/title row, the stock cast dialog, Library grid on tablets, Settings
+leading icons/two-column hub, and the player mini/expanded split. Those are Wave 3.
+
+### Story Cast quality benchmark
+
+`docs/benchmarks/2026-11-06-story-cast-quality.md` measured the actual cast path: 18 cues,
+98.4 s audio, RTF **0.119** host / **0.21** emulator, controlled speaker-switch overhead
+**−0.5 ms**, raw ASR WER **8.7%** (name-normalised **3.8%**), and 4–5/5 voice distinction from the
+audio judge. Two concrete defects were found and one was fixed in this wave:
+`CastChunker` now joins short same-speaker fragments, so `"Tomas. I told you…"` is one cue instead
+of two. Remaining quality work: one-word lines (`"Whose?"` → `"Who's Who"`), one truncated tail
+(`… didn't sit.`), and emotional range.
+
+## 9. Acceptance metrics
 
 - No blocking finding remains on phone or tablet.
 - Every interactive target ≥48 dp (dense ≥44 dp).

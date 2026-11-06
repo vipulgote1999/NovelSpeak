@@ -1,0 +1,43 @@
+{
+  "model": "gemini-2.5-flash-lite",
+  "audio": "/tmp/opencode/cast-bench/scene_45s_48k.mp3",
+  "image": "docs/media/ui-audit/phone-cast.png",
+  "usage": {
+    "completion_tokens": 406,
+    "prompt_tokens": 2313,
+    "total_tokens": 2719
+  },
+  "ratings": {
+    "naturalness": 3.5,
+    "character_distinction": 4.0,
+    "emotional_fit": 3.0,
+    "pacing": 3.5,
+    "intelligibility": 4.0,
+    "overall": 3.5,
+    "biggest_issue": "The unresolved lines for Tomas sound like the narrator, which is confusing given the context.",
+    "per_character": {
+      "Narrator": "The narrator's voice is clear but lacks the gravitas needed for the scene's tension.",
+      "Marshal Rennick": "Rennick's voice is appropriately gruff and authoritative.",
+      "Mara": "Mara's voice is clear and distinct, conveying a sense of weary pragmatism.",
+      "Tomas": "Tomas's voice is a bit too similar to the narrator's, making his interjection less impactful."
+    },
+    "segment_notes": [
+      {
+        "timestamp": "00:39",
+        "line": "He's right here.",
+        "comment": "This line, intended for Tomas, is delivered by the narrator and sounds indistinguishable from the narrator's other lines, causing confusion."
+      },
+      {
+        "timestamp": "00:44",
+        "line": "Whose?",
+        "comment": "The delivery of 'Whose?' is a bit too flat, not quite capturing the marshal's sudden suspicion."
+      },
+      {
+        "timestamp": "00:47",
+        "line": "Mine,",
+        "comment": "This line, intended for a voice from the yard, is also delivered by the narrator and sounds abrupt and unresolved."
+      }
+    ],
+    "confidence": 0.9
+  }
+}

@@ -142,6 +142,18 @@ object Design {
 
 ---
 
+## Progress
+
+- **Wave 1 — done.** `Design.kt`, adaptive Home frame, player targets, Library delete confirm;
+  442 host checks and Maestro 01/13/03/16/20 green.
+- **Wave 2 — done.** Settings frame + sections + Story Cast toggle; Library search/filter/empty
+  state; Maestro 18/20/21 updated and the 7-flow suite green (106 commands).
+- **Parallel — done.** Story Cast quality/latency benchmark with Supertonic 3, ASR and an
+  audio-capable judge; `CastChunker` fix for short same-speaker fragments. See
+  `docs/benchmarks/2026-11-06-story-cast-quality.md`.
+- **Wave 3 — next.** Mini player + expanded sheet; branded cast sheet; confidence; per-line Fix
+  speaker; voice preview; short-line TTS guard.
+
 ## Execution notes
 
 - Never refactor a screen and change its behavior in the same commit; keep UI-only changes separate

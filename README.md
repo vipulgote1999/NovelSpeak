@@ -141,6 +141,13 @@ narrator's voice and are counted as *to review* rather than given a confident wr
 cast currently requires Supertonic or Kokoro; system TTS, Pocket and ZipVoice fall back to a
 narrator-only queue.
 
+Quality and latency are measured, not assumed: the 2026-11-06 evaluation covers host and on-device
+RTF, speaker-switch overhead, ASR word error rate, F0 separation, and an audio-capable judge.
+See [the benchmark](docs/benchmarks/2026-11-06-story-cast-quality.md) and the reproducible
+[`tools/cast-benchmark`](tools/cast-benchmark/README.md) harness. Headline: 4–5/5 voice
+distinction, 96.2% word accuracy after spelling normalisation, RTF 0.12 host / 0.21 emulator;
+ultra-short lines and emotional range are the open quality work.
+
 ### Ad blocking
 
 Ads are blocked at three levels, because a WebView cannot be a mini-uBO:

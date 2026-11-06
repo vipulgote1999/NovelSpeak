@@ -1,0 +1,31 @@
+{
+  "model": "gemini-2.5-flash",
+  "audio": "/tmp/opencode/cast-bench/judge_montage_16k.wav",
+  "image": "",
+  "usage": {
+    "completion_tokens": 374,
+    "prompt_tokens": 1177,
+    "total_tokens": 4073
+  },
+  "ratings": {
+    "naturalness": 4,
+    "character_distinction": 5,
+    "emotional_fit": 2,
+    "pacing": 1,
+    "intelligibility": 5,
+    "overall": 2,
+    "biggest_issue": "A significant portion of the source scene's dialogue and narration is missing from the audio, rendering the clip fragmented and incomplete.",
+    "per_character": {
+      "Narrator": "The narrator's voice is clear and professional, effectively handling both descriptive text and the intentionally unresolved line.",
+      "Marshal Rennick": "Marshal Rennick's voice is distinct and suitable for an authoritative figure, though his delivery could convey more underlying tension given the scene's context.",
+      "Mara": "Mara's voice is clear and well-distinguished from the narrator, but her character's full contribution and presence are severely diminished by missing lines.",
+      "Tomas": "Tomas's voice is distinct and conveys a youthful defiance effectively, but his interaction is cut short due to the scene's truncation."
+    },
+    "segment_notes": [
+      "0:04 - 0:05: After Rennick's first line, two crucial lines of dialogue from Rennick and Mara are missing, abruptly cutting their initial exchange.",
+      "0:12 - 0:13: The narrator's line 'The marshal's hand moved to his holster' is omitted, which removes a key moment of rising tension before Rennick addresses Tomas.",
+      "0:18 - End: The entire latter half of the scene, including Mara's intervention, Rennick's final question, and the climactic reveal, is missing, leaving the narrative incomplete."
+    ],
+    "confidence": 0.9
+  }
+}

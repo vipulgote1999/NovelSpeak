@@ -66,6 +66,7 @@ import android.widget.Toast
 import app.novelspeak.adblock.UrlTools
 import android.os.SystemClock
 import app.novelspeak.cast.CastBlock
+import app.novelspeak.cast.CastChunker
 import app.novelspeak.cast.CastCoordinator
 import app.novelspeak.cast.CastIds
 import app.novelspeak.cast.CastMember
@@ -3104,21 +3105,16 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         for (segment in result.analysis.segments) {
             val voice = if (segment.isDialogue) result.voiceFor(segment.speakerId) else null
             val speakerName = if (segment.isDialogue) result.nameFor(segment.speakerId) else ""
-            val pieces = SentenceSplitter.split(segment.text, maxChars)
-            if (pieces.isEmpty()) continue
-            var cursor = 0
-            for (piece in pieces) {
-                val at = segment.text.indexOf(piece, cursor)
-                val startInSegment = if (at >= 0) at else cursor
+            for (chunk in CastChunker.chunks(segment.text, maxChars)) {
                 val start = if (segment.isDialogue && segment.charStart >= 0) {
-                    segment.charStart + startInSegment
+                    segment.charStart + chunk.start
                 } else {
                     -1
                 }
-                val end = if (start >= 0) start + piece.length else -1
+                val end = if (start >= 0) start + (chunk.end - chunk.start) else -1
                 out.add(
                     Reader.Block(
-                        text = piece,
+                        text = chunk.text,
                         blockIndex = segment.blockIndex,
                         voiceId = voice,
                         speakerId = segment.speakerId,
@@ -3127,7 +3123,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         speakerName = speakerName
                     )
                 )
-                cursor = startInSegment + piece.length
             }
         }
         val speakers = result.cast.members.count { it.dialogueLines > 0 }
