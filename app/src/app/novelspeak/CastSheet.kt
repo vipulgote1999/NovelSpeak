@@ -126,7 +126,11 @@ class CastSheet(
                         confidence = member.confidence,
                         lines = member.dialogueLines,
                         current = currentSpeakerId == member.id,
-                        onChange = { onRecast(member) }
+                        onChange = {
+                            // Close the sheet first so the voice picker is not hidden behind it.
+                            dialog.dismiss()
+                            onRecast(member)
+                        }
                     )
                 )
             }

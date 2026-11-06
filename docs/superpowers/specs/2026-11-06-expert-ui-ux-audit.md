@@ -266,7 +266,24 @@ audio judge. Two concrete defects were found and one was fixed in this wave:
 of two. Remaining quality work: one-word lines (`"Whose?"` → `"Who's Who"`), one truncated tail
 (`… didn't sit.`), and emotional range.
 
-## 9. Acceptance metrics
+## 9. Wave 3 result (partial): branded cast sheet (2026-11-06)
+
+- `CastSheet.kt` replaces the stock `AlertDialog` with a Harbor-ink bottom sheet: drag handle,
+  STORY CAST eyebrow, chapter title, “Narrator + N characters”, a cast row per speaker, voice
+  label, confidence label, line count, unresolved-line banner, and per-character **Change**.
+- The sheet caps at 560 dp on tablets, uses 44–48 dp targets, and includes TalkBack descriptions
+  for every row and action.
+- The parser now promotes a member’s confidence from the best evidence among their lines, and
+  `CastStore` persists it. Before this, every character loaded as “Review” even when the parser
+  was confident.
+- **455 host checks** pass (parser 36, store 28, library 211, feature 130, design 15, catalog 18,
+  selection 7, chunker 10).
+- Render: [Wave 3 cast sheet](../../media/ui-audit/wave3-cast-phone.png).
+
+Still open: mini player/expanded sheet, per-line **Fix speaker** (the unresolved banner is the
+entry point), and voice preview from a character’s real line.
+
+## 10. Acceptance metrics
 
 - No blocking finding remains on phone or tablet.
 - Every interactive target ≥48 dp (dense ≥44 dp).
