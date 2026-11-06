@@ -1,0 +1,28 @@
+{
+  "family": "supertonic",
+  "threads": 4,
+  "repsPerBlock": 9,
+  "rounds": [
+    {
+      "round": 1,
+      "sameMeanMs": 531.4,
+      "alternatingMeanMs": 519.3,
+      "overheadMs": -12.1
+    },
+    {
+      "round": 2,
+      "sameMeanMs": 627.2,
+      "alternatingMeanMs": 501.2,
+      "overheadMs": -126.0
+    },
+    {
+      "round": 3,
+      "sameMeanMs": 608.5,
+      "alternatingMeanMs": 610.1,
+      "overheadMs": 1.6
+    }
+  ],
+  "medianOverheadMs": -12.1,
+  "minOverheadMs": -126.0,
+  "maxOverheadMs": 1.6
+}

@@ -1,0 +1,28 @@
+{
+  "family": "kokoro",
+  "threads": 4,
+  "repsPerBlock": 9,
+  "rounds": [
+    {
+      "round": 1,
+      "sameMeanMs": 2061.7,
+      "alternatingMeanMs": 2241.9,
+      "overheadMs": 180.1
+    },
+    {
+      "round": 2,
+      "sameMeanMs": 1974.2,
+      "alternatingMeanMs": 2193.5,
+      "overheadMs": 219.3
+    },
+    {
+      "round": 3,
+      "sameMeanMs": 2027.8,
+      "alternatingMeanMs": 3743.5,
+      "overheadMs": 1715.7
+    }
+  ],
+  "medianOverheadMs": 219.3,
+  "minOverheadMs": 180.1,
+  "maxOverheadMs": 1715.7
+}

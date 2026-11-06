@@ -253,18 +253,22 @@ grid, and Settings icons/two-column layout. Those are Wave 2–3.
   centered frame, 44 dp chips and clear action. Search/filter are covered by a new Maestro flow.
 - **Regression** — Maestro `01`, `13`, `18`, `20`, `21`, `03`, `16` pass (106 commands).
 
-Still open: the reader chrome/title row, the stock cast dialog, Library grid on tablets, Settings
-leading icons/two-column hub, and the player mini/expanded split. Those are Wave 3.
+Still open: the reader chrome/title row, Library grid on tablets, Settings leading icons and
+two-column hub, and Wave 4 motion/accessibility/performance. The stock cast dialog and the player
+mini/expanded split were completed in Wave 3.
 
 ### Story Cast quality benchmark
 
 `docs/benchmarks/2026-11-06-story-cast-quality.md` measured the actual cast path: 18 cues,
-98.4 s audio, RTF **0.119** host / **0.21** emulator, controlled speaker-switch overhead
-**−0.5 ms**, raw ASR WER **8.7%** (name-normalised **3.8%**), and 4–5/5 voice distinction from the
-audio judge. Two concrete defects were found and one was fixed in this wave:
+**51.45 s** audio, Supertonic RTF **0.168** host / **~0.50** emulator, three-round switch median
+**−12 ms**, raw ASR WER **8.7%** (name-normalised **3.8%**), and 4–5/5 voice distinction from the
+valid clean-PCM judge. Kokoro was benchmarked on the same cues: ~3× slower in absolute synthesis
+(RTF 0.768) but closer to normal audiobook pacing (190 vs 121 words/min); it remains the quality
+option pending a listening test. Two concrete defects were found and one was fixed in this wave:
 `CastChunker` now joins short same-speaker fragments, so `"Tomas. I told you…"` is one cue instead
-of two. Remaining quality work: one-word lines (`"Whose?"` → `"Who's Who"`), one truncated tail
-(`… didn't sit.`), and emotional range.
+of two. Remaining quality work: ultra-short-line recognition (`"Whose?"` was an ASR hallucination,
+the waveform has one word), a quiet final word (`… didn't sit.` is present but missed), and
+emotional range.
 
 ## 9. Wave 3 result (partial): branded cast sheet (2026-11-06)
 

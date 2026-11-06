@@ -152,8 +152,10 @@ Quality and latency are measured, not assumed: the 2026-11-06 evaluation covers 
 RTF, speaker-switch overhead, ASR word error rate, F0 separation, and an audio-capable judge.
 See [the benchmark](docs/benchmarks/2026-11-06-story-cast-quality.md) and the reproducible
 [`tools/cast-benchmark`](tools/cast-benchmark/README.md) harness. Headline: 4–5/5 voice
-distinction, 96.2% word accuracy after spelling normalisation, RTF 0.12 host / 0.21 emulator;
-ultra-short lines and emotional range are the open quality work.
+distinction, 96.2% word accuracy after spelling normalisation, Supertonic RTF **0.168 host /
+~0.50 emulator**, and near-zero speaker-switch cost. Kokoro is ~3× slower in absolute synthesis but
+closer to normal audiobook pacing; it remains the quality option pending a listening test.
+Ultra-short lines and emotional range are the open quality work.
 
 ### Ad blocking
 

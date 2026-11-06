@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Story Cast host benchmark: synthesize the real cast queue with Supertonic 3 int8.
+"""Story Cast host benchmark: synthesize the real cast queue with an on-device TTS family.
 
 Input is the JSON emitted by ParserMain.kt, so the text and speaker order are exactly what the
 reader queues. Each chunk is synthesized with the same speaker id the app uses, concatenated with
@@ -7,14 +7,18 @@ reader queues. Each chunk is synthesized with the same speaker id the app uses, 
 
     /tmp/opencode/castbench-venv/bin/python tools/cast-benchmark/run_benchmark.py \
       --chunks /tmp/opencode/scene-chunks.json \
+      --family supertonic \
       --model-dir /tmp/opencode/models/supertonic \
       --out /tmp/opencode/cast-bench
+
+    ... --family kokoro --model-dir /tmp/opencode/models/kokoro/kokoro-int8-en-v0_19
 
 Outputs: metrics.json, summary.md, scene.wav, chunks/*.wav
 """
 import argparse
 import json
 import os
+import re
 import time
 import wave
 
@@ -22,24 +26,79 @@ import numpy as np
 import sherpa_onnx
 
 # Canonical cast for the fixture. Matches VoiceCastPlanner's gender-aware assignment.
-SID = {
-    "NARRATOR": 0,       # F1
-    "UNKNOWN": 0,        # unresolved lines stay in the narrator path
-    "marshal-rennick": 5,  # M1
-    "mara": 1,           # F2
-    "tomas": 6,          # M2
+# Supertonic 0..4 = F1..F5, 5..9 = M1..M5.
+# Kokoro 0=Heart, 1=Bella, 5=Adam, 6=Michael (US female/female/male/male).
+CAST = {
+    "supertonic": {
+        "sid": {
+            "NARRATOR": 0,
+            "UNKNOWN": 0,
+            "marshal-rennick": 5,
+            "mara": 1,
+            "tomas": 6,
+        },
+        "label": {0: "F1", 1: "F2", 5: "M1", 6: "M2"},
+        "default_rate": 22050,
+        "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+    },
+    "kokoro": {
+        "sid": {
+            "NARRATOR": 0,
+            "UNKNOWN": 0,
+            "marshal-rennick": 5,
+            "mara": 1,
+            "tomas": 6,
+        },
+        "label": {0: "Heart", 1: "Bella", 5: "Adam", 6: "Michael"},
+        "default_rate": 24000,
+        "model": "kokoro-int8-en-v0_19",
+    },
 }
-LABEL = {0: "F1", 1: "F2", 5: "M1", 6: "M2"}
 
-SAMPLE_RATE = 22050
 GAP_SECONDS = 0.25
 FRAME = 1024
 HOP = 256
 
 
-def build_tts(model_dir, threads):
-    cfg = sherpa_onnx.OfflineTtsConfig(
-        model=sherpa_onnx.OfflineTtsModelConfig(
+def kokoro_lexicon(model_dir):
+    """The en-v0_19 bundle has no lexicon; add the cast names so Kokoro does not skip them."""
+    source = os.path.join(model_dir, "lexicon-us-en.txt")
+    patched = os.path.join(model_dir, "lexicon-cast-en.txt")
+    if os.path.exists(source) and not os.path.exists(patched):
+        with open(source, encoding="utf-8") as f:
+            text = f.read()
+        text += (
+            "\nrennick ɹ ˈ ɛ n ɪ k\n"
+            "tomas t ˈ O m ə s\n"
+            "mara m ˈ ɑ ɹ ə\n"
+        )
+        with open(patched, "w", encoding="utf-8") as f:
+            f.write(text)
+    if os.path.exists(patched):
+        return patched
+    return source
+
+
+def build_tts(model_dir, threads, family):
+    if family == "kokoro":
+        kokoro = sherpa_onnx.OfflineTtsKokoroModelConfig(
+            model=os.path.join(model_dir, "model.int8.onnx"),
+            voices=os.path.join(model_dir, "voices.bin"),
+            tokens=os.path.join(model_dir, "tokens.txt"),
+            data_dir=os.path.join(model_dir, "espeak-ng-data"),
+            # The en-v0_19 tarball omits the lexicon that the Python binding needs; the
+            # Android AAR uses eSpeak directly. Use the matching US English lexicon plus
+            # the three cast names that would otherwise be skipped as OOV.
+            lexicon=kokoro_lexicon(model_dir),
+            dict_dir="",
+            lang="en-us",
+            length_scale=1.0,
+        )
+        model = sherpa_onnx.OfflineTtsModelConfig(
+            kokoro=kokoro, num_threads=threads, provider="cpu"
+        )
+    else:
+        model = sherpa_onnx.OfflineTtsModelConfig(
             supertonic=sherpa_onnx.OfflineTtsSupertonicModelConfig(
                 duration_predictor=os.path.join(model_dir, "duration_predictor.int8.onnx"),
                 text_encoder=os.path.join(model_dir, "text_encoder.int8.onnx"),
@@ -51,9 +110,8 @@ def build_tts(model_dir, threads):
             ),
             num_threads=threads,
             provider="cpu",
-        ),
-    )
-    return sherpa_onnx.OfflineTts(cfg)
+        )
+    return sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(model=model))
 
 
 def write_wav(path, samples, sample_rate):
@@ -114,6 +172,8 @@ def main():
     ap.add_argument("--chunks", required=True)
     ap.add_argument("--model-dir", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--family", choices=sorted(CAST), default="supertonic")
+    ap.add_argument("--model-id", default="")
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--speed", type=float, default=1.0)
     ap.add_argument("--gap-ms", type=int, default=250)
@@ -121,6 +181,10 @@ def main():
 
     global GAP_SECONDS
     GAP_SECONDS = args.gap_ms / 1000.0
+    family_cfg = CAST[args.family]
+    sid_map = family_cfg["sid"]
+    label_map = family_cfg["label"]
+    model_id = args.model_id or family_cfg["model"]
     os.makedirs(args.out, exist_ok=True)
     os.makedirs(os.path.join(args.out, "chunks"), exist_ok=True)
 
@@ -128,12 +192,13 @@ def main():
     chunks = doc["chunks"]
 
     t0 = time.perf_counter()
-    tts = build_tts(args.model_dir, args.threads)
+    tts = build_tts(args.model_dir, args.threads, args.family)
     load_ms = (time.perf_counter() - t0) * 1000.0
 
     # Warm-up is excluded from steady-state latency but reported separately.
     warm = tts.generate("Warm up the model.", sid=0, speed=args.speed)
     warm_ms = (time.perf_counter() - t0) * 1000.0 - load_ms
+    scene_rate = int(warm.sample_rate) or family_cfg["default_rate"]
 
     # Controlled speaker-switch probe: identical text, alternating sids. This isolates the cost
     # of changing speaker from the cost of a longer sentence (which confounds the scene rows).
@@ -153,7 +218,7 @@ def main():
 
     rows = []
     scene = []
-    silence = np.zeros(int(SAMPLE_RATE * GAP_SECONDS), dtype=np.float32)
+    silence = np.zeros(int(scene_rate * GAP_SECONDS), dtype=np.float32)
     previous_speaker = None
     switch_synth_ms = []
     same_synth_ms = []
@@ -162,13 +227,18 @@ def main():
     print(f"loaded in {load_ms:.0f} ms, warm-up {warm_ms:.0f} ms, {len(chunks)} chunks")
     for i, c in enumerate(chunks):
         speaker = c["speakerId"]
-        sid = SID.get(speaker, 0)
+        sid = sid_map.get(speaker, 0)
         text = c["text"]
         started = time.perf_counter()
         audio = tts.generate(text, sid=sid, speed=args.speed)
         synth_ms = (time.perf_counter() - started) * 1000.0
         samples = np.asarray(audio.samples, dtype=np.float32)
-        rate = int(audio.sample_rate) or SAMPLE_RATE
+        rate = int(audio.sample_rate) or scene_rate
+        if rate != scene_rate:
+            raise SystemExit(
+                f"chunk {i} sample rate {rate} != scene rate {scene_rate}; refusing to write a "
+                "mislabelled scene"
+            )
         duration = len(samples) / rate
         rtf = synth_ms / 1000.0 / duration if duration > 0 else 0.0
         peak = float(np.max(np.abs(samples))) if len(samples) else 0.0
@@ -184,7 +254,7 @@ def main():
             "type": c["type"],
             "speakerId": speaker,
             "sid": sid,
-            "voice": LABEL.get(sid, str(sid)),
+            "voice": label_map.get(sid, str(sid)),
             "text": text,
             "chars": len(text),
             "synth_ms": round(synth_ms, 1),
@@ -204,10 +274,11 @@ def main():
         scene.append(silence)
         play_clock += duration + GAP_SECONDS
         previous_speaker = speaker
-        print(f"{i:02d} {LABEL.get(sid):2} {synth_ms:7.0f}ms {duration:6.2f}s rtf={rtf:.2f} {text[:56]}")
+        print(f"{i:02d} {label_map.get(sid, str(sid)):7} {synth_ms:7.0f}ms {duration:6.2f}s "
+              f"rtf={rtf:.2f} {text[:56]}")
 
     scene_audio = np.concatenate(scene) if scene else np.zeros(1, dtype=np.float32)
-    write_wav(os.path.join(args.out, "scene.wav"), scene_audio, SAMPLE_RATE)
+    write_wav(os.path.join(args.out, "scene.wav"), scene_audio, scene_rate)
 
     # Speaker feature profiles.
     profiles = {}
@@ -245,12 +316,16 @@ def main():
             }
 
     synth = [r["synth_ms"] for r in rows]
-    scene_seconds = len(scene_audio) / SAMPLE_RATE
+    scene_seconds = len(scene_audio) / scene_rate
+    words = sum(len(re.findall(r"[A-Za-z0-9']+", c["text"])) for c in chunks)
     summary = {
-        "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+        "family": args.family,
+        "model": model_id,
         "threads": args.threads,
         "speed": args.speed,
-        "sample_rate": SAMPLE_RATE,
+        "sample_rate": scene_rate,
+        "words": words,
+        "wordsPerMinute": round(words / scene_seconds * 60.0, 1) if scene_seconds else 0.0,
         "chunks": len(rows),
         "characters": len(keys),
         "unresolvedLines": doc.get("unresolved", 0),
@@ -294,7 +369,8 @@ def main():
         f"- Model: `{summary['model']}`",
         f"- Threads: {args.threads}; speed {args.speed}×; {summary['chunks']} chunks",
         f"- Scene audio: **{summary['sceneAudioSeconds']} s**; synthesis: "
-        f"**{summary['totalSynthMs'] / 1000.0:.2f} s**; overall RTF **{summary['overallRtf']}**",
+        f"**{summary['totalSynthMs'] / 1000.0:.2f} s**; overall RTF **{summary['overallRtf']}**; "
+        f"{summary['wordsPerMinute']} words/min",
         f"- Model load: {summary['modelLoadMs']} ms; first chunk: "
         f"{summary['firstChunkLatencyMs']} ms",
         f"- Synth latency p50/p95/max: {summary['synthMs']['p50']} / "

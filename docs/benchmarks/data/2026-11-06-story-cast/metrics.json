@@ -1,87 +1,90 @@
 {
+  "family": "supertonic",
   "model": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
   "threads": 4,
   "speed": 1.0,
-  "sample_rate": 22050,
+  "sample_rate": 44100,
+  "words": 104,
+  "wordsPerMinute": 121.3,
   "chunks": 18,
   "characters": 3,
   "unresolvedLines": 2,
-  "modelLoadMs": 630.6,
-  "warmupMs": 497.0,
-  "sceneAudioSeconds": 98.39,
-  "totalSynthMs": 11710.2,
-  "overallRtf": 0.119,
-  "firstChunkLatencyMs": 767.8,
+  "modelLoadMs": 476.0,
+  "warmupMs": 318.6,
+  "sceneAudioSeconds": 51.45,
+  "totalSynthMs": 8623.7,
+  "overallRtf": 0.168,
+  "firstChunkLatencyMs": 500.6,
   "synthMs": {
-    "mean": 650.6,
-    "p50": 653.8,
-    "p95": 828.7,
-    "max": 876.7
+    "mean": 479.1,
+    "p50": 461.4,
+    "p95": 617.9,
+    "max": 676.4
   },
   "rtf": {
-    "p50": 0.264,
-    "p95": 0.333
+    "p50": 0.17,
+    "p95": 0.274
   },
   "speakerSwitches": 17,
   "controlledProbe": {
     "text": "The lantern flickered once and the room went quiet.",
-    "sameSpeakerMeanMs": 753.0,
-    "alternatingMeanMs": 752.5,
-    "switchOverheadMs": -0.5,
+    "sameSpeakerMeanMs": 636.8,
+    "alternatingMeanMs": 512.6,
+    "switchOverheadMs": -124.2,
     "reps": 9
   },
   "interChunkSilenceMs": 250,
   "clippingChunks": 0,
-  "peakMax": 0.5521,
+  "peakMax": 0.739,
   "profiles": {
     "NARRATOR": {
       "voice": "F1",
-      "f0_median_hz": 178.4,
-      "centroid_hz": 2683.1,
+      "f0_median_hz": 184.6,
+      "centroid_hz": 2818.8,
       "rms": 0.0503,
       "chunks": 8
     },
     "marshal-rennick": {
       "voice": "M1",
-      "f0_median_hz": 139.6,
-      "centroid_hz": 2327.6,
-      "rms": 0.0449,
+      "f0_median_hz": 131.7,
+      "centroid_hz": 2340.3,
+      "rms": 0.041,
       "chunks": 4
     },
     "mara": {
       "voice": "F2",
-      "f0_median_hz": 196.0,
-      "centroid_hz": 2383.4,
-      "rms": 0.0491,
+      "f0_median_hz": 202.3,
+      "centroid_hz": 2289.6,
+      "rms": 0.0443,
       "chunks": 3
     },
     "UNKNOWN": {
       "voice": "F1",
-      "f0_median_hz": 176.4,
-      "centroid_hz": 2183.2,
-      "rms": 0.0489,
+      "f0_median_hz": 178.4,
+      "centroid_hz": 2408.0,
+      "rms": 0.0492,
       "chunks": 2
     },
     "tomas": {
       "voice": "M2",
-      "f0_median_hz": 100.6,
-      "centroid_hz": 1753.6,
-      "rms": 0.0521,
+      "f0_median_hz": 106.3,
+      "centroid_hz": 1610.8,
+      "rms": 0.0544,
       "chunks": 1
     }
   },
   "voiceDistances": {
     "marshal-rennick vs tomas": {
-      "f0_relative_delta": 0.279,
-      "centroid_relative_delta": 0.247
+      "f0_relative_delta": 0.193,
+      "centroid_relative_delta": 0.312
     },
     "mara vs marshal-rennick": {
-      "f0_relative_delta": 0.288,
-      "centroid_relative_delta": 0.023
+      "f0_relative_delta": 0.349,
+      "centroid_relative_delta": 0.022
     },
     "mara vs tomas": {
-      "f0_relative_delta": 0.487,
-      "centroid_relative_delta": 0.264
+      "f0_relative_delta": 0.475,
+      "centroid_relative_delta": 0.296
     }
   },
   "rows": [
@@ -94,17 +97,17 @@
       "voice": "F1",
       "text": "Marshal Rennick set the lantern on the table.",
       "chars": 45,
-      "synth_ms": 767.8,
+      "synth_ms": 500.6,
       "audio_s": 3.197,
-      "rtf": 0.24,
-      "peak": 0.3276,
-      "rms": 0.0494,
-      "f0_median": 181.5,
+      "rtf": 0.157,
+      "peak": 0.2986,
+      "rms": 0.0496,
+      "f0_median": 187.7,
       "f0_iqr": [
-        168.3,
-        204.2
+        170.3,
+        215.1
       ],
-      "centroid_hz": 2962.8,
+      "centroid_hz": 2836.6,
       "switch": false,
       "play_start_s": 0.0
     },
@@ -117,17 +120,17 @@
       "voice": "M1",
       "text": "\"You came alone.\"",
       "chars": 17,
-      "synth_ms": 659.8,
+      "synth_ms": 523.0,
       "audio_s": 1.99,
-      "rtf": 0.331,
-      "peak": 0.4653,
-      "rms": 0.0363,
-      "f0_median": 128.9,
+      "rtf": 0.263,
+      "peak": 0.3401,
+      "rms": 0.039,
+      "f0_median": 130.9,
       "f0_iqr": [
-        101.6,
-        144.2
+        119.5,
+        139.6
       ],
-      "centroid_hz": 1968.8,
+      "centroid_hz": 1756.3,
       "switch": true,
       "play_start_s": 3.447
     },
@@ -140,17 +143,17 @@
       "voice": "F1",
       "text": "The woman in the grey coat didn't sit.",
       "chars": 38,
-      "synth_ms": 753.8,
+      "synth_ms": 600.1,
       "audio_s": 2.566,
-      "rtf": 0.294,
-      "peak": 0.3069,
-      "rms": 0.0445,
-      "f0_median": 200.5,
+      "rtf": 0.234,
+      "peak": 0.4061,
+      "rms": 0.0477,
+      "f0_median": 188.1,
       "f0_iqr": [
-        182.2,
-        250.6
+        178.5,
+        234.9
       ],
-      "centroid_hz": 2105.6,
+      "centroid_hz": 3469.9,
       "switch": true,
       "play_start_s": 5.687
     },
@@ -163,17 +166,17 @@
       "voice": "F2",
       "text": "\"You said to.\"",
       "chars": 14,
-      "synth_ms": 538.9,
+      "synth_ms": 329.4,
       "audio_s": 1.947,
-      "rtf": 0.277,
-      "peak": 0.4758,
-      "rms": 0.0496,
-      "f0_median": 250.6,
+      "rtf": 0.169,
+      "peak": 0.3564,
+      "rms": 0.0406,
+      "f0_median": 249.2,
       "f0_iqr": [
-        197.8,
-        268.9
+        237.7,
+        288.2
       ],
-      "centroid_hz": 2930.5,
+      "centroid_hz": 3481.1,
       "switch": true,
       "play_start_s": 8.503
     },
@@ -186,17 +189,17 @@
       "voice": "M1",
       "text": "\"I said not to bring the boy.\"",
       "chars": 30,
-      "synth_ms": 620.8,
+      "synth_ms": 463.2,
       "audio_s": 3.214,
-      "rtf": 0.193,
-      "peak": 0.3774,
-      "rms": 0.0469,
-      "f0_median": 135.7,
+      "rtf": 0.144,
+      "peak": 0.4505,
+      "rms": 0.0419,
+      "f0_median": 107.0,
       "f0_iqr": [
-        120.2,
-        150.0
+        102.6,
+        118.5
       ],
-      "centroid_hz": 2131.7,
+      "centroid_hz": 2230.4,
       "switch": true,
       "play_start_s": 10.7
     },
@@ -209,17 +212,17 @@
       "voice": "F2",
       "text": "\"He isn't a boy anymore.\"",
       "chars": 25,
-      "synth_ms": 714.3,
+      "synth_ms": 412.4,
       "audio_s": 2.306,
-      "rtf": 0.31,
-      "peak": 0.3571,
-      "rms": 0.0491,
-      "f0_median": 170.3,
+      "rtf": 0.179,
+      "peak": 0.3859,
+      "rms": 0.0468,
+      "f0_median": 180.0,
       "f0_iqr": [
-        162.1,
-        187.1
+        163.9,
+        199.5
       ],
-      "centroid_hz": 2383.4,
+      "centroid_hz": 2259.0,
       "switch": true,
       "play_start_s": 14.164
     },
@@ -232,17 +235,17 @@
       "voice": "F1",
       "text": "From the doorway, a third voice:",
       "chars": 32,
-      "synth_ms": 683.3,
+      "synth_ms": 456.0,
       "audio_s": 2.846,
-      "rtf": 0.24,
-      "peak": 0.3059,
-      "rms": 0.0503,
-      "f0_median": 175.3,
+      "rtf": 0.16,
+      "peak": 0.739,
+      "rms": 0.0616,
+      "f0_median": 183.8,
       "f0_iqr": [
-        165.6,
-        205.1
+        163.3,
+        208.0
       ],
-      "centroid_hz": 2126.7,
+      "centroid_hz": 1980.6,
       "switch": true,
       "play_start_s": 16.72
     },
@@ -255,17 +258,17 @@
       "voice": "F1",
       "text": "\"He's right here.\"",
       "chars": 18,
-      "synth_ms": 645.6,
+      "synth_ms": 542.7,
       "audio_s": 1.996,
-      "rtf": 0.323,
-      "peak": 0.4278,
-      "rms": 0.0435,
-      "f0_median": 184.5,
+      "rtf": 0.272,
+      "peak": 0.4128,
+      "rms": 0.0431,
+      "f0_median": 176.4,
       "f0_iqr": [
-        160.4,
-        196.9
+        169.0,
+        185.3
       ],
-      "centroid_hz": 2516.4,
+      "centroid_hz": 2826.4,
       "switch": true,
       "play_start_s": 19.816
     },
@@ -278,17 +281,17 @@
       "voice": "F1",
       "text": "The marshal's hand moved to his holster.",
       "chars": 40,
-      "synth_ms": 563.1,
+      "synth_ms": 459.7,
       "audio_s": 2.741,
-      "rtf": 0.205,
-      "peak": 0.3365,
-      "rms": 0.0545,
-      "f0_median": 173.6,
+      "rtf": 0.168,
+      "peak": 0.2644,
+      "rms": 0.0528,
+      "f0_median": 190.1,
       "f0_iqr": [
-        166.4,
-        204.2
+        180.0,
+        211.0
       ],
-      "centroid_hz": 3283.8,
+      "centroid_hz": 3060.1,
       "switch": true,
       "play_start_s": 22.062
     },
@@ -301,17 +304,17 @@
       "voice": "M1",
       "text": "\"Tomas. I told you to wait outside.\"",
       "chars": 36,
-      "synth_ms": 876.7,
+      "synth_ms": 581.7,
       "audio_s": 3.821,
-      "rtf": 0.229,
-      "peak": 0.4114,
-      "rms": 0.0446,
-      "f0_median": 143.6,
+      "rtf": 0.152,
+      "peak": 0.4142,
+      "rms": 0.0428,
+      "f0_median": 132.4,
       "f0_iqr": [
-        117.6,
-        192.6
+        111.9,
+        179.3
       ],
-      "centroid_hz": 2523.5,
+      "centroid_hz": 2450.2,
       "switch": true,
       "play_start_s": 25.053
     },
@@ -324,17 +327,17 @@
       "voice": "F1",
       "text": "The young man stepped in, rain dripping from his sleeves.",
       "chars": 57,
-      "synth_ms": 784.2,
+      "synth_ms": 676.4,
       "audio_s": 4.118,
-      "rtf": 0.19,
-      "peak": 0.3074,
-      "rms": 0.0498,
-      "f0_median": 186.1,
+      "rtf": 0.164,
+      "peak": 0.2741,
+      "rms": 0.0509,
+      "f0_median": 185.3,
       "f0_iqr": [
-        168.3,
-        212.3
+        174.3,
+        210.5
       ],
-      "centroid_hz": 2966.9,
+      "centroid_hz": 2800.9,
       "switch": true,
       "play_start_s": 29.124
     },
@@ -347,17 +350,17 @@
       "voice": "M2",
       "text": "\"And I told you I wouldn't.\"",
       "chars": 28,
-      "synth_ms": 647.9,
+      "synth_ms": 423.5,
       "audio_s": 2.491,
-      "rtf": 0.26,
-      "peak": 0.5521,
-      "rms": 0.0521,
-      "f0_median": 100.6,
+      "rtf": 0.17,
+      "peak": 0.6278,
+      "rms": 0.0544,
+      "f0_median": 106.3,
       "f0_iqr": [
-        85.7,
-        116.4
+        89.6,
+        135.7
       ],
-      "centroid_hz": 1753.6,
+      "centroid_hz": 1610.8,
       "switch": true,
       "play_start_s": 33.492
     },
@@ -370,17 +373,17 @@
       "voice": "F1",
       "text": "Mara looked from one man to the other.",
       "chars": 38,
-      "synth_ms": 686.8,
+      "synth_ms": 436.5,
       "audio_s": 2.785,
-      "rtf": 0.247,
-      "peak": 0.2995,
-      "rms": 0.0527,
-      "f0_median": 186.9,
+      "rtf": 0.157,
+      "peak": 0.2921,
+      "rms": 0.0519,
+      "f0_median": 180.7,
       "f0_iqr": [
-        174.3,
-        190.9
+        172.4,
+        184.5
       ],
-      "centroid_hz": 2403.4,
+      "centroid_hz": 2342.0,
       "switch": true,
       "play_start_s": 36.232
     },
@@ -393,17 +396,17 @@
       "voice": "F2",
       "text": "\"If you two are finished, there's a body in the stable.\"",
       "chars": 56,
-      "synth_ms": 820.2,
+      "synth_ms": 607.6,
       "audio_s": 4.105,
-      "rtf": 0.2,
-      "peak": 0.3728,
-      "rms": 0.0441,
-      "f0_median": 196.0,
+      "rtf": 0.148,
+      "peak": 0.3249,
+      "rms": 0.0443,
+      "f0_median": 202.3,
       "f0_iqr": [
-        175.7,
-        242.3
+        189.5,
+        282.2
       ],
-      "centroid_hz": 2227.4,
+      "centroid_hz": 2289.6,
       "switch": true,
       "play_start_s": 39.267
     },
@@ -416,17 +419,17 @@
       "voice": "F1",
       "text": "Rennick turned to her.",
       "chars": 22,
-      "synth_ms": 495.9,
+      "synth_ms": 532.2,
       "audio_s": 1.848,
-      "rtf": 0.268,
-      "peak": 0.3384,
-      "rms": 0.0569,
-      "f0_median": 170.3,
+      "rtf": 0.288,
+      "peak": 0.335,
+      "rms": 0.0459,
+      "f0_median": 177.1,
       "f0_iqr": [
-        162.7,
-        190.1
+        165.2,
+        186.9
       ],
-      "centroid_hz": 2316.7,
+      "centroid_hz": 2181.5,
       "switch": true,
       "play_start_s": 43.623
     },
@@ -439,17 +442,17 @@
       "voice": "M1",
       "text": "\"Whose?\"",
       "chars": 8,
-      "synth_ms": 384.8,
+      "synth_ms": 351.3,
       "audio_s": 1.389,
-      "rtf": 0.277,
-      "peak": 0.5212,
-      "rms": 0.0451,
-      "f0_median": 165.2,
+      "rtf": 0.253,
+      "peak": 0.3371,
+      "rms": 0.0401,
+      "f0_median": 148.6,
       "f0_iqr": [
-        139.4,
-        185.7
+        99.3,
+        191.3
       ],
-      "centroid_hz": 2782.1,
+      "centroid_hz": 3287.2,
       "switch": true,
       "play_start_s": 45.72
     },
@@ -462,17 +465,17 @@
       "voice": "F1",
       "text": "\"Mine,\"",
       "chars": 7,
-      "synth_ms": 470.1,
+      "synth_ms": 330.3,
       "audio_s": 1.369,
-      "rtf": 0.343,
-      "peak": 0.3649,
-      "rms": 0.0544,
-      "f0_median": 168.3,
+      "rtf": 0.241,
+      "peak": 0.3571,
+      "rms": 0.0553,
+      "f0_median": 180.4,
       "f0_iqr": [
-        163.9,
-        178.5
+        170.1,
+        190.3
       ],
-      "centroid_hz": 1850.1,
+      "centroid_hz": 1989.6,
       "switch": true,
       "play_start_s": 47.359
     },
@@ -485,17 +488,17 @@
       "voice": "F1",
       "text": "said a voice from the yard.",
       "chars": 27,
-      "synth_ms": 596.2,
+      "synth_ms": 397.1,
       "audio_s": 2.218,
-      "rtf": 0.269,
-      "peak": 0.3036,
-      "rms": 0.0503,
-      "f0_median": 164.6,
+      "rtf": 0.179,
+      "peak": 0.3399,
+      "rms": 0.0496,
+      "f0_median": 165.2,
       "f0_iqr": [
-        159.2,
-        172.9
+        155.3,
+        178.5
       ],
-      "centroid_hz": 3216.3,
+      "centroid_hz": 2866.8,
       "switch": true,
       "play_start_s": 48.978
     }
