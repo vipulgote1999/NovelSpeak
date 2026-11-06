@@ -77,8 +77,9 @@ import app.novelspeak.library.ImportedBookStore
 import app.novelspeak.library.LibraryStore
 import app.novelspeak.library.PrefsLibraryStorage
 import app.novelspeak.library.ReadingStats
+import app.novelspeak.manga.MangaOcr
+import app.novelspeak.manga.MangaTranslator
 import kotlin.math.min
-
 /**
  * WebView browser + reader UI.
  *
@@ -734,6 +735,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             }
         }
         actionsRow.addView(castButton)
+        val mangaButton = textButton("Manga", primary = false, widthDp = 0, heightDp = Design.DENSE_TOUCH_DP) {
+            readMangaChapter()
+        }.apply {
+            textSize = 11f
+            contentDescription = "Read manga on this page"
+        }
+        actionsRow.addView(mangaButton)
         val speedGroup = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -2126,6 +2134,63 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             return
         }
         extractNow(append = false)
+    }
+
+    /** Read a manga chapter: collect images on the page, OCR + (optionally) translate, TTS. */
+    private fun readMangaChapter() {
+        statusView.text = "Collecting manga images…"
+        web.evaluateJavascript(
+            "(function(){var imgs=Array.from(document.querySelectorAll('img')); " +
+            "var urls=[]; imgs.forEach(function(i){var u=i.getAttribute('data-src')||i.getAttribute('data-lazy-src')||i.src; " +
+            "if(u && u.indexOf('http')===0){var w=i.naturalWidth||i.width||0; var h=i.naturalHeight||i.height||0; " +
+            "if(w>=200 && h>=200) urls.push(u);} }); return JSON.stringify(urls.slice(0,60));})()"
+        ) { value ->
+            val urls = try {
+                val raw = try { org.json.JSONObject("{\"v\":$value}").getJSONArray("v") } catch (t: Throwable) { org.json.JSONArray("[]") }
+                (0 until raw.length()).map { raw.getString(it) }
+            } catch (t: Throwable) { emptyList() }
+            if (urls.isEmpty()) { statusView.text = "No manga images found on this page"; return@evaluateJavascript }
+            Thread {
+                val prefs = NovelSpeakApp.instance.prefs
+                val ocrLang = prefs.mangaOcrLanguage
+                val target = prefs.mangaTargetLanguage
+                val doTranslate = prefs.mangaTranslate
+                val translator = if (doTranslate) MangaTranslator.translatorFor(ocrLang, target) else null
+                val allBlocks = ArrayList<Reader.Block>()
+                var idx = 0
+                for (u in urls) {
+                    try {
+                        val bmp = downloadBitmap(u) ?: continue
+                        val ocr = MangaOcr.recognizeBlocking(bmp, ocrLang)
+                        for (b in ocr) {
+                            var text = b.text
+                            if (doTranslate) text = MangaTranslator.translateBlocking(translator, text)
+                            if (text.isNotBlank()) allBlocks.add(Reader.Block(text, idx++))
+                        }
+                    } catch (t: Throwable) {
+                        DiagLog.exception(this, "manga page OCR failed: $u", t)
+                    }
+                }
+                MangaTranslator.close(translator)
+                uiHandler.post {
+                    if (allBlocks.isEmpty()) {
+                        statusView.text = "No text detected on manga page"
+                    } else {
+                        reader.setContent(web.title ?: "Manga", allBlocks)
+                        statusView.text = "Manga: ${allBlocks.size} chunks ready"
+                    }
+                }
+            }.start()
+        }
+    }
+
+    private fun downloadBitmap(url: String): Bitmap? {
+        return try {
+            val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+            conn.connectTimeout = 15000
+            conn.readTimeout = 30000
+            conn.inputStream.use { android.graphics.BitmapFactory.decodeStream(it) }
+        } catch (t: Throwable) { null }
     }
 
     private fun extractNow(append: Boolean) {
