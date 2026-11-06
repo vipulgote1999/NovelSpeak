@@ -3,14 +3,17 @@ import app.novelspeak.cast.BookCast
 import app.novelspeak.cast.CastAnalysis
 import app.novelspeak.cast.CastBlock
 import app.novelspeak.cast.CastCoordinator
+import app.novelspeak.cast.CastIds
 import app.novelspeak.cast.CastMember
 import app.novelspeak.cast.CastStore
 import app.novelspeak.cast.Confidence
 import app.novelspeak.cast.Gender
+import app.novelspeak.cast.LineFix
 import app.novelspeak.cast.SpeechSegment
 import app.novelspeak.cast.SegmentType
 import app.novelspeak.cast.VoiceCastPlanner
 import app.novelspeak.library.InMemoryStorage
+import java.io.File
 
 /**
  * Host-side checks for cast persistence and voice planning.
@@ -85,6 +88,18 @@ fun main() {
     val remerged = store.merge("book-1", "Test Book", analysis, "0")
     check("merge preserves lock", remerged.members.first { it.id == "mr-bennet" }.voiceId == "9")
 
+    // Line corrections are chapter-scoped, replace in place, and survive a save round-trip.
+    store.setLineFix("book-1", "ch1", LineFix(4, 12, "mr-bennet"))
+    check("line fix round-trips", store.lineFixes("book-1", "ch1") == listOf(LineFix(4, 12, "mr-bennet")))
+    check("line fix is chapter-scoped", store.lineFixes("book-1", "ch2").isEmpty())
+    store.setLineFix("book-1", "ch1", LineFix(4, 12, "mrs-bennet"))
+    check("line fix replaces the same segment", store.lineFixes("book-1", "ch1") == listOf(LineFix(4, 12, "mrs-bennet")))
+    store.save(store.load("book-1")!!)
+    check("save keeps line fixes", store.lineFixes("book-1", "ch1").size == 1)
+    store.clear("book-1")
+    check("clear removes line fixes", store.lineFixes("book-1", "ch1").isEmpty())
+    check("clear removes the cast", store.load("book-1") == null)
+
     // Voice planner: narrator excluded, unique until the pool is exhausted, then reuse.
     val cast = BookCast(
         bookKey = "plan",
@@ -114,6 +129,7 @@ fun main() {
     val coordinator = CastCoordinator(store)
     val result = coordinator.analyze(
         bookKey = "book-2",
+        chapterKey = "chapter-1",
         title = "Scene",
         narratorVoiceId = "0",
         family = "supertonic",
@@ -126,6 +142,42 @@ fun main() {
     check("coordinator never assigns narrator", result.voiceFor("mr-bennet") != "0")
     check("coordinator names the speaker", result.nameFor("mr-bennet") == "Mr. Bennet")
     check("coordinator persists the cast", store.load("book-2")?.members?.any { it.name == "Mr. Bennet" } == true)
+
+    // Per-line fix: correct one UNKNOWN line and leave the other untouched.
+    val sceneBlocks = File("tools/cast-parser-test/fixtures/unattributed-scene.txt")
+        .readLines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .mapIndexed { i, s -> CastBlock(s, i) }
+    fun scene(chapter: String) = coordinator.analyze(
+        bookKey = "book-scene",
+        chapterKey = chapter,
+        title = "The Lantern",
+        narratorVoiceId = "0",
+        family = "supertonic",
+        blocks = sceneBlocks
+    )
+    val sceneBefore = scene("ch1")
+    val unknown = sceneBefore.analysis.segments.first {
+        it.isDialogue && it.speakerId == CastIds.UNKNOWN
+    }
+    check("scene starts with two unresolved lines", sceneBefore.analysis.unresolved == 2,
+        sceneBefore.analysis.unresolved.toString())
+    store.setLineFix(
+        "book-scene", "ch1", LineFix(unknown.blockIndex, unknown.charStart, "tomas")
+    )
+    val sceneAfter = scene("ch1")
+    val fixed = sceneAfter.analysis.segments.first {
+        it.blockIndex == unknown.blockIndex && it.charStart == unknown.charStart
+    }
+    check("line fix changes the speaker", fixed.speakerId == "tomas", fixed.speakerId)
+    check("line fix is high confidence", fixed.confidence == Confidence.HIGH, fixed.confidence.toString())
+    check("line fix reduces unresolved count", sceneAfter.analysis.unresolved == 1,
+        sceneAfter.analysis.unresolved.toString())
+    check("line fix keeps a character voice", sceneAfter.voiceFor("tomas") != null)
+    check("line fix never steals the narrator", sceneAfter.voiceFor("tomas") != "0")
+    check("line fix is not applied to another chapter", scene("ch2").analysis.unresolved == 2,
+        scene("ch2").analysis.unresolved.toString())
 
     // A locked voice wins even when the planner would prefer another.
     val lockedCast = BookCast(

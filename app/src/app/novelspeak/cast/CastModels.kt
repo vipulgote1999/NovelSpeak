@@ -70,6 +70,19 @@ data class BookCast(
     val members: List<CastMember> = emptyList()
 )
 
+/**
+ * A user correction for one dialogue segment.
+ *
+ * [charStart] is an offset inside [blockIndex] and may point at any TTS chunk of the segment; the
+ * coordinator applies it to the whole segment. This is deliberately separate from [CastMember] so
+ * a one-off correction never changes the character's voice for the rest of the book.
+ */
+data class LineFix(
+    val blockIndex: Int,
+    val charStart: Int,
+    val speakerId: String
+)
+
 /** Stable ids and phrase normalisation shared by the parser and the store. */
 object CastIds {
     const val NARRATOR = "NARRATOR"

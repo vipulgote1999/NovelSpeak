@@ -129,7 +129,8 @@ class Reader(private val app: NovelSpeakApp) {
         val speakerId: String? = null,
         val charStart: Int = -1,
         val charEnd: Int = -1,
-        val speakerName: String = ""
+        val speakerName: String = "",
+        val trimSilence: Boolean = false
     )
 
     interface Listener {
@@ -207,6 +208,9 @@ class Reader(private val app: NovelSpeakApp) {
 
     fun addListener(l: Listener) { if (!listeners.contains(l)) listeners.add(l) }
     fun removeListener(l: Listener) { listeners.remove(l) }
+
+    /** The exact cue the reader is on, including its cast/source offsets. */
+    fun currentBlock(): Block? = sentences.getOrNull(cursor)
 
     fun state(): State {
         val current = sentences.getOrNull(cursor)
@@ -700,7 +704,8 @@ class Reader(private val app: NovelSpeakApp) {
             sentences[index].text,
             onDone = { ok -> onSentenceDone(gen, index, ok) },
             onRendered = { hasAudio -> onClipRendered(gen, index, hasAudio) },
-            voiceId = sentences[index].voiceId
+            voiceId = sentences[index].voiceId,
+            trimSilence = sentences[index].trimSilence
         )
     }
 

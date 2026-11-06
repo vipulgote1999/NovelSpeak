@@ -23,12 +23,17 @@ interface TtsEngine {
      * [voiceId] is the voice for *this sentence*. It must be captured with the task rather than
      * read from a shared field, because the reader queues several sentences ahead. `null` keeps
      * the engine's saved/global voice.
+     *
+     * [trimSilence] removes the provider's digital padding for this cue. Story Cast sets it on
+     * dialogue: Supertonic pads a one-word line to ~1.35 s (0.4 s lead + 0.6 s tail), which turns
+     * every short exchange into dead air. It never affects ordinary playback or user settings.
      */
     fun speak(
         text: String,
         onDone: (ok: Boolean) -> Unit,
         onRendered: ((hasAudio: Boolean) -> Unit)? = null,
-        voiceId: String? = null
+        voiceId: String? = null,
+        trimSilence: Boolean = false
     )
 
     /**

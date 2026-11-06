@@ -72,7 +72,8 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
         val epoch: Int,
         val onDone: (Boolean) -> Unit,
         val onRendered: ((Boolean) -> Unit)? = null,
-        val voiceId: String? = null
+        val voiceId: String? = null,
+        val trimSilence: Boolean = false
     )
     private class Boundary(
         val endFrame: Long,
@@ -294,7 +295,7 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
                 // keeps the boundary at zero) and before the single PcmPlayer.write. Off by
                 // default; when the render was pure silence the untrimmed buffer is kept so the
                 // feature can never turn a rendered sentence into a dropped one.
-                if (prefs.ttsSkipSilence) {
+                if (prefs.ttsSkipSilence || task.trimSilence) {
                     val trimmed = try {
                         AudioDsp.trimSilence(pcm, SAMPLE_RATE)
                     } catch (e: Throwable) {
@@ -465,7 +466,8 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
         text: String,
         onDone: (Boolean) -> Unit,
         onRendered: ((Boolean) -> Unit)?,
-        voiceId: String?
+        voiceId: String?,
+        trimSilence: Boolean
     ) {
         if (!isReady) {
             main.post { onRendered?.invoke(false) }
@@ -476,7 +478,7 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
             stopFlag = false
             novelSpeakPlayer().reset()
         }
-        queue.offer(Task(text, stopEpoch.get(), onDone, onRendered, voiceId))
+        queue.offer(Task(text, stopEpoch.get(), onDone, onRendered, voiceId, trimSilence))
     }
 
     override fun stop() {

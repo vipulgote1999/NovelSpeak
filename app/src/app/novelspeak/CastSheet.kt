@@ -36,8 +36,10 @@ class CastSheet(
     private val unresolved: Int,
     private val currentSpeakerId: String,
     private val storyCastOn: Boolean,
+    private val canFixLine: Boolean,
     private val onToggle: () -> Unit,
-    private val onRecast: (CastMember) -> Unit
+    private val onRecast: (CastMember) -> Unit,
+    private val onFixLine: () -> Unit
 ) {
 
     private val density = activity.resources.displayMetrics.density
@@ -86,7 +88,7 @@ class CastSheet(
         })
 
         if (unresolved > 0) {
-            sheet.addView(unresolvedBanner(unresolved))
+            sheet.addView(unresolvedBanner(unresolved, dialog))
         }
 
         sheet.addView(divider())
@@ -267,22 +269,30 @@ class CastSheet(
         return row
     }
 
-    private fun unresolvedBanner(count: Int): LinearLayout = LinearLayout(activity).apply {
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        background = rounded(withAlpha(Palette.AMBER, 0.12f), Design.RADIUS_MD)
-        setPadding(dp(12), dp(10), dp(12), dp(10))
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { topMargin = dp(6) }
-        addView(TextView(activity).apply {
+    private fun unresolvedBanner(count: Int, dialog: Dialog): LinearLayout {
+        val plural = count != 1
+        val banner = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(withAlpha(Palette.AMBER, 0.12f), Design.RADIUS_MD)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(6) }
+            contentDescription = "$count line" + (if (plural) "s" else "") +
+                " had no confident speaker and " + (if (plural) "stay" else "stays") +
+                " with the narrator"
+        }
+        val line = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        line.addView(TextView(activity).apply {
             text = "●"
             textSize = 12f
             setTextColor(Palette.AMBER)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         })
-        val plural = count != 1
-        addView(label(
+        line.addView(label(
             "$count line" + (if (plural) "s" else "") + " had no confident speaker and " +
                 (if (plural) "stay" else "stays") + " with the narrator.",
             12f,
@@ -291,9 +301,29 @@ class CastSheet(
             setPadding(dp(8), 0, 0, 0)
             setLineSpacing(dp(2).toFloat(), 1f)
         })
-        contentDescription = "$count line" + (if (plural) "s" else "") +
-            " had no confident speaker and " + (if (plural) "stay" else "stays") +
-            " with the narrator"
+        banner.addView(line)
+
+        if (canFixLine) {
+            val fix = actionButton("Fix current line", primary = false).apply {
+                setTextColor(Palette.AMBER)
+                background = ripple(withAlpha(Palette.AMBER, 0.18f), 12)
+                contentDescription = "Fix the current unresolved line"
+                setOnClickListener {
+                    dialog.dismiss()
+                    onFixLine()
+                }
+            }
+            banner.addView(fix, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(Design.DENSE_TOUCH_DP)
+            ).apply { topMargin = dp(8) })
+        } else {
+            banner.addView(label(
+                "Play an unresolved line, then reopen Cast to fix it.",
+                11f,
+                Palette.MUTED
+            ).apply { setPadding(0, dp(6), 0, 0) })
+        }
+        return banner
     }
 
     private fun actionButton(text: String, primary: Boolean): TextView = TextView(activity).apply {

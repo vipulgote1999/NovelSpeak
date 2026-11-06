@@ -11,6 +11,7 @@ import app.novelspeak.library.LibraryStorage
  * `v1`
  * `book<TAB>bookKey<TAB>narratorVoiceId<TAB>title`
  * `member<TAB>bookKey<TAB>id<TAB>name<TAB>gender<TAB>voiceId<TAB>userLocked<TAB>aliases<TAB>dialogueLines<TAB>confidence`
+ * `linefix<TAB>bookKey<TAB>chapterKey<TAB>blockIndex<TAB>charStart<TAB>speakerId`
  */
 class CastStore(private val storage: LibraryStorage) {
 
@@ -99,6 +100,53 @@ class CastStore(private val storage: LibraryStorage) {
         return next
     }
 
+    /** User corrections for one chapter, oldest first. */
+    @Synchronized
+    fun lineFixes(bookKey: String, chapterKey: String): List<LineFix> {
+        val book = clean(bookKey)
+        val chapter = clean(chapterKey)
+        if (book.isEmpty() || chapter.isEmpty()) return emptyList()
+        return read().fixes
+            .filter { it.bookKey == book && it.chapterKey == chapter }
+            .map { it.fix }
+    }
+
+    /**
+     * Persist one line correction. A second fix for the same segment replaces the first rather
+     * than stacking; the cap keeps one pathological book from bloating the preference string.
+     */
+    @Synchronized
+    fun setLineFix(bookKey: String, chapterKey: String, fix: LineFix) {
+        val book = clean(bookKey)
+        val chapter = clean(chapterKey)
+        if (book.isEmpty() || chapter.isEmpty()) return
+        val document = read()
+        document.fixes.removeAll {
+            it.bookKey == book && it.chapterKey == chapter &&
+                it.fix.blockIndex == fix.blockIndex && it.fix.charStart == fix.charStart
+        }
+        document.fixes.add(
+            FixRecord(
+                bookKey = book,
+                chapterKey = chapter,
+                fix = fix.copy(speakerId = clean(fix.speakerId))
+            )
+        )
+        val forBook = document.fixes.count { it.bookKey == book }
+        if (forBook > MAX_FIXES_PER_BOOK) {
+            val drop = forBook - MAX_FIXES_PER_BOOK
+            val it = document.fixes.iterator()
+            var removed = 0
+            while (it.hasNext() && removed < drop) {
+                if (it.next().bookKey == book) {
+                    it.remove()
+                    removed++
+                }
+            }
+        }
+        write(document)
+    }
+
     @Synchronized
     fun clear(bookKey: String? = null) {
         if (bookKey == null) {
@@ -109,6 +157,7 @@ class CastStore(private val storage: LibraryStorage) {
         val document = read()
         document.books.remove(key)
         document.members.remove(key)
+        document.fixes.removeAll { it.bookKey == key }
         write(document)
     }
 
@@ -116,9 +165,16 @@ class CastStore(private val storage: LibraryStorage) {
 
     private data class Header(val title: String, val narratorVoiceId: String)
 
+    private data class FixRecord(
+        val bookKey: String,
+        val chapterKey: String,
+        val fix: LineFix
+    )
+
     private class Document(
         val books: MutableMap<String, Header> = LinkedHashMap(),
-        val members: MutableMap<String, MutableList<CastMember>> = LinkedHashMap()
+        val members: MutableMap<String, MutableList<CastMember>> = LinkedHashMap(),
+        val fixes: MutableList<FixRecord> = ArrayList()
     )
 
     private fun read(): Document {
@@ -156,6 +212,20 @@ class CastStore(private val storage: LibraryStorage) {
                     )
                     doc.members.getOrPut(key) { ArrayList() }.add(member)
                 }
+                f.size >= 6 && f[0] == "linefix" -> {
+                    val book = clean(f[1])
+                    val chapter = clean(f[2])
+                    val block = f[3].toIntOrNull()
+                    val start = f[4].toIntOrNull()
+                    val speaker = clean(f[5])
+                    if (book.isNotEmpty() && chapter.isNotEmpty() && block != null &&
+                        start != null && speaker.isNotEmpty()
+                    ) {
+                        doc.fixes.add(
+                            FixRecord(book, chapter, LineFix(block, start, speaker))
+                        )
+                    }
+                }
             }
         }
         return doc
@@ -179,6 +249,13 @@ class CastStore(private val storage: LibraryStorage) {
                     .append(m.confidence.name.lowercase())
                     .append('\n')
             }
+        }
+        for (record in document.fixes) {
+            sb.append("linefix\t").append(clean(record.bookKey)).append('\t')
+                .append(clean(record.chapterKey)).append('\t')
+                .append(record.fix.blockIndex).append('\t')
+                .append(record.fix.charStart).append('\t')
+                .append(clean(record.fix.speakerId)).append('\n')
         }
         try {
             storage.write(sb.toString())
@@ -205,5 +282,10 @@ class CastStore(private val storage: LibraryStorage) {
     private fun maxConfidence(a: Confidence, b: Confidence): Confidence {
         val rank = mapOf(Confidence.LOW to 0, Confidence.MEDIUM to 1, Confidence.HIGH to 2)
         return if ((rank[a] ?: 0) >= (rank[b] ?: 0)) a else b
+    }
+
+    private companion object {
+        /** One correction per dialogue line; 2,000 lines is many novels of margin. */
+        const val MAX_FIXES_PER_BOOK = 2000
     }
 }

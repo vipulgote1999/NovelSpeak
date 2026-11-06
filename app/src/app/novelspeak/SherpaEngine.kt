@@ -66,7 +66,8 @@ class SherpaEngine(
         val epoch: Int,
         val onDone: (Boolean) -> Unit,
         val onRendered: ((Boolean) -> Unit)? = null,
-        val voiceId: String? = null
+        val voiceId: String? = null,
+        val trimSilence: Boolean = false
     )
     private class Boundary(val endFrame: Long, val epoch: Int, val onDone: (Boolean) -> Unit)
 
@@ -77,6 +78,7 @@ class SherpaEngine(
      */
     private inner class SampleSink(
         private val epoch: Int,
+        castTrim: Boolean,
         private val onFirstAudio: () -> Unit
     ) : (FloatArray) -> Int {
         var wrote = false
@@ -97,8 +99,11 @@ class SherpaEngine(
         /** PcmPlayer rejected a write (stop/reset); abort like the inline path did before. */
         var writeFailed = false
 
-        /** Skip-silence is read once per sentence so a Settings toggle cannot split a sentence. */
-        private val trim = prefs.ttsSkipSilence
+        /**
+         * Skip-silence is read once per sentence so a Settings toggle cannot split a sentence.
+         * Cast dialogue also sets it per cue, because Supertonic pads every short line.
+         */
+        private val trim = prefs.ttsSkipSilence || castTrim
         private val rate = if (sampleRate > 0) sampleRate else 24000
 
         /**
@@ -108,6 +113,7 @@ class SherpaEngine(
          * byte-for-byte the previous behaviour.
          */
         private var pending: FloatArray? = null
+        private var trimLogged = false
 
         override fun invoke(samples: FloatArray): Int {
             // sherpa-onnx offline-tts callback contract: 1 = continue generating,
@@ -189,6 +195,10 @@ class SherpaEngine(
                 }
             } else {
                 samples
+            }
+            if (trim && !trimLogged && out.size != samples.size) {
+                trimLogged = true
+                DiagLog.line(ctx, "tts trim ${samples.size} -> ${out.size} samples")
             }
             if (out.isEmpty()) return true // pure-silence chunk dropped; keep generating
             val first = !wrote
@@ -376,7 +386,9 @@ class SherpaEngine(
                     8,                  // numSteps: HayaiTTS default for cloning generation
                     emptyMap()
                 )
-                val sink = SampleSink(task.epoch) { postRendered(task, true) }
+                val sink = SampleSink(task.epoch, task.trimSilence) {
+                    postRendered(task, true)
+                }
                 val started = System.currentTimeMillis()
                 val label = cleaned.take(28).replace('\n', ' ')
                 DiagLog.line(ctx, "gen start \"$label\" queue=${player.queueDepth()}")
@@ -452,7 +464,8 @@ class SherpaEngine(
         text: String,
         onDone: (Boolean) -> Unit,
         onRendered: ((Boolean) -> Unit)?,
-        voiceId: String?
+        voiceId: String?,
+        trimSilence: Boolean
     ) {
         if (!isReady) {
             main.post { onRendered?.invoke(false) }
@@ -463,7 +476,7 @@ class SherpaEngine(
             stopFlag = false
             player.reset()
         }
-        genQueue.offer(Task(text, cancelEpoch, onDone, onRendered, voiceId))
+        genQueue.offer(Task(text, cancelEpoch, onDone, onRendered, voiceId, trimSilence))
     }
 
     override fun stop() {

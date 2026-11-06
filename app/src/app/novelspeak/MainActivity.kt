@@ -70,6 +70,7 @@ import app.novelspeak.cast.CastChunker
 import app.novelspeak.cast.CastCoordinator
 import app.novelspeak.cast.CastIds
 import app.novelspeak.cast.CastMember
+import app.novelspeak.cast.LineFix
 import app.novelspeak.library.BookmarkStore
 import app.novelspeak.library.ImportedBook
 import app.novelspeak.library.ImportedBookStore
@@ -3042,6 +3043,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         currentImportId?.let { "import:$it" }
             ?: bookKeyForUrl(web.url ?: lastDisplayedUrl)
 
+    /** Line corrections are chapter-scoped; the cast itself stays book-scoped. */
+    private fun currentChapterKey(): String =
+        currentImportId?.let { "import:$it" }
+            ?: (web.url ?: lastDisplayedUrl).ifEmpty { "chapter" }
+
     /**
      * A series key, not a chapter key: every chapter of the same novel must share one cast.
      * Host + the first non-generic path segments covers the common serial layouts
@@ -3088,6 +3094,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val result = try {
             castCoordinator.analyze(
                 bookKey = currentBookKey(),
+                chapterKey = currentChapterKey(),
                 title = title,
                 narratorVoiceId = narratorVoiceId(family),
                 family = family,
@@ -3121,7 +3128,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         speakerId = segment.speakerId,
                         charStart = start,
                         charEnd = end,
-                        speakerName = speakerName
+                        speakerName = speakerName,
+                        trimSilence = segment.isDialogue
                     )
                 )
             }
@@ -3223,20 +3231,73 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             null
         }
         val prefs = NovelSpeakApp.instance.prefs
+        val state = reader.state()
         CastSheet(
             activity = this,
             chapterTitle = currentChapterTitle(),
             cast = cast,
             family = family,
             unresolved = if (prefs.storyCast) lastUnresolved else 0,
-            currentSpeakerId = reader.state().speakerId,
+            currentSpeakerId = state.speakerId,
             storyCastOn = prefs.storyCast,
+            canFixLine = state.speakerId == CastIds.UNKNOWN,
             onToggle = { toggleStoryCast() },
             onRecast = { member ->
                 val narrator = cast?.narratorVoiceId ?: narratorVoiceId(family)
                 showVoicePicker(family, narrator, member)
-            }
+            },
+            onFixLine = { showLineFixPicker(family) }
         ).show()
+    }
+
+    /**
+     * Correct the speaker of the line the reader is on. The fix is chapter-scoped and persisted,
+     * so replaying the chapter or reopening the book keeps the correction.
+     */
+    private fun showLineFixPicker(family: String) {
+        val block = reader.currentBlock()
+        if (block == null || block.charStart < 0) {
+            Toast.makeText(this, "Play a dialogue line first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val cast = try {
+            NovelSpeakApp.instance.castStore.load(currentBookKey())
+        } catch (t: Throwable) {
+            null
+        }
+        val members = cast?.members
+            ?.sortedWith(compareByDescending<CastMember> { it.dialogueLines }.thenBy { it.name })
+            .orEmpty()
+        val labels = ArrayList<String>()
+        val narratorId = cast?.narratorVoiceId ?: narratorVoiceId(family)
+        labels.add(
+            "Narrator · " + VoiceCatalog.label(family, narratorId ?: "0")
+        )
+        for (member in members) {
+            val voice = member.voiceId?.let { VoiceCatalog.label(family, it) } ?: "auto-assigned"
+            labels.add(member.name + " · " + voice)
+        }
+        labels.add("Unknown · keep with narrator")
+
+        AlertDialog.Builder(this)
+            .setTitle("Who is speaking?")
+            .setItems(labels.toTypedArray()) { _, which ->
+                val speakerId = when (which) {
+                    0 -> CastIds.NARRATOR
+                    labels.size - 1 -> CastIds.UNKNOWN
+                    else -> members[which - 1].id
+                }
+                val name = labels[which].substringBefore(" · ")
+                NovelSpeakApp.instance.castStore.setLineFix(
+                    currentBookKey(),
+                    currentChapterKey(),
+                    LineFix(block.blockIndex, block.charStart, speakerId)
+                )
+                reapplyStoryCast()
+                Toast.makeText(this, "Line assigned to $name", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun showVoicePicker(family: String, narratorId: String?, member: CastMember) {
