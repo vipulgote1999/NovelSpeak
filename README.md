@@ -271,6 +271,21 @@ cd - && DEPS="$HOME/build/deps" tools/fetch-webkit-deps.sh && ./build.sh
 `KEYSTORE`, `KS_ALIAS`, `KS_PASS`, `KEY_PASS`, and `OUT_APK` — see [RELEASING.md](RELEASING.md).
 Use `ABI=armeabi-v7a ./build.sh` for 32-bit devices.
 
+### Side-by-side dev build
+
+A release-signed install cannot be replaced by a debug APK. To test a work-in-progress build
+next to the release app without erasing its library:
+
+```bash
+ABI=arm64-v8a tools/build-dev-variant.sh
+# output: build/NovelSpeak-dev-arm64-v8a.apk
+```
+
+It builds package `app.novelspeak.dev` with label **NovelSpeak Dev**, version `1.3.0-dev`, the
+debug key, and its own data, notification channels and diagnostics provider authority. Android
+treats it as a separate app, so the release app's library, settings and models are untouched.
+The dev app downloads its own models on first use.
+
 ### Android Studio
 
 The sources are plain Kotlin. The no-Gradle build vendors only the AndroidX WebKit and
