@@ -10,7 +10,7 @@ import app.novelspeak.library.LibraryStorage
  *
  * `v1`
  * `book<TAB>bookKey<TAB>narratorVoiceId<TAB>title`
- * `member<TAB>bookKey<TAB>id<TAB>name<TAB>gender<TAB>voiceId<TAB>userLocked<TAB>aliases<TAB>dialogueLines<TAB>confidence`
+ * `member<TAB>bookKey<TAB>id<TAB>name<TAB>gender<TAB>voiceId<TAB>userLocked<TAB>aliases<TAB>dialogueLines<TAB>confidence<TAB>sampleLine`
  * `linefix<TAB>bookKey<TAB>chapterKey<TAB>blockIndex<TAB>charStart<TAB>speakerId`
  */
 class CastStore(private val storage: LibraryStorage) {
@@ -67,7 +67,12 @@ class CastStore(private val storage: LibraryStorage) {
                 confidence = maxConfidence(old.confidence, incoming.confidence),
                 userLocked = old.userLocked,
                 // Re-analysing the same chapter must not inflate priority forever.
-                dialogueLines = maxOf(old.dialogueLines, incoming.dialogueLines)
+                dialogueLines = maxOf(old.dialogueLines, incoming.dialogueLines),
+                sampleLine = if (incoming.sampleLine.isNotEmpty()) {
+                    incoming.sampleLine
+                } else {
+                    old.sampleLine
+                }
             )
         }
 
@@ -208,7 +213,8 @@ class CastStore(private val storage: LibraryStorage) {
                         voiceId = clean(f[5]).ifEmpty { null },
                         confidence = if (f.size >= 10) parseConfidence(f[9]) else Confidence.LOW,
                         userLocked = f[6] == "1",
-                        dialogueLines = if (f.size >= 9) f[8].toIntOrNull() ?: 0 else 0
+                        dialogueLines = if (f.size >= 9) f[8].toIntOrNull() ?: 0 else 0,
+                        sampleLine = if (f.size >= 11) clean(f[10]) else ""
                     )
                     doc.members.getOrPut(key) { ArrayList() }.add(member)
                 }
@@ -246,7 +252,8 @@ class CastStore(private val storage: LibraryStorage) {
                     .append(if (m.userLocked) "1" else "0").append('\t')
                     .append(m.aliases.joinToString("\u001f") { clean(it) }).append('\t')
                     .append(m.dialogueLines).append('\t')
-                    .append(m.confidence.name.lowercase())
+                    .append(m.confidence.name.lowercase()).append('\t')
+                    .append(clean(m.sampleLine))
                     .append('\n')
             }
         }

@@ -46,8 +46,8 @@ fun main() {
         title = "Test Book",
         narratorVoiceId = "0",
         members = listOf(
-            CastMember("mrs-bennet", "Mrs. Bennet", listOf("his wife"), Gender.FEMALE, "1", Confidence.HIGH, false, 12),
-            CastMember("mr-bennet", "Mr. Bennet", listOf("Bennet"), Gender.MALE, "5", Confidence.HIGH, false, 9)
+            CastMember("mrs-bennet", "Mrs. Bennet", listOf("his wife"), Gender.FEMALE, "1", Confidence.HIGH, false, 12, "\"My dear Mr. Bennet,\""),
+            CastMember("mr-bennet", "Mr. Bennet", listOf("Bennet"), Gender.MALE, "5", Confidence.HIGH, false, 9, "\"You want to tell me.\"")
         )
     )
     store.save(book)
@@ -61,6 +61,8 @@ fun main() {
     check("cast dialogue count round-trips", loaded?.members?.first { it.id == "mr-bennet" }?.dialogueLines == 9)
     check("cast confidence round-trips", loaded?.members?.first { it.id == "mr-bennet" }?.confidence == Confidence.HIGH,
         loaded?.members?.first { it.id == "mr-bennet" }?.confidence.toString())
+    check("cast preview line round-trips", loaded?.members?.first { it.id == "mrs-bennet" }?.sampleLine == "\"My dear Mr. Bennet,\"",
+        loaded?.members?.first { it.id == "mrs-bennet" }?.sampleLine ?: "null")
 
     // Merge a chapter analysis into the stored cast.
     val analysis = CastAnalysis(

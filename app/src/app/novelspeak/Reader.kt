@@ -541,6 +541,33 @@ class Reader(private val app: NovelSpeakApp) {
     }
 
     /**
+     * Release the engine for a one-off voice preview without preparing a replacement.
+     *
+     * [invalidateEngine] immediately prepares again, which used to let the reader synthesize and
+     * play underneath a preview on the shared PcmPlayer. Parking leaves the queue intact; [play]
+     * prepares again when the preview finishes.
+     */
+    fun parkEngine() {
+        stopInternal()
+        pausedByFocus = false
+        waitingForFocus = false
+        if (preparing) {
+            prepareWanted = ""
+            prepareToken++
+            prepareWaiters.clear()
+        }
+        engine?.release()
+        engine = null
+        engineName = ""
+        status = if (sentences.isEmpty()) "Idle" else "Ready · " + sentences.size + " sentences"
+        notifyState()
+    }
+
+    /** True when a preview should restore playback afterwards. */
+    fun isPlaybackActive(): Boolean =
+        playing || playRequested || prerolling || waitingForFocus
+
+    /**
      * Applies a voice without reloading the model. The engine reads the voice per generation,
      * so only the queued/pre-rendered audio has to be discarded.
      */

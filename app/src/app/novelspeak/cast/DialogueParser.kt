@@ -156,14 +156,38 @@ object DialogueParser {
                 segment.confidence
             )
         }
+        val samples = HashMap<String, String>()
+        for (segment in segments) {
+            if (!segment.isDialogue) continue
+            val text = segment.text.trim()
+            if (text.length < 4) continue
+            val previous = samples[segment.speakerId]
+            if (previous == null || text.length > previous.length) {
+                samples[segment.speakerId] = previewLine(text)
+            }
+        }
         val rawMembers = state.members().map {
             it.copy(
                 dialogueLines = counts[it.id] ?: 0,
-                confidence = best[it.id] ?: it.confidence
+                confidence = best[it.id] ?: it.confidence,
+                sampleLine = samples[it.id] ?: it.sampleLine
             )
         }
         val merged = mergeDescriptions(segments, rawMembers)
         return CastAnalysis(merged.first, merged.second, state.unresolved)
+    }
+
+    /**
+     * A short, complete-sounding line for a voice audition. Long paragraphs are cut at a word
+     * boundary rather than mid-word, and get terminal punctuation so the model sees EOS.
+     */
+    fun previewLine(text: String, maxChars: Int = 160): String {
+        val clean = text.trim()
+        if (clean.length <= maxChars) return clean
+        val cut = clean.take(maxChars).substringBeforeLast(' ').trimEnd()
+            .trimEnd(',', ';', ':', '-')
+        if (cut.isEmpty()) return clean.take(maxChars)
+        return cut + "."
     }
 
     private fun maxConfidence(a: Confidence, b: Confidence): Confidence {
@@ -236,7 +260,12 @@ object DialogueParser {
                     .distinctBy { CastIds.normalize(it) },
                 gender = if (target.gender == Gender.UNKNOWN) d.gender else target.gender,
                 dialogueLines = target.dialogueLines + d.dialogueLines,
-                confidence = maxConfidence(target.confidence, d.confidence)
+                confidence = maxConfidence(target.confidence, d.confidence),
+                sampleLine = if (d.sampleLine.length > target.sampleLine.length) {
+                    d.sampleLine
+                } else {
+                    target.sampleLine
+                }
             )
             byId.remove(d.id)
         }

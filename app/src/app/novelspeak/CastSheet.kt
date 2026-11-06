@@ -39,7 +39,9 @@ class CastSheet(
     private val canFixLine: Boolean,
     private val onToggle: () -> Unit,
     private val onRecast: (CastMember) -> Unit,
-    private val onFixLine: () -> Unit
+    private val onPreview: (CastMember) -> Unit,
+    private val onFixLine: () -> Unit,
+    private val onDismiss: () -> Unit
 ) {
 
     private val density = activity.resources.displayMetrics.density
@@ -50,6 +52,7 @@ class CastSheet(
 
     fun show() {
         val dialog = Dialog(activity).apply { requestWindowFeature(Window.FEATURE_NO_TITLE) }
+        dialog.setOnDismissListener { onDismiss() }
         val sheet = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             background = rounded(Palette.SURFACE, 20, Palette.BORDER)
@@ -103,6 +106,7 @@ class CastSheet(
                 confidence = null,
                 lines = 0,
                 current = currentSpeakerId == CastIds.NARRATOR,
+                onPreview = null,
                 onChange = null
             )
         )
@@ -128,6 +132,7 @@ class CastSheet(
                         confidence = member.confidence,
                         lines = member.dialogueLines,
                         current = currentSpeakerId == member.id,
+                        onPreview = { onPreview(member) },
                         onChange = {
                             // Close the sheet first so the voice picker is not hidden behind it.
                             dialog.dismiss()
@@ -183,6 +188,7 @@ class CastSheet(
         confidence: Confidence?,
         lines: Int,
         current: Boolean,
+        onPreview: (() -> Unit)?,
         onChange: (() -> Unit)?
     ): LinearLayout {
         val row = LinearLayout(activity).apply {
@@ -243,30 +249,52 @@ class CastSheet(
         if (confidence != null) {
             right.addView(label(confidenceLabel(confidence), 10.5f, confidenceColor(confidence)))
         }
+        val actions = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.END
+            setPadding(0, dp(2), 0, 0)
+        }
+        if (onPreview != null) {
+            actions.addView(smallAction(
+                text = "Preview",
+                description = "Preview voice for $title with their line"
+            ) { onPreview() })
+        }
         if (onChange != null) {
-            val change = TextView(activity).apply {
-                text = "Change"
-                textSize = 12f
-                typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
-                gravity = Gravity.CENTER
-                setTextColor(Palette.ACCENT)
-                background = ripple(Palette.SURFACE_HIGH, 12)
-                setPadding(dp(10), 0, dp(10), 0)
-                minWidth = dp(64)
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, dp(Design.DENSE_TOUCH_DP)
-                ).apply { topMargin = dp(2) }
-                contentDescription = "Change voice for $title"
-                isClickable = true
-                isFocusable = true
-                setOnClickListener { onChange() }
-            }
-            right.addView(change)
+            actions.addView(smallAction(
+                text = "Change",
+                description = "Change voice for $title"
+            ) { onChange() })
+        }
+        if (actions.childCount > 0) {
+            right.addView(actions)
         } else {
             right.addView(label("From settings", 10.5f, Palette.FAINT))
         }
         row.addView(right)
         return row
+    }
+
+    private fun smallAction(
+        text: String,
+        description: String,
+        onClick: () -> Unit
+    ): TextView = TextView(activity).apply {
+        this.text = text
+        textSize = 11.5f
+        typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+        gravity = Gravity.CENTER
+        setTextColor(Palette.ACCENT)
+        background = ripple(Palette.SURFACE_HIGH, 12)
+        setPadding(dp(8), 0, dp(8), 0)
+        minWidth = dp(62)
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, dp(Design.DENSE_TOUCH_DP)
+        ).apply { marginStart = dp(4) }
+        contentDescription = description
+        isClickable = true
+        isFocusable = true
+        setOnClickListener { onClick() }
     }
 
     private fun unresolvedBanner(count: Int, dialog: Dialog): LinearLayout {

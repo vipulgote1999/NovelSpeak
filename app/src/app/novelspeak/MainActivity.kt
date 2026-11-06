@@ -119,6 +119,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private val castCoordinator by lazy {
         CastCoordinator(NovelSpeakApp.instance.castStore)
     }
+    private lateinit var voicePreview: VoicePreview
     private lateinit var dotView: View
     private lateinit var seekBar: SeekBar
     private lateinit var playButton: FrameLayout
@@ -251,6 +252,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         // extraction can see prefs/loading state instead of racing app startup.
         AdBlocker.init(applicationContext)
         applyWindowTheme()
+        voicePreview = VoicePreview(this, NovelSpeakApp.instance.prefs)
         buildUi()
         configureWebView()
         reader.addListener(this)
@@ -3405,8 +3407,42 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 val narrator = cast?.narratorVoiceId ?: narratorVoiceId(family)
                 showVoicePicker(family, narrator, member)
             },
-            onFixLine = { showLineFixPicker(family) }
+            onPreview = { member -> previewCharacter(member, family) },
+            onFixLine = { showLineFixPicker(family) },
+            onDismiss = { voicePreview.stop() }
         ).show()
+    }
+
+    /** Audition a character's saved line with their assigned voice. */
+    private fun previewCharacter(member: CastMember, family: String) {
+        val voiceId = member.voiceId
+        if (voiceId.isNullOrEmpty()) {
+            Toast.makeText(this, "Cast this chapter first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val modelId = NovelSpeakApp.instance.prefs.modelId
+        if (modelId.isNullOrEmpty()) {
+            Toast.makeText(this, "Install a neural model first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val line = member.sampleLine.ifBlank {
+            "The lantern flickered twice, and then the harbour went dark."
+        }
+        Toast.makeText(this, "Previewing ${member.name}…", Toast.LENGTH_SHORT).show()
+        voicePreview.previewNeuralLine(
+            modelId = modelId,
+            voiceId = voiceId,
+            label = member.name + " · " + VoiceCatalog.label(family, voiceId),
+            text = line,
+            onStatus = { msg ->
+                if (msg.startsWith("Preview finished") || msg.contains("failed") ||
+                    msg.contains("Not enough") || msg.contains("unavailable") ||
+                    msg.contains("Model not ready") || msg.contains("needs this APK")
+                ) {
+                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
     }
 
     /**
@@ -3626,6 +3662,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     override fun onDestroy() {
+        if (::voicePreview.isInitialized) voicePreview.release()
         dismissSuggestions()
         cancelPrefetch()
         uiHandler.removeCallbacks(prefetchRunnable)

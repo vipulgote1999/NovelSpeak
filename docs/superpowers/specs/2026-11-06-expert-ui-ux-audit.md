@@ -291,14 +291,20 @@ of two. Remaining quality work: one-word lines (`"Whose?"` → `"Who's Who"`), o
   (`PlayerChrome`). Renders: [phone collapsed](../../media/ui-audit/wave3-mini-phone.png) ·
   [phone playing](../../media/ui-audit/wave3-mini-playing.png) ·
   [tablet collapsed](../../media/ui-audit/wave3-mini-tablet.png).
-- **509 host checks** pass (parser 36, store 41, library 211, feature 130, design 15, catalog 18,
+- **Character voice preview.** Every cast row has **Preview**, which auditions the character's
+  persisted real line with their assigned voice. The preview parks the reader engine first, so the
+  book cannot synthesize underneath the sample; playback resumes only after the preview finishes.
+  On device: `voice preview neural voice=2 label=Mara · F3`, `voice preview line chars=56`,
+  `sid=2 requested=2`, and no reader generation during the sample. The same change fixes the
+  Settings preview regression where `speak` no longer received the preview voice.
+  Render: [cast preview](../../media/ui-audit/wave3-cast-preview.png).
+- **516 host checks** pass (parser 42, store 42, library 211, feature 130, design 15, catalog 18,
   selection 7, chunker 10, audio DSP 32, player chrome 9).
-- **Maestro 7 flows / 106 commands** pass on the mini-player build (launch, home, settings,
-  library delete, library search, read, transport). Mini-player states were also verified on phone
-  and tablet, including play/pause from the bar.
+- **Maestro 7 flows / 106 commands** pass on the preview build (launch, home, settings, library
+  delete, library search, read, transport). Mini-player states were also verified on phone and
+  tablet, including play/pause from the bar.
 
-Still open: a voice preview from a character’s real line, an ASR re-check of one-word lines after
-the trim, and the Kokoro quality comparison.
+Still open: an ASR re-check of one-word lines after the trim, and the Kokoro quality comparison.
 
 ## 10. Acceptance metrics
 

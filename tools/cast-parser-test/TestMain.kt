@@ -113,6 +113,18 @@ fun main() {
     check("auto scene wouldn't is Tomas", speakerOf(auto, "And I told you I wouldn't") == "Tomas", speakerOf(auto, "And I told you I wouldn't"))
     check("auto scene unresolved is two", auto.unresolved == 2, auto.unresolved.toString())
     check("auto scene coverage", coversInput(auto, blocks(scenePath)))
+    val rennick = auto.members.firstOrNull { it.name == "Marshal Rennick" }
+    val maraAuto = auto.members.firstOrNull { it.name == "Mara" }
+    val tomasAuto = auto.members.firstOrNull { it.name == "Tomas" }
+    check("rennick has a preview line", rennick?.sampleLine?.contains("Tomas") == true, rennick?.sampleLine ?: "")
+    check("mara has a preview line", maraAuto?.sampleLine?.contains("body in the stable") == true, maraAuto?.sampleLine ?: "")
+    check("tomas has a preview line", tomasAuto?.sampleLine?.contains("wouldn't") == true, tomasAuto?.sampleLine ?: "")
+    val longLine = "This is a deliberately long narration line that must be shortened at a word boundary " +
+        "so a voice preview never cuts a word in half or speaks an unfinished sentence."
+    val preview = DialogueParser.previewLine(longLine, 80)
+    check("preview line respects the cap", preview.length <= 80, preview.length.toString())
+    check("preview line ends cleanly", preview.endsWith("."), preview)
+    check("preview line keeps whole words", !preview.dropLast(1).endsWith(" "))
     check(
         "auto scene confidence is promoted",
         auto.members.filter { it.dialogueLines > 0 }.all { it.confidence != Confidence.LOW },

@@ -45,16 +45,25 @@ class CastCoordinator(private val store: CastStore) {
         val fixedSpeakers = segments.filter { it.confidence == Confidence.HIGH }
             .map { it.speakerId }
             .toSet()
-        val counts = segments.filter { it.isDialogue }
-            .groupingBy { it.speakerId }
-            .eachCount()
+        val dialogue = segments.filter { it.isDialogue }
+        val counts = dialogue.groupingBy { it.speakerId }.eachCount()
+        val samples = HashMap<String, String>()
+        for (segment in dialogue) {
+            val text = segment.text.trim()
+            if (text.length < 4) continue
+            val previous = samples[segment.speakerId]
+            if (previous == null || text.length > previous.length) {
+                samples[segment.speakerId] = DialogueParser.previewLine(text)
+            }
+        }
         val analysis = parsed.copy(
             segments = segments,
             members = parsed.members.map { member ->
                 member.copy(
                     dialogueLines = counts[member.id] ?: 0,
                     confidence = if (member.id in fixedSpeakers) Confidence.HIGH
-                    else member.confidence
+                    else member.confidence,
+                    sampleLine = samples[member.id] ?: member.sampleLine
                 )
             },
             unresolved = segments.count { it.isDialogue && it.speakerId == CastIds.UNKNOWN }

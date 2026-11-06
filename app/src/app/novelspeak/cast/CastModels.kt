@@ -24,7 +24,12 @@ data class CastMember(
     val confidence: Confidence = Confidence.LOW,
     val userLocked: Boolean = false,
     /** Dialogue lines in the chapter(s) analysed so far; drives cast priority. */
-    val dialogueLines: Int = 0
+    val dialogueLines: Int = 0,
+    /**
+     * A real line from the book, used to audition the character's voice. Kept short enough for a
+     * preview and persisted with the cast so it survives a restart.
+     */
+    val sampleLine: String = ""
 ) {
     fun matches(phrase: String): Boolean {
         val p = CastIds.normalize(phrase)
