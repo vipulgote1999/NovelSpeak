@@ -11,5 +11,4 @@ tags:
 - tapOn: "Manga"
 - assertVisible: "OCR + READ"
 - tapOn: "SAMPLE"
-- tapOn: "OCR + READ"
-- assertVisible: "OCR + READ"
+- assertVisible: "Sample loaded. Tap OCR + READ."

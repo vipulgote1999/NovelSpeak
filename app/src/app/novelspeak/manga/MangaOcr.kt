@@ -72,16 +72,22 @@ object MangaOcr {
     }
 
     private fun recognizeAsync(bitmap: Bitmap, language: String, cb: (List<OcrBlock>?, Throwable?) -> Unit) {
-        val recognizer = when (language) {
-            LANG_JAPANESE -> TextRecognition.getClient(JapaneseTextRecognizerOptions.Builder().build())
-            LANG_CHINESE -> TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
-            LANG_KOREAN -> TextRecognition.getClient(KoreanTextRecognizerOptions.Builder().build())
-            LANG_DEVANAGARI -> TextRecognition.getClient(DevanagariTextRecognizerOptions.Builder().build())
-            else -> TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        val recognizer = try {
+            when (language) {
+                LANG_JAPANESE -> TextRecognition.getClient(JapaneseTextRecognizerOptions.Builder().build())
+                LANG_CHINESE -> TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
+                LANG_KOREAN -> TextRecognition.getClient(KoreanTextRecognizerOptions.Builder().build())
+                LANG_DEVANAGARI -> TextRecognition.getClient(DevanagariTextRecognizerOptions.Builder().build())
+                else -> TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+            }
+        } catch (t: Throwable) {
+            cb(null, t)
+            return
         }
         val image = InputImage.fromBitmap(bitmap, 0)
-        recognizer.process(image)
-            .addOnSuccessListener { res: com.google.mlkit.vision.text.Text ->
+        try {
+            recognizer.process(image)
+                .addOnSuccessListener { res: com.google.mlkit.vision.text.Text ->
                 val blocks = ArrayList<OcrBlock>()
                 var lineIdx = 0
                 for (block in res.textBlocks) {
@@ -103,6 +109,9 @@ object MangaOcr {
                 cb(blocks, null)
             }
             .addOnFailureListener { e -> cb(null, e) }
+        } catch (t: Throwable) {
+            cb(null, t)
+        }
     }
 
     suspend fun recognize(context: Context, uri: Uri, language: String): List<OcrBlock> {
