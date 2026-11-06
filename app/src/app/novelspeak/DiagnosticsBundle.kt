@@ -34,7 +34,7 @@ import java.util.zip.ZipOutputStream
  *
  * Total size is capped at [MAX_BUNDLE_BYTES] (2 MB) and only the newest [MAX_KEPT] bundles are
  * retained (older than [TTL_MS] are deleted). Nothing is uploaded: [share] hands the zip to the
- * user's chosen app through [AUTHORITY] (a framework-only provider — no AndroidX FileProvider
+ * user's chosen app through [authority] (a framework-only provider — no AndroidX FileProvider
  * is available in this build) with FLAG_GRANT_READ_URI_PERMISSION.
  *
  * If the provider is not registered in the manifest, [share]/[shareFile] return false and the
@@ -42,8 +42,11 @@ import java.util.zip.ZipOutputStream
  */
 object DiagnosticsBundle {
 
-    /** FileProvider-compatible authority; the manifest provider must use exactly this string. */
-    const val AUTHORITY = "app.novelspeak.fileprovider"
+    /**
+     * FileProvider-compatible authority. Derived from the package id so a side-by-side dev
+     * build (`app.novelspeak.dev`) has its own provider and can be installed next to release.
+     */
+    fun authority(context: Context): String = context.packageName + ".fileprovider"
 
     /** Hard cap on one zip (uncompressed accounting), per roadmap P1.10. */
     const val MAX_BUNDLE_BYTES = 2 * 1024 * 1024
@@ -135,7 +138,7 @@ object DiagnosticsBundle {
     fun shareFile(context: Context, file: File): Boolean {
         if (!file.isFile) return false
         if (!providerAvailable(context)) return false
-        val uri = uriFor(file)
+        val uri = uriFor(context, file)
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "application/zip"
             putExtra(Intent.EXTRA_STREAM, uri)
@@ -159,9 +162,9 @@ object DiagnosticsBundle {
         }
     }
 
-    /** True when a content provider with [AUTHORITY] is registered (manifest wiring present). */
+    /** True when this package's diagnostics provider is registered (manifest wiring present). */
     fun providerAvailable(context: Context): Boolean = try {
-        context.packageManager.resolveContentProvider(AUTHORITY, 0) != null
+        context.packageManager.resolveContentProvider(authority(context), 0) != null
     } catch (t: Throwable) {
         false
     }
@@ -170,9 +173,9 @@ object DiagnosticsBundle {
     fun bundleDir(context: Context): File = File(context.cacheDir, "diagnostics")
 
     /** content:// URI for a bundle file, shaped `/diagnostics/<name>.zip`. */
-    fun uriFor(file: File): Uri = Uri.Builder()
+    fun uriFor(context: Context, file: File): Uri = Uri.Builder()
         .scheme("content")
-        .authority(AUTHORITY)
+        .authority(authority(context))
         .appendPath("diagnostics")
         .appendPath(file.name)
         .build()
