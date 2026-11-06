@@ -383,9 +383,9 @@ open p99 **250 → 48 ms**, slow UI-thread frames **3 → 1**, scroll unchanged.
 still required before changing the hierarchy. Full report:
 `docs/benchmarks/2026-11-06-performance.md`.
 
-**Verification:** **521 host checks** (motion 5, player chrome 9, audio DSP 32, parser 42, store 42,
-library 211, feature 130, design 15, catalog 18, selection 7, chunker 10) and **Maestro 7 flows /
-106 commands** pass at 1.0× with animator scale 1.
+**Verification:** **531 host checks** (library grid 10, motion 5, player chrome 9, audio DSP 32,
+parser 42, store 42, library 211, feature 130, design 15, catalog 18, selection 7, chunker 10) and
+**Maestro 7 flows / 103 CLI steps** pass at 1.0× with animator scale 1.
 
 **Compact reader chrome.** The title row is gone. The chapter title now sits at the top of the
 player card (and in the mini bar when no character is speaking); Reader is a book icon with an
