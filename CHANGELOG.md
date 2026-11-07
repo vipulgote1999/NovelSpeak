@@ -4,6 +4,26 @@ All notable changes to NovelSpeak are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Manga page and text stay together.** The image-based reader now draws every OCR bubble
+  over its page image, highlights the whole box currently being spoken, and turns the page
+  automatically when TTS reaches text from another page. Tapping a box jumps playback to that
+  line, and a panel under the image shows the matching text (translated text plus the original
+  when translation is on). The browser **Manga** action now opens this page-synchronised reader
+  instead of queueing text without the images.
+- Manga OCR now reuses its ML Kit recognizer per language, merges each speech bubble's lines
+  into one box, caches decoded pages with a bounded memory/disk cache, and streams OCR results
+  page by page into the playback queue so reading can start after the first page.
+
+### Changed
+
+- Manga pages are downloaded with the site referer and cookies, so hotlink-protected images
+  load, and the page viewer supports pinch zoom, double-tap zoom, panning, and fit-page.
+- Added Maestro coverage for browser-to-page sync (`24`) and TTS-driven page turns (`25`).
+
 ## [1.3.0] - 2026-11-04
 
 ### Added

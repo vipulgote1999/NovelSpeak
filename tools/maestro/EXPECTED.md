@@ -149,3 +149,15 @@ flow was then updated for the new player status wording (`Playing`, not `Extract
 | 16_transport.yaml | reader | voice label, next/prev sentence, speed, stop, restart | PASS |
 | 17_voice_preview.yaml | settings | voice rows preview a sample to completion | PASS |
 | 18_settings_hub.yaml | settings | every hub category opens and returns | PASS |
+
+## Manga page/text sync (2026-11-07)
+
+| Flow | Feature | Assertions | Expected | Status |
+|---|---|---|---|---|
+| 22_manga_launch.yaml | Manga home shortcut | Manga reader shell with `OCR + READ` | opens the image reader | PASS |
+| 23_manga_ocr_read.yaml | Sample OCR | sample loads, OCR queue is ready | sample can be read | PASS |
+| 24_manga_page_sync.yaml | Browser → page image + box | `1 / 2`; next text → `2 / 2`; page cd and text panel both say `PAGE TWO FIRST` | image, box, and text stay on the same page | PASS |
+| 25_manga_tts_page_turn.yaml | TTS-driven page turn | Play → `PAGE TWO FIRST` appears without manual seeking | speech turns the page automatically | PASS |
+
+Fixture: `tools/test-page/manga.html` with two generated page PNGs. Run through
+`tools/maestro/run.sh` so the fixture server is on `localhost:8765`.
