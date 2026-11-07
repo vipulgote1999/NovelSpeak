@@ -1,0 +1,28 @@
+appId: app.novelspeak
+name: "24 manga: page image and OCR box follow the text"
+tags:
+  - manga
+  - reading
+---
+- launchApp
+- tapOn: "Search or enter a web address"
+- inputText: "http://localhost:8765/manga.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Manga Fixture Chapter"
+    timeout: 20000
+- tapOn: "Manga"
+- extendedWaitUntil:
+    visible: "PAGE ONE FIRST"
+    timeout: 40000
+- assertVisible: "1 / 2"
+- assertVisible: "PAGE ONE FIRST"
+- tapOn: "Next text"
+- tapOn: "Next text"
+- extendedWaitUntil:
+    visible: "PAGE TWO FIRST"
+    timeout: 10000
+- assertVisible: "2 / 2"
+- assertVisible: "PAGE TWO FIRST"
+- assertVisible: "Page image. Reading: PAGE TWO FIRST"
+- assertVisible: "Current manga text, page 2 of 2.*PAGE TWO FIRST.*"

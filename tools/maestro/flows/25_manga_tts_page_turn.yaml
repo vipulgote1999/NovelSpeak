@@ -1,0 +1,26 @@
+appId: app.novelspeak
+name: "25 manga: TTS playback turns to the page that owns the text"
+tags:
+  - manga
+  - reading
+---
+# End-to-end proof that the image follows speech, not just manual seeking: play the
+# two-page fixture and wait for the second page to appear on its own.
+- launchApp
+- tapOn: "Search or enter a web address"
+- inputText: "http://localhost:8765/manga.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Manga Fixture Chapter"
+    timeout: 20000
+- tapOn: "Manga"
+- extendedWaitUntil:
+    visible: "PAGE ONE FIRST"
+    timeout: 40000
+- tapOn: "Play"
+- extendedWaitUntil:
+    visible: "PAGE TWO FIRST"
+    timeout: 45000
+- assertVisible: "2 / 2"
+- assertVisible: "Page image. Reading: PAGE TWO FIRST"
+- assertVisible: "Current manga text, page 2 of 2.*PAGE TWO FIRST.*"
