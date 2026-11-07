@@ -77,8 +77,6 @@ import app.novelspeak.library.ImportedBookStore
 import app.novelspeak.library.LibraryStore
 import app.novelspeak.library.PrefsLibraryStorage
 import app.novelspeak.library.ReadingStats
-import app.novelspeak.manga.MangaOcr
-import app.novelspeak.manga.MangaTranslator
 import kotlin.math.min
 /**
  * WebView browser + reader UI.
@@ -249,6 +247,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private var editingUrl = false
     private var pageLoading = false
     private var lastDisplayedUrl = ""
+    // True while the dedicated manga reader owns the shared Reader queue. Browser highlight
+    // calls must not be sent to the page for manga block indices.
+    private var mangaReadingActive = false
+    // Guards against a second tap while the page is still being scrolled and collected.
+    private var mangaExtractionRunning = false
 
     private val reader: Reader get() = NovelSpeakApp.instance.reader
 
@@ -2136,66 +2139,89 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         extractNow(append = false)
     }
 
-    /** Read a manga chapter: collect images on the page, OCR + (optionally) translate, TTS. */
+    /** Read a manga chapter: collect page images in the browser, then open the image reader. */
     private fun readMangaChapter() {
+        if (mangaExtractionRunning) return
+        mangaExtractionRunning = true
         statusView.text = "Collecting manga images…"
-        web.evaluateJavascript(
-            "(function(){var imgs=Array.from(document.querySelectorAll('img')); " +
-            "var urls=[]; var seen={}; imgs.forEach(function(i){var u=i.getAttribute('data-src')||i.getAttribute('data-lazy-src')||i.getAttribute('data-original')||i.getAttribute('srcset')||i.src; " +
+        web.evaluateJavascript("window.__mangaUrls=[]; window.__mangaDone=false; window.__mangaExtracting=false;", null)
+        val inject = "(function(){ if(window.__mangaExtracting) return; window.__mangaExtracting=true; window.__mangaUrls=[]; window.__mangaDone=false; " +
+            "var seen={}; var bad=/logo|icon|avatar|report|\\.svg(\\?|$)|data:image|web-app-manifest/i; " +
+            "function collect(){ var imgs=Array.from(document.querySelectorAll('img')); imgs.forEach(function(i){ " +
+            "var u=i.getAttribute('data-src')||i.getAttribute('data-lazy-src')||i.getAttribute('data-original')||i.getAttribute('srcset')||i.src; " +
             "if(u && u.indexOf('http')!==0 && u.indexOf('//')===0) u=location.protocol+u; " +
             "if(u && u.indexOf('http')!==0 && u.charAt(0)==='/') u=location.origin+u; " +
             "if(u && u.indexOf(' ')>=0) u=u.split(' ')[0]; " +
-            "if(u && u.indexOf('http')===0 && !seen[u] && u.indexOf('logo')<0 && u.indexOf('icon')<0 && u.indexOf('avatar')<0){seen[u]=1; urls.push(u);} }); " +
-            "if(urls.length===0){var bg=document.querySelectorAll('[style*=\"background-image\"]'); bg.forEach(function(e){var m=e.style.backgroundImage.match(/url\\([\\\"']?([^\\\"')]+)[\\\"']?\\)/); if(m){var u=m[1]; if(u.indexOf('http')!==0 && u.charAt(0)==='/') u=location.origin+u; if(u.indexOf('http')===0 && !seen[u] && u.indexOf('logo')<0){seen[u]=1; urls.push(u);}}});} " +
-            "return JSON.stringify(urls.slice(0,80));})()"
-        ) { value ->
-            val urls = try {
-                val raw = try { org.json.JSONObject("{\"v\":$value}").getJSONArray("v") } catch (t: Throwable) { org.json.JSONArray("[]") }
-                (0 until raw.length()).map { raw.getString(it) }
-            } catch (t: Throwable) { emptyList() }
-            if (urls.isEmpty()) { statusView.text = "No manga images found on this page"; return@evaluateJavascript }
-            statusView.text = "Found ${urls.size} manga images, OCR…"
-            Thread {
-                val prefs = NovelSpeakApp.instance.prefs
-                val ocrLang = prefs.mangaOcrLanguage
-                val target = prefs.mangaTargetLanguage
-                val doTranslate = prefs.mangaTranslate
-                val translator = if (doTranslate) MangaTranslator.translatorFor(ocrLang, target) else null
-                val allBlocks = ArrayList<Reader.Block>()
-                var idx = 0
-                for (u in urls) {
-                    try {
-                        val bmp = downloadBitmap(u) ?: continue
-                        val ocr = MangaOcr.recognizeBlocking(bmp, ocrLang)
-                        for (b in ocr) {
-                            var text = b.text
-                            if (doTranslate) text = MangaTranslator.translateBlocking(translator, text)
-                            if (text.isNotBlank()) allBlocks.add(Reader.Block(text, idx++))
-                        }
-                    } catch (t: Throwable) {
-                        DiagLog.exception(this, "manga page OCR failed: $u", t)
-                    }
+            "var nw=i.naturalWidth||i.width||0; var nh=i.naturalHeight||i.height||0; " +
+            "var isPage=(nh>=250 && nw>=150) && (nh>nw*1.05 || /page|chapter|manga|ch[0-9]/i.test((i.alt||'')+' '+u)); " +
+            "if(u && u.indexOf('http')===0 && !seen[u] && !bad.test(u) && !bad.test(i.alt||'') && isPage){ seen[u]=1; window.__mangaUrls.push(u); } }); " +
+            "if(window.__mangaUrls.length===0){ var bg=document.querySelectorAll('[style*=\"background-image\"]'); bg.forEach(function(e){ var m=e.style.backgroundImage.match(/url\\([\\\"']?([^\\\"')]+)[\\\"']?\\)/); if(m){ var u=m[1]; if(u.indexOf('http')!==0 && u.charAt(0)==='/') u=location.origin+u; if(u.indexOf('http')===0 && !seen[u] && !bad.test(u)){ seen[u]=1; window.__mangaUrls.push(u); } } }); } " +
+            "} " +
+            "function step(){ collect(); var before=window.scrollY; window.scrollBy(0, Math.max(window.innerHeight*0.75, 500)); " +
+            "if(window.scrollY > before + 2){ setTimeout(step, 750); } else { collect(); window.scrollTo(0,0); window.__mangaExtracting=false; window.__mangaDone=true; } } " +
+            "step(); })();"
+        web.evaluateJavascript(inject, null)
+
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        val start = System.currentTimeMillis()
+        val poll = object : Runnable {
+            override fun run() {
+                if (isFinishing || isDestroyed) {
+                    mangaExtractionRunning = false
+                    return
                 }
-                MangaTranslator.close(translator)
-                uiHandler.post {
-                    if (allBlocks.isEmpty()) {
-                        statusView.text = "No text detected on manga page"
+                web.evaluateJavascript("window.__mangaDone", { doneVal ->
+                    if (isFinishing || isDestroyed) return@evaluateJavascript
+                    val done = doneVal == "true"
+                    if (done || System.currentTimeMillis() - start > 25000) {
+                        mangaExtractionRunning = false
+                        web.evaluateJavascript("window.__mangaUrls", { value ->
+                            val urls = parseJsonStringArray(value)
+                            if (urls.isEmpty()) {
+                                statusView.text = "No manga images found on this page"
+                            } else {
+                                // Keep OCR and the page images together in the dedicated
+                                // reader: it overlays each OCR box on the exact page bitmap
+                                // and follows the TTS cursor from page to page.
+                                statusView.text =
+                                    "Found ${urls.size} manga pages. Opening image reader…"
+                                mangaReadingActive = true
+                                val intent = Intent(
+                                    this@MainActivity, MangaReaderActivity::class.java
+                                ).apply {
+                                    putStringArrayListExtra(
+                                        MangaReaderActivity.EXTRA_IMAGE_URLS,
+                                        ArrayList(urls)
+                                    )
+                                    putExtra(
+                                        MangaReaderActivity.EXTRA_TITLE,
+                                        web.title ?: "Manga"
+                                    )
+                                    putExtra(
+                                        MangaReaderActivity.EXTRA_REFERER,
+                                        web.url ?: lastDisplayedUrl
+                                    )
+                                }
+                                startActivity(intent)
+                            }
+                        })
                     } else {
-                        reader.setContent(web.title ?: "Manga", allBlocks)
-                        statusView.text = "Manga: ${allBlocks.size} chunks ready"
+                        handler.postDelayed(this, 1000)
                     }
-                }
-            }.start()
+                })
+            }
         }
+        handler.postDelayed(poll, 1500)
     }
 
-    private fun downloadBitmap(url: String): Bitmap? {
+    private fun parseJsonStringArray(value: String?): List<String> {
+        if (value.isNullOrBlank() || value == "null") return emptyList()
         return try {
-            val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-            conn.connectTimeout = 15000
-            conn.readTimeout = 30000
-            conn.inputStream.use { android.graphics.BitmapFactory.decodeStream(it) }
-        } catch (t: Throwable) { null }
+            val arr = org.json.JSONArray(value)
+            (0 until arr.length()).map { arr.getString(it) }
+        } catch (t: Throwable) {
+            emptyList()
+        }
     }
 
     private fun extractNow(append: Boolean) {
@@ -2275,6 +2301,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         WebExtractor.setReader(web, p.readerMode)
                     } else {
                         val chapterTitle = title.ifEmpty { web.title ?: "" }
+                        mangaReadingActive = false
                         if (append && !wantsRestart && reader.hasContent()) {
                             autoAppendStart = reader.state().total
                             storyBlocks = storyBlocks + blocks
@@ -2517,6 +2544,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     /** Accumulate reading time locally (no telemetry) for the stats screen. */
     private fun recordReadingTime(state: Reader.State) {
+        if (mangaReadingActive) return
         if (!state.playing || state.total <= 0) return
         val now = SystemClock.elapsedRealtime()
         if (state.cursor != lastStatsCursor) {
@@ -2530,6 +2558,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     private fun persistProgressThrottled(state: Reader.State) {
+        if (mangaReadingActive) return
         if (currentImportId != null) return
         if (!::library.isInitialized || state.total <= 0) return
         val now = System.currentTimeMillis()
@@ -2749,6 +2778,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         currentImportId = id
         pendingResumeIndex = -1
         storyBlocks = blocks
+        mangaReadingActive = false
         val queue = if (NovelSpeakApp.instance.prefs.storyCast) {
             castChapter(book.title, blocks) ?: blocks
         } else {
@@ -2993,6 +3023,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val blocks = ArrayList<Reader.Block>(parts.size)
         for (i in parts.indices) blocks.add(Reader.Block(parts[i], i))
         storyBlocks = blocks
+        mangaReadingActive = false
         val queue = if (NovelSpeakApp.instance.prefs.storyCast) {
             castChapter("Shared text", blocks) ?: blocks
         } else {
@@ -3159,6 +3190,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             lastExtractedBlocks = cached!!.size
             autoAppendStart = reader.state().total
             storyBlocks = storyBlocks + cached
+            mangaReadingActive = false
             val chapterTitle = title.ifEmpty { "Next chapter" }
             val queue = if (NovelSpeakApp.instance.prefs.storyCast) {
                 castChapter(chapterTitle, cached) ?: cached
@@ -3500,6 +3532,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     private fun toggleStoryCast() {
+        if (mangaReadingActive) {
+            Toast.makeText(
+                this,
+                "Story cast is for text chapters; manga uses the narrator",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
         if (!reader.hasContent() || storyBlocks.isEmpty()) {
             Toast.makeText(this, "Open a chapter first", Toast.LENGTH_SHORT).show()
             return
@@ -3682,6 +3722,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     /** Rebuild the current chapter from [storyBlocks] using the persisted cast. */
     private fun reapplyStoryCast() {
+        if (mangaReadingActive) return
         if (!reader.hasContent() || storyBlocks.isEmpty()) return
         val wasPlaying = reader.state().playing
         val at = reader.currentIndex()
@@ -3694,14 +3735,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     override fun onHighlight(blockIndex: Int) {
-        if (currentImportId != null) return
+        if (currentImportId != null || mangaReadingActive) return
         if (NovelSpeakApp.instance.prefs.highlight) {
             WebExtractor.highlight(web, blockIndex)
         }
     }
 
     override fun onWordHighlight(blockIndex: Int, charStart: Int, charEnd: Int) {
-        if (currentImportId != null) return
+        if (currentImportId != null || mangaReadingActive) return
         val p = NovelSpeakApp.instance.prefs
         if (!p.highlight || !p.readerWordHighlight) return
         WebExtractor.highlightWord(web, blockIndex, charStart, charEnd)
@@ -3713,7 +3754,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         charEnd: Int,
         speaker: String
     ) {
-        if (currentImportId != null) return
+        if (currentImportId != null || mangaReadingActive) return
         val p = NovelSpeakApp.instance.prefs
         if (!p.highlight) return
         // Dialogue segments carry exact source offsets; narration keeps the whole-block mark.
