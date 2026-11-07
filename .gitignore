@@ -34,6 +34,9 @@ Thumbs.db
 .vscode/
 tools/maestro/reports/artifacts/
 
+# ---- local agent/browser artifacts ----
+.playwright-mcp/
+
 # ---- video projects (HyperFrames) ----
 videos/*/node_modules/
 videos/*/renders/
