@@ -189,9 +189,19 @@
   function detectWall(total) {
     if (total >= 1200) return '';
     var bodyText = '';
+    var pageTitle = '';
     try {
       bodyText = norm(document.body ? document.body.innerText : '').toLowerCase();
-    } catch (e) { bodyText = ''; }
+      pageTitle = norm(document.title || '').toLowerCase();
+    } catch (e) { bodyText = ''; pageTitle = ''; }
+    // Cloudflare and similar interstitials often expose more than 200 characters of
+    // explanatory copy, so the title/body marker is checked before the generic text rule.
+    if (/(just a moment|performing security verification|checking your browser|attention required|verify you are human)/.test(pageTitle)) {
+      return 'challenge';
+    }
+    if (total < 4000 && /(performing security verification|checking your browser|verify you are human|attention required|just a moment)/.test(bodyText)) {
+      return 'challenge';
+    }
     var hasPassword = false;
     try {
       hasPassword = !!document.querySelector('input[type="password"]');
@@ -293,7 +303,8 @@
       color:#EAF0F5 !important;
     }
     html.ns-reader body {
-      max-width:var(--ns-width,760px) !important; margin:0 auto !important;
+      box-sizing:border-box !important;
+      max-width:min(var(--ns-width,760px), 100%) !important; margin:0 auto !important;
       padding:16px 16px 56px !important;
       font-family:var(--ns-font-family,Georgia,'Times New Roman',serif) !important;
       font-size:var(--ns-font-size,17px) !important;
@@ -320,7 +331,7 @@
     html.ns-reader [class*="chapter"], html.ns-reader [id*="chapter"],
     html.ns-reader [class*="content"], html.ns-reader [id*="content"] {
       background:transparent !important; color:#EAF0F5 !important;
-      max-width:var(--ns-width,760px) !important;
+      max-width:min(var(--ns-width,760px), 100%) !important;
       margin-left:auto !important; margin-right:auto !important;
     }
     /* Word-level read-along uses the CSS Custom Highlight API (Chromium 105+). */
