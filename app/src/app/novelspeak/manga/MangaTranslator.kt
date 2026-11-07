@@ -65,6 +65,9 @@ object MangaTranslator {
                 }
                 .addOnFailureListener { latch.countDown() }
             latch.await()
+        } catch (t: InterruptedException) {
+            Thread.currentThread().interrupt()
+            return text
         } catch (t: Throwable) {
             return text
         }
