@@ -21,6 +21,7 @@ sed \
   -e 's/android:name="\./android:name="app.novelspeak./g' \
   -e 's/android:label="NovelSpeak"/android:label="NovelSpeak Dev"/' \
   -e 's/android:authorities="app\.novelspeak\.fileprovider"/android:authorities="app.novelspeak.dev.fileprovider"/' \
+  -e 's/android:authorities="app\.novelspeak\.mlkitinitprovider"/android:authorities="app.novelspeak.dev.mlkitinitprovider"/' \
   -e 's/android:versionName="1\.3\.0"/android:versionName="1.3.0-dev"/' \
   "$SRC" > "$OUT_MANIFEST"
 
