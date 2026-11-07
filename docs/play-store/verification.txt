@@ -1,0 +1,132 @@
+NovelSpeak 1.4.0 — Play artifact verification
+Generated: 2026-11-07T16:57:34Z
+
+== APK badging ==
+package: name='app.novelspeak' versionCode='20' versionName='1.4.0' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
+minSdkVersion:'24'
+targetSdkVersion:'36'
+uses-permission: name='android.permission.INTERNET'
+uses-permission: name='android.permission.ACCESS_NETWORK_STATE'
+uses-permission: name='android.permission.WAKE_LOCK'
+uses-permission: name='android.permission.FOREGROUND_SERVICE'
+uses-permission: name='android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK'
+uses-permission: name='android.permission.POST_NOTIFICATIONS'
+application-label:'NovelSpeak'
+application-icon-160:'res/mipmap-anydpi-v26/ic_launcher.xml'
+application-icon-240:'res/mipmap-anydpi-v26/ic_launcher.xml'
+application-icon-320:'res/mipmap-anydpi-v26/ic_launcher.xml'
+application-icon-480:'res/mipmap-anydpi-v26/ic_launcher.xml'
+
+== APK signature ==
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): true
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+Signer #1 certificate DN: CN=NovelSpeak, O=NovelSpeak, C=IN
+Signer #1 certificate SHA-256 digest: cdf2e8a5d85dab3b0c15ee61d789d37a2c931697bb57dded9057344371a36fe6
+Signer #1 certificate SHA-1 digest: fda97cd1a6907298b9b69259e4244d25dc52edf8
+Signer #1 certificate MD5 digest: e480ab2c697ba69db54b5c6791c471b7
+Signer #1 key algorithm: RSA
+Signer #1 key size (bits): 4096
+Signer #1 public key SHA-256 digest: 395fede295b6ea268f79400bc73297cf8000c02f21152cbaf0bfc7a5183d9269
+Signer #1 public key SHA-1 digest: 0245c6178297ef36c3c480af820a2dca95ae4573
+
+== APK 16 KB zip alignment ==
+35676026 META-INF/MANIFEST.MF (OK - compressed)
+Verification successful
+
+== Native libraries (must be Stored, not Defl) ==
+  440688  Stored   440688   0% 2026-11-07 22:26 a2410b86  lib/arm64-v8a/libsherpa-onnx-cxx-api.so
+22249560  Stored 22249560   0% 2026-11-07 22:26 c644719e  lib/arm64-v8a/libonnxruntime.so
+ 4465168  Stored  4465168   0% 2026-11-07 22:26 7ceec218  lib/arm64-v8a/libsherpa-onnx-c-api.so
+ 4771760  Stored  4771760   0% 2026-11-07 22:26 8963f90b  lib/arm64-v8a/libsherpa-onnx-jni.so
+
+== ELF LOAD alignment ==
+-- libonnxruntime.so
+0x4000
+-- libsherpa-onnx-c-api.so
+0x4000
+-- libsherpa-onnx-cxx-api.so
+0x4000
+-- libsherpa-onnx-jni.so
+0x4000
+
+== Manifest components ==
+        A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.permission.INTERNET" (Raw: "android.permission.INTERNET")
+        A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.permission.ACCESS_NETWORK_STATE" (Raw: "android.permission.ACCESS_NETWORK_STATE")
+        A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.permission.WAKE_LOCK" (Raw: "android.permission.WAKE_LOCK")
+        A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.permission.FOREGROUND_SERVICE" (Raw: "android.permission.FOREGROUND_SERVICE")
+        A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" (Raw: "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK")
+        A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.permission.POST_NOTIFICATIONS" (Raw: "android.permission.POST_NOTIFICATIONS")
+        A: http://schemas.android.com/apk/res/android:name(0x01010003)="app.novelspeak.NovelSpeakApp" (Raw: "app.novelspeak.NovelSpeakApp")
+        A: http://schemas.android.com/apk/res/android:extractNativeLibs(0x010104ea)=false
+        A: http://schemas.android.com/apk/res/android:enableOnBackInvokedCallback(0x0101066c)=false
+          E: activity (line=30)
+            A: http://schemas.android.com/apk/res/android:name(0x01010003)=".MainActivity" (Raw: ".MainActivity")
+            A: http://schemas.android.com/apk/res/android:exported(0x01010010)=true
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.action.MAIN" (Raw: "android.intent.action.MAIN")
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.category.LAUNCHER" (Raw: "android.intent.category.LAUNCHER")
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.action.SEND" (Raw: "android.intent.action.SEND")
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.category.DEFAULT" (Raw: "android.intent.category.DEFAULT")
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.action.PROCESS_TEXT" (Raw: "android.intent.action.PROCESS_TEXT")
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.category.DEFAULT" (Raw: "android.intent.category.DEFAULT")
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.action.VIEW" (Raw: "android.intent.action.VIEW")
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.category.DEFAULT" (Raw: "android.intent.category.DEFAULT")
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.action.SEND" (Raw: "android.intent.action.SEND")
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.category.DEFAULT" (Raw: "android.intent.category.DEFAULT")
+          E: activity (line=67)
+            A: http://schemas.android.com/apk/res/android:name(0x01010003)=".SettingsActivity" (Raw: ".SettingsActivity")
+            A: http://schemas.android.com/apk/res/android:exported(0x01010010)=false
+          E: activity (line=74)
+            A: http://schemas.android.com/apk/res/android:name(0x01010003)=".LibraryActivity" (Raw: ".LibraryActivity")
+            A: http://schemas.android.com/apk/res/android:exported(0x01010010)=false
+          E: activity (line=81)
+            A: http://schemas.android.com/apk/res/android:name(0x01010003)=".AboutPrivacyActivity" (Raw: ".AboutPrivacyActivity")
+            A: http://schemas.android.com/apk/res/android:exported(0x01010010)=false
+          E: activity (line=90)
+            A: http://schemas.android.com/apk/res/android:name(0x01010003)=".BenchmarkActivity" (Raw: ".BenchmarkActivity")
+            A: http://schemas.android.com/apk/res/android:exported(0x01010010)=false
+          E: service (line=97)
+            A: http://schemas.android.com/apk/res/android:name(0x01010003)=".PlaybackService" (Raw: ".PlaybackService")
+            A: http://schemas.android.com/apk/res/android:exported(0x01010010)=false
+            A: http://schemas.android.com/apk/res/android:foregroundServiceType(0x01010599)=0x00000002
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.action.MEDIA_BUTTON" (Raw: "android.intent.action.MEDIA_BUTTON")
+          E: receiver (line=107)
+            A: http://schemas.android.com/apk/res/android:name(0x01010003)=".MediaButtonReceiver" (Raw: ".MediaButtonReceiver")
+            A: http://schemas.android.com/apk/res/android:exported(0x01010010)=true
+                    A: http://schemas.android.com/apk/res/android:name(0x01010003)="android.intent.action.MEDIA_BUTTON" (Raw: "android.intent.action.MEDIA_BUTTON")
+          E: provider (line=116)
+            A: http://schemas.android.com/apk/res/android:name(0x01010003)=".DiagnosticsFileProvider" (Raw: ".DiagnosticsFileProvider")
+            A: http://schemas.android.com/apk/res/android:exported(0x01010010)=false
+
+== AAB signature ==
+      X.509, CN=NovelSpeak, O=NovelSpeak, C=IN
+      X.509, CN=NovelSpeak, O=NovelSpeak, C=IN
+      X.509, CN=NovelSpeak, O=NovelSpeak, C=IN
+
+== AAB manifest ==
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:compileSdkVersion="36" android:compileSdkVersionCodename="16" android:versionCode="20" android:versionName="1.4.0" package="app.novelspeak" platformBuildVersionCode="36" platformBuildVersionName="16">
+  <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="36"/>
+
+== AAB 16 KB config ==
+    "uncompressNativeLibraries": {
+      "enabled": true,
+      "alignment": "PAGE_ALIGNMENT_16K"
+    }
+
+== Checksums ==
+079c66ed7fd0a3bd26dac38dc3d2710a201c606f158639a9ceb2f0a307ce3d75  build/NovelSpeak-1.4.0-release-arm64-v8a.apk
+47f32bb061d5d7fc33a6a24349917380a5e6eb0c898445e5bd1e2ed70a5463e0  build/NovelSpeak-1.4.0.aab
+
+== RELRO 16 KB check ==
+Each GNU_RELRO either ends on a 0x4000 boundary or occupies the remainder of its
+containing RW LOAD segment:
+  libonnxruntime.so        RELRO end 0x1543000 (0x4000-aligned)
+  libsherpa-onnx-c-api.so  RELRO end 0x446000  (LOAD end, no following writable data)
+  libsherpa-onnx-cxx-api.so RELRO end 0x6f000 (LOAD end)
+  libsherpa-onnx-jni.so    RELRO end 0x491000  (LOAD end)
+This matches the Play Console 16 KB page-size compatibility criteria.
