@@ -53,8 +53,8 @@ signed model-catalog verification (`tools/model-catalog-sign.sh`).
   shown in Library and Continue reading, reopen in the reader, and keep their playback position.
 - **Library**: search, All/Chapters/Imported/Finished filters, a two-column grid at ≥600 dp, and
   recycled rows so large libraries open without a long frame.
-- **Generic extraction**: Mozilla Readability + a text-density fallback; works on empirenovel and
-  any similar serialized-novel site (chapter pages, next-chapter detection, append-as-you-go).
+- **Generic extraction**: Mozilla Readability + a text-density fallback; works on serialized
+  chapter pages and standard article layouts (next-chapter detection, append-as-you-go).
 - **Two TTS backends**, switchable in settings:
   - **Android system TTS** — instant, offline, every language the device ships, no download.
   - **Neural voices (sherpa-onnx)** — downloaded on demand from upstream, SHA-256 verified:
@@ -132,7 +132,8 @@ permission (needed for the playback notification).
 
 ## Use
 
-1. Open a chapter (default start page: `https://www.empirenovel.com/`).
+1. Open a chapter (the home screen offers Royal Road, Scribble Hub, WebNovel, Wattpad,
+   Project Gutenberg and Wikipedia shortcuts; the address bar accepts any HTTPS URL).
 2. Tap **Read** — the page is extracted and queued.
 3. **▶ / ⏸**, **⏮ / ⏭** move by sentence, **■** stops, **− / +** change speed.
 4. **Next ch** follows the page's own "next chapter" link and appends it to the queue.
@@ -223,8 +224,8 @@ Licences and sources are in `app/assets/adblock/NOTICE.txt`.
   carries a cancellation epoch). See [docs/tts-playback-resilience.md](docs/tts-playback-resilience.md).
 - **Ad text is no longer read aloud**: extraction drops a block when its only live match is
   hidden (`display:none`, `visibility:hidden` or zero client rects), and waits for the filter
-  engine + cosmetic CSS before cloning. A bundled local supplement covers first-party ad code
-  (`empirenovel.com/po.js`, `.pub`, `#reader-bottom`).
+  engine + cosmetic CSS before cloning. A bundled local supplement covers first-party popunder
+  scripts and reader-bottom ad slots that upstream lists miss.
 - **Settings no longer slows saved speech speed**: slider rows do not write preferences while
   the page is being built; both engines report a 3.0× ceiling before preparation.
 
@@ -251,7 +252,7 @@ Nothing is bundled in the APK. Downloads come from the official
 
 ```bash
 pkg install -y openjdk-21 kotlin d8 aapt2 apksigner zip
-# platform android.jar (API 34) — aapt2 in Termux cannot read the API 35/36 jars
+# platform android.jar (API 34 is enough for resource linking in Termux; the manifest targets 36)
 mkdir -p ~/build/cache && cd ~/build/cache
 curl -LO https://dl.google.com/android/repository/platform-34-ext7_r03.zip
 unzip -o platform-34-ext7_r03.zip "android-34/android.jar" -d sdk34
@@ -262,7 +263,9 @@ curl -LO https://repo1.maven.org/maven2/org/apache/commons/commons-compress/1.27
 curl -LO https://repo1.maven.org/maven2/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar
 # d8 9.x from Google Maven (Termux's d8 3.3 crashes on commons-io)
 curl -LO https://dl.google.com/dl/android/maven2/com/android/tools/r8/9.5.28/r8-9.5.28.jar && mv r8-9.5.28.jar r8.jar
-cd - && DEPS="$HOME/build/deps" tools/fetch-webkit-deps.sh && ./build.sh
+cd - && DEPS="$HOME/build/deps" tools/fetch-webkit-deps.sh
+ANDROID_JAR="$HOME/build/cache/sdk34/android-34/android.jar" \
+  TARGET_SDK=36 DEPS="$HOME/build/deps" ./build.sh
 ```
 
 `build.sh` runs: `aapt2 link` → `kotlinc` → `d8` → package dex + `lib/arm64-v8a/*.so` → `zipalign`
@@ -313,9 +316,9 @@ PlaybackService     foreground service + MediaSession + wake lock (screen-off pl
 
 ## Known limits
 
-- **Cloudflare-protected sites** (empirenovel included) may show a challenge inside the WebView;
-  solve it once in the browser view and the session cookie persists. Extraction then works on the
-  real chapter page.
+- **Cloudflare-protected sites** may show a challenge inside the WebView; solve it once in the
+  browser view and the session cookie persists. NovelSpeak detects the challenge page and does
+  not queue its text for speech; extraction resumes on the real chapter page.
 - **Pause** stops the engine and resumes at the start of the current sentence (system TTS has no
   pause primitive; this is what all shipped readers do).
 - **ZipVoice** transcript-based cloning is now wired (audio + verbatim transcript, zh + en); it

@@ -39,7 +39,7 @@ Never commit the keystore, the password file, or the passwords. Both are covered
 - JDK 17+ (`java`, `keytool`, `jar`)
 - Kotlin compiler (`kotlinc`)
 - Android SDK build-tools (`aapt2`, `d8`, `apksigner`, `zipalign`)
-- `android.jar` for API 34
+- `android.jar` for API 36 (the Play target; API 34 also works for resource linking on Termux)
 - Dependency jars/AAR in `deps/` (see README): `sherpa.aar`, `commons-compress.jar`,
   `commons-io.jar`, `webkit-classes.jar`, `annotation.jar`; `r8.jar` is optional and preferred
   on Termux. Fetch WebKit with `tools/fetch-webkit-deps.sh`.
@@ -51,7 +51,7 @@ export ANDROID_HOME="$HOME/Android/Sdk"
 export BUILD_TOOLS="$ANDROID_HOME/build-tools/36.0.0"
 export PATH="$BUILD_TOOLS:$PATH"
 export DEPS="$PWD/deps"
-export ANDROID_JAR="$ANDROID_HOME/platforms/android-34/android.jar"
+export ANDROID_JAR="$ANDROID_HOME/platforms/android-36/android.jar"
 export KOTLIN_STDLIB="/path/to/kotlinc/lib/kotlin-stdlib.jar"
 ```
 
@@ -60,11 +60,11 @@ export KOTLIN_STDLIB="/path/to/kotlinc/lib/kotlin-stdlib.jar"
 1. Update `android:versionCode` (increment) and `android:versionName` in
    `app/AndroidManifest.xml`.
 2. Add the release section to `CHANGELOG.md` and write `docs/releases/v<version>.md`.
-3. Build the release APK from a clean tree:
+3. Build the release APK (direct distribution) and the Play AAB from a clean tree:
 
    ```bash
    source "$HOME/.keys/novelspeak-release.env"
-   VERSION="1.0.0"
+   VERSION="1.4.0"
    KEYSTORE="$HOME/.keys/novelspeak-release.jks" \
    KS_ALIAS="novelspeak" \
    KS_PASS="$NOVELSPEAK_KS_PASS" \
@@ -72,24 +72,34 @@ export KOTLIN_STDLIB="/path/to/kotlinc/lib/kotlin-stdlib.jar"
    ZIPALIGN="$BUILD_TOOLS/zipalign" \
    OUT_APK="build/NovelSpeak-$VERSION-arm64-v8a.apk" \
    bash ./build.sh
+
+   KEYSTORE="$HOME/.keys/novelspeak-release.jks" \
+   KS_ALIAS="novelspeak" \
+   KS_PASS="$NOVELSPEAK_KS_PASS" \
+   KEY_PASS="$NOVELSPEAK_KEY_PASS" \
+   OUT_AAB="build/NovelSpeak-$VERSION.aab" \
+   bash tools/build-aab.sh
    ```
 
-   The build zipaligns before signing and verifies the signature. Pass
-   `ABI=armeabi-v7a` to produce a 32-bit APK instead.
+   `build.sh` stores native libraries uncompressed, zipaligns them with `-P 16` and
+   verifies the signature. `tools/build-aab.sh` re-links resources in proto format,
+   writes a 16 KB-aligned bundle config and signs the AAB with the upload key.
 
-4. Verify the artifact and record the checksum:
+4. Verify both artifacts and record checksums:
 
    ```bash
    APK="build/NovelSpeak-$VERSION-arm64-v8a.apk"
+   AAB="build/NovelSpeak-$VERSION.aab"
    "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
-   "$BUILD_TOOLS/aapt2" dump badging "$APK" | head -5
-   unzip -t "$APK" >/dev/null
-   sha256sum "$APK" > "$APK.sha256"
-   cat "$APK.sha256"
+   "$BUILD_TOOLS/aapt2" dump badging "$APK" | head -8
+   "$BUILD_TOOLS/zipalign" -c -P 16 -v 4 "$APK" | tail -1
+   jarsigner -verify -verbose -certs "$AAB" | grep 'jar verified'
+   sha256sum "$APK" "$AAB" | tee build/SHA256SUMS
    ```
 
-   Check that `versionCode`/`versionName`, `minSdkVersion 24`, and the arm64 native
-   libraries are correct. Put the checksum in the release notes.
+   Check that `versionCode`/`versionName`, `minSdkVersion 24`, `targetSdkVersion 36`,
+   the adaptive icon, and the uncompressed arm64 native libraries are correct. Put
+   both checksums in the release notes.
 
 5. Commit the version bump, changelog, and release notes:
 
@@ -105,13 +115,27 @@ export KOTLIN_STDLIB="/path/to/kotlinc/lib/kotlin-stdlib.jar"
    git push origin main
    git push origin "v$VERSION"
    gh release create "v$VERSION" \
-     "$APK" "$APK.sha256" \
+     "$APK" "$AAB" build/SHA256SUMS \
      --title "NovelSpeak $VERSION" \
      --notes-file "docs/releases/v$VERSION.md" \
      --latest
    ```
 
-7. Confirm the release page lists the APK and checksum and is marked **Latest**.
+7. Confirm the release page lists the APK, AAB and checksums and is marked **Latest**.
+
+## Play Store upload
+
+1. Upload `build/NovelSpeak-$VERSION.aab` to the Play Console (internal testing first).
+2. Keep Play App Signing enabled. The AAB above is signed with the upload key; Google
+   re-signs the delivered APKs.
+3. Complete every **App content** declaration using
+   [`docs/play-store/PLAY_CONSOLE.md`](docs/play-store/PLAY_CONSOLE.md): privacy policy,
+   ads (No), app access (no login), target audience (18+ and restrict minor access),
+   content rating (unrestricted web access = Yes), data safety, and the media-playback
+   foreground service declaration.
+4. Use the store listing copy and graphics in [`docs/play-store/`](docs/play-store/).
+5. Run the pre-launch report on at least one Android 16 device or emulator and check the
+   Play Console policy warnings before rolling out.
 
 ## Notes
 
@@ -120,3 +144,6 @@ export KOTLIN_STDLIB="/path/to/kotlinc/lib/kotlin-stdlib.jar"
 - Debug builds still use `build/debug.keystore` by default and are unaffected by the release
   variables above.
 - `build/`, APKs, and signing material are ignored by git.
+- The Play release manifest sets `android:enableOnBackInvokedCallback="false"` so the custom
+  WebView back stack keeps working on Android 16. Migrate to `OnBackInvokedDispatcher` before
+  removing this opt-out.

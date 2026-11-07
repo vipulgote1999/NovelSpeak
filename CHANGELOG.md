@@ -4,6 +4,38 @@ All notable changes to NovelSpeak are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-11-07
+
+### Play Store readiness
+
+- **Target Android 16 (API 36)** and compile against SDK 36. This is required for new apps
+  and updates submitted to Google Play since 31 August 2026.
+- **Ship an Android App Bundle.** The new `tools/build-aab.sh` re-links resources in proto
+  format, assembles a bundletool base module, writes a `PAGE_ALIGNMENT_16K` bundle config and
+  signs the `.aab` with the Play upload key.
+- **16 KB page-size compatibility:** native libraries are stored uncompressed, zipaligned with
+  `-P 16`, and `extractNativeLibs` is false.
+- **Real app icon:** adaptive/legacy launcher icons and a 512 px Play icon replace the Android
+  system default icon.
+- **No exported debug harness:** `BenchmarkActivity` is not exported in the Play release; the
+  side-by-side dev variant still exports it for `adb` benchmarks.
+- **WebView hardening:** removed the reflected JavaScript bridge in favour of an origin-scoped
+  `WebViewCompat` WebMessage listener (HTTPS only); disabled file/content access, mixed content,
+  form saving, geolocation and third-party cookies; enabled Safe Browsing; non-HTTP(S) links
+  and intents are rejected instead of being loaded.
+- **Download consent:** neural model and ad-block list updates now show the download size and
+  require confirmation before starting.
+- **Diagnostics redaction:** exported event logs and crash reports have URLs and
+  credential-shaped values redacted before the zip is created.
+- **Cleartext lockdown:** the release network security config no longer allows localhost; the
+  Maestro exception moved to the dev-only resource set.
+- **Back navigation:** `enableOnBackInvokedCallback="false"` keeps the custom WebView back stack
+  working for apps targeting Android 16 until the `OnBackInvokedDispatcher` migration lands.
+- **Store packet:** privacy policy, Data safety, content rating, foreground-service declaration,
+  review notes, listing copy, icons, feature graphic, screenshots and a release checklist under
+  `docs/play-store/`.
+- Version 1.4.0 (versionCode 20).
+
 ## [1.3.0] - 2026-11-04
 
 ### Added
