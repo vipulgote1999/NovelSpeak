@@ -49,6 +49,29 @@ if [ -d "$APP/res" ]; then
   RES_ARGS=("$BUILD/res.zip")
 fi
 
+# Merge app assets with ML Kit OCR model assets (text-recognition AAR) so on-device
+# Latin OCR can find its model files at runtime. aapt2 only takes one asset dir.
+rm -rf "$BUILD/assets" "$BUILD/mlkit_assets"
+mkdir -p "$BUILD/assets"
+cp -a "$APP/assets/." "$BUILD/assets/"
+MLKIT_MODELS_AAR="${MLKIT_MODELS_AAR:-}"
+if [ -z "$MLKIT_MODELS_AAR" ] || [ ! -f "$MLKIT_MODELS_AAR" ]; then
+  if [ -f "$DEPS/mlkit-text-recognition.aar" ]; then
+    MLKIT_MODELS_AAR="$DEPS/mlkit-text-recognition.aar"
+  else
+    MLKIT_MODELS_AAR="$(find "$HOME/.gradle" -name 'text-recognition-*.aar' 2>/dev/null | head -1)"
+  fi
+fi
+if [ -n "$MLKIT_MODELS_AAR" ] && [ -f "$MLKIT_MODELS_AAR" ]; then
+  rm -rf "$BUILD/mlkit_assets"; mkdir -p "$BUILD/mlkit_assets"
+  unzip -o -q "$MLKIT_MODELS_AAR" 'assets/*' -d "$BUILD/mlkit_assets" 2>/dev/null || true
+  if [ -d "$BUILD/mlkit_assets/assets" ]; then
+    cp -a "$BUILD/mlkit_assets/assets/." "$BUILD/assets/"
+  fi
+else
+  echo "    (mlkit text-recognition AAR not found; OCR models may be missing)" >&2
+fi
+
 echo "==> 1/8 aapt2 link (manifest + assets + resources)"
 LINK_ARGS=()
 if [ "$DEBUGGABLE" = "1" ]; then
@@ -60,7 +83,7 @@ aapt2 link \
   -o "$BUILD/base.apk" \
   -I "$ANDROID_JAR" \
   --manifest "$MANIFEST" \
-  -A "$APP/assets" \
+  -A "$BUILD/assets" \
   "${RES_ARGS[@]}" \
   "${LINK_ARGS[@]}" \
   --min-sdk-version $MIN_SDK \
@@ -75,6 +98,24 @@ rm -rf "$BUILD/jni"
 mkdir -p "$BUILD/jni/$ABI"
 unzip -o -q -j "$DEPS/sherpa.aar" "jni/$ABI/*" -d "$BUILD/jni/$ABI"
 
+# ML Kit on-device OCR needs its native pipeline library (libmlkit_google_ocr_pipeline.so).
+# It is shipped in the text-recognition-bundled-common AAR; without it OCR crashes with
+# UnsatisfiedLinkError on every device (and the app dies on emulator). Extract it for the
+# target ABI when the AAR is available locally (vendored or in the Gradle cache).
+echo "==> 2b/7 preparing ML Kit OCR native libs ($ABI)"
+MLKIT_AAR="${MLKIT_AAR:-}"
+if [ -z "$MLKIT_AAR" ] || [ ! -f "$MLKIT_AAR" ]; then
+  if [ -f "$DEPS/mlkit-bundled-common.aar" ]; then
+    MLKIT_AAR="$DEPS/mlkit-bundled-common.aar"
+  else
+    MLKIT_AAR="$(find "$HOME/.gradle" -name 'text-recognition-bundled-common-*.aar' 2>/dev/null | head -1)"
+  fi
+fi
+if [ -n "$MLKIT_AAR" ] && [ -f "$MLKIT_AAR" ]; then
+  unzip -o -q -j "$MLKIT_AAR" "jni/$ABI/*" -d "$BUILD/jni/$ABI" 2>/dev/null || true
+else
+  echo "    (mlkit bundled-common AAR not found; OCR may fail at runtime)" >&2
+fi
 echo "==> 3/7 kotlinc"
 for dep in webkit-classes.jar annotation.jar; do
   if [ ! -f "$DEPS/$dep" ]; then
