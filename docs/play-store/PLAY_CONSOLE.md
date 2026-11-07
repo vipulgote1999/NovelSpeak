@@ -16,7 +16,7 @@ submission. It is written against the requirements in force on **7 November 2026
 | Category | Books & Reference |
 | Tags | Reading, Text to speech, Offline |
 | Contact email | Use the email on the Play Console developer account (required; not stored in this repo) |
-| Website | `https://vipulgote1999.github.io/NovelSpeak/` (after the Pages workflow runs) |
+| Website | `https://vipulgote1999.github.io/NovelSpeak/` (live) |
 | Privacy policy | `https://vipulgote1999.github.io/NovelSpeak/privacy/` |
 | Content rating | Complete the IARC questionnaire; unrestricted web access = **Yes** |
 | Target audience | **18 and over only**; enable **Restrict minor access** |

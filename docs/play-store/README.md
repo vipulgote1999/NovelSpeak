@@ -33,17 +33,22 @@ policies).
 | Privacy policy | In-app text only | In-app text + hosted HTML policy + Pages workflow |
 | Back navigation | `onBackPressed` only | `enableOnBackInvokedCallback="false"` so the custom WebView back stack works on Android 16 |
 
-## Manual steps that cannot be completed from the repository
+## Manual steps that still need the account owner
 
-- Host the privacy policy: enable GitHub Pages for this repository with **GitHub Actions** as the
-  source, then push to `main`. The workflow `.github/workflows/pages.yml` publishes `site/`.
-  Expected URL: `https://vipulgote1999.github.io/NovelSpeak/privacy/`.
 - Enter the Play Console contact email (the repo uses the GitHub issue tracker as the privacy
   contact; the store listing still needs a monitored email).
 - Complete developer identity verification, create the app, upload the AAB, and complete the
   App content forms listed in `PLAY_CONSOLE.md`.
 - Record the foreground-service demo video described in `PLAY_CONSOLE.md`.
 - Run the pre-launch report on an Android 16 device/emulator.
+
+## Live privacy policy
+
+GitHub Pages is enabled with **GitHub Actions** as the source. The workflow
+`.github/workflows/pages.yml` published `site/`, and both URLs return HTTP 200:
+
+- `https://vipulgote1999.github.io/NovelSpeak/`
+- `https://vipulgote1999.github.io/NovelSpeak/privacy/`
 
 ## Audit evidence
 

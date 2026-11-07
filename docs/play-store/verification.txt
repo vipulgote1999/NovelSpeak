@@ -130,3 +130,8 @@ containing RW LOAD segment:
   libsherpa-onnx-cxx-api.so RELRO end 0x6f000 (LOAD end)
   libsherpa-onnx-jni.so    RELRO end 0x491000  (LOAD end)
 This matches the Play Console 16 KB page-size compatibility criteria.
+
+== Live privacy policy ==
+GET https://vipulgote1999.github.io/NovelSpeak/privacy/ -> HTTP 200 (text/html)
+Content check: <title>Privacy Policy — NovelSpeak</title>, effective 2026-11-07,
+developer Vipul Gote, issue-tracker contact present.
