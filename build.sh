@@ -14,12 +14,25 @@ APP="$ROOT/app"
 BUILD="$ROOT/build"
 MANIFEST="${MANIFEST:-$APP/AndroidManifest.xml}"
 DEPS="${DEPS:-$HOME/build/deps}"
-ANDROID_JAR="${ANDROID_JAR:-$HOME/build/cache/sdk34/android-34/android.jar}"
+# Play requires targetSdk 36 for new apps and updates since 2026-08-31. The manifest is the
+# source of truth for the shipped target; this value must match it.
+MIN_SDK="${MIN_SDK:-24}"
+TARGET_SDK="${TARGET_SDK:-36}"
+MANIFEST_TARGET_SDK="$(sed -n 's/.*android:targetSdkVersion="\([^"]*\)".*/\1/p' "$MANIFEST" | head -1)"
+if [ -n "$MANIFEST_TARGET_SDK" ] && [ "$TARGET_SDK" != "$MANIFEST_TARGET_SDK" ]; then
+  echo "TARGET_SDK=$TARGET_SDK does not match the manifest targetSdkVersion=$MANIFEST_TARGET_SDK" >&2
+  exit 1
+fi
+if [ -z "${ANDROID_JAR:-}" ]; then
+  if [ -n "${ANDROID_HOME:-}" ] && [ -f "$ANDROID_HOME/platforms/android-$TARGET_SDK/android.jar" ]; then
+    ANDROID_JAR="$ANDROID_HOME/platforms/android-$TARGET_SDK/android.jar"
+  else
+    ANDROID_JAR="$HOME/build/cache/sdk$TARGET_SDK/android-$TARGET_SDK/android.jar"
+  fi
+fi
 KOTLIN_STDLIB="${KOTLIN_STDLIB:-/data/data/com.termux/files/usr/opt/kotlin/lib/kotlin-stdlib.jar}"
 PKG="app.novelspeak"
 ABI="${ABI:-arm64-v8a}"
-MIN_SDK=24
-TARGET_SDK=34
 DEBUGGABLE="${DEBUGGABLE:-0}"
 OUT_APK="${OUT_APK:-$BUILD/NovelSpeak-debug.apk}"
 if [ -n "${KEYSTORE:-}" ]; then
@@ -42,12 +55,21 @@ mkdir -p "$BUILD/stage" "$BUILD/dex" "$(dirname "$OUT_APK")"
 # Optional compiled resources (app/res). The app is assets/WebView-first, but a few
 # framework resources (network security config, backup rules, future UI XML) need aapt2.
 RES_ARGS=()
-if [ -d "$APP/res" ]; then
-  echo "==> 0/8 aapt2 compile (resources)"
-  rm -f "$BUILD/res.zip"
-  aapt2 compile --dir "$APP/res" -o "$BUILD/res.zip"
-  RES_ARGS=("$BUILD/res.zip")
+RES_DIRS=("$APP/res")
+if [ -n "${EXTRA_RES_DIR:-}" ]; then
+  RES_DIRS+=("$EXTRA_RES_DIR")
 fi
+RES_INDEX=0
+for RES_DIR in "${RES_DIRS[@]}"; do
+  if [ -d "$RES_DIR" ]; then
+    echo "==> 0/8 aapt2 compile (resources: $RES_DIR)"
+    RES_ZIP="$BUILD/res-$RES_INDEX.zip"
+    rm -f "$RES_ZIP"
+    aapt2 compile --dir "$RES_DIR" -o "$RES_ZIP"
+    RES_ARGS+=("$RES_ZIP")
+    RES_INDEX=$((RES_INDEX + 1))
+  fi
+done
 
 echo "==> 1/8 aapt2 link (manifest + assets + resources)"
 LINK_ARGS=()
@@ -115,7 +137,10 @@ rm -rf "$BUILD/stage"; mkdir -p "$BUILD/stage/lib/$ABI"
 cp "$BUILD/base.apk" "$BUILD/unsigned.apk"
 cp "$BUILD/dex/classes.dex" "$BUILD/stage/classes.dex"
 cp "$BUILD/jni/$ABI/"*.so "$BUILD/stage/lib/$ABI/"
-( cd "$BUILD/stage" && zip -q -X -r "$BUILD/unsigned.apk" classes.dex lib )
+# extractNativeLibs=false requires the .so entries to be stored uncompressed and 16 KB
+# zip-aligned. zipalign below applies -P 16 when the installed build-tools support it.
+( cd "$BUILD/stage" && zip -q -X -r "$BUILD/unsigned.apk" classes.dex )
+( cd "$BUILD/stage" && zip -q -X -0 -r "$BUILD/unsigned.apk" lib )
 
 echo "==> 6/7 signing"
 if [ ! -f "$KEYSTORE" ]; then
@@ -127,13 +152,17 @@ if [ ! -f "$KEYSTORE" ]; then
     -storepass "$KS_PASS" -keypass "$KEY_PASS" -keyalg RSA -keysize 2048 -validity 10000 \
     -dname "CN=NovelSpeak Debug,O=NovelSpeak,C=IN" >/dev/null 2>&1
 fi
-if [ -n "$ZIPALIGN" ]; then
-  rm -f "$BUILD/aligned.apk"
-  "$ZIPALIGN" -f -p 4 "$BUILD/unsigned.apk" "$BUILD/aligned.apk"
-  SIGN_INPUT="$BUILD/aligned.apk"
-else
-  SIGN_INPUT="$BUILD/unsigned.apk"
+if [ -z "$ZIPALIGN" ]; then
+  echo "zipalign is required: extractNativeLibs=false needs 16 KB-aligned, uncompressed .so entries" >&2
+  exit 1
 fi
+rm -f "$BUILD/aligned.apk"
+if "$ZIPALIGN" -h 2>&1 | grep -q -- '-P'; then
+  "$ZIPALIGN" -f -P 16 4 "$BUILD/unsigned.apk" "$BUILD/aligned.apk"
+else
+  "$ZIPALIGN" -f -p 4 "$BUILD/unsigned.apk" "$BUILD/aligned.apk"
+fi
+SIGN_INPUT="$BUILD/aligned.apk"
 # Pass secrets through the environment so they do not appear in the process list.
 export KS_PASS KEY_PASS
 rm -f "$OUT_APK"

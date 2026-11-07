@@ -14,6 +14,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="$ROOT/app/AndroidManifest.xml"
 OUT_MANIFEST="$ROOT/build/AndroidManifest-dev.xml"
+VERSION="$(sed -n 's/.*android:versionName="\([^"]*\)".*/\1/p' "$SRC" | head -1)"
 mkdir -p "$ROOT/build"
 
 sed \
@@ -21,8 +22,12 @@ sed \
   -e 's/android:name="\./android:name="app.novelspeak./g' \
   -e 's/android:label="NovelSpeak"/android:label="NovelSpeak Dev"/' \
   -e 's/android:authorities="app\.novelspeak\.fileprovider"/android:authorities="app.novelspeak.dev.fileprovider"/' \
-  -e 's/android:versionName="1\.3\.0"/android:versionName="1.3.0-dev"/' \
+  -e 's#@xml/network_security_config#@xml/network_security_config_dev#' \
+  -e "s/android:versionName=\"[^\"]*\"/android:versionName=\"$VERSION-dev\"/" \
   "$SRC" > "$OUT_MANIFEST"
+
+# The benchmark harness is exported only in the side-by-side debug variant.
+sed -i '/android:name="app\.novelspeak\.BenchmarkActivity"/{n;s/android:exported="false"/android:exported="true"/;}' "$OUT_MANIFEST"
 
 # Every component must be fully qualified now that the package id differs from the class
 # package. A relative name would resolve to app.novelspeak.dev.<Class> and fail at launch.
@@ -33,6 +38,7 @@ if grep -q 'android:name="\.' "$OUT_MANIFEST"; then
 fi
 
 export MANIFEST="$OUT_MANIFEST"
+export EXTRA_RES_DIR="$ROOT/app/res-dev"
 export OUT_APK="${OUT_APK:-$ROOT/build/NovelSpeak-dev-arm64-v8a.apk}"
 export ABI="${ABI:-arm64-v8a}"
 export DEBUGGABLE=1
