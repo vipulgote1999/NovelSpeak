@@ -279,23 +279,40 @@ object DiagnosticsBundle {
 
     private fun eventsText(context: Context): String {
         // 1) DiagLog's private fallback file (external app dir) — usable without MediaStore.
-        readExternalFile(context, LOG_FILE)?.let { if (it.isNotBlank()) return it }
-        // 2) The MediaStore Downloads row DiagLog normally writes to (API 29+).
-        try {
-            readMediaStoreText(context, LOG_FILE)?.let { if (it.isNotBlank()) return it }
-        } catch (t: Throwable) {
-        }
-        return "log unavailable\nNo readable DiagLog file was found (event log may be disabled).\n"
+        val raw = readExternalFile(context, LOG_FILE)?.takeIf { it.isNotBlank() }
+            // 2) The MediaStore Downloads row DiagLog normally writes to (API 29+).
+            ?: try {
+                readMediaStoreText(context, LOG_FILE)?.takeIf { it.isNotBlank() }
+            } catch (t: Throwable) {
+                null
+            }
+            ?: "log unavailable\nNo readable DiagLog file was found (event log may be disabled).\n"
+        return redactEvents(raw)
+    }
+
+    /**
+     * The event log is written for local debugging and can contain page URLs. The shareable
+     * diagnostics bundle is documented as redacted, so scrub URLs and credential-shaped values
+     * before the zip is created.
+     */
+    private fun redactEvents(text: String): String {
+        var out = text.replace(Regex("(?i)https?://[^\\s\"']+"), "[url redacted]")
+        out = out.replace(
+            Regex("(?i)(token|secret|password|passphrase|api[_-]?key)\\s*=\\s*\\S+"),
+            "$1=[redacted]"
+        )
+        return out
     }
 
     private fun crashText(context: Context): String? {
-        readExternalFile(context, CRASH_FILE)?.let { if (it.isNotBlank()) return it }
-        readExternalFile(context, "crash.txt")?.let { if (it.isNotBlank()) return it }
-        return try {
-            readMediaStoreText(context, CRASH_FILE)?.takeIf { it.isNotBlank() }
-        } catch (t: Throwable) {
-            null
-        }
+        val raw = readExternalFile(context, CRASH_FILE)?.takeIf { it.isNotBlank() }
+            ?: readExternalFile(context, "crash.txt")?.takeIf { it.isNotBlank() }
+            ?: try {
+                readMediaStoreText(context, CRASH_FILE)?.takeIf { it.isNotBlank() }
+            } catch (t: Throwable) {
+                null
+            }
+        return raw?.let { redactEvents(it) }
     }
 
     private fun readExternalFile(context: Context, name: String): String? = try {

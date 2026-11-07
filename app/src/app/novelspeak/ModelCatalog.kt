@@ -227,8 +227,7 @@ object ModelCatalog {
         }
     }
 
-    private fun isHttpUrl(url: String): Boolean =
-        url.startsWith("https://") || url.startsWith("http://")
+    private fun isHttpUrl(url: String): Boolean = url.startsWith("https://")
 
     // ---- signed catalog (OTA) ------------------------------------------------
 

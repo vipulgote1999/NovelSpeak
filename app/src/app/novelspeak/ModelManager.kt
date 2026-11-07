@@ -256,6 +256,7 @@ object ModelManager {
     }
 
     private fun download(url: String, out: File, sizeMb: Int, onProgress: (Int, String) -> Unit): Boolean? {
+        if (!url.startsWith("https://")) return false
         var conn: HttpURLConnection? = null
         try {
             var current = url
@@ -270,7 +271,14 @@ object ModelManager {
                 val code = conn.responseCode
                 if (code in 300..399) {
                     val loc = conn.getHeaderField("Location") ?: return false
-                    current = if (loc.startsWith("http")) loc else URL(URL(current), loc).toString()
+                    current = if (loc.startsWith("https://")) {
+                        loc
+                    } else if (loc.startsWith("http://")) {
+                        return false
+                    } else {
+                        URL(URL(current), loc).toString()
+                    }
+                    if (!current.startsWith("https://")) return false
                     conn.disconnect()
                     redirects++
                     continue

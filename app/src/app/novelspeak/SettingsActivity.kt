@@ -1521,6 +1521,27 @@ class SettingsActivity : Activity() {
             Toast.makeText(this, "An install is already running", Toast.LENGTH_SHORT).show()
             return
         }
+        // Deceptive Behavior policy 3.2: prompt and disclose the download size before any
+        // additional app resource is fetched. The size is also shown on the model card, but
+        // the confirmation makes the network transfer an explicit, informed action.
+        AlertDialog.Builder(this)
+            .setTitle("Download ${m.label}?")
+            .setMessage(
+                "This downloads ${m.sizeMb} MB from GitHub and unpacks about " +
+                    "${m.unpackedMb} MB into this app's private storage. The archive is " +
+                    "verified with SHA-256 before use. Mobile data charges may apply.\n\n" +
+                    "Model licence: Apache-2.0 (upstream model card)."
+            )
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Download") { _, _ -> startDownload(m) }
+            .show()
+    }
+
+    private fun startDownload(m: ModelManager.Model) {
+        if (installing) {
+            Toast.makeText(this, "An install is already running", Toast.LENGTH_SHORT).show()
+            return
+        }
         installing = true
         installModelId = m.id
         installPct = -1
@@ -1582,6 +1603,22 @@ class SettingsActivity : Activity() {
     }
 
     private fun updateAdBlockLists() {
+        if (adblockUpdating) {
+            Toast.makeText(this, "A list update is already running", Toast.LENGTH_SHORT).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Update filter lists?")
+            .setMessage(
+                "This downloads about 5 MB of EasyList and uBlock Origin filter lists over " +
+                    "the network. Mobile data charges may apply."
+            )
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Update") { _, _ -> startAdBlockUpdate() }
+            .show()
+    }
+
+    private fun startAdBlockUpdate() {
         if (adblockUpdating) {
             Toast.makeText(this, "A list update is already running", Toast.LENGTH_SHORT).show()
             return
