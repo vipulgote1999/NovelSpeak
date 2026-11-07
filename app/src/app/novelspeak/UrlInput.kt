@@ -22,7 +22,10 @@ object UrlInput {
         if (text.isEmpty()) return null
 
         val lower = text.lowercase()
-        if (lower.startsWith("http://") || lower.startsWith("https://")) return text
+        // The Play release blocks cleartext globally. Upgrade an explicitly typed HTTP URL
+        // instead of handing the WebView a request that can only fail.
+        if (lower.startsWith("http://")) return "https://" + text.substring(7)
+        if (lower.startsWith("https://")) return text
         if (lower.startsWith("about:")) return text
 
         // Anything that already carries a non-web scheme is treated as a search query. A bare

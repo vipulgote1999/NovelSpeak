@@ -186,9 +186,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     )
 
     private val homeShortcuts = listOf(
-        HomeShortcut("EmpireNovel", "EN", "https://www.empirenovel.com/", "empirenovel"),
         HomeShortcut("Royal Road", "RR", "https://www.royalroad.com/", "royalroad"),
-        HomeShortcut("LightNovel", "LN", "https://www.lightnovelworld.com/", "lightnovelworld"),
+        HomeShortcut("Scribble Hub", "SH", "https://www.scribblehub.com/", "scribblehub"),
         HomeShortcut("WebNovel", "WN", "https://www.webnovel.com/", "webnovel"),
         HomeShortcut("Wattpad", "WP", "https://www.wattpad.com/", "wattpad"),
         HomeShortcut("Gutenberg", "PG", "https://www.gutenberg.org/", "gutenberg"),
@@ -1451,7 +1450,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         s.databaseEnabled = true
         s.loadsImagesAutomatically = true
         s.cacheMode = WebSettings.LOAD_DEFAULT
-        s.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+        // The app only shows HTTPS pages (network security config blocks cleartext); never
+        // silently upgrade or render mixed content inside an untrusted page.
+        s.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
         s.useWideViewPort = true
         s.loadWithOverviewMode = true
         s.setSupportZoom(true)
@@ -1459,13 +1460,23 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         s.displayZoomControls = false
         s.javaScriptCanOpenWindowsAutomatically = false
         s.setSupportMultipleWindows(false)
+        s.allowFileAccess = false
+        s.allowContentAccess = false
+        @Suppress("DEPRECATION")
+        s.allowFileAccessFromFileURLs = false
+        @Suppress("DEPRECATION")
+        s.allowUniversalAccessFromFileURLs = false
+        s.mediaPlaybackRequiresUserGesture = true
+        s.setGeolocationEnabled(false)
+        s.saveFormData = false
+        if (Build.VERSION.SDK_INT >= 26) {
+            s.safeBrowsingEnabled = true
+        }
         CookieManager.getInstance().setAcceptCookie(true)
         if (Build.VERSION.SDK_INT >= 21) {
-            CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
-        }
-        try {
-            web.addJavascriptInterface(AdBlockBridge(), "NSAdBlock")
-        } catch (t: Throwable) {
+            // First-party cookies are enough for reader sessions; third-party cookies are a
+            // tracking surface the app does not need.
+            CookieManager.getInstance().setAcceptThirdPartyCookies(web, false)
         }
         AdBlocker.installDocumentStart(web, NovelSpeakApp.instance.prefs.adblockPopups)
         try {
@@ -1513,6 +1524,19 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             ): Boolean {
                 if (request == null) return false
                 if (AdBlocker.shouldOverride(request)) return true
+                // Never hand custom schemes (intent:, file:, content:, javascript:) from page
+                // content to the WebView. The address bar already normalizes those to search;
+                // links from an untrusted page must stay on the open web.
+                val scheme = request.url.scheme?.lowercase()
+                if (scheme != "http" && scheme != "https" && scheme != "about") {
+                    return true
+                }
+                if (scheme == "http") {
+                    // Cleartext is blocked by the network security config; upgrade instead of
+                    // showing a dead page. Sites without HTTPS simply fail closed.
+                    view?.loadUrl(request.url.buildUpon().scheme("https").build().toString())
+                    return true
+                }
                 return super.shouldOverrideUrlLoading(view, request)
             }
 
@@ -2167,6 +2191,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     val badPage = title.contains("not found", true) ||
                         title.contains("404", true)
                     val blocked = badPage ||
+                        wall == "challenge" ||
                         title.contains("just a moment", true) ||
                         title.contains("security verification", true) ||
                         title.contains("cloudflare", true) ||
@@ -2185,6 +2210,18 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                             this, "Page is still verifying — reloading", Toast.LENGTH_SHORT
                         ).show()
                         web.reload()
+                        return@runOnUiThread
+                    }
+                    if (wall == "challenge") {
+                        // A verification interstitial is not chapter text. Keep the page
+                        // interactive, do not queue its copy for speech, and let the user
+                        // solve it before tapping Read again.
+                        appendNext = false
+                        autoAdvance = false
+                        reader.stop()
+                        statusView.text = "Security check — finish it in the page, then tap Read"
+                        onExtracted(title, wall)
+                        WebExtractor.setReader(web, false)
                         return@runOnUiThread
                     }
                     if (append && !wantsRestart && (blocked || blocks.size < 2)) {
@@ -2345,10 +2382,19 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     hw.settings.domStorageEnabled = true
                     hw.settings.javaScriptCanOpenWindowsAutomatically = false
                     hw.settings.setSupportMultipleWindows(false)
-                    try {
-                        hw.addJavascriptInterface(AdBlockBridge(UrlTools.host(link)), "NSAdBlock")
-                    } catch (t: Throwable) {
+                    hw.settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                    hw.settings.allowFileAccess = false
+                    hw.settings.allowContentAccess = false
+                    @Suppress("DEPRECATION")
+                    hw.settings.allowFileAccessFromFileURLs = false
+                    @Suppress("DEPRECATION")
+                    hw.settings.allowUniversalAccessFromFileURLs = false
+                    hw.settings.mediaPlaybackRequiresUserGesture = true
+                    hw.settings.setGeolocationEnabled(false)
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        hw.settings.safeBrowsingEnabled = true
                     }
+                    AdBlocker.attachWebMessages(hw)
                     AdBlocker.installDocumentStart(hw, NovelSpeakApp.instance.prefs.adblockPopups)
                     hiddenWeb = hw
                     hw.webViewClient = object : WebViewClient() {
@@ -2529,15 +2575,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             try {
                 val name = documentName(uri)
                 DiagLog.line(this, "import read name=" + name + " mime=" + (mimeHint ?: "?"))
-                val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                val input = contentResolver.openInputStream(uri)
                     ?: return@Thread runOnUiThread {
                         Toast.makeText(this, "Could not read that file", Toast.LENGTH_SHORT).show()
                     }
-                if (bytes.size > 64 * 1024 * 1024) {
-                    return@Thread runOnUiThread {
+                val bytes = input.use { readCapped(it, 64 * 1024 * 1024) }
+                    ?: return@Thread runOnUiThread {
                         Toast.makeText(this, "File is too large (limit 64 MB)", Toast.LENGTH_SHORT).show()
                     }
-                }
                 val lower = (name ?: "").lowercase()
                 val mime = mimeHint ?: contentResolver.getType(uri) ?: ""
                 when {
@@ -2870,22 +2915,28 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         val data = intent.data
         val mime = intent.type ?: ""
-        val isDocument = data != null && (
-            data.scheme == "content" || data.scheme == "file" ||
-                mime.contains("epub") || mime.contains("pdf")
-            )
-        if (action == Intent.ACTION_SEND && stream != null && isDocument) {
+        val isDocument = data != null && data.scheme == "content" &&
+            (mime.contains("epub") || mime.contains("pdf") ||
+                (data.path ?: "").lowercase().let { it.endsWith(".epub") || it.endsWith(".pdf") })
+        if (action == Intent.ACTION_SEND && stream != null && stream.scheme == "content" &&
+            (mime.contains("epub") || mime.contains("pdf") ||
+                (stream.path ?: "").lowercase().let { it.endsWith(".epub") || it.endsWith(".pdf") })
+        ) {
             importDocument(stream, mime)
             return
         }
         if (action == Intent.ACTION_VIEW && data != null) {
-            if (isDocument && (mime.contains("epub") || mime.contains("pdf") ||
-                    (data.path ?: "").lowercase().let { it.endsWith(".epub") || it.endsWith(".pdf") })
-            ) {
+            if (isDocument) {
                 importDocument(data, mime)
                 return
             }
-            // Library row tap: launchMode=singleTask delivers ACTION_VIEW here.
+            // Library row tap and shared links are the only intents allowed to drive the
+            // WebView. An exported activity must never turn an arbitrary `content:`/`file:`/
+            // `javascript:` URI from another app into a page load.
+            if (!isWebUri(data)) {
+                openLastPosition()
+                return
+            }
             pendingResumeIndex = intent.getIntExtra(
                 LibraryActivity.EXTRA_RESUME_SENTENCE, -1
             )
@@ -2897,8 +2948,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 ?: intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
             if (!text.isNullOrBlank()) {
                 val trimmed = text.trim()
-                if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-                    web.loadUrl(trimmed)
+                val sharedUri = Uri.parse(trimmed)
+                if (isWebUri(sharedUri)) {
+                    web.loadUrl(sharedUri.toString())
                 } else {
                     renderSharedText(trimmed)
                 }
@@ -2906,6 +2958,27 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             }
         }
         openLastPosition()
+    }
+
+    private fun isWebUri(uri: Uri?): Boolean {
+        if (uri == null) return false
+        val scheme = uri.scheme?.lowercase() ?: return false
+        return (scheme == "https" || scheme == "http") && !uri.host.isNullOrBlank()
+    }
+
+    /** Reads at most [max] bytes; null means the provider tried to exceed the cap. */
+    private fun readCapped(input: java.io.InputStream, max: Int): ByteArray? {
+        val out = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(64 * 1024)
+        var total = 0
+        while (true) {
+            val n = input.read(buffer)
+            if (n < 0) break
+            total += n
+            if (total > max) return null
+            out.write(buffer, 0, n)
+        }
+        return out.toByteArray()
     }
 
     /** Read text shared from another app / selected via ACTION_PROCESS_TEXT. */
@@ -3882,7 +3955,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     companion object {
-        private const val DEFAULT_URL = "https://www.empirenovel.com/"
+        private const val DEFAULT_URL = "https://www.royalroad.com/"
         private const val MENU_HOME = 1
         private const val MENU_RELOAD = 2
         private const val MENU_COPY = 3
