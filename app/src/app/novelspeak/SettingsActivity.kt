@@ -252,7 +252,8 @@ class SettingsActivity : Activity() {
     }
 
     private fun build() {
-        val y = if (resetScroll) 0 else scroll.scrollY
+        val entering = resetScroll
+        val y = if (entering) 0 else scroll.scrollY
         resetScroll = false
         container.removeAllViews()
         voiceRows.clear()
@@ -274,6 +275,7 @@ class SettingsActivity : Activity() {
         if (page == Page.HUB) {
             buildHub()
             scroll.post { scroll.scrollTo(0, 0) }
+            if (entering) animatePageEntry()
             return
         }
 
@@ -785,6 +787,23 @@ class SettingsActivity : Activity() {
         // toggle rebuilt the same page. Apply it either way; the old `y > 0` guard left a
         // newly opened page scrolled to the hub's offset, hiding the first section.
         scroll.post { scroll.scrollTo(0, y) }
+        if (entering) animatePageEntry()
+    }
+
+    private fun animatePageEntry() {
+        container.animate().cancel()
+        if (!MotionAndroid.animationsEnabled(this)) {
+            container.alpha = 1f
+            container.translationY = 0f
+            return
+        }
+        container.alpha = 0f
+        container.translationY = dp(6).toFloat()
+        container.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(Motion.durationMs(Design.MOTION_FAST, 1f))
+            .start()
     }
 
     /** Hub: one screen, four categories and About; each row navigates to a short page. */
