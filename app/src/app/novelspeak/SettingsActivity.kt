@@ -255,6 +255,12 @@ class SettingsActivity : Activity() {
         val entering = resetScroll
         val y = if (entering) 0 else scroll.scrollY
         resetScroll = false
+        if (!entering) {
+            // A toggle can rebuild the page while its entry fade is still running.
+            container.animate().cancel()
+            container.alpha = 1f
+            container.translationY = 0f
+        }
         container.removeAllViews()
         voiceRows.clear()
         // Views belong to the previous build; drop stale handles before rebuilding.
