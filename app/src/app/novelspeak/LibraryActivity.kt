@@ -440,8 +440,13 @@ class LibraryActivity : Activity() {
         }
 
         if (::searchWrap.isInitialized) {
+            // Bookmarks-only libraries still need the search field.
             searchWrap.visibility =
-                if (rawEntries.isEmpty() && rawBooks.isEmpty()) View.GONE else View.VISIBLE
+                if (rawEntries.isEmpty() && rawBooks.isEmpty() && rawMarks.isEmpty()) {
+                    View.GONE
+                } else {
+                    View.VISIBLE
+                }
         }
         if (entries.isEmpty() && marks.isEmpty() && books.isEmpty()) {
             val noneAtAll = rawEntries.isEmpty() && rawBooks.isEmpty() && rawMarks.isEmpty()
