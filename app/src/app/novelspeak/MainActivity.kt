@@ -1361,9 +1361,26 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val showMini = PlayerChrome.showMini(
             playerCollapsed, homeVisible, state.playing, hasContent
         )
+        val cardWasVisible = playerCard.visibility == View.VISIBLE
+        val miniWasVisible = miniPlayer.visibility == View.VISIBLE
         playerCard.visibility = if (showCard) View.VISIBLE else View.GONE
         miniPlayer.visibility = if (showMini) View.VISIBLE else View.GONE
+        if (showCard && !cardWasVisible) animatePlayerIn(playerCard)
+        if (showMini && !miniWasVisible) animatePlayerIn(miniPlayer)
         if (showMini) updateMiniPlayer(state)
+    }
+
+    /** Restrained entrance for the two player surfaces; reduced-motion users get none. */
+    private fun animatePlayerIn(view: View) {
+        if (!MotionAndroid.animationsEnabled(this)) return
+        view.animate().cancel()
+        view.alpha = 0f
+        view.translationY = dp(10).toFloat()
+        view.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(Motion.durationMs(Design.MOTION_NORMAL, 1f))
+            .start()
     }
 
     private fun updateMiniPlayer(state: Reader.State) {
