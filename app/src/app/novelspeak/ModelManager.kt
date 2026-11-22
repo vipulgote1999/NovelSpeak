@@ -92,33 +92,8 @@ object ModelManager {
 
     fun modelDir(ctx: Context, id: String): File = File(File(ctx.filesDir, "models"), id)
 
-    fun isInstalled(ctx: Context, id: String): Boolean {
-        val d = modelDir(ctx, id)
-        if (!d.isDirectory) return false
-        return when (model(id)?.family) {
-            "kokoro" -> findFile(d, listOf("model.int8.onnx", "model.onnx")) != null &&
-                    File(d, "voices.bin").isFile && File(d, "tokens.txt").isFile
-            "pocket" -> findFile(d, listOf("lm_main.int8.onnx", "lm_main.onnx")) != null &&
-                    findFile(d, listOf("encoder.onnx")) != null &&
-                    findFile(d, listOf("decoder.int8.onnx", "decoder.onnx")) != null &&
-                    File(d, "text_conditioner.onnx").isFile &&
-                    File(d, "vocab.json").isFile && File(d, "token_scores.json").isFile
-            "supertonic" -> findFile(d, listOf("duration_predictor.int8.onnx", "duration_predictor.onnx")) != null &&
-                    findFile(d, listOf("text_encoder.int8.onnx", "text_encoder.onnx")) != null &&
-                    findFile(d, listOf("vector_estimator.int8.onnx", "vector_estimator.onnx")) != null &&
-                    findFile(d, listOf("vocoder.int8.onnx", "vocoder.onnx")) != null &&
-                    File(d, "tts.json").isFile && File(d, "unicode_indexer.bin").isFile &&
-                    File(d, "voice.bin").isFile
-            "zipvoice" -> findFile(d, listOf("encoder.int8.onnx", "encoder.onnx")) != null &&
-                    findFile(d, listOf("decoder.int8.onnx", "decoder.onnx")) != null &&
-                    File(d, "tokens.txt").isFile && File(d, "lexicon.txt").isFile &&
-                    // vocoder is a separate model dir; accept if present alongside OR in vocos dir
-                    (File(d, "vocos_24khz.onnx").isFile ||
-                     File(File(d.parentFile, "vocos-24khz"), "vocos_24khz.onnx").isFile)
-            "vocoder" -> File(d, "vocos_24khz.onnx").isFile
-            else -> false
-        }
-    }
+    fun isInstalled(ctx: Context, id: String): Boolean =
+        ModelValidation.isComplete(modelDir(ctx, id), model(id)?.family)
 
     /**
      * Default neural model when the user has not saved an explicit choice: the benchmark's
@@ -142,20 +117,18 @@ object ModelManager {
 
     /** Downloads + verifies + extracts. [onProgress] gets 0..100, -1 for extracting. */
     fun install(ctx: Context, model: Model, onProgress: (Int, String) -> Unit): Boolean {
-        if (installInProgress) {
+        if (!installInProgress.compareAndSet(false, true)) {
             onProgress(-1, "Another install is already running")
             return false
         }
-        installInProgress = true
         try {
             return installLocked(ctx, model, onProgress)
         } finally {
-            installInProgress = false
+            installInProgress.set(false)
         }
     }
 
-    @Volatile
-    private var installInProgress = false
+    private val installInProgress = java.util.concurrent.atomic.AtomicBoolean(false)
 
     private fun installLocked(ctx: Context, model: Model, onProgress: (Int, String) -> Unit): Boolean {
         val dest = modelDir(ctx, model.id)
@@ -164,7 +137,12 @@ object ModelManager {
         DiagLog.line(ctx, "install start id=${model.id} size=${model.sizeMb}MB unpacked~${model.unpackedMb}MB")
         return try {
             // Download + extracted tree + temp archive; fail fast with a readable message.
-            val need = model.sizeMb.toLong() * 1024L * 1024L * 2L + 64L * 1024L * 1024L
+            val archive = ModelInstallPolicy.isArchive(model.url)
+            val need = if (archive) {
+                model.sizeMb.toLong() * 1024L * 1024L * 2L + 64L * 1024L * 1024L
+            } else {
+                model.sizeMb.toLong() * 1024L * 1024L + 16L * 1024L * 1024L
+            }
             val free = android.os.StatFs(ctx.filesDir.absolutePath).availableBytes
             DiagLog.line(ctx, "storage free=${free / 1048576}MB need=${need / 1048576}MB")
             if (free < need) {
@@ -187,6 +165,33 @@ object ModelManager {
                 tmp.delete()
                 onProgress(-1, "Checksum mismatch (got ${digest.take(12)}…)")
                 return false
+            }
+            if (!archive) {
+                // A bare .onnx model (the 24 kHz vocoder) is not a tar.bz2 bundle. Moving the
+                // verified file into place is the whole install; running bunzip2 on it used to
+                // fail with a format error after a 52 MB download.
+                onProgress(-1, "Installing…")
+                dest.deleteRecursively()
+                dest.mkdirs()
+                val name = ModelInstallPolicy.targetFileName(model.url)
+                if (name.isEmpty()) {
+                    tmp.delete()
+                    onProgress(-1, "Invalid model URL")
+                    return false
+                }
+                val target = File(dest, name)
+                val moved = tmp.renameTo(target) ||
+                    runCatching { tmp.copyTo(target, overwrite = true) }.isSuccess
+                tmp.delete()
+                if (!moved || !isInstalled(ctx, model.id)) {
+                    dest.deleteRecursively()
+                    DiagLog.line(ctx, "install INCOMPLETE — bare model not written")
+                    onProgress(-1, "Installation incomplete")
+                    return false
+                }
+                DiagLog.line(ctx, "install OK (bare file) in ${(System.currentTimeMillis() - started) / 1000}s")
+                onProgress(100, "Installed")
+                return true
             }
             onProgress(-1, "Extracting…")
             dest.deleteRecursively()
