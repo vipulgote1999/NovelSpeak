@@ -3200,22 +3200,84 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val options = arrayOf(
             "Off", "15 minutes", "30 minutes", "45 minutes", "60 minutes", "End of chapter"
         )
+        val values = intArrayOf(0, 15, 30, 45, 60, -1)
         val current = NovelSpeakApp.instance.prefs.sleepTimerMinutes
         val selected = when (current) {
             15 -> 1; 30 -> 2; 45 -> 3; 60 -> 4; -1 -> 5; else -> 0
         }
-        AlertDialog.Builder(this)
-            .setTitle("Sleep timer")
-            .setSingleChoiceItems(options, selected) { dialog, which ->
-                dialog.dismiss()
-                applySleepTimer(
-                    when (which) {
-                        1 -> 15; 2 -> 30; 3 -> 45; 4 -> 60; 5 -> -1; else -> 0
-                    }
-                )
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = roundedStroke(Palette.SURFACE, Design.RADIUS_LG, Palette.BORDER, 1)
+            setPadding(dp(8), dp(10), dp(8), dp(20))
+        }
+        panel.addView(View(this).apply {
+            background = rounded(Palette.FAINT, 2)
+            layoutParams = LinearLayout.LayoutParams(dp(36), dp(4)).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        })
+        panel.addView(TextView(this).apply {
+            text = "Sleep timer"
+            textSize = 18f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+            setPadding(dp(14), dp(14), dp(14), dp(2))
+        })
+        panel.addView(TextView(this).apply {
+            text = "Pause playback automatically"
+            textSize = 12f
+            setTextColor(Palette.MUTED)
+            setPadding(dp(14), 0, dp(14), dp(8))
+        })
+        fun chip(index: Int): TextView {
+            val on = index == selected
+            return TextView(this).apply {
+                text = options[index]
+                textSize = 14.5f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                gravity = Gravity.CENTER
+                minHeight = dp(52)
+                setTextColor(if (on) Palette.BG else Palette.TEXT)
+                background = ripple(if (on) Palette.ACCENT else Palette.SURFACE_HIGH, 14)
+                contentDescription =
+                    "Sleep timer, " + options[index] + (if (on) ", selected" else "")
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    dialog.dismiss()
+                    applySleepTimer(values[index])
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
+                ).apply { setMargins(dp(4), dp(4), dp(4), dp(4)) }
+            }
+        }
+        fun row(vararg indices: Int) {
+            panel.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(dp(6), 0, dp(6), 0)
+                for (index in indices) addView(chip(index))
+            })
+        }
+        row(0)
+        row(1, 2)
+        row(3, 4)
+        row(5)
+        dialog.setContentView(panel)
+        dialog.setOnShowListener {
+            val window = dialog.window ?: return@setOnShowListener
+            window.setLayout(
+                min(resources.displayMetrics.widthPixels - dp(24), dp(480)).coerceAtLeast(dp(280)),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            window.setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            window.setDimAmount(0.55f)
+        }
+        dialog.show()
     }
 
     private fun applySleepTimer(minutes: Int) {

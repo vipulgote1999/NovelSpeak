@@ -49,7 +49,8 @@ class AboutPrivacyActivity : Activity() {
         }
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(4), dp(20), dp(28))
+            val side = dp(Design.contentPadding(resources.configuration.screenWidthDp))
+            setPadding(side, dp(4), side, dp(28))
         }
         scroll.addView(content)
         root.addView(scroll)
@@ -79,7 +80,8 @@ class AboutPrivacyActivity : Activity() {
             content,
             "Everything else works offline: extraction, system TTS, playback, the reader, the " +
                 "library and the network-free features in Settings. Neural voices work fully " +
-                "offline once their model file has been installed."
+                "offline once their model file has been installed.",
+            topDp = 10
         )
 
         heading(content, "DIAGNOSTICS")
@@ -205,7 +207,7 @@ class AboutPrivacyActivity : Activity() {
                 shape = GradientDrawable.OVAL
                 setColor(Palette.SURFACE_HIGH)
             }
-            layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+            layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP))
             contentDescription = "Back"
             isClickable = true
             isFocusable = true
@@ -233,12 +235,13 @@ class AboutPrivacyActivity : Activity() {
         })
     }
 
-    private fun paragraph(parent: LinearLayout, text: String) {
+    private fun paragraph(parent: LinearLayout, text: String, topDp: Int = 0) {
         parent.addView(TextView(this).apply {
             this.text = text
             textSize = 14f
             setTextColor(Palette.TEXT)
             setLineSpacing(dp(3).toFloat(), 1f)
+            setPadding(0, dp(topDp), 0, 0)
         })
     }
 
