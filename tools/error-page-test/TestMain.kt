@@ -45,6 +45,10 @@ fun main() {
     check("initial skips a quote", UiText.initial("\"The Salt Road\"") == "T", UiText.initial("\"The Salt Road\""))
     check("initial skips a dash", UiText.initial(" — Chapter") == "C", UiText.initial(" — Chapter"))
     check("initial fallback", UiText.initial("") == "•", UiText.initial(""))
+    check("duration minutes", UiText.durationMinutes(42) == "42 min", UiText.durationMinutes(42))
+    check("duration exact hour", UiText.durationMinutes(60) == "1 h", UiText.durationMinutes(60))
+    check("duration hours and minutes", UiText.durationMinutes(72) == "1 h 12 min", UiText.durationMinutes(72))
+    check("duration zero", UiText.durationMinutes(0) == "0 min", UiText.durationMinutes(0))
 
     check("Chromium error title", PageFailure.isErrorPage("Webpage not available"))
     check(

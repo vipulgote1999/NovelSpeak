@@ -167,6 +167,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var homeView: ScrollView
     private lateinit var homeColumn: LinearLayout
     private lateinit var homeContinue: LinearLayout
+    private lateinit var homeStats: LinearLayout
     private lateinit var homeMenuButton: FrameLayout
     private lateinit var importMenuButton: FrameLayout
     private var homeVisible = false
@@ -1122,6 +1123,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         col.addView(homeContinue)
 
+        homeStats = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        col.addView(homeStats)
+
         col.addView(TextView(this).apply {
             text = "Local only: no account, no ads, no tracking."
             textSize = 11f
@@ -1206,6 +1213,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private fun refreshHome() {
         if (!::homeContinue.isInitialized) return
+        refreshHomeStats()
         homeContinue.removeAllViews()
         val resumes = ArrayList<HomeResume>()
         try {
@@ -1348,6 +1356,58 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 })
             })
         }
+    }
+
+    /** A quiet weekly summary; hidden until there is something honest to report. */
+    private fun refreshHomeStats() {
+        if (!::homeStats.isInitialized) return
+        homeStats.removeAllViews()
+        val days = try {
+            if (::readingStats.isInitialized) readingStats.lastDays(7) else emptyList()
+        } catch (t: Throwable) {
+            emptyList()
+        }
+        val minutes = days.sumOf { it.minutes }
+        val sentences = days.sumOf { it.sentences }
+        val activeDays = days.count { it.minutes > 0 || it.sentences > 0 }
+        if (minutes <= 0 && sentences <= 0) {
+            homeStats.visibility = View.GONE
+            return
+        }
+        val duration = if (minutes > 0) UiText.durationMinutes(minutes) else "under 1 min"
+        val meta = UiText.sentenceCount(sentences) + " · " +
+            activeDays + if (activeDays == 1) " day" else " days"
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rippleStroke(Palette.SURFACE, Design.RADIUS_MD, Palette.BORDER)
+            setPadding(dp(Design.SPACE_LG), dp(14), dp(Design.SPACE_LG), dp(14))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(18) }
+            contentDescription = "Reading this week, $duration, $meta"
+        }
+        card.addView(TextView(this).apply {
+            text = "READING THIS WEEK"
+            textSize = 10.5f
+            letterSpacing = 0.1f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.MUTED)
+        })
+        card.addView(TextView(this).apply {
+            text = duration
+            textSize = 21f
+            typeface = Typeface.create("serif", Typeface.BOLD)
+            setTextColor(Palette.TEXT)
+            setPadding(0, dp(4), 0, 0)
+        })
+        card.addView(TextView(this).apply {
+            text = meta
+            textSize = 12f
+            setTextColor(Palette.MUTED)
+            setPadding(0, dp(3), 0, 0)
+        })
+        homeStats.addView(card)
+        homeStats.visibility = View.VISIBLE
     }
 
     private fun togglePlayback() {

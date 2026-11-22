@@ -29,6 +29,15 @@ object UiText {
     fun initial(title: String): String =
         title.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "•"
 
+    /** Compact listening time: "42 min", "1 h", "1 h 12 min". */
+    fun durationMinutes(total: Int): String {
+        val minutes = total.coerceAtLeast(0)
+        if (minutes < 60) return "$minutes min"
+        val hours = minutes / 60
+        val rest = minutes % 60
+        return if (rest == 0) "$hours h" else "$hours h $rest min"
+    }
+
     private fun countOf(count: Int, noun: String): String =
         "$count $noun" + if (count == 1) "" else "s"
 }
