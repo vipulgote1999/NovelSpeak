@@ -1,0 +1,34 @@
+appId: app.novelspeak
+name: "29 library imported filter: an empty tab offers the import action"
+tags:
+  - library
+  - regression
+---
+- clearState
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter1.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter1.html"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+|Restart chapter"
+    timeout: 30000
+- tapOn: "More options"
+- tapOn: "Library"
+- tapOn: "Imported"
+- extendedWaitUntil:
+    visible: "No imported books yet"
+    timeout: 10000
+- assertVisible: "Import a book"

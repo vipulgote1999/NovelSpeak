@@ -74,7 +74,11 @@ class LibraryActivity : Activity() {
         data class Entry(val entry: LibraryEntry) : Row()
         data class Book(val book: ImportedBook) : Row()
         data class Mark(val mark: Bookmark) : Row()
-        data class Empty(val message: String, val libraryEmpty: Boolean = false) : Row()
+        data class Empty(
+            val message: String,
+            val libraryEmpty: Boolean = false,
+            val showImport: Boolean = false
+        ) : Row()
 
         /** Two cards side by side on medium/expanded windows; [right] is null for an odd tail. */
         data class Pair(val left: Row, val right: Row?) : Row()
@@ -96,7 +100,7 @@ class LibraryActivity : Activity() {
                 is Row.Entry -> entryRow(row.entry)
                 is Row.Book -> importRow(row.book)
                 is Row.Mark -> bookmarkRow(row.mark)
-                is Row.Empty -> emptyView(row.message, row.libraryEmpty)
+                is Row.Empty -> emptyView(row.message, row.libraryEmpty, row.showImport)
                 is Row.Pair -> pairView(row.left, row.right)
             }
             // ListView owns row layout; ignore the LinearLayout margins used by the old
@@ -439,12 +443,17 @@ class LibraryActivity : Activity() {
         }
         if (entries.isEmpty() && marks.isEmpty() && books.isEmpty()) {
             val noneAtAll = rawEntries.isEmpty() && rawBooks.isEmpty() && rawMarks.isEmpty()
+            val importedEmpty = !noneAtAll && filter == Filter.IMPORTED && rawBooks.isEmpty()
             clearAction.visibility = if (noneAtAll) View.GONE else View.VISIBLE
             adapter.rows = listOf(
                 Row.Empty(
-                    if (noneAtAll) EMPTY_TEXT
-                    else "No matches. Try a different search or filter.",
-                    libraryEmpty = noneAtAll
+                    when {
+                        noneAtAll -> EMPTY_TEXT
+                        importedEmpty -> "No imported books yet."
+                        else -> "No matches. Try a different search or filter."
+                    },
+                    libraryEmpty = noneAtAll,
+                    showImport = importedEmpty
                 )
             )
             adapter.notifyDataSetChanged()
@@ -484,14 +493,16 @@ class LibraryActivity : Activity() {
             gravity = Gravity.TOP
             isBaselineAligned = false
         }
+        // WRAP_CONTENT, not MATCH_PARENT: ListView measures this row with an unspecified
+        // height, and MATCH_PARENT children collapse to the 1 px spacer on an odd tail.
         val leftParams = LinearLayout.LayoutParams(
-            0, ViewGroup.LayoutParams.MATCH_PARENT, 1f
+            0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
         ).apply { if (right != null) marginEnd = dp(4) }
         row.addView(cardView(left), leftParams)
         if (right != null) {
             row.addView(
                 cardView(right),
-                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { marginStart = dp(4) }
             )
         } else {
@@ -531,6 +542,15 @@ class LibraryActivity : Activity() {
                 }
             }
         }
+        card.addView(TextView(this).apply {
+            text = book.title.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "•"
+            textSize = 18f
+            typeface = Typeface.create("serif", Typeface.BOLD)
+            setTextColor(Palette.ACCENT)
+            gravity = Gravity.CENTER
+            background = rounded(Palette.SURFACE_HIGH, 12)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, LinearLayout.LayoutParams(dp(42), dp(42)).apply { marginEnd = dp(12) })
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -546,7 +566,7 @@ class LibraryActivity : Activity() {
         val author = if (book.author.isBlank()) "" else book.author + " · "
         val state = if (book.finished) "Finished" else book.percent.toString() + "%"
         texts.addView(TextView(this).apply {
-            text = author + book.kind + " · " + book.sentenceCount + " sentences · " + state
+            text = author + book.kind + " · " + UiText.sentenceCount(book.sentenceCount) + " · " + state
             textSize = 12f
             setTextColor(if (book.finished) Palette.ACCENT else Palette.MUTED)
             setPadding(0, dp(3), 0, 0)
@@ -554,10 +574,10 @@ class LibraryActivity : Activity() {
         card.addView(texts)
         card.addView(TextView(this).apply {
             text = "✕"
-            textSize = 16f
+            textSize = 17f
             gravity = Gravity.CENTER
-            setTextColor(Palette.MUTED)
-            background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
+            setTextColor(Palette.FAINT)
+            background = ripple(Palette.SURFACE, 22, oval = true)
             layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP)).apply { marginStart = dp(6) }
             contentDescription = "Delete imported book: " + book.title
             isClickable = true
@@ -633,10 +653,10 @@ class LibraryActivity : Activity() {
         card.addView(texts)
         card.addView(TextView(this).apply {
             text = "✕"
-            textSize = 16f
+            textSize = 17f
             gravity = Gravity.CENTER
-            setTextColor(Palette.MUTED)
-            background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
+            setTextColor(Palette.FAINT)
+            background = ripple(Palette.SURFACE, 22, oval = true)
             layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP)).apply { marginStart = dp(6) }
             contentDescription = "Delete bookmark: " + mark.snippet.take(40)
             isClickable = true
@@ -660,7 +680,38 @@ class LibraryActivity : Activity() {
      * actions that can fill it (browse, or import a file) instead of sending the user back to
      * the overflow menu.
      */
-    private fun emptyView(message: String = EMPTY_TEXT, libraryEmpty: Boolean = false): View {
+    private fun emptyView(
+        message: String = EMPTY_TEXT,
+        libraryEmpty: Boolean = false,
+        showImport: Boolean = false
+    ): View {
+        if (showImport) {
+            val col = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                setPadding(dp(24), dp(40), dp(24), dp(24))
+            }
+            col.addView(TextView(this).apply {
+                text = "No imported books yet"
+                textSize = 18f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                setTextColor(Palette.TEXT)
+                gravity = Gravity.CENTER
+            })
+            col.addView(TextView(this).apply {
+                text = "EPUB, PDF and text files you import appear here."
+                textSize = 13f
+                setTextColor(Palette.MUTED)
+                gravity = Gravity.CENTER
+                setPadding(0, dp(8), 0, 0)
+            })
+            val import = emptyAction("Import a book", primary = true) { openImportPicker() }
+            import.contentDescription = "Import a book"
+            col.addView(import, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(20) })
+            return col
+        }
         if (!libraryEmpty) {
             return TextView(this).apply {
                 text = message
@@ -762,8 +813,9 @@ class LibraryActivity : Activity() {
             val mime = contentResolver.getType(uri)
             val open = Intent(this, MainActivity::class.java)
                 .setAction(Intent.ACTION_VIEW)
-                .setData(uri)
-            if (!mime.isNullOrEmpty()) open.type = mime
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            // setType() clears data and setData() clears type; only this call keeps both.
+            if (mime.isNullOrEmpty()) open.data = uri else open.setDataAndType(uri, mime)
             startActivity(open)
         } catch (t: Throwable) {
             Toast.makeText(this, "Could not open that file", Toast.LENGTH_SHORT).show()
@@ -786,6 +838,15 @@ class LibraryActivity : Activity() {
             ).apply { bottomMargin = dp(8) }
             setOnClickListener { openEntry(entry) }
         }
+        card.addView(TextView(this).apply {
+            text = entry.title.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "•"
+            textSize = 18f
+            typeface = Typeface.create("serif", Typeface.BOLD)
+            setTextColor(Palette.ACCENT)
+            gravity = Gravity.CENTER
+            background = rounded(Palette.SURFACE_HIGH, 12)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, LinearLayout.LayoutParams(dp(42), dp(42)).apply { marginEnd = dp(12) })
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
@@ -847,10 +908,10 @@ class LibraryActivity : Activity() {
 
     private fun deleteButton(entry: LibraryEntry): TextView = TextView(this).apply {
         text = "✕"
-        textSize = 16f
+        textSize = 17f
         gravity = Gravity.CENTER
-        setTextColor(Palette.MUTED)
-        background = ripple(Palette.SURFACE_HIGH, 22, oval = true)
+        setTextColor(Palette.FAINT)
+        background = ripple(Palette.SURFACE, 22, oval = true)
         layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP)).apply { marginStart = dp(6) }
         contentDescription = "Delete entry: " + entry.title
         isClickable = true
