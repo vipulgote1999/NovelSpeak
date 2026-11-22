@@ -50,8 +50,8 @@ Reports: `tools/maestro/reports/junit.xml` (Maestro 2.11 wants a **file** for `-
 Clean-state run of every YAML flow on the dedicated `NovelSpeak_API35` AVD:
 
 ```
-27/27 Flows Passed in 14m 13s
-tests=27 failures=0 errors=0 skipped=0
+28/28 Flows Passed in 14m 44s
+tests=28 failures=0 errors=0 skipped=0
 == RESULT: PASS
 ```
 
