@@ -772,7 +772,10 @@ class SettingsActivity : Activity() {
         container.addView(adblockCard)
         }
 
-        if (y > 0) scroll.post { scroll.scrollTo(0, y) }
+        // y is 0 when a page was just opened (resetScroll) and the previous offset when a
+        // toggle rebuilt the same page. Apply it either way; the old `y > 0` guard left a
+        // newly opened page scrolled to the hub's offset, hiding the first section.
+        scroll.post { scroll.scrollTo(0, y) }
     }
 
     /** Hub: one screen, four categories and About; each row navigates to a short page. */

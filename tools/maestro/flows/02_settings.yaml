@@ -25,6 +25,11 @@ tags:
     timeout: 15000
 - assertVisible: "Privacy & data"
 - assertVisible: "Advanced"
+- scrollUntilVisible:
+    element:
+      text: "Changes are saved instantly.*"
+    direction: DOWN
+    timeout: 15000
 - assertVisible: "Changes are saved instantly.*"
 - scrollUntilVisible:
     element:
