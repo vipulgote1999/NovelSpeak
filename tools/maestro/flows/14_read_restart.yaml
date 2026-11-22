@@ -22,15 +22,14 @@ tags:
     visible: "Address bar, http://localhost:8765/chapter1.html"
     timeout: 15000
 - extendedWaitUntil:
-    visible: "Read chapter"
-    timeout: 20000
-- tapOn: "Read chapter"
+    visible: "Restart chapter"
+    timeout: 30000
 - extendedWaitUntil:
     visible: "Sentence [0-9]+ of [0-9]+"
     timeout: 30000
 - tapOn: "Next sentence"
 - tapOn: "Next sentence"
-- tapOn: "Read chapter"
+- tapOn: "Restart chapter"
 - extendedWaitUntil:
     visible: "Restarted.*"
     timeout: 30000

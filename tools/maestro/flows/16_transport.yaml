@@ -20,9 +20,8 @@ tags:
 - inputText: "http://localhost:8765/chapter1.html"
 - pressKey: Enter
 - extendedWaitUntil:
-    visible: "Read chapter"
-    timeout: 20000
-- tapOn: "Read chapter"
+    visible: "Restart chapter"
+    timeout: 30000
 - extendedWaitUntil:
     visible: "Sentence [0-9]+ of [0-9]+"
     timeout: 30000
@@ -46,7 +45,7 @@ tags:
 - extendedWaitUntil:
     visible: "Stopped"
     timeout: 10000
-- tapOn: "Read chapter"
+- tapOn: "Restart chapter"
 - extendedWaitUntil:
     visible: "Restarted.*"
     timeout: 30000

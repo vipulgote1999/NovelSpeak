@@ -20,12 +20,25 @@ tags:
 - inputText: "http://localhost:8765/chapter2.html"
 - pressKey: Enter
 - extendedWaitUntil:
-    visible: "Read"
+    visible: "Read chapter|Restart chapter"
     timeout: 20000
-- tapOn: "Read"
+- runFlow:
+    when:
+      visible: "Read chapter"
+    commands:
+      - tapOn: "Read chapter"
 - extendedWaitUntil:
     visible: "Sentence [0-9]+ of [0-9]+"
     timeout: 30000
+# Auto-extraction can leave the queue ready but paused; start audio explicitly.
+- runFlow:
+    when:
+      visible: "Play"
+    commands:
+      - tapOn: "Play"
+- extendedWaitUntil:
+    visible: "Pause"
+    timeout: 20000
 # Pause while the writer may be inside a blocking AudioTrack.write(). Before the fix this
 # returned a short transfer, the writer thread exited, and resume left "Playing" forever.
 - tapOn: "Pause"

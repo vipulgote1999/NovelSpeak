@@ -390,6 +390,9 @@
       background:rgba(244,198,106,.10) !important;
       box-shadow:inset 3px 0 0 #F4C66A !important;
       border-radius:4px !important;
+      /* Extend the amber rule into the gutter without moving a single glyph. */
+      padding-left:12px !important;
+      margin-left:-12px !important;
     }
     html.ns-reader h1[data-ns].ns-active, html.ns-reader h2[data-ns].ns-active,
     html.ns-reader h3[data-ns].ns-active, html.ns-reader h4[data-ns].ns-active,

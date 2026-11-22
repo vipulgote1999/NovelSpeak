@@ -3308,6 +3308,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 else "Story cast off, long press for details"
         }
         progressView.text = if (total > 0) "${state.cursor + 1} / $total" else "0 / 0"
+        if (::readChapterButton.isInitialized) {
+            readChapterButton.text = PlayerChrome.readActionLabel(total)
+            readChapterButton.contentDescription = PlayerChrome.readActionDescription(total)
+        }
         speedView.text = "%.2f×".format(NovelSpeakApp.instance.prefs.speed)
         speedView.contentDescription =
             "Playback speed ${"%.2f".format(NovelSpeakApp.instance.prefs.speed)} times"

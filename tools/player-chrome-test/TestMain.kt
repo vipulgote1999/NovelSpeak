@@ -29,6 +29,14 @@ fun main() {
     check("home playing collapsed shows mini", PlayerChrome.showMini(true, true, true, true))
     check("home paused collapsed hides mini", !PlayerChrome.showMini(true, true, false, true))
 
+    check("no content labels Read", PlayerChrome.readActionLabel(0) == "Read")
+    check("no content describes Read", PlayerChrome.readActionDescription(0) == "Read chapter")
+    check("content labels Restart", PlayerChrome.readActionLabel(1) == "Restart")
+    check(
+        "content describes Restart",
+        PlayerChrome.readActionDescription(1) == "Restart chapter"
+    )
+
     println("$checks checks, $failures failure(s)")
     if (failures > 0) kotlin.system.exitProcess(1)
 }

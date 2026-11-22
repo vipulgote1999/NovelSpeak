@@ -21,7 +21,11 @@ tags:
 - extendedWaitUntil:
     visible: "Address bar, http://localhost:8765/chapter1.html"
     timeout: 15000
-- tapOn: "Read"
+- runFlow:
+    when:
+      visible: "Read chapter"
+    commands:
+      - tapOn: "Read chapter"
 - extendedWaitUntil:
     visible: "Sentence [0-9]+ of [0-9]+"
     timeout: 30000
@@ -38,9 +42,8 @@ tags:
 - assertVisible: "Library entry.*"
 - assertVisible: ".*Salt Road.*"
 - assertVisible: ".*[0-9]+%.*"
-- tapOn:
-    text: ".*Salt Road.*"
-    index: 0
+# Target the row itself: the delete button's accessibility label also contains the title.
+- tapOn: "Library entry, .*Salt Road.*"
 - extendedWaitUntil:
     visible: "Address bar, http://localhost:8765/chapter2.html"
     timeout: 20000

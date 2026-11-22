@@ -19,7 +19,11 @@ tags: [reader, bookmark, library]
 - extendedWaitUntil:
     visible: "Address bar, http://localhost:8765/chapter1.html"
     timeout: 15000
-- tapOn: "Read"
+- runFlow:
+    when:
+      visible: "Read chapter"
+    commands:
+      - tapOn: "Read chapter"
 - extendedWaitUntil:
     visible: "Sentence [0-9]+ of [0-9]+"
     timeout: 30000

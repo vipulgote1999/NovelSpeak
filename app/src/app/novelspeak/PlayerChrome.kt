@@ -18,4 +18,10 @@ object PlayerChrome {
         playing: Boolean,
         hasContent: Boolean
     ): Boolean = collapsed && hasContent && (!homeVisible || playing)
+
+    /** The main reading action restarts once a queue exists; "Read" would be a lie. */
+    fun readActionLabel(total: Int): String = if (total > 0) "Restart" else "Read"
+
+    fun readActionDescription(total: Int): String =
+        if (total > 0) "Restart chapter" else "Read chapter"
 }
