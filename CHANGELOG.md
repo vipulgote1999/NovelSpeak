@@ -4,6 +4,33 @@ All notable changes to NovelSpeak are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Reader and Home UI
+
+- **Home owns its header.** The empty 60 dp browser strip is gone; the menu sits with the
+  wordmark and Home content starts immediately. The new-tab surface hides while the address
+  editor is open.
+- **Context-aware action sheet.** The platform overflow menu became a scrollable Harbor-ink
+  sheet. Home and imported books no longer offer page-only actions. The sheet caps at 560 dp
+  on tablets.
+- **Player thumb-reach.** Sleep timer and voice settings are one tap from the player; Play
+  stays centred with the extra control. Player surfaces fade in, respecting reduced motion.
+- **Imported books own their surface.** No dead browser chrome, a header menu, Back to Home,
+  humanised filenames (`the-salt-road.txt` → “The Salt Road”) and a working text/plain import.
+- **Library polish.** Cover initials, a designed first-run and Imported empty state, quote
+  tiles for bookmarks, branded destructive confirmations, and a fix for imported cards
+  collapsing to 1 px in the tablet two-column grid.
+- **Safety and copy.** WebView error/404 pages are never queued for speech; “1 sentence” and
+  “1 line” are singular; the site dialog is a branded switch sheet; the privacy page keeps a
+  readable measure and 48 dp Back target on tablets.
+- **Reading this week.** Home surfaces recorded listening time, sentences and active days.
+
+### Verification
+
+- Host suite: **28/28 harnesses**, browser regressions green.
+- Device suite: **27/27 Maestro flows** (14m 16s), plus `text-scale.sh` at 2.0×.
+
 ## [1.4.0] - 2026-11-22
 
 ### Play Store readiness

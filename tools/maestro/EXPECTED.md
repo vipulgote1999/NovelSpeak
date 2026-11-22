@@ -44,6 +44,21 @@ Reports: `tools/maestro/reports/junit.xml` (Maestro 2.11 wants a **file** for `-
 | 28 | `flows/28_reader_text_scale.yaml` | Reader at 2× | voice row, Sleep timer, Next chapter reachable; timer arms | Final controls fit at 2.0× text | **PASS** (2026-11-22: 33 s) |
 | 29 | `flows/29_library_imported_empty.yaml` | Imported filter empty | `No imported books yet`, `Import a book` | Empty Imported tab offers the picker | **PASS** (2026-11-22: 38 s) |
 
+### Full UI gate (2026-11-22, versionCode 20)
+
+Clean-state run of every YAML flow on the dedicated `NovelSpeak_API35` AVD:
+
+```
+27/27 Flows Passed in 14m 16s
+tests=27 failures=0 errors=0 skipped=0
+== RESULT: PASS
+```
+
+The same build passed **28/28 host harnesses**, the headless Chromium regressions,
+and `tools/maestro/text-scale.sh` (flows 23 + 28 at 2.0×). Manual coverage: a real
+text-file import, imported-book Back, site-settings switches, the confirm sheet,
+and Home/Settings/Library/reader at 800 dp.
+
 ### UI hardening gate (2026-11-22, versionCode 20)
 
 Focused run after the player shortcuts, error-page guard, import-mode and Library tablet fixes:
