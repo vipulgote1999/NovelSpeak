@@ -62,14 +62,8 @@ object DiagnosticsBundle {
     private const val PREFS_BUDGET = 64 * 1024
     private const val EVENTS_BUDGET = 1536 * 1024
     private const val CRASH_BUDGET = 256 * 1024
-    private const val MAX_VALUE_CHARS = 300
     private const val LOG_FILE = "novelspeak-log.txt"
     private const val CRASH_FILE = "novelspeak-crash.txt"
-
-    /** Redact any pref whose key mentions one of these words (matches the P1.10 spec). */
-    private val SENSITIVE_KEY_PARTS = arrayOf(
-        "url", "token", "rule", "secret", "password", "passphrase"
-    )
 
     private val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US)
     private val isoStamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US)
@@ -248,7 +242,7 @@ object DiagnosticsBundle {
         }
         return buildString {
             appendLine("# NovelSpeak preferences snapshot")
-            appendLine("# values for url/token/rule/secret keys are redacted; nothing is uploaded")
+            appendLine("# values for url/token/rule/library/transcript keys are redacted")
             appendLine("# generated=${isoStamp.format(Date())}")
             for (key in all.keys.sorted()) {
                 append(key)
@@ -258,24 +252,8 @@ object DiagnosticsBundle {
         }
     }
 
-    private fun safeValue(key: String, value: Any?): String {
-        if (value == null) return "null"
-        val lower = key.lowercase(Locale.US)
-        val sensitive = SENSITIVE_KEY_PARTS.any { lower.contains(it) }
-        return when (value) {
-            is String -> if (sensitive) "(redacted, ${value.length} chars)"
-            else escape(value).take(MAX_VALUE_CHARS)
-            is Set<*> -> if (sensitive) "(redacted, ${value.size} items)"
-            else value.joinToString("|") { escape(it.toString()) }.take(MAX_VALUE_CHARS)
-            is Boolean, is Int, is Long, is Float -> value.toString()
-            else -> if (sensitive) "(redacted)" else escape(value.toString()).take(MAX_VALUE_CHARS)
-        }
-    }
-
-    private fun escape(value: String): String = value
-        .replace("\r", " ")
-        .replace("\n", "\\n")
-        .replace("\t", " ")
+    private fun safeValue(key: String, value: Any?): String =
+        DiagnosticsRedaction.safeValue(key, value)
 
     private fun eventsText(context: Context): String {
         // 1) DiagLog's private fallback file (external app dir) — usable without MediaStore.
@@ -295,14 +273,7 @@ object DiagnosticsBundle {
      * diagnostics bundle is documented as redacted, so scrub URLs and credential-shaped values
      * before the zip is created.
      */
-    private fun redactEvents(text: String): String {
-        var out = text.replace(Regex("(?i)https?://[^\\s\"']+"), "[url redacted]")
-        out = out.replace(
-            Regex("(?i)(token|secret|password|passphrase|api[_-]?key)\\s*=\\s*\\S+"),
-            "$1=[redacted]"
-        )
-        return out
-    }
+    private fun redactEvents(text: String): String = DiagnosticsRedaction.redact(text)
 
     private fun crashText(context: Context): String? {
         val raw = readExternalFile(context, CRASH_FILE)?.takeIf { it.isNotBlank() }

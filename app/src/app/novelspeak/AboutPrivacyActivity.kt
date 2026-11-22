@@ -86,10 +86,10 @@ class AboutPrivacyActivity : Activity() {
         paragraph(
             content,
             "Share diagnostics creates a zip on this device containing the app version, SDK, " +
-                "device model, ABI, settings snapshot (URLs, tokens and pronunciation rules are " +
-                "redacted), the event log and the last crash if one exists. It is capped at 2 MB, " +
-                "handed to the app you choose through the system share sheet, and never uploaded " +
-                "by NovelSpeak. Delete it like any other file."
+                "device model, ABI, settings snapshot (URLs, library entries, transcripts, tokens and " +
+                "pronunciation rules are redacted), the event log and the last crash if one exists. " +
+                "It is capped at 2 MB, handed to the app you choose through the system share sheet, " +
+                "and never uploaded by NovelSpeak. Delete it like any other file."
         )
 
         heading(content, "PERMISSIONS")

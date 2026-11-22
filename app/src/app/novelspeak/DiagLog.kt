@@ -19,7 +19,8 @@ import java.util.Locale
  *
  * MediaStore inserts are allowed on API 29+ without storage permission. The file is truncated on
  * every app start, then appended to synchronously, so a crash still leaves the last line on disk.
- * Also mirrors to logcat under the "NovelSpeak" tag.
+ * Full page URLs and credential-shaped values are redacted before the line is written because
+ * this file is in shared storage. Also mirrors to logcat under the "NovelSpeak" tag.
  */
 object DiagLog {
 
@@ -224,9 +225,12 @@ object DiagLog {
     }
 
     fun line(ctx: Context, msg: String) {
-        Log.i(TAG, msg)
+        // The log lives in shared Downloads (for Termux/debug access), so never write a
+        // full page URL or credential-shaped value there. Logcat gets the same safe text.
+        val safe = DiagnosticsRedaction.redact(msg)
+        Log.i(TAG, safe)
         synchronized(lock) {
-            val text = "${time.format(Date())} $msg\n"
+            val text = "${time.format(Date())} $safe\n"
             val u = uri
             if (u != null) {
                 try {
