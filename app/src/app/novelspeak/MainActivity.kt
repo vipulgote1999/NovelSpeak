@@ -760,9 +760,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             addView(speedView)
             addView(iconButton(Glyph.PLUS, "Faster", 40) { bumpSpeed(0.05f) })
         }
-        if (resources.configuration.fontScale >= 1.2f) {
-            // At 1.3x/2x the labels and speed chip no longer share a 411 dp row without
-            // clipping the "+" control. Keep the three reading actions and move speed below.
+        if (PlayerChrome.stackSpeedRow(
+                resources.configuration.screenWidthDp,
+                resources.configuration.fontScale
+            )
+        ) {
+            // At 1.3x/2x or on a 320 dp phone the labels and speed chip cannot share one row
+            // without clipping the "+" control. Keep the reading actions and move speed below.
             actionsRow.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
             card.addView(actionsRow)
             card.addView(LinearLayout(this).apply {

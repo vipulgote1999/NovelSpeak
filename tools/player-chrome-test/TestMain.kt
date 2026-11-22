@@ -37,6 +37,11 @@ fun main() {
         PlayerChrome.readActionDescription(1) == "Restart chapter"
     )
 
+    check("speed row stays inline on a normal phone", !PlayerChrome.stackSpeedRow(411, 1.0f))
+    check("speed row stacks on a 320 dp phone", PlayerChrome.stackSpeedRow(320, 1.0f))
+    check("speed row stacks at 1.3x text", PlayerChrome.stackSpeedRow(411, 1.3f))
+    check("speed row stays inline on a tablet", !PlayerChrome.stackSpeedRow(800, 1.0f))
+
     println("$checks checks, $failures failure(s)")
     if (failures > 0) kotlin.system.exitProcess(1)
 }

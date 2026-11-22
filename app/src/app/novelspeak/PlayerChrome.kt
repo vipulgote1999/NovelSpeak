@@ -24,4 +24,8 @@ object PlayerChrome {
 
     fun readActionDescription(total: Int): String =
         if (total > 0) "Restart chapter" else "Read chapter"
+
+    /** The Read/Next/Cast strip and speed controls cannot share a row below 360 dp. */
+    fun stackSpeedRow(screenWidthDp: Int, fontScale: Float): Boolean =
+        screenWidthDp < 360 || fontScale >= 1.2f
 }
