@@ -229,6 +229,7 @@ class SherpaEngine(
     private val boundaries = LinkedBlockingQueue<Boundary>()
     private var genThread: Thread? = null
     private var monThread: Thread? = null
+    @Volatile private var workersRun = true
     private var voiceId: String = ""
 
     override fun prepare(onResult: (Boolean, String?) -> Unit) {
@@ -306,6 +307,7 @@ class SherpaEngine(
         SherpaConfig.build(dir, family, prefs.threads, provider)
 
     private fun startWorkers() {
+        workersRun = true
         if (genThread == null) {
             genThread = Thread({ generationLoop() }, "ns-sherpa-gen").apply { isDaemon = true; start() }
         }
@@ -319,7 +321,7 @@ class SherpaEngine(
     }
 
     private fun generationLoop() {
-        while (true) {
+        while (workersRun) {
             val task = try {
                 genQueue.poll(500, TimeUnit.MILLISECONDS)
             } catch (e: InterruptedException) {
@@ -445,17 +447,18 @@ class SherpaEngine(
     }
 
     private fun monitorLoop() {
-        while (true) {
+        while (workersRun) {
             val b = try {
                 boundaries.poll(250, TimeUnit.MILLISECONDS)
             } catch (e: InterruptedException) {
                 null
             } ?: continue
             if (stopFlag) { main.post { b.onDone(false) }; continue }
-            player.awaitDrained(b.endFrame, b.epoch) { stopFlag }
-            // A broken/rebuilt AudioTrack is a real failure even though stopFlag never moved;
-            // without the epoch check the Reader could advance as if the sentence was heard.
-            val ok = !stopFlag && player.epoch() == b.epoch && !player.hasWriteError()
+            val drained = player.awaitDrained(b.endFrame, b.epoch) { stopFlag }
+            // A broken/rebuilt AudioTrack or a drain watchdog timeout is a real failure even
+            // though stopFlag never moved; without these checks the Reader could advance as if
+            // the sentence was heard.
+            val ok = drained && !stopFlag && player.epoch() == b.epoch && !player.hasWriteError()
             main.post { b.onDone(ok) }
         }
     }
@@ -492,9 +495,37 @@ class SherpaEngine(
 
     override fun release() {
         stop()
-        try { tts?.release() } catch (e: Throwable) {}
+        // The generation thread may still be inside the native generate call. Freeing the
+        // native OfflineTts while that call is unwinding is a use-after-free. Stop accepting
+        // work, wake both workers, and release the native handle only after the generation
+        // thread has actually left native code.
+        workersRun = false
+        val gen = genThread
+        val mon = monThread
+        val engine = tts
+        genThread = null
+        monThread = null
         tts = null
         isReady = false
+        try { gen?.interrupt() } catch (e: Throwable) {}
+        try { mon?.interrupt() } catch (e: Throwable) {}
+        if (gen == null && mon == null) {
+            try { engine?.release() } catch (e: Throwable) {}
+            return
+        }
+        Thread({
+            try { gen?.join(10_000) } catch (e: InterruptedException) {}
+            try { mon?.join(2_000) } catch (e: InterruptedException) {}
+            if (gen?.isAlive == true) {
+                // A native generation that will not return is safer to leak than to free
+                // underneath. The process-lifetime JNI allocation is small next to a crash.
+                DiagLog.line(ctx, "sherpa native release skipped: generation thread still alive")
+                return@Thread
+            }
+            try { engine?.release() } catch (e: Throwable) {
+                DiagLog.exception(ctx, "sherpa native release failed", e)
+            }
+        }, "ns-sherpa-release").apply { isDaemon = true; start() }
     }
 
     override fun voices(): List<Pair<String, String>> {

@@ -59,6 +59,9 @@ class NovelSpeakApp : Application() {
     }
 
     private fun dumpCrash(text: String) {
+        // Downloads is shared storage; the crash dump is local-only but still must not
+        // leave full URLs or credentials readable by other apps.
+        val safe = DiagnosticsRedaction.redact(text)
         if (Build.VERSION.SDK_INT >= 29) {
             try {
                 val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
@@ -84,7 +87,7 @@ class NovelSpeakApp : Application() {
                 }
                 val u = uri
                 if (u != null) {
-                    contentResolver.openOutputStream(u, "wt")?.use { it.write(text.toByteArray()) }
+                    contentResolver.openOutputStream(u, "wt")?.use { it.write(safe.toByteArray()) }
                     // Clear IS_PENDING or the file stays invisible/unreadable to other apps.
                     val done = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
                     contentResolver.update(u, done, null, null)
@@ -95,7 +98,7 @@ class NovelSpeakApp : Application() {
         }
         // Fallback: external app dir (readable via adb/shell on older builds).
         val dir = getExternalFilesDir(null) ?: filesDir
-        File(dir, "crash.txt").writeText(text)
+        File(dir, "crash.txt").writeText(safe)
     }
 
     companion object {
@@ -572,7 +575,7 @@ class Reader(private val app: NovelSpeakApp) {
      * so only the queued/pre-rendered audio has to be discarded.
      */
     fun setVoice(id: String) {
-        val wasPlaying = playing
+        val wasPlaying = playing || playRequested || prerolling
         playing = false
         pausedByFocus = false
         waitingForFocus = false
@@ -581,6 +584,9 @@ class Reader(private val app: NovelSpeakApp) {
         engine?.setVoice(id)
         status = if (sentences.isEmpty()) "Idle" else "Ready · " + sentences.size + " sentences"
         notifyState()
+        // Changing a voice must not silently stop the book. The queued audio was discarded,
+        // so re-enter the normal Play path and rebuild the preroll with the new voice.
+        if (wasPlaying) play()
     }
 
     fun nextSentence() {
@@ -778,14 +784,31 @@ class Reader(private val app: NovelSpeakApp) {
         playRequested = false
         prerolling = false
         main.removeCallbacks(prerollTick)
+        // Keep the track held until PlaybackService confirms audio focus. Starting the
+        // AudioTrack first briefly mixed over whatever was already playing and, when focus
+        // came back delayed, tore down a session that had already made sound.
+        app.player.setPlaybackHold(true)
+        status = "Starting…"
+        notifyState()
+        PlaybackService.start(app)
+        DiagLog.line(app, "play requested cursor=$cursor/${sentences.size} buffered=${"%.2f".format(engine?.bufferedSeconds() ?: 0f)}s")
+    }
+
+    /**
+     * Called by PlaybackService once audio focus is granted for a queued Play.
+     *
+     * Keeping this as a separate step is what guarantees the first sample is written only
+     * after focus is ours. It also delays the system-TTS legacy speak path, which plays
+     * outside PcmPlayer.
+     */
+    fun onFocusGrantedStart() {
+        if (!playing) return
         app.player.setPlaybackHold(false)
         app.player.startIfBuffered()
         status = "Playing"
         notifyState()
         schedulePump()
         startWordTracking()
-        PlaybackService.start(app)
-        DiagLog.line(app, "play started cursor=$cursor/${sentences.size} buffered=${"%.2f".format(engine?.bufferedSeconds() ?: 0f)}s")
         pump()
     }
 

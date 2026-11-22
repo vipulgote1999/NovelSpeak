@@ -85,6 +85,7 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
     private val queue = LinkedBlockingQueue<Task>()
     private val boundaries = LinkedBlockingQueue<Boundary>()
     private var worker: Thread? = null
+    @Volatile private var workerRun = true
     private var monitor: Thread? = null
     @Volatile private var stopFlag = false
     @Volatile private var monitorRun = true
@@ -174,6 +175,7 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
     }
 
     private fun startWorker() {
+        workerRun = true
         if (worker == null) {
             worker = Thread({ workerLoop() }, "ns-system-tts").apply {
                 isDaemon = true
@@ -203,12 +205,12 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
                 main.post { b.onDone(false) }
                 continue
             }
-            novelSpeakPlayer().awaitDrained(b.endFrame, b.playerEpoch) {
+            val drained = novelSpeakPlayer().awaitDrained(b.endFrame, b.playerEpoch) {
                 stopFlag || b.epoch != stopEpoch.get()
             }
-            // A broken/rebuilt AudioTrack must fail the sentence, not advance the cursor
-            // silently; both the engine and player epochs must still match.
-            val ok = !stopFlag && b.epoch == stopEpoch.get() &&
+            // A broken/rebuilt AudioTrack or a drain timeout must fail the sentence, not
+            // advance the cursor silently; both the engine and player epochs must still match.
+            val ok = drained && !stopFlag && b.epoch == stopEpoch.get() &&
                 novelSpeakPlayer().epoch() == b.playerEpoch &&
                 !novelSpeakPlayer().hasWriteError()
             main.post { b.onDone(ok) }
@@ -220,7 +222,7 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
     }
 
     private fun workerLoop() {
-        while (true) {
+        while (workerRun) {
             val task = try {
                 queue.poll(500, TimeUnit.MILLISECONDS)
             } catch (e: InterruptedException) {
@@ -411,6 +413,11 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
             if (res != TextToSpeech.SUCCESS) {
                 synchronized(pending) { pending.remove(utt) }
                 main.post { task.onDone(false) }
+            } else {
+                // Some providers accept speak() and then never call back (or the callback is
+                // dropped during a provider restart). Without this watchdog the Reader waits
+                // in "Playing" forever. First callback wins; finish() is idempotent.
+                main.postDelayed({ finish(utt, false) }, LEGACY_DONE_TIMEOUT_MS)
             }
         } catch (t2: Throwable) {
             DiagLog.exception(ctx, "tts speak failed len=${task.text.length}", t2)
@@ -501,12 +508,16 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
     override fun release() {
         stop()
         monitorRun = false
+        workerRun = false
         try { monitor?.interrupt() } catch (e: Throwable) {}
+        val w = worker
+        worker = null
+        monitor = null
+        try { w?.interrupt() } catch (e: Throwable) {}
+        try { w?.join(5_000) } catch (e: InterruptedException) {}
         try { tts?.shutdown() } catch (e: Throwable) {}
         tts = null
         isReady = false
-        worker = null
-        monitor = null
     }
 
     override fun bufferedSeconds(): Float = NovelSpeakApp.instance.player.bufferedSeconds()
@@ -547,5 +558,6 @@ class SystemTtsEngine(private val ctx: Context, private val prefs: Prefs) : TtsE
         /** Same 0.5..3.0 contract as the neural engine so the UI can use one range. */
         const val MIN_SPEED = 0.5f
         const val MAX_SPEED = 3.0f
+        const val LEGACY_DONE_TIMEOUT_MS = 60_000L
     }
 }
