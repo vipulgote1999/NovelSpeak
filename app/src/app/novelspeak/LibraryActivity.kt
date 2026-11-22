@@ -209,11 +209,17 @@ class LibraryActivity : Activity() {
     }
 
     private fun buildTopBar(): LinearLayout {
+        // At 2x on a phone narrower than 411 dp the title and both actions cannot share a row
+        // without reducing the title to "Li…". Put the actions on their own second row.
+        val stackActions = resources.configuration.fontScale >= 1.5f &&
+            resources.configuration.screenWidthDp < 411
+        val outer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val bar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(8), dp(8), dp(8), dp(6))
         }
+        outer.addView(bar)
         val back = TextView(this).apply {
             text = "←"
             textSize = 20f
@@ -233,12 +239,12 @@ class LibraryActivity : Activity() {
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.TEXT)
             setPadding(dp(12), 0, 0, 0)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             contentDescription = "Library"
         })
-        bar.addView(View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
-        })
-        bar.addView(TextView(this).apply {
+        val importAction = TextView(this).apply {
             text = "Import"
             textSize = 12f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
@@ -254,7 +260,7 @@ class LibraryActivity : Activity() {
             isClickable = true
             isFocusable = true
             setOnClickListener { openImportPicker() }
-        })
+        }
         clearAction = TextView(this).apply {
             text = "Clear"
             textSize = 12f
@@ -272,8 +278,20 @@ class LibraryActivity : Activity() {
             isFocusable = true
             setOnClickListener { confirmClear() }
         }
-        bar.addView(clearAction)
-        return bar
+        if (stackActions) {
+            val actions = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.END
+                setPadding(dp(16), 0, dp(16), dp(4))
+            }
+            actions.addView(importAction)
+            actions.addView(clearAction)
+            outer.addView(actions)
+        } else {
+            bar.addView(importAction)
+            bar.addView(clearAction)
+        }
+        return outer
     }
 
     private fun buildSearchBar(): LinearLayout {

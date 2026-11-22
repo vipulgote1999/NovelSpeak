@@ -1057,10 +1057,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         header.addView(TextView(this).apply {
             text = "NovelSpeak"
-            textSize = 32f
+            // A 64 sp effective wordmark splits mid-word on a 320 dp/2x phone.
+            textSize = if (resources.configuration.fontScale >= 1.5f) 26f else 32f
             typeface = Typeface.create("serif", Typeface.BOLD)
             setTextColor(Palette.TEXT)
             letterSpacing = -0.01f
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
             contentDescription = "NovelSpeak"
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })

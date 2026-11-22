@@ -9,6 +9,11 @@ tags:
     when:
       visible: "Home search"
     commands:
+      - scrollUntilVisible:
+          element:
+            text: "Shortcut Library"
+          direction: DOWN
+          timeout: 15000
       - tapOn: "Shortcut Library"
 - extendedWaitUntil:
     visible: "Search library"

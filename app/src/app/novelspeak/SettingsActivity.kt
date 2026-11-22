@@ -19,6 +19,7 @@ import android.os.PowerManager
 import android.speech.tts.TextToSpeech
 import android.text.Editable
 import android.text.InputType
+import android.text.TextUtils
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextWatcher
@@ -204,6 +205,9 @@ class SettingsActivity : Activity() {
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.TEXT)
             setPadding(dp(12), 0, 0, 0)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         bar.addView(pageTitle)
         return bar
