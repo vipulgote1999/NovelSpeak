@@ -1,8 +1,8 @@
 appId: app.novelspeak
 name: "07 library: opened chapter appears with progress and resumes"
 tags:
-  - pending
   - library
+  - reader
 ---
 - launchApp
 - runFlow:

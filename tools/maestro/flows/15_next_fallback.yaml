@@ -2,6 +2,7 @@ appId: app.novelspeak
 name: "15 next fallback: chapter URLs without a next anchor still advance"
 tags:
   - reader
+  - url
   - regression
 ---
 - launchApp

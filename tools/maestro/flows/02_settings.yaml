@@ -9,13 +9,28 @@ tags:
 - assertVisible: "NovelSpeak settings"
 - tapOn: "NovelSpeak settings"
 - assertVisible: "Settings"
+- scrollUntilVisible:
+    element:
+      text: "Reading aloud"
+    direction: UP
+    timeout: 15000
 - assertVisible: "Reading aloud"
 - assertVisible: "Voices & previews"
 - assertVisible: "Playback & sleep"
 - assertVisible: "Reading & display"
+- scrollUntilVisible:
+    element:
+      text: "Privacy & data"
+    direction: DOWN
+    timeout: 15000
 - assertVisible: "Privacy & data"
 - assertVisible: "Advanced"
 - assertVisible: "Changes are saved instantly.*"
+- scrollUntilVisible:
+    element:
+      text: "Reading aloud"
+    direction: UP
+    timeout: 15000
 - tapOn: "Reading aloud"
 - assertVisible: "Engine & models"
 - assertVisible: "Speech engine"

@@ -1,7 +1,8 @@
 # NovelSpeak Maestro E2E — expected results
 
-Last verified: **2026-10-24 ~23:00 IST**, emulator-5554 (API 35, headless), Maestro 2.11.0.
-App under test: **app.novelspeak 1.2.0-dev (versionCode 16)**.
+Last verified: **2026-11-22**, emulator-5554 (API 35, headless), Maestro 2.11.0.
+App under test: **app.novelspeak 1.4.0 (versionCode 20)**, test-only debug APK with the
+`res-dev` cleartext configuration for the localhost fixture.
 The first baseline (01–02) was taken on the previously installed **1.0.0 (versionCode 14)**.
 
 Status key: **PASS** = verified on the installed build; **PENDING** = feature/build not present;
@@ -36,6 +37,22 @@ Reports: `tools/maestro/reports/junit.xml` (Maestro 2.11 wants a **file** for `-
 | 07 | `flows/07_library_resume.yaml` | Library + resume | `Library`, `Library entry`, `.*Salt Road.*`, `.*[0-9]+%.*`; row reopens chapter2 and shows sentence state; row survives relaunch | Opened chapters are recorded, show progress, and resume | **PASS** (1.2.0-dev: 40 s) |
 | 08 | `flows/08_share_intent.txt` | Share-sheet ingestion | adb `ACTION_SEND text/plain` → `Shared text` status, `Sentence N of M`, `Read` | Shared prose reaches the reader | **PASS** (script, 1.2.0-dev) |
 | 09 | `flows/09_privacy_about.yaml` | Privacy / about | overflow `About & privacy`; `Privacy & licences`, `PRIVACY`, `.*no analytics.*`; `Back` | Privacy page states the no-analytics posture and returns | **PASS** (1.2.0-dev: 11 s) |
+
+### 1.4.0 gate (2026-11-22, versionCode 20)
+
+Run against a test-only debug APK using the `res-dev` cleartext config for `localhost`,
+`127.0.0.1` and `10.0.2.2`:
+
+```
+21/21 Flows Passed in 11m 23s
+tests=21 failures=0 errors=0 skipped=0
+== RESULT: PASS
+```
+
+`flows/08_share_intent.txt` separately: **PASS**. `tools/maestro/adaptive.sh` **PASS**
+(landscape two-pane and portrait single-column). `tools/maestro/text-scale.sh` **PASS**
+(flow 23 at 2.0×; font scale restored afterward). The new flow 22 proves a `file:` next
+link is refused and leaves the reader on the chapter.
 
 ### Full gate run (1.2.0-dev / versionCode 16)
 

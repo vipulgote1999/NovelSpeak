@@ -15,10 +15,10 @@ tags:
     timeout: 15000
 - tapOn: "Search library"
 - eraseText: 100
-- inputText: "Lantern"
+- inputText: "Lamplighter"
 - hideKeyboard
 - extendedWaitUntil:
-    visible: "The Lantern — A Short Chapter"
+    visible: "The Lamplighter's Daughter — The Wick Chronicle"
     timeout: 10000
 - assertNotVisible: "The Salt Road — The Wick Chronicle"
 - tapOn: "Clear search"
@@ -34,6 +34,6 @@ tags:
     timeout: 15000
 - tapOn: "Filter: Chapters"
 - extendedWaitUntil:
-    visible: "The Lantern — A Short Chapter"
+    visible: "The Lamplighter's Daughter — The Wick Chronicle"
     timeout: 10000
 - tapOn: "Filter: All"

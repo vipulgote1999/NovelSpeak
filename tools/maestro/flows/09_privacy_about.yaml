@@ -1,7 +1,7 @@
 appId: app.novelspeak
 name: "09 privacy: About & privacy -> Privacy & licences -> back"
 tags:
-  - pending
+  - settings
   - privacy
 ---
 # The installed 1.2.0-dev exposes privacy from the overflow menu; the newer

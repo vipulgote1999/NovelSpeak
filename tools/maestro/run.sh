@@ -4,6 +4,9 @@
 #   tools/maestro/run.sh                     # run every flow in flows/
 #   tools/maestro/run.sh 01_launch.yaml 02_settings.yaml
 #   tools/maestro/run.sh --pending           # run flows_pending/ (new-build gate)
+#   tools/maestro/run.sh --tag=library       # only flows tagged library (comma-separated
+#                                            # tags are passed as --include-tags)
+#   tools/maestro/run.sh --list-tags         # print flow tags without touching a device
 #
 # What it does, in order:
 #   1. verify emulator-5554 is connected
@@ -168,13 +171,58 @@ resolve_targets() {
 
 MODE="flows"
 ARGS=()
-for arg in "$@"; do
+TAG=""
+MAESTRO_ARGS=()
+LIST_TAGS=0
+while [ "$#" -gt 0 ]; do
+  arg="$1"
+  shift
   case "$arg" in
     -h|--help) usage; exit 0 ;;
     --pending) MODE="pending" ;;
+    --tag=*) TAG="${arg#--tag=}" ;;
+    --tag)
+      [ "$#" -gt 0 ] || die "--tag requires a value" 2
+      TAG="$1"
+      shift
+      ;;
+    --list-tags) LIST_TAGS=1 ;;
     *) ARGS+=("$arg") ;;
   esac
 done
+
+if [ "$LIST_TAGS" = "1" ]; then
+  for flow in "$SCRIPT_DIR"/flows/*.yaml; do
+    [ -f "$flow" ] || continue
+    tags="$(python3 - "$flow" <<'PY'
+import sys
+tags = []
+in_tags = False
+for line in open(sys.argv[1], encoding='utf-8'):
+    stripped = line.strip()
+    if stripped.startswith('tags:'):
+        rest = stripped.split(':', 1)[1].strip()
+        if rest.startswith('[') and rest.endswith(']'):
+            tags += [x.strip() for x in rest[1:-1].split(',') if x.strip()]
+        else:
+            in_tags = True
+            if rest.startswith('-'):
+                tags.append(rest[1:].strip())
+        continue
+    if in_tags:
+        if stripped == '---':
+            break
+        if line[:1] in (' ', '\t') and stripped.startswith('- '):
+            tags.append(stripped[2:].strip())
+        elif stripped:
+            break
+print(','.join(tags))
+PY
+)"
+    printf '%-36s %s\n' "$(basename "$flow")" "${tags:-<untagged>}"
+  done
+  exit 0
+fi
 
 [ -x "$MAESTRO" ] || die "Maestro not found/executable at $MAESTRO (set MAESTRO=...)" 5
 command -v curl >/dev/null || die "curl is required for the fixture-server health check" 5
@@ -190,9 +238,14 @@ else
   fi
 fi
 
+if [ -n "$TAG" ]; then
+  MAESTRO_ARGS+=(--include-tags "$TAG")
+fi
+
 echo "== NovelSpeak Maestro E2E"
 echo "   workspace: $ROOT"
 echo "   targets:   ${TARGETS[*]}"
+if [ -n "$TAG" ]; then echo "   tags:      $TAG"; fi
 
 ensure_device
 ensure_app
@@ -207,6 +260,7 @@ echo "== maestro test --format junit --output $JUNIT"
 "$MAESTRO" test "${TARGETS[@]}" \
   --format junit --output "$JUNIT" \
   --udid "$DEVICE" --no-ansi \
+  "${MAESTRO_ARGS[@]}" \
   --test-output-dir "$ARTIFACTS" 2>&1 | tee "$RUN_LOG"
 STATUS=${PIPESTATUS[0]}
 

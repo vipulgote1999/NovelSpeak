@@ -3,6 +3,7 @@ name: "03 read local chapter: URL loads, Read extracts, player shows sentence st
 tags:
   - reading
   - fixture
+  - url
 ---
 - launchApp
 - runFlow:

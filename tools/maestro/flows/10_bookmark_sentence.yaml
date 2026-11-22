@@ -1,6 +1,6 @@
 appId: app.novelspeak
 name: "10 bookmark: bookmark current sentence, find it in Library, reopen it"
-tags: [bookmark, library]
+tags: [reader, bookmark, library]
 ---
 - launchApp
 - runFlow:

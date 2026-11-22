@@ -1,7 +1,7 @@
 appId: app.novelspeak
 name: "06 sleep timer: set 15 minutes, countdown appears, Off clears it"
 tags:
-  - pending
+  - settings
   - sleep-timer
 ---
 - launchApp

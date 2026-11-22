@@ -2,6 +2,7 @@ appId: app.novelspeak
 name: "16 transport: voice label, sentence nav, stop, speed, restart"
 tags:
   - reader
+  - transport
   - regression
 ---
 - launchApp

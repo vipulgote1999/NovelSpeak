@@ -1,8 +1,8 @@
 appId: app.novelspeak
 name: "05 per-site reader mode: localhost off does not affect 10.0.2.2; survives relaunch"
 tags:
-  - pending
   - per-site
+  - reader
 ---
 # Targets the per-site reader fix. The dialog checkbox (checked attr) is the
 # authoritative state. The top bar exposes Reader as an icon plus state
