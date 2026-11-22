@@ -898,7 +898,7 @@ class SettingsActivity : Activity() {
                 if (target != null) openPage(target) else onClick?.invoke()
             }
         }
-        if (mark.isNotEmpty()) {
+        if (mark.isNotEmpty() && resources.configuration.fontScale < 1.5f) {
             row.addView(TextView(this).apply {
                 text = mark
                 textSize = 13f
