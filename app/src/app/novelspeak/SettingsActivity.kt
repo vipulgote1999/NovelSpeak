@@ -311,7 +311,7 @@ class SettingsActivity : Activity() {
         }
 
         if (page == Page.ENGINE) {
-            hubRow("Voices & previews", currentVoiceLabelText(), Page.VOICES)
+            hubRow("Voices & previews", currentVoiceLabelText(), Page.VOICES, mark = "V")
             hubRow(
                 "Speed, pitch & sleep",
                 "%.2f× speed · ".format(prefs.speed) +
@@ -798,16 +798,17 @@ class SettingsActivity : Activity() {
         })
 
         section("READING")
-        hubRow("Reading aloud", engineSummary() + " · " + shortVoiceLabel(), Page.ENGINE)
-        hubRow("Reading & display", readingSummary(), Page.READING)
+        hubRow("Reading aloud", engineSummary() + " · " + shortVoiceLabel(), Page.ENGINE, mark = "R")
+        hubRow("Reading & display", readingSummary(), Page.READING, mark = "Aa")
 
         section("VOICE & PLAYBACK")
-        hubRow("Voices & previews", voiceSummary(), Page.VOICES)
+        hubRow("Voices & previews", voiceSummary(), Page.VOICES, mark = "V")
         hubRow(
             "Playback & sleep",
             "%.2f× speed · ".format(prefs.speed) +
                 if (prefs.sleepTimerMinutes > 0) prefs.sleepTimerMinutes.toString() + " min sleep" else "sleep off",
-            Page.PLAYBACK
+            Page.PLAYBACK,
+            mark = "P"
         )
 
         section("STORY")
@@ -833,11 +834,14 @@ class SettingsActivity : Activity() {
         container.addView(castCard)
 
         section("PRIVACY & APP")
-        hubRow("Privacy & data", privacySummary(), Page.PRIVACY)
-        hubRow("Advanced", advancedSummary(), Page.ADVANCED)
-        hubRow("About NovelSpeak", "Privacy, licences and version") {
-            startActivity(Intent(this, AboutPrivacyActivity::class.java))
-        }
+        hubRow("Privacy & data", privacySummary(), Page.PRIVACY, mark = "S")
+        hubRow("Advanced", advancedSummary(), Page.ADVANCED, mark = "A")
+        hubRow(
+            "About NovelSpeak",
+            "Privacy, licences and version",
+            onClick = { startActivity(Intent(this, AboutPrivacyActivity::class.java)) },
+            mark = "i"
+        )
 
         container.addView(TextView(this).apply {
             text = "Changes are saved instantly."
@@ -847,7 +851,13 @@ class SettingsActivity : Activity() {
         })
     }
 
-    private fun hubRow(title: String, subtitle: String, target: Page? = null, onClick: (() -> Unit)? = null) {
+    private fun hubRow(
+        title: String,
+        subtitle: String,
+        target: Page? = null,
+        onClick: (() -> Unit)? = null,
+        mark: String = ""
+    ) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -862,6 +872,17 @@ class SettingsActivity : Activity() {
             setOnClickListener {
                 if (target != null) openPage(target) else onClick?.invoke()
             }
+        }
+        if (mark.isNotEmpty()) {
+            row.addView(TextView(this).apply {
+                text = mark
+                textSize = 13f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                setTextColor(Palette.ACCENT)
+                gravity = Gravity.CENTER
+                background = rounded(Palette.SURFACE_HIGH, 12)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(38), dp(38)).apply { marginEnd = dp(12) })
         }
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
