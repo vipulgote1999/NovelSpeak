@@ -46,6 +46,12 @@ object WebExtractor {
                 val wall = obj.optString("wall", "")
                 val arr = obj.optJSONArray("blocks")
                     ?: return@evaluateJavascript onResult(title, emptyList(), wall)
+                if (obj.optBoolean("truncated", false)) {
+                    DiagLog.line(
+                        web.context,
+                        "extract capped blocks=${arr.length()} chars=${obj.optInt("chars", 0)}"
+                    )
+                }
                 val max = NovelSpeakApp.instance.prefs.maxSentenceChars
                 val raw = ArrayList<Reader.Block>()
                 for (i in 0 until arr.length()) {

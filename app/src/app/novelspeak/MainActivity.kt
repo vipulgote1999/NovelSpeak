@@ -1532,8 +1532,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     return true
                 }
                 if (scheme == "http") {
-                    // Cleartext is blocked by the network security config; upgrade instead of
-                    // showing a dead page. Sites without HTTPS simply fail closed.
+                    // Cleartext is blocked by the release network security config. Loopback
+                    // is the exception used by the dev build and the Maestro fixture server.
+                    if (UrlInput.isLoopbackHttpUrl(request.url.toString())) {
+                        return super.shouldOverrideUrlLoading(view, request)
+                    }
+                    // Upgrade instead of showing a dead page. Sites without HTTPS fail closed.
                     view?.loadUrl(request.url.buildUpon().scheme("https").build().toString())
                     return true
                 }
@@ -2177,6 +2181,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     private fun extractPageNow(append: Boolean, auto: Boolean) {
+        val expectedUrl = web.url ?: ""
         // install() is async; extract only once the page-side scripts have actually run.
         WebExtractor.install(web) {
             WebExtractor.extract(web) { title, blocks, wall ->
@@ -2186,6 +2191,16 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 )
                 runOnUiThread {
                     extractionInFlight = false
+                    if (expectedUrl.isNotEmpty() && web.url != expectedUrl) {
+                        // A navigation (or a redirect) landed while the script chain was
+                        // waiting. Applying this result would append the previous page's text
+                        // to the current chapter.
+                        DiagLog.line(
+                            this,
+                            "extract discarded: page changed expected=$expectedUrl now=${web.url}"
+                        )
+                        return@runOnUiThread
+                    }
                     lastExtractedUrl = web.url
                     lastExtractedBlocks = blocks.size
                     val badPage = title.contains("not found", true) ||
@@ -2374,7 +2389,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         WebExtractor.nextLink(web) { link ->
             runOnUiThread {
                 prefetching = false
-                if (link.isNullOrEmpty() || link == current) return@runOnUiThread
+                if (link.isNullOrEmpty() || link == current || !UrlTools.isHttpUrl(link)) {
+                    return@runOnUiThread
+                }
                 prefetchLink = link
                 try {
                     val hw = WebView(this)
@@ -3210,6 +3227,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     }
                     autoAdvance = false
                     Toast.makeText(this, "No next-chapter link found", Toast.LENGTH_SHORT).show()
+                } else if (!UrlTools.isHttpUrl(target)) {
+                    // A page-controlled next link must not turn into a file/content/intent
+                    // load. The WebViewClient scheme guard does not see programmatic loadUrl.
+                    autoAdvance = false
+                    Toast.makeText(this, "Next link is not a web page", Toast.LENGTH_SHORT).show()
                 } else {
                     appendNext = true
                     web.loadUrl(target)

@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Next-link extraction regression</title></head>
+<body>
+<article>
+  <h1>Next-link fixture</h1>
+  <p>The first chapter ends here, and the reader should prepare the next page.</p>
+  <p>This second paragraph gives Readability enough text to parse the chapter.</p>
+</article>
+<a rel="next" href="chapter-two.html">Next Chapter</a>
+<pre id="out">waiting</pre>
+<script src="../../app/assets/extract.js"></script>
+<script>
+  setTimeout(function () {
+    try {
+      document.getElementById('out').textContent = String(window.__nsNextLink());
+    } catch (e) {
+      document.getElementById('out').textContent = 'ERROR ' + e;
+    }
+  }, 300);
+</script>
+</body>
+</html>

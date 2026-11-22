@@ -8,6 +8,12 @@
 
   var BLOCK_SEL = 'p, h1, h2, h3, h4, h5, li, blockquote, pre, td, dd';
   var SKIP_SEL = 'script, style, noscript, nav, header, footer, aside, form, button, select, svg, iframe';
+  // Extraction is fed straight into TTS and transported as one JSON string. Bound both the
+  // returned text and the density-candidate scan so a pathological page cannot freeze the
+  // WebView or allocate an unbounded queue.
+  var MAX_BLOCKS = 4000;
+  var MAX_CHARS = 250000;
+  var MAX_DENSITY_CANDIDATES = 400;
 
   function norm(s) {
     return (s || '')
@@ -74,9 +80,13 @@
       '[class*="read"], [id*="read"], [class*="text"], [id*="text"], [class*="entry"], [class*="post"], div, section'
     );
     var best = null, bestScore = 0;
-    for (var i = 0; i < cands.length; i++) {
+    var limit = Math.min(cands.length, MAX_DENSITY_CANDIDATES);
+    for (var i = 0; i < limit; i++) {
       var el = cands[i];
       if (el.closest(SKIP_SEL)) continue;
+      // innerText forces layout; a cheap textContent prefilter keeps div-heavy pages from
+      // becoming quadratic before the real candidate is scored.
+      if ((el.textContent || '').length < 400) continue;
       var t = norm(el.innerText);
       if (t.length < 400) continue;
       var links = el.querySelectorAll('a').length;
@@ -176,11 +186,25 @@
       if (t) blocks = [{ i: 0, text: t, tag: 'body' }];
     }
 
+    var kept = [], keptChars = 0, truncated = false;
+    for (var k = 0; k < blocks.length; k++) {
+      var text = blocks[k].text;
+      if (kept.length >= MAX_BLOCKS || keptChars + text.length > MAX_CHARS) {
+        truncated = true;
+        break;
+      }
+      kept.push(blocks[k]);
+      keptChars += text.length;
+    }
+    blocks = kept;
+    if (usedReadability) blocks = tagLive(blocks);
+
     var total = 0;
     for (var j = 0; j < blocks.length; j++) total += blocks[j].text.length;
     var wall = detectWall(total);
     return JSON.stringify({
-      title: title, blocks: blocks, chars: total, url: location.href, wall: wall
+      title: title, blocks: blocks, chars: total, url: location.href,
+      wall: wall, truncated: truncated
     });
   }
 
