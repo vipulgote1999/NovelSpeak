@@ -14,6 +14,20 @@ APP="$ROOT/app"
 BUILD="$ROOT/build"
 MANIFEST="${MANIFEST:-$APP/AndroidManifest.xml}"
 DEPS="${DEPS:-$HOME/build/deps}"
+
+if ! command -v kotlinc >/dev/null 2>&1; then
+  echo "kotlinc is required (Kotlin 2.2 or newer)" >&2
+  exit 1
+fi
+KOTLIN_VERSION="$(kotlinc -version 2>&1 | sed -n 's/.*kotlinc-jvm \([0-9][0-9.]*\).*/\1/p' | head -1)"
+if [ -z "$KOTLIN_VERSION" ]; then
+  echo "Could not determine the Kotlin compiler version; Kotlin 2.2+ is required" >&2
+  exit 1
+fi
+if [ "$(printf '%s\n' "2.2.0" "$KOTLIN_VERSION" | sort -V | head -1)" != "2.2.0" ]; then
+  echo "Kotlin 2.2+ is required (found $KOTLIN_VERSION); the sources use 2.2 language features" >&2
+  exit 1
+fi
 # Play requires targetSdk 36 for new apps and updates since 2026-08-31. The manifest is the
 # source of truth for the shipped target; this value must match it.
 MIN_SDK="${MIN_SDK:-24}"
@@ -31,6 +45,11 @@ if [ -z "${ANDROID_JAR:-}" ]; then
   fi
 fi
 KOTLIN_STDLIB="${KOTLIN_STDLIB:-/data/data/com.termux/files/usr/opt/kotlin/lib/kotlin-stdlib.jar}"
+if [ ! -f "$KOTLIN_STDLIB" ]; then
+  echo "KOTLIN_STDLIB not found: $KOTLIN_STDLIB" >&2
+  echo "Set KOTLIN_STDLIB to <kotlinc>/lib/kotlin-stdlib.jar (see RELEASING.md)" >&2
+  exit 1
+fi
 PKG="app.novelspeak"
 ABI="${ABI:-arm64-v8a}"
 DEBUGGABLE="${DEBUGGABLE:-0}"

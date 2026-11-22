@@ -37,7 +37,7 @@ Never commit the keystore, the password file, or the passwords. Both are covered
 `build.sh` needs:
 
 - JDK 17+ (`java`, `keytool`, `jar`)
-- Kotlin compiler (`kotlinc`)
+- Kotlin compiler **2.2+** (`kotlinc`; the sources use 2.2 language features)
 - Android SDK build-tools (`aapt2`, `d8`, `apksigner`, `zipalign`)
 - `android.jar` for API 36 (the Play target; API 34 also works for resource linking on Termux)
 - Dependency jars/AAR in `deps/` (see README): `sherpa.aar`, `commons-compress.jar`,
@@ -70,7 +70,7 @@ export KOTLIN_STDLIB="/path/to/kotlinc/lib/kotlin-stdlib.jar"
    KS_PASS="$NOVELSPEAK_KS_PASS" \
    KEY_PASS="$NOVELSPEAK_KEY_PASS" \
    ZIPALIGN="$BUILD_TOOLS/zipalign" \
-   OUT_APK="build/NovelSpeak-$VERSION-arm64-v8a.apk" \
+   OUT_APK="build/NovelSpeak-$VERSION-release-arm64-v8a.apk" \
    bash ./build.sh
 
    KEYSTORE="$HOME/.keys/novelspeak-release.jks" \
@@ -88,7 +88,7 @@ export KOTLIN_STDLIB="/path/to/kotlinc/lib/kotlin-stdlib.jar"
 4. Verify both artifacts and record checksums:
 
    ```bash
-   APK="build/NovelSpeak-$VERSION-arm64-v8a.apk"
+   APK="build/NovelSpeak-$VERSION-release-arm64-v8a.apk"
    AAB="build/NovelSpeak-$VERSION.aab"
    "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
    "$BUILD_TOOLS/aapt2" dump badging "$APK" | head -8
