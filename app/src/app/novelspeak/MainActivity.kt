@@ -1813,6 +1813,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         // Home hides the whole browser bar; the search pill brings it back for typing.
         if (::topBar.isInitialized) topBar.visibility = View.VISIBLE
         if (::addressBox.isInitialized) addressBox.visibility = View.VISIBLE
+        // A second search pill and a half-cut wordmark behind the keyboard are noise.
+        if (homeVisible && ::homeView.isInitialized) homeView.visibility = View.GONE
         val current = web.url ?: lastDisplayedUrl
         setEditingUi(true)
         urlBar.setText(current)
@@ -1839,6 +1841,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         updateAddressDisplay(web.url ?: lastDisplayedUrl)
         if (homeVisible) {
             // Returning to Home keeps its minimal chrome.
+            if (::homeView.isInitialized) homeView.visibility = View.VISIBLE
             if (::topBar.isInitialized) topBar.visibility = View.GONE
             if (::addressBox.isInitialized) addressBox.visibility = View.GONE
             if (::navCluster.isInitialized) navCluster.visibility = View.GONE
