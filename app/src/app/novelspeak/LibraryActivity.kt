@@ -74,7 +74,7 @@ class LibraryActivity : Activity() {
         data class Entry(val entry: LibraryEntry) : Row()
         data class Book(val book: ImportedBook) : Row()
         data class Mark(val mark: Bookmark) : Row()
-        data class Empty(val message: String) : Row()
+        data class Empty(val message: String, val libraryEmpty: Boolean = false) : Row()
 
         /** Two cards side by side on medium/expanded windows; [right] is null for an odd tail. */
         data class Pair(val left: Row, val right: Row?) : Row()
@@ -96,7 +96,7 @@ class LibraryActivity : Activity() {
                 is Row.Entry -> entryRow(row.entry)
                 is Row.Book -> importRow(row.book)
                 is Row.Mark -> bookmarkRow(row.mark)
-                is Row.Empty -> emptyView(row.message)
+                is Row.Empty -> emptyView(row.message, row.libraryEmpty)
                 is Row.Pair -> pairView(row.left, row.right)
             }
             // ListView owns row layout; ignore the LinearLayout margins used by the old
@@ -231,6 +231,23 @@ class LibraryActivity : Activity() {
         })
         bar.addView(View(this).apply {
             layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+        })
+        bar.addView(TextView(this).apply {
+            text = "Import"
+            textSize = 12f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            gravity = Gravity.CENTER
+            setTextColor(Palette.ACCENT)
+            background = ripple(Palette.SURFACE_HIGH, 12)
+            setPadding(dp(14), 0, dp(14), 0)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                dp(Design.DENSE_TOUCH_DP)
+            ).apply { marginEnd = dp(6) }
+            contentDescription = "Import from file"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { openImportPicker() }
         })
         clearAction = TextView(this).apply {
             text = "Clear"
@@ -426,7 +443,8 @@ class LibraryActivity : Activity() {
             adapter.rows = listOf(
                 Row.Empty(
                     if (noneAtAll) EMPTY_TEXT
-                    else "No matches. Try a different search or filter."
+                    else "No matches. Try a different search or filter.",
+                    libraryEmpty = noneAtAll
                 )
             )
             adapter.notifyDataSetChanged()
@@ -637,13 +655,119 @@ class LibraryActivity : Activity() {
         return card
     }
 
-    private fun emptyView(message: String = EMPTY_TEXT): TextView = TextView(this).apply {
-        text = message
-        textSize = 14f
-        setTextColor(Palette.MUTED)
-        gravity = Gravity.CENTER
-        setLineSpacing(dp(4).toFloat(), 1f)
-        setPadding(dp(24), dp(72), dp(24), dp(24))
+    /**
+     * The first-run Library is a dead end no longer: it names the state and offers the two
+     * actions that can fill it (browse, or import a file) instead of sending the user back to
+     * the overflow menu.
+     */
+    private fun emptyView(message: String = EMPTY_TEXT, libraryEmpty: Boolean = false): View {
+        if (!libraryEmpty) {
+            return TextView(this).apply {
+                text = message
+                textSize = 14f
+                setTextColor(Palette.MUTED)
+                gravity = Gravity.CENTER
+                setLineSpacing(dp(4).toFloat(), 1f)
+                setPadding(dp(24), dp(72), dp(24), dp(24))
+            }
+        }
+        val col = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(24), dp(56), dp(24), dp(24))
+        }
+        col.addView(TextView(this).apply {
+            text = "Aa"
+            textSize = 26f
+            typeface = Typeface.create("serif", Typeface.BOLD)
+            setTextColor(Palette.ACCENT)
+            gravity = Gravity.CENTER
+            background = rounded(Palette.SURFACE_HIGH, 32)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, LinearLayout.LayoutParams(dp(64), dp(64)))
+        col.addView(TextView(this).apply {
+            text = "Your library is empty"
+            textSize = 20f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(20), 0, 0)
+        })
+        col.addView(TextView(this).apply {
+            text = "Chapters and imported books appear here."
+            textSize = 13.5f
+            setTextColor(Palette.MUTED)
+            gravity = Gravity.CENTER
+            setLineSpacing(dp(3).toFloat(), 1f)
+            setPadding(0, dp(8), 0, 0)
+        })
+        val browse = emptyAction("Browse a site", primary = true) { finish() }
+        browse.contentDescription = "Browse a site"
+        col.addView(browse, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(24) })
+        val import = emptyAction("Import a book", primary = false) { openImportPicker() }
+        import.contentDescription = "Import a book"
+        col.addView(import, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(8) })
+        return col
+    }
+
+    private fun emptyAction(label: String, primary: Boolean, onClick: () -> Unit): TextView =
+        TextView(this).apply {
+            text = label
+            textSize = 14f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            gravity = Gravity.CENTER
+            setTextColor(if (primary) Palette.BG else Palette.TEXT)
+            background = if (primary) {
+                ripple(Palette.ACCENT, 14)
+            } else {
+                rippleStroke(Palette.SURFACE_HIGH, 14, Palette.BORDER)
+            }
+            minHeight = dp(Design.TOUCH_DP)
+            setPadding(dp(18), dp(12), dp(18), dp(12))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onClick() }
+        }
+
+    /**
+     * Library owns the picker so cancelling returns here, not to the reader. Only a chosen file
+     * is handed to MainActivity (its ACTION_VIEW path already imports content documents).
+     */
+    private fun openImportPicker() {
+        try {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+                putExtra(
+                    Intent.EXTRA_MIME_TYPES,
+                    arrayOf("application/epub+zip", "application/pdf", "text/plain")
+                )
+            }
+            startActivityForResult(intent, REQ_IMPORT_DOCUMENT)
+        } catch (t: Throwable) {
+            Toast.makeText(this, "Could not open the document picker", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    @Deprecated("Activity result is the only API available without AndroidX")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQ_IMPORT_DOCUMENT || resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        try {
+            val mime = contentResolver.getType(uri)
+            val open = Intent(this, MainActivity::class.java)
+                .setAction(Intent.ACTION_VIEW)
+                .setData(uri)
+            if (!mime.isNullOrEmpty()) open.type = mime
+            startActivity(open)
+        } catch (t: Throwable) {
+            Toast.makeText(this, "Could not open that file", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun entryRow(entry: LibraryEntry): View {
@@ -833,6 +957,15 @@ class LibraryActivity : Activity() {
         return RippleDrawable(ColorStateList.valueOf(Palette.RIPPLE), content, mask)
     }
 
+    private fun rippleStroke(color: Int, radiusDp: Int, strokeColor: Int): RippleDrawable {
+        val content = rounded(color, radiusDp).apply { setStroke(dp(1), strokeColor) }
+        val mask = GradientDrawable().apply {
+            setColor(Color.WHITE)
+            cornerRadius = dp(radiusDp).toFloat()
+        }
+        return RippleDrawable(ColorStateList.valueOf(Palette.RIPPLE), content, mask)
+    }
+
     companion object {
         /** Extra: sentence index MainActivity should seek to after extraction. */
         const val EXTRA_RESUME_SENTENCE = "resumeSentence"
@@ -843,9 +976,10 @@ class LibraryActivity : Activity() {
         /** Extra: id of a stored import (EPUB/PDF/text) to open in the reader. */
         const val EXTRA_IMPORT_ID = "importId"
 
+        private const val REQ_IMPORT_DOCUMENT = 1002
+
         /** Shown when no chapter has been opened and no book imported yet. */
-        const val EMPTY_TEXT =
-            "Nothing here yet — open a page, or import an EPUB/PDF from the menu, and it will appear here."
+        const val EMPTY_TEXT = "Chapters and imported books appear here."
 
         private const val MINUTE_MS = 60_000L
         private const val HOUR_MS = 60 * MINUTE_MS
