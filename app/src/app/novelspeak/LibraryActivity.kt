@@ -446,12 +446,16 @@ class LibraryActivity : Activity() {
         if (entries.isEmpty() && marks.isEmpty() && books.isEmpty()) {
             val noneAtAll = rawEntries.isEmpty() && rawBooks.isEmpty() && rawMarks.isEmpty()
             val importedEmpty = !noneAtAll && filter == Filter.IMPORTED && rawBooks.isEmpty()
+            val finishedEmpty = !noneAtAll && filter == Filter.FINISHED &&
+                entries.isEmpty() && books.isEmpty()
             clearAction.visibility = if (noneAtAll) View.GONE else View.VISIBLE
             adapter.rows = listOf(
                 Row.Empty(
                     when {
                         noneAtAll -> EMPTY_TEXT
                         importedEmpty -> "No imported books yet."
+                        finishedEmpty -> "Nothing finished yet. Chapters you complete appear here."
+                        q.isNotEmpty() -> "No results for “" + query.trim() + "”."
                         else -> "No matches. Try a different search or filter."
                     },
                     libraryEmpty = noneAtAll,
