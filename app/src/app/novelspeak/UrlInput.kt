@@ -23,8 +23,12 @@ object UrlInput {
 
         val lower = text.lowercase()
         // The Play release blocks cleartext globally. Upgrade an explicitly typed HTTP URL
-        // instead of handing the WebView a request that can only fail.
-        if (lower.startsWith("http://")) return "https://" + text.substring(7)
+        // instead of handing the WebView a request that can only fail. Loopback stays HTTP
+        // so the dev build and the Maestro fixture server can be exercised; the release
+        // network config still blocks cleartext for those hosts.
+        if (lower.startsWith("http://")) {
+            return if (isLoopbackHttpUrl(text)) text else "https://" + text.substring(7)
+        }
         if (lower.startsWith("https://")) return text
         if (lower.startsWith("about:")) return text
 
@@ -55,6 +59,25 @@ object UrlInput {
             it.isLetterOrDigit() || it == '.' || it == '-' || it == ':' ||
                 it == '[' || it == ']' || it == '%'
         }
+    }
+
+    /** True for the loopback hosts used by the dev build and the Maestro fixture server. */
+    fun isLoopbackHttpUrl(url: String): Boolean {
+        if (!url.startsWith("http://", ignoreCase = true)) return false
+        val authority = url.substringAfter("://")
+            .substringBefore('/').substringBefore('?').substringBefore('#')
+        val hostPort = authority.substringAfterLast('@')
+        val host = if (hostPort.startsWith("[")) {
+            hostPort.substringBefore(']') + "]"
+        } else {
+            hostPort.substringBefore(':')
+        }
+        return isLoopbackHost(host)
+    }
+
+    private fun isLoopbackHost(host: String): Boolean {
+        val h = host.trim('[', ']').lowercase()
+        return h == "localhost" || h == "127.0.0.1" || h == "::1" || h == "10.0.2.2"
     }
 
     private fun search(text: String): String =

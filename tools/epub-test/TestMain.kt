@@ -94,6 +94,22 @@ fun main() {
         return baos.toByteArray()
     }
 
+    fun buildEpubWithOpf(opfXml: String): ByteArray {
+        val baos = ByteArrayOutputStream()
+        ZipOutputStream(baos).use { zos ->
+            zos.putNextEntry(ZipEntry("META-INF/container.xml"))
+            zos.write(containerXml.toByteArray(Charsets.UTF_8))
+            zos.closeEntry()
+            zos.putNextEntry(ZipEntry("OEBPS/content.opf"))
+            zos.write(opfXml.toByteArray(Charsets.UTF_8))
+            zos.closeEntry()
+            zos.putNextEntry(ZipEntry("OEBPS/ch1.xhtml"))
+            zos.write(xhtml("Chapter One", "<p>Ordinary chapter text for size.</p>").toByteArray(Charsets.UTF_8))
+            zos.closeEntry()
+        }
+        return baos.toByteArray()
+    }
+
     val bytes = buildEpub()
     val streamRes = EpubImporter.import(ByteArrayInputStream(bytes))
     val book = streamRes.book
@@ -136,6 +152,25 @@ fun main() {
     }
     val overRes = EpubImporter.import(ByteArrayInputStream(baos2.toByteArray()))
     check("oversized-rejected", overRes.book == null && overRes.error.isNotEmpty(), "err=" + overRes.error)
+
+    // XML external entity (XXE): the hardened parser rejects DOCTYPE, but the compatibility
+    // fallback must not silently re-parse the same document with entities enabled.
+    val secretFile = File("/tmp/novelspeak-epub-xxe-secret.txt")
+    val secret = "xxe-secret-" + System.nanoTime()
+    secretFile.writeText(secret)
+    var maliciousOpf = opf("PLACEHOLDER", "Test Author", listOf("ch1" to "ch1.xhtml"))
+    maliciousOpf = maliciousOpf.replace(
+        "<dc:title>PLACEHOLDER</dc:title>",
+        "<dc:title>&xxe;</dc:title>"
+    ).replaceFirst(
+        "?>",
+        "?>\n<!DOCTYPE package [<!ENTITY xxe SYSTEM \"file://" + secretFile.absolutePath + "\">]>"
+    )
+    val xxeRes = EpubImporter.import(ByteArrayInputStream(buildEpubWithOpf(maliciousOpf)))
+    val xxeTitle = xxeRes.book?.title ?: ""
+    check("xxe-rejected", xxeRes.book == null && xxeRes.error.isNotEmpty(), "err=" + xxeRes.error)
+    check("xxe-secret-not-expanded", !xxeTitle.contains(secret), "title=" + xxeTitle)
+    secretFile.delete()
 
     if (failures > 0) {
         println(failures.toString() + " case(s) failed")

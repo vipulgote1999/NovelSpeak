@@ -206,6 +206,10 @@ object EpubImporter {
             null
         }
         if (hardened != null) return hardened
+        // The hardened parser can fail because a vendor rejects one of the optional knobs.
+        // Do not retry a document that contains a DOCTYPE/ENTITY declaration: the plain
+        // parser would resolve external entities (XXE), as this test demonstrates.
+        if (hasDoctypeOrEntity(bytes)) return null
         return try {
             val plain = DocumentBuilderFactory.newInstance()
             plain.isNamespaceAware = true
@@ -213,6 +217,11 @@ object EpubImporter {
         } catch (_: Throwable) {
             null
         }
+    }
+
+    private fun hasDoctypeOrEntity(bytes: ByteArray): Boolean {
+        val text = String(bytes, Charsets.ISO_8859_1).lowercase()
+        return text.contains("<!doctype") || text.contains("<!entity")
     }
 
     private fun firstDcText(doc: Document, local: String): String {
