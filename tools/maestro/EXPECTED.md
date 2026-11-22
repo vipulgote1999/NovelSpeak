@@ -39,6 +39,25 @@ Reports: `tools/maestro/reports/junit.xml` (Maestro 2.11 wants a **file** for `-
 | 09 | `flows/09_privacy_about.yaml` | Privacy / about | overflow `About & privacy`; `Privacy & licences`, `PRIVACY`, `.*no analytics.*`; `Back` | Privacy page states the no-analytics posture and returns | **PASS** (1.2.0-dev: 11 s) |
 | 24 | `flows/24_library_empty.yaml` | First-run Library | `Your library is empty`, `Import a book`, `Browse a site`; picker cancel returns to Library; Browse returns Home | Empty Library explains the state and both ways to fill it | **PASS** (2026-11-22: 11 s) |
 | 25 | `flows/25_home_overflow.yaml` | Home action sheet | sheet `Import EPUB or PDF`, `Library`, `NovelSpeak settings`, `About & privacy`; no `Reload`/`Copy link`/`Site settings`/`Translate page` | Home never offers page-only actions | **PASS** (2026-11-22: 13 s) |
+| 26 | `flows/26_error_page.yaml` | Error page guard | 404 document → `Page didn't load.*`/`This page isn't a readable chapter`; no `Ready ·`, no `Pause` | A failed page is never queued for speech | **PASS** (2026-11-22: 30 s) |
+| 27 | `flows/27_player_shortcuts.yaml` | Player shortcuts | voice row → `Voices & previews`; Back → hub → reader; Sleep timer → 15 minutes → live chip | Voice settings and the sleep timer are one tap from playback | **PASS** (2026-11-22: 37 s) |
+| 28 | `flows/28_reader_text_scale.yaml` | Reader at 2× | voice row, Sleep timer, Next chapter reachable; timer arms | Final controls fit at 2.0× text | **PASS** (2026-11-22: 33 s) |
+| 29 | `flows/29_library_imported_empty.yaml` | Imported filter empty | `No imported books yet`, `Import a book` | Empty Imported tab offers the picker | **PASS** (2026-11-22: 38 s) |
+
+### UI hardening gate (2026-11-22, versionCode 20)
+
+Focused run after the player shortcuts, error-page guard, import-mode and Library tablet fixes:
+
+```
+6/6 Flows Passed in 2m 56s
+tests=6 failures=0 errors=0 skipped=0
+== RESULT: PASS
+```
+
+The same build passed **28/28 host harnesses** and the two 2× text-scale flows
+(23 and 28). Manual checks covered a real text-file import, imported-book Back,
+and the Library two-column grid at 800 dp. That check found and fixed a 1 px
+imported-card measurement bug.
 
 ### Continuous-improvement gate (2026-11-22, versionCode 20)
 

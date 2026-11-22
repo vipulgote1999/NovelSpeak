@@ -9,7 +9,7 @@ NovelSpeak is deliberately Gradle-free, so its tests use four layers:
 | Maestro + emulator | Real app journeys, navigation, playback controls, library and settings | `tools/maestro/run.sh` |
 | Device scripts | Share intent, rotation, 2× font scale | `08_share_intent.txt`, `adaptive.sh`, `text-scale.sh` |
 
-The host suite currently has **26 harnesses**. The device suite has **23 Maestro flows**
+The host suite currently has **28 harnesses**. The device suite has **27 Maestro flows**
 plus the three device scripts.
 
 ## Quick commands
