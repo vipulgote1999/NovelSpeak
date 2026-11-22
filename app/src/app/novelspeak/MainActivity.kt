@@ -787,45 +787,76 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             gravity = Gravity.CENTER
             setPadding(0, dp(6), 0, 0)
         }
-        // Equal side columns keep the 56 dp Play button exactly on the card's centre line,
-        // even though the right cluster has two more controls than the left.
-        val leftTransport = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.END or Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        leftTransport.addView(iconButton(Glyph.PREV, "Previous sentence", Design.TOUCH_DP) {
+        fun previous() {
             cancelAutoAdvance()
             reader.prevSentence()
-        })
-        transportRow.addView(leftTransport)
-        playButton = iconButton(
-            Glyph.PLAY, "Play", 56, Palette.ACCENT, Palette.BG, oval = true
-        ) {
-            togglePlayback()
         }
-        playGlyph = playButton.getChildAt(0) as GlyphView
-        transportRow.addView(playButton)
-        val rightTransport = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        rightTransport.addView(iconButton(Glyph.NEXT, "Next sentence", Design.TOUCH_DP) {
+        fun next() {
             cancelAutoAdvance()
             reader.nextSentence()
-        })
-        rightTransport.addView(iconButton(Glyph.STOP, "Stop", Design.DENSE_TOUCH_DP) {
+        }
+        fun stop() {
             cancelAutoAdvance()
             reader.stop()
-        })
-        // Sleep timer belongs next to transport, not three taps deep in the overflow.
-        sleepButton = iconButton(Glyph.MOON, "Sleep timer", Design.DENSE_TOUCH_DP) {
-            showSleepTimerDialog()
         }
-        sleepGlyph = sleepButton.getChildAt(0) as GlyphView
-        rightTransport.addView(sleepButton)
-        transportRow.addView(rightTransport)
+        if (resources.configuration.screenWidthDp < 360) {
+            // A 320 dp phone cannot fit two equal side columns around Play. Keep one compact
+            // strip so the sleep timer is not clipped off the card.
+            transportRow.addView(iconButton(Glyph.PREV, "Previous sentence", Design.DENSE_TOUCH_DP) {
+                previous()
+            })
+            playButton = iconButton(
+                Glyph.PLAY, "Play", 52, Palette.ACCENT, Palette.BG, oval = true
+            ) { togglePlayback() }
+            playGlyph = playButton.getChildAt(0) as GlyphView
+            transportRow.addView(playButton)
+            transportRow.addView(iconButton(Glyph.NEXT, "Next sentence", Design.DENSE_TOUCH_DP) {
+                next()
+            })
+            transportRow.addView(iconButton(Glyph.STOP, "Stop", 40) { stop() })
+            sleepButton = iconButton(Glyph.MOON, "Sleep timer", 40) {
+                showSleepTimerDialog()
+            }
+            sleepGlyph = sleepButton.getChildAt(0) as GlyphView
+            transportRow.addView(sleepButton)
+        } else {
+            // Equal side columns keep the 56 dp Play button exactly on the card's centre line,
+            // even though the right cluster has two more controls than the left.
+            val leftTransport = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.END or Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            leftTransport.addView(iconButton(Glyph.PREV, "Previous sentence", Design.TOUCH_DP) {
+                previous()
+            })
+            transportRow.addView(leftTransport)
+            playButton = iconButton(
+                Glyph.PLAY, "Play", 56, Palette.ACCENT, Palette.BG, oval = true
+            ) {
+                togglePlayback()
+            }
+            playGlyph = playButton.getChildAt(0) as GlyphView
+            transportRow.addView(playButton)
+            val rightTransport = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            rightTransport.addView(iconButton(Glyph.NEXT, "Next sentence", Design.TOUCH_DP) {
+                next()
+            })
+            rightTransport.addView(iconButton(Glyph.STOP, "Stop", Design.DENSE_TOUCH_DP) {
+                stop()
+            })
+            // Sleep timer belongs next to transport, not three taps deep in the overflow.
+            sleepButton = iconButton(Glyph.MOON, "Sleep timer", Design.DENSE_TOUCH_DP) {
+                showSleepTimerDialog()
+            }
+            sleepGlyph = sleepButton.getChildAt(0) as GlyphView
+            rightTransport.addView(sleepButton)
+            transportRow.addView(rightTransport)
+        }
         card.addView(transportRow)
         playerCard = card
 
