@@ -43,6 +43,7 @@ Reports: `tools/maestro/reports/junit.xml` (Maestro 2.11 wants a **file** for `-
 | 27 | `flows/27_player_shortcuts.yaml` | Player shortcuts | voice row → `Voices & previews`; Back → hub → reader; Sleep timer → 15 minutes → live chip | Voice settings and the sleep timer are one tap from playback | **PASS** (2026-11-22: 37 s) |
 | 28 | `flows/28_reader_text_scale.yaml` | Reader at 2× | voice row, Sleep timer, Next chapter reachable; timer arms | Final controls fit at 2.0× text | **PASS** (2026-11-22: 33 s) |
 | 29 | `flows/29_library_imported_empty.yaml` | Imported filter empty | `No imported books yet`, `Import a book` | Empty Imported tab offers the picker | **PASS** (2026-11-22: 38 s) |
+| 30 | `flows/30_narrow_player.yaml` | 320 dp player | previous/play/next/stop/Sleep timer all present; timer arms | No transport control is clipped on a narrow phone | **PASS** (2026-11-22: 33 s, `narrow.sh`) |
 
 ### Full UI gate (2026-11-22, versionCode 20)
 
@@ -55,7 +56,7 @@ tests=27 failures=0 errors=0 skipped=0
 ```
 
 The same build passed **28/28 host harnesses**, the headless Chromium regressions,
-and `tools/maestro/text-scale.sh` (flows 23 + 28 at 2.0×). Manual coverage: a real
+`tools/maestro/text-scale.sh` (flows 23 + 28 at 2.0×) and `tools/maestro/narrow.sh` (flow 30 at 320 dp). Manual coverage: a real
 text-file import, imported-book Back, site-settings switches, the confirm sheet,
 and Home/Settings/Library/reader at 800 dp.
 
