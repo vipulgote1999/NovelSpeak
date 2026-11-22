@@ -63,6 +63,7 @@ import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.Space
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import app.novelspeak.adblock.UrlTools
@@ -2147,34 +2148,102 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val site = app.novelspeak.adblock.PublicSuffixList
             .registrableDomain(host).ifEmpty { host }
         var adblockChanged = false
-        val checked = booleanArrayOf(
-            prefs.readerModeForSite(site),
+
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = roundedStroke(Palette.SURFACE, Design.RADIUS_LG, Palette.BORDER, 1)
+            setPadding(dp(8), dp(10), dp(8), dp(14))
+        }
+        panel.addView(View(this).apply {
+            background = rounded(Palette.FAINT, 2)
+            layoutParams = LinearLayout.LayoutParams(dp(36), dp(4)).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+            }
+        })
+        panel.addView(TextView(this).apply {
+            text = host
+            textSize = 18f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+            setPadding(dp(14), dp(14), dp(14), dp(2))
+        })
+        panel.addView(TextView(this).apply {
+            text = if (secure) "Secure HTTPS connection" else "Not a secure connection"
+            textSize = 12f
+            setTextColor(if (secure) Palette.ACCENT else Palette.AMBER)
+            setPadding(dp(14), 0, dp(14), dp(10))
+        })
+
+        fun siteSwitch(
+            label: String,
+            checked: Boolean,
+            onChange: (Boolean) -> Unit
+        ) {
+            val sw = Switch(this).apply {
+                text = label
+                textSize = 15f
+                setTextColor(Palette.TEXT)
+                showText = false
+                minHeight = dp(56)
+                setPadding(dp(14), 0, dp(10), 0)
+                isChecked = checked
+                thumbTintList = ColorStateList(
+                    arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                    intArrayOf(Palette.ACCENT, Palette.TEXT_SECONDARY)
+                )
+                trackTintList = ColorStateList(
+                    arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                    intArrayOf(0x996EE7B7.toInt(), 0xFF3E4E5C.toInt())
+                )
+                setOnCheckedChangeListener { _, on -> onChange(on) }
+            }
+            panel.addView(sw, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(dp(6), dp(2), dp(6), dp(2)) })
+        }
+
+        siteSwitch("Reader mode", prefs.readerModeForSite(site)) { on ->
+            prefs.setReaderModeForSite(site, on)
+            WebExtractor.setReader(web, prefs.readerModeForSite(site))
+            updateReaderButton()
+        }
+        siteSwitch(
+            "Block ads on this site",
             prefs.adblockEnabled && !AdBlocker.isSiteAllowed(host)
-        )
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(
-                "$host\n${if (secure) "Secure HTTPS connection" else "Not a secure connection"}"
+        ) { on ->
+            adblockChanged = true
+            prefs.setAdblockSiteAllowed(site, !on)
+            updateShield()
+        }
+
+        val footer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(6), dp(8), dp(6), 0)
+        }
+        footer.addView(textButton("App settings", primary = false, widthDp = 0, heightDp = Design.DENSE_TOUCH_DP) {
+            dialog.dismiss()
+            AppPermissions.openAppSettings(this)
+        })
+        footer.addView(Space(this), LinearLayout.LayoutParams(0, 1, 1f))
+        footer.addView(textButton("Done", primary = true, widthDp = 0, heightDp = Design.DENSE_TOUCH_DP) {
+            dialog.dismiss()
+        })
+        panel.addView(footer)
+        dialog.setContentView(panel)
+        dialog.setOnShowListener {
+            val window = dialog.window ?: return@setOnShowListener
+            window.setLayout(
+                min(resources.displayMetrics.widthPixels - dp(24), dp(520)).coerceAtLeast(dp(280)),
+                ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            .setMultiChoiceItems(
-                arrayOf("Reader mode", "Block ads on this site"),
-                checked
-            ) { _, which, isChecked ->
-                if (which == 0) {
-                    prefs.setReaderModeForSite(site, isChecked)
-                    WebExtractor.setReader(web, prefs.readerModeForSite(site))
-                    updateReaderButton()
-                } else {
-                    adblockChanged = true
-                    prefs.setAdblockSiteAllowed(site, !isChecked)
-                    updateShield()
-                }
-            }
-            .setPositiveButton("Done") { d, _ -> d.dismiss() }
-            .setNeutralButton("App settings") { d, _ ->
-                d.dismiss()
-                AppPermissions.openAppSettings(this)
-            }
-            .create()
+            window.setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            window.setDimAmount(0.55f)
+        }
         dialog.setOnDismissListener {
             if (adblockChanged) {
                 try {
