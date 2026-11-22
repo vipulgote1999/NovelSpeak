@@ -6,6 +6,7 @@ tags:
 ---
 - clearState
 - launchApp
+- assertVisible: "Import a book"
 - tapOn: "Open library"
 - extendedWaitUntil:
     visible: "Your library is empty"

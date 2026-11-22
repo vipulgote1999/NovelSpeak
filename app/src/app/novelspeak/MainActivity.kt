@@ -1258,6 +1258,23 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 setTextColor(Palette.MUTED)
                 setPadding(0, dp(4), 0, dp(4))
             })
+            homeContinue.addView(TextView(this).apply {
+                text = "Import a book"
+                textSize = 13f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                setTextColor(Palette.ACCENT)
+                background = ripple(Palette.SURFACE_HIGH, 12)
+                setPadding(dp(14), 0, dp(14), 0)
+                minHeight = dp(Design.DENSE_TOUCH_DP)
+                gravity = Gravity.CENTER_VERTICAL
+                isClickable = true
+                isFocusable = true
+                contentDescription = "Import a book"
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(8) }
+                setOnClickListener { pickDocumentForImport() }
+            })
             return
         }
         for (item in top) {
