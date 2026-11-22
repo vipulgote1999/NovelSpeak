@@ -2,6 +2,7 @@ package app.novelspeak
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.Dialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
@@ -38,7 +39,9 @@ import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.view.WindowInsets
+import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.CookieManager
@@ -55,7 +58,6 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.PopupMenu
 import android.widget.PopupWindow
 import android.widget.ProgressBar
 import android.widget.ScrollView
@@ -162,7 +164,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var homeView: ScrollView
     private lateinit var homeColumn: LinearLayout
     private lateinit var homeContinue: LinearLayout
-    private lateinit var homeTopSpacer: Space
+    private lateinit var homeMenuButton: FrameLayout
     private var homeVisible = false
     private var shieldBlocked = 0
     private var shieldHidden = 0
@@ -483,11 +485,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         topBar.addView(cancelEdit)
 
-        homeTopSpacer = Space(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
-            visibility = View.GONE
-        }
-        topBar.addView(homeTopSpacer)
         overflowButton = iconButton(Glyph.MORE, "More options", Design.TOUCH_DP) {
             showOverflowMenu()
         }
@@ -981,14 +978,25 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         homeColumn = col
 
         // Wordmark: quiet serif display with one warm rule. Deliberately not a browser clone.
-        col.addView(TextView(this).apply {
+        // Home owns its header, so the empty browser chrome row is not shown at all.
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(this).apply {
             text = "NovelSpeak"
             textSize = 32f
             typeface = Typeface.create("serif", Typeface.BOLD)
             setTextColor(Palette.TEXT)
             letterSpacing = -0.01f
             contentDescription = "NovelSpeak"
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
+        homeMenuButton = iconButton(Glyph.MORE, "More options", Design.TOUCH_DP) {
+            showOverflowMenu()
+        }
+        header.addView(homeMenuButton)
+        col.addView(header)
         col.addView(TextView(this).apply {
             text = "A quiet place to read."
             textSize = 13f
@@ -1219,9 +1227,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         for (item in top) {
             homeContinue.addView(LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
                 background = rippleStroke(Palette.SURFACE, Design.RADIUS_MD, Palette.BORDER)
-                setPadding(dp(Design.SPACE_LG), dp(14), dp(Design.SPACE_LG), dp(14))
+                setPadding(dp(Design.SPACE_MD), dp(12), dp(Design.SPACE_MD), dp(12))
                 isClickable = true
                 isFocusable = true
                 contentDescription = "Continue reading: " + item.title
@@ -1240,36 +1249,49 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         web.loadUrl(url)
                     }
                 }
+                // A quiet initial tile gives each book a stable visual anchor without covers.
                 addView(TextView(this@MainActivity).apply {
-                    text = item.title
-                    textSize = 15f
-                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                    setTextColor(Palette.TEXT)
-                    maxLines = 2
-                    ellipsize = TextUtils.TruncateAt.END
-                })
-                addView(TextView(this@MainActivity).apply {
-                    text = item.meta
-                    textSize = 12f
-                    setTextColor(Palette.MUTED)
-                    setPadding(0, dp(3), 0, 0)
-                })
+                    text = item.title.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "•"
+                    textSize = 18f
+                    typeface = Typeface.create("serif", Typeface.BOLD)
+                    setTextColor(Palette.ACCENT)
+                    gravity = Gravity.CENTER
+                    background = rounded(Palette.SURFACE_HIGH, 12)
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                }, LinearLayout.LayoutParams(dp(42), dp(42)).apply { marginEnd = dp(12) })
                 addView(LinearLayout(this@MainActivity).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.CENTER_VERTICAL
-                    setPadding(0, dp(10), 0, 0)
-                    addView(
-                        progressTrack(item.percent),
-                        LinearLayout.LayoutParams(0, dp(3), 1f)
+                    orientation = LinearLayout.VERTICAL
+                    layoutParams = LinearLayout.LayoutParams(
+                        0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
                     )
                     addView(TextView(this@MainActivity).apply {
-                        text = "›"
-                        textSize = 16f
-                        setTextColor(Palette.FAINT)
-                        gravity = Gravity.CENTER
-                        setPadding(dp(10), 0, 0, 0)
-                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                        text = item.title
+                        textSize = 15f
+                        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                        setTextColor(Palette.TEXT)
+                        maxLines = 2
+                        ellipsize = TextUtils.TruncateAt.END
                     })
+                    addView(TextView(this@MainActivity).apply {
+                        text = item.meta
+                        textSize = 12f
+                        setTextColor(Palette.MUTED)
+                        setPadding(0, dp(2), 0, 0)
+                    })
+                    addView(
+                        progressTrack(item.percent),
+                        LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, dp(3)
+                        ).apply { topMargin = dp(8) }
+                    )
+                })
+                addView(TextView(this@MainActivity).apply {
+                    text = "›"
+                    textSize = 20f
+                    setTextColor(Palette.FAINT)
+                    gravity = Gravity.CENTER
+                    setPadding(dp(10), 0, 0, 0)
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 })
             })
         }
@@ -1339,7 +1361,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         homeVisible = true
         refreshHome()
         applyHomeWidth()
-        if (::homeTopSpacer.isInitialized) homeTopSpacer.visibility = View.VISIBLE
         homeView.visibility = View.VISIBLE
         val animateHome = MotionAndroid.animationsEnabled(this)
         DiagLog.line(this, "home shown motion=$animateHome")
@@ -1351,9 +1372,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 .setDuration(Motion.durationMs(Design.MOTION_NORMAL, 1f)).start()
         }
         web.visibility = View.GONE
-        navCluster.visibility = View.GONE
-        addressBox.visibility = View.GONE
-        cancelEdit.visibility = View.GONE
+        if (::topBar.isInitialized) topBar.visibility = View.GONE
         // The player bar only appears on Home while audio is actually playing; otherwise
         // the tab gets the full height (like a browser new-tab page).
         applyPlayerVisibility()
@@ -1367,9 +1386,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (homeView.visibility == View.VISIBLE) homeView.visibility = View.GONE
         web.visibility = View.VISIBLE
         applyPlayerVisibility()
+        if (::topBar.isInitialized) topBar.visibility = View.VISIBLE
         if (::navCluster.isInitialized) navCluster.visibility = View.VISIBLE
         if (::addressBox.isInitialized) addressBox.visibility = View.VISIBLE
-        if (::homeTopSpacer.isInitialized) homeTopSpacer.visibility = View.GONE
     }
 
     /** Two-pane layout above 600dp (tablets, landscape phones); single column otherwise. */
@@ -1729,7 +1748,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     private fun enterEditMode() {
         if (editingUrl) return
-        // Home hides the omnibox; the home search pill re-opens it for typing.
+        // Home hides the whole browser bar; the search pill brings it back for typing.
+        if (::topBar.isInitialized) topBar.visibility = View.VISIBLE
         if (::addressBox.isInitialized) addressBox.visibility = View.VISIBLE
         val current = web.url ?: lastDisplayedUrl
         setEditingUi(true)
@@ -1757,6 +1777,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         updateAddressDisplay(web.url ?: lastDisplayedUrl)
         if (homeVisible) {
             // Returning to Home keeps its minimal chrome.
+            if (::topBar.isInitialized) topBar.visibility = View.GONE
             if (::addressBox.isInitialized) addressBox.visibility = View.GONE
             if (::navCluster.isInitialized) navCluster.visibility = View.GONE
         }
@@ -1906,69 +1927,110 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         addressBox.contentDescription = "Address bar, $value"
     }
 
+    /**
+     * A Harbor-ink bottom sheet rather than the platform PopupMenu: the reader menu is longer
+     * than a phone screen at large text, and a scrollable sheet keeps every action reachable.
+     * The contents come from [MenuPolicy], so Home never offers page-only actions.
+     */
     private fun showOverflowMenu() {
-        val items = ArrayList<Pair<Int, String>>()
-        items.add(MENU_HOME to "Home")
-        if (web.canGoForward()) items.add(MENU_FORWARD to "Forward")
-        items.addAll(listOf(
-            MENU_RELOAD to "Reload",
-            MENU_COPY to "Copy link",
-            MENU_SHARE to "Share link",
-            MENU_EXTERNAL to "Open in browser",
-            MENU_SITE to "Site settings",
-            MENU_IMPORT to "Import EPUB or PDF",
-            MENU_BOOKMARK to "Bookmark sentence",
-            MENU_SLEEP to "Sleep timer",
-            MENU_LIBRARY to "Library",
-            MENU_TRANSLATE to "Translate page",
-            MENU_CONTINUE to "Continue reading",
-            MENU_SETTINGS to "NovelSpeak settings",
-            MENU_PRIVACY to "About & privacy"
-        ))
-        if (resources.configuration.fontScale >= 1.5f) {
-            // A PopupMenu is anchored and cannot scroll; at 2x its last items fall off the
-            // screen. A list dialog keeps the whole menu reachable.
-            AlertDialog.Builder(this)
-                .setTitle("Menu")
-                .setItems(items.map { it.second }.toTypedArray()) { _, which ->
-                    handleOverflow(items[which].first)
+        val actions = MenuPolicy.items(
+            home = homeVisible,
+            hasContent = reader.hasContent(),
+            canForward = web.canGoForward()
+        )
+        if (actions.isEmpty()) return
+
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = roundedStroke(Palette.SURFACE, Design.RADIUS_LG, Palette.BORDER, 1)
+            setPadding(dp(8), dp(10), dp(8), dp(20))
+        }
+        panel.addView(View(this).apply {
+            background = rounded(Palette.FAINT, 2)
+            layoutParams = LinearLayout.LayoutParams(dp(36), dp(4)).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                bottomMargin = dp(4)
+            }
+        })
+        panel.addView(TextView(this).apply {
+            text = "MENU"
+            textSize = 10.5f
+            letterSpacing = 0.12f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.MUTED)
+            setPadding(dp(14), dp(8), dp(14), dp(6))
+        })
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        for (action in actions) {
+            list.addView(TextView(this).apply {
+                text = action.label
+                textSize = 15f
+                setTextColor(Palette.TEXT)
+                gravity = Gravity.CENTER_VERTICAL
+                minHeight = dp(Design.TOUCH_DP)
+                setPadding(dp(14), dp(11), dp(14), dp(11))
+                background = ripple(Palette.SURFACE_HIGH, 12)
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    dialog.dismiss()
+                    handleOverflow(action.id)
                 }
-                .setNegativeButton("Cancel", null)
-                .show()
-            return
+            })
         }
-        val popup = PopupMenu(this, overflowButton)
-        items.forEachIndexed { index, (id, label) ->
-            popup.menu.add(0, id, index, label)
+        val longMenu = actions.size > 8 || resources.configuration.fontScale >= 1.5f
+        val listHeight = if (longMenu) {
+            (resources.displayMetrics.heightPixels * 0.60).toInt()
+        } else {
+            ViewGroup.LayoutParams.WRAP_CONTENT
         }
-        popup.setOnMenuItemClickListener { item ->
-            handleOverflow(item.itemId)
-            true
+        val scroll = ScrollView(this).apply {
+            isFillViewport = false
+            isVerticalScrollBarEnabled = false
+            addView(list)
         }
-        popup.show()
+        panel.addView(
+            scroll,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, listHeight)
+        )
+        dialog.setContentView(panel)
+        dialog.setOnShowListener {
+            val window = dialog.window ?: return@setOnShowListener
+            window.setLayout(
+                (resources.displayMetrics.widthPixels - dp(24)).coerceAtLeast(dp(280)),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            window.setGravity(Gravity.BOTTOM)
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            window.setDimAmount(0.55f)
+        }
+        dialog.show()
     }
 
     private fun handleOverflow(id: Int) {
         when (id) {
-            MENU_HOME -> showHome()
-            MENU_FORWARD -> navigateForward()
-            MENU_RELOAD -> web.reload()
-            MENU_COPY -> copyLink()
-            MENU_SHARE -> shareLink()
-            MENU_EXTERNAL -> openExternal()
-            MENU_SITE -> showSiteDialog()
-            MENU_LIBRARY -> startActivity(Intent(this, LibraryActivity::class.java))
-            MENU_CONTINUE -> continueReading()
-            MENU_SLEEP -> showSleepTimerDialog()
-            MENU_BOOKMARK -> bookmarkCurrentSentence()
-            MENU_SETTINGS -> startActivity(
+            MenuPolicy.HOME -> showHome()
+            MenuPolicy.FORWARD -> navigateForward()
+            MenuPolicy.RELOAD -> web.reload()
+            MenuPolicy.COPY -> copyLink()
+            MenuPolicy.SHARE -> shareLink()
+            MenuPolicy.EXTERNAL -> openExternal()
+            MenuPolicy.SITE -> showSiteDialog()
+            MenuPolicy.LIBRARY -> startActivity(Intent(this, LibraryActivity::class.java))
+            MenuPolicy.CONTINUE -> continueReading()
+            MenuPolicy.SLEEP -> showSleepTimerDialog()
+            MenuPolicy.BOOKMARK -> bookmarkCurrentSentence()
+            MenuPolicy.SETTINGS -> startActivity(
                 Intent(this, SettingsActivity::class.java)
             )
-            MENU_PRIVACY -> startActivity(
+            MenuPolicy.PRIVACY -> startActivity(
                 Intent(this, AboutPrivacyActivity::class.java)
             )
-            MENU_TRANSLATE -> translateCurrentPage()
-            MENU_IMPORT -> pickDocumentForImport()
+            MenuPolicy.TRANSLATE -> translateCurrentPage()
+            MenuPolicy.IMPORT -> pickDocumentForImport()
         }
     }
 
@@ -3982,21 +4044,6 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     companion object {
         private const val DEFAULT_URL = "https://www.royalroad.com/"
-        private const val MENU_HOME = 1
-        private const val MENU_RELOAD = 2
-        private const val MENU_COPY = 3
-        private const val MENU_SHARE = 4
-        private const val MENU_EXTERNAL = 5
-        private const val MENU_SITE = 6
-        private const val MENU_BOOKMARK = 12
-        private const val MENU_LIBRARY = 7
-        private const val MENU_CONTINUE = 8
-        private const val MENU_SLEEP = 9
-        private const val MENU_SETTINGS = 10
-        private const val MENU_PRIVACY = 11
-        private const val MENU_TRANSLATE = 13
-        private const val MENU_IMPORT = 14
-        private const val MENU_FORWARD = 15
         private const val REQ_IMPORT_DOCUMENT = 1001
         private const val PREFETCH_DELAY_MS = 12_000L
         private const val PREFETCH_MIN_FREE_BYTES = 350L * 1024 * 1024
