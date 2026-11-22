@@ -37,6 +37,24 @@ Reports: `tools/maestro/reports/junit.xml` (Maestro 2.11 wants a **file** for `-
 | 07 | `flows/07_library_resume.yaml` | Library + resume | `Library`, `Library entry`, `.*Salt Road.*`, `.*[0-9]+%.*`; row reopens chapter2 and shows sentence state; row survives relaunch | Opened chapters are recorded, show progress, and resume | **PASS** (1.2.0-dev: 40 s) |
 | 08 | `flows/08_share_intent.txt` | Share-sheet ingestion | adb `ACTION_SEND text/plain` → `Shared text` status, `Sentence N of M`, `Read` | Shared prose reaches the reader | **PASS** (script, 1.2.0-dev) |
 | 09 | `flows/09_privacy_about.yaml` | Privacy / about | overflow `About & privacy`; `Privacy & licences`, `PRIVACY`, `.*no analytics.*`; `Back` | Privacy page states the no-analytics posture and returns | **PASS** (1.2.0-dev: 11 s) |
+| 24 | `flows/24_library_empty.yaml` | First-run Library | `Your library is empty`, `Import a book`, `Browse a site`; picker cancel returns to Library; Browse returns Home | Empty Library explains the state and both ways to fill it | **PASS** (2026-11-22: 11 s) |
+| 25 | `flows/25_home_overflow.yaml` | Home action sheet | sheet `Import EPUB or PDF`, `Library`, `NovelSpeak settings`, `About & privacy`; no `Reload`/`Copy link`/`Site settings`/`Translate page` | Home never offers page-only actions | **PASS** (2026-11-22: 13 s) |
+
+### Continuous-improvement gate (2026-11-22, versionCode 20)
+
+Run after the Home header, action-sheet, Library first-run and reader-highlight work, from a
+cleared app state on a dedicated `NovelSpeak_API35` AVD (1080×2400 @420):
+
+```
+23/23 Flows Passed in 11m 36s
+tests=23 failures=0 errors=0 skipped=0
+== RESULT: PASS
+```
+
+Host + browser quick gate: **26/26 host harnesses pass**, including the new
+`menu-policy-test` (25 checks) and the extended `player-chrome-test` (13 checks).
+The run also fixed a real Settings bug: opening a hub page kept the hub's scroll
+offset, hiding the Speech engine choice (flow 02 now covers the footer explicitly).
 
 ### 1.4.0 gate (2026-11-22, versionCode 20)
 
