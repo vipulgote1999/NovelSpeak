@@ -543,7 +543,7 @@ class LibraryActivity : Activity() {
             }
         }
         card.addView(TextView(this).apply {
-            text = book.title.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "•"
+            text = UiText.initial(book.title)
             textSize = 18f
             typeface = Typeface.create("serif", Typeface.BOLD)
             setTextColor(Palette.ACCENT)
@@ -839,7 +839,7 @@ class LibraryActivity : Activity() {
             setOnClickListener { openEntry(entry) }
         }
         card.addView(TextView(this).apply {
-            text = entry.title.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "•"
+            text = UiText.initial(entry.title)
             textSize = 18f
             typeface = Typeface.create("serif", Typeface.BOLD)
             setTextColor(Palette.ACCENT)

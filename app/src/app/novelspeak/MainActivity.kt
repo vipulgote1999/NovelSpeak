@@ -1286,7 +1286,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 }
                 // A quiet initial tile gives each book a stable visual anchor without covers.
                 addView(TextView(this@MainActivity).apply {
-                    text = item.title.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "•"
+                    text = UiText.initial(item.title)
                     textSize = 18f
                     typeface = Typeface.create("serif", Typeface.BOLD)
                     setTextColor(Palette.ACCENT)

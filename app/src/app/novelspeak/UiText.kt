@@ -25,6 +25,10 @@ object UiText {
         }
     }
 
+    /** First letter or digit for a cover tile, skipping quotes, dashes and whitespace. */
+    fun initial(title: String): String =
+        title.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "•"
+
     private fun countOf(count: Int, noun: String): String =
         "$count $noun" + if (count == 1) "" else "s"
 }

@@ -42,6 +42,9 @@ fun main() {
         UiText.titleFromFileName("Already Nice Title.epub", "Imported")
     )
     check("blank filename falls back", UiText.titleFromFileName("", "Imported text") == "Imported text")
+    check("initial skips a quote", UiText.initial("\"The Salt Road\"") == "T", UiText.initial("\"The Salt Road\""))
+    check("initial skips a dash", UiText.initial(" — Chapter") == "C", UiText.initial(" — Chapter"))
+    check("initial fallback", UiText.initial("") == "•", UiText.initial(""))
 
     check("Chromium error title", PageFailure.isErrorPage("Webpage not available"))
     check(
