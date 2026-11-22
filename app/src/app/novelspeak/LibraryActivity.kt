@@ -1,7 +1,7 @@
 package app.novelspeak
 
 import android.app.Activity
-import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
@@ -20,7 +20,9 @@ import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.view.WindowInsets
+import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.AbsListView
 import android.widget.BaseAdapter
@@ -631,6 +633,15 @@ class LibraryActivity : Activity() {
                 }
             }
         }
+        card.addView(TextView(this).apply {
+            text = "“"
+            textSize = 22f
+            typeface = Typeface.create("serif", Typeface.BOLD)
+            setTextColor(Palette.ACCENT)
+            gravity = Gravity.CENTER
+            background = rounded(Palette.SURFACE_HIGH, 12)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }, LinearLayout.LayoutParams(dp(42), dp(42)).apply { marginEnd = dp(12) })
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -930,12 +941,97 @@ class LibraryActivity : Activity() {
 
     /** One destructive confirmation path for chapters, imports and bookmarks. */
     private fun confirmDelete(title: String, message: String, onDelete: () -> Unit) {
-        AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMessage(message)
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Remove") { _, _ -> onDelete() }
-            .show()
+        confirmSheet(title, message, "Remove", onDelete)
+    }
+
+    /** Harbor-ink confirmation with a clearly destructive action. */
+    private fun confirmSheet(
+        title: String,
+        message: String,
+        confirmLabel: String,
+        onConfirm: () -> Unit
+    ) {
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(Palette.SURFACE, Design.RADIUS_LG).apply {
+                setStroke(dp(1), Palette.BORDER)
+            }
+            setPadding(dp(20), dp(12), dp(20), dp(18))
+        }
+        panel.addView(View(this).apply {
+            background = rounded(Palette.FAINT, 2)
+            layoutParams = LinearLayout.LayoutParams(dp(36), dp(4)).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+            }
+        })
+        panel.addView(TextView(this).apply {
+            text = title
+            textSize = 18f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Palette.TEXT)
+            setPadding(0, dp(14), 0, dp(6))
+        })
+        panel.addView(TextView(this).apply {
+            text = message
+            textSize = 13.5f
+            setTextColor(Palette.MUTED)
+            setLineSpacing(dp(3).toFloat(), 1f)
+        })
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            setPadding(0, dp(18), 0, 0)
+        }
+        actions.addView(TextView(this).apply {
+            text = "Cancel"
+            textSize = 14f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            gravity = Gravity.CENTER
+            setTextColor(Palette.TEXT)
+            background = ripple(Palette.SURFACE_HIGH, 12)
+            minHeight = dp(Design.TOUCH_DP)
+            setPadding(dp(16), 0, dp(16), 0)
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { dialog.dismiss() }
+        }, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { marginEnd = dp(8) })
+        actions.addView(TextView(this).apply {
+            text = confirmLabel
+            textSize = 14f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            gravity = Gravity.CENTER
+            setTextColor(Palette.BG)
+            background = ripple(Palette.RED, 12)
+            minHeight = dp(Design.TOUCH_DP)
+            setPadding(dp(18), 0, dp(18), 0)
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                dialog.dismiss()
+                onConfirm()
+            }
+        }, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ))
+        panel.addView(actions)
+        dialog.setContentView(panel)
+        dialog.setOnShowListener {
+            val window = dialog.window ?: return@setOnShowListener
+            window.setLayout(
+                minOf(resources.displayMetrics.widthPixels - dp(24), dp(480))
+                    .coerceAtLeast(dp(280)),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            window.setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            window.setDimAmount(0.55f)
+        }
+        dialog.show()
     }
 
     /**
@@ -961,17 +1057,16 @@ class LibraryActivity : Activity() {
     }
 
     private fun confirmClear() {
-        AlertDialog.Builder(this)
-            .setTitle("Clear library?")
-            .setMessage("This removes all saved chapters and reading positions from this device.")
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Clear") { _, _ ->
-                store.clear()
-                imports.clear()
-                render()
-                Toast.makeText(this, "Library cleared", Toast.LENGTH_SHORT).show()
-            }
-            .show()
+        confirmSheet(
+            "Clear library?",
+            "This removes all saved chapters and reading positions from this device.",
+            "Clear"
+        ) {
+            store.clear()
+            imports.clear()
+            render()
+            Toast.makeText(this, "Library cleared", Toast.LENGTH_SHORT).show()
+        }
     }
 
     /** Prefer the stored site label; fall back to the url host for entries saved by other code. */
