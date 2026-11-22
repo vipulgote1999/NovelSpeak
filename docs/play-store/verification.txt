@@ -1,5 +1,5 @@
 NovelSpeak 1.4.0 — Play artifact verification
-Generated: 2026-11-07T16:57:34Z
+Generated: 2026-11-22T15:47:00Z
 
 == APK badging ==
 package: name='app.novelspeak' versionCode='20' versionName='1.4.0' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
@@ -119,8 +119,8 @@ Verification successful
     }
 
 == Checksums ==
-079c66ed7fd0a3bd26dac38dc3d2710a201c606f158639a9ceb2f0a307ce3d75  build/NovelSpeak-1.4.0-release-arm64-v8a.apk
-47f32bb061d5d7fc33a6a24349917380a5e6eb0c898445e5bd1e2ed70a5463e0  build/NovelSpeak-1.4.0.aab
+0642df32256264028ebf02a2adbff5b7d1b3dc32d490dcec747be8bfbf368d6a  build/NovelSpeak-1.4.0-release-arm64-v8a.apk
+25a0616926ca2c157a2104e20c2c5f85611029a5b81fc7370a979fd090fb3dac  build/NovelSpeak-1.4.0.aab
 
 == RELRO 16 KB check ==
 Each GNU_RELRO either ends on a 0x4000 boundary or occupies the remainder of its

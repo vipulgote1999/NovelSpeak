@@ -7,6 +7,7 @@ export ANDROID_HOME="$HOME/Android/Sdk"
 export BUILD_TOOLS="$ANDROID_HOME/build-tools/36.0.0"
 export ANDROID_JAR="$ANDROID_HOME/platforms/android-36/android.jar"
 export PATH="$HOME/.local/share/kotlin-2.2.20/bin:$BUILD_TOOLS:$PATH"
+export KOTLIN_STDLIB="$HOME/.local/share/kotlin-2.2.20/lib/kotlin-stdlib.jar"
 source "$HOME/.keys/novelspeak-release.env"
 ```
 
@@ -73,6 +74,7 @@ source "$HOME/.keys/novelspeak-release.env"
 
 ## 4. Testing
 
+- [ ] `tools/test-host.sh` passes (25 host harnesses; no emulator needed).
 - [ ] Clean install on a physical Android 16 device or API 36 emulator.
 - [ ] Cold start < 3 s, no crash, no ANR.
 - [ ] Home → Project Gutenberg/Wikipedia → Read works with system TTS.

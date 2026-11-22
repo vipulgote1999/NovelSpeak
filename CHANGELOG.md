@@ -4,7 +4,7 @@ All notable changes to NovelSpeak are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.0] - 2026-11-07
+## [1.4.0] - 2026-11-22
 
 ### Play Store readiness
 
@@ -35,6 +35,41 @@ All notable changes to NovelSpeak are documented here. The format follows
   review notes, listing copy, icons, feature graphic, screenshots and a release checklist under
   `docs/play-store/`.
 - Version 1.4.0 (versionCode 20).
+
+### Fixed
+
+- **Preroll no longer silently skips sentences.** The PcmPlayer drain watchdog no longer
+  counts deliberate preroll hold time, and a drain timeout returns failure instead of
+  reporting the sentence as heard. A chapter left paused for more than two minutes can no
+  longer advance the cursor with no audio.
+- **Neural engine teardown no longer frees native state under a live generation thread.**
+  Engine workers are stopped and joined before `OfflineTts.release()`; a stuck native
+  generation is leaked rather than risking a use-after-free crash.
+- **Audio focus is acquired before the first sample.** The reader holds the track until
+  PlaybackService confirms focus, so a resume cannot briefly mix over another app.
+- **Changing voice resumes playback.** A voice change still discards prerendered audio and
+  updates the live model, but no longer stops the book.
+- **The 24 kHz vocoder installs.** A bare `.onnx` model is moved into place after checksum
+  verification instead of being sent through the tar.bz2 extractor.
+- **Diagnostics redaction covers library and transcript data.** `library_v1`,
+  `zipvoice_transcript`, allow-listed sites and URLs embedded in ordinary values are
+  redacted before sharing; the on-device log and crash dump also scrub URLs.
+- **Playback service start failures no longer crash.** Android 12+ background FGS refusals
+  are caught and reported as a stopped Play instead of escaping the main thread.
+- **Extraction is bounded.** A page is capped at 4,000 blocks / 250,000 characters, and the
+  density fallback scans at most 400 candidates. Results from a page that navigated during
+  the asynchronous extraction chain are discarded.
+- **Next-chapter and prefetch links must be HTTP(S).** A page-controlled `file:`, `content:`,
+  `data:` or `javascript:` next link is rejected before `loadUrl`.
+- **HTTP loopback stays usable in dev builds.** Explicit `http://localhost`, `127.0.0.1`,
+  `10.0.2.2` and `[::1]` URLs are not upgraded to HTTPS, so the Maestro fixture server works;
+  the release network config still blocks cleartext for those hosts.
+- **EPUB XML fallback rejects DOCTYPE/ENTITY.** The compatibility parser can no longer
+  resolve external entities after the hardened parser declines a malicious OPF.
+- **Host regression suite is runnable in one command.** `tools/test-host.sh` covers 25
+  harnesses via `tools/host-tests.tsv`, with `--area` focus, `--check` manifest
+  enforcement, `tools/test-changed.sh` for diff-based selection, and `tools/test-all.sh`
+  for the full host + browser + device gate.
 
 ## [1.3.0] - 2026-11-04
 

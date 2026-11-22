@@ -90,24 +90,21 @@ Tuning values are not guesses: they were reverse-engineered from two shipped app
 NekoSpeak) and are listed with their provenance in [OPTIMIZATIONS.md](OPTIMIZATIONS.md).
 The reverse-engineering notes are in [docs/re-natural-ai-voices.md](docs/re-natural-ai-voices.md).
 
-## What's new in 1.3.0
+## What's new in 1.4.0
 
-Highlights since v1.2.1:
+This is the Play Store readiness release. It keeps the reader and voice features from 1.3.0
+and closes the submission blockers found in the 2026 audit:
 
-- **New neural voices**: Supertonic 3 (fast, 2 curated styles) and ZipVoice (transcript-based
-  cloning, zh + en), alongside Kokoro and Pocket TTS. Supertonic is the default once installed.
-- **First-audio latency**: engine prewarm on content queue + preroll of up to 8 s / 4 sentences;
-  play starts as soon as the first PCM arrives. See
-  [docs/benchmarks/2026-11-03-tts-benchmark.md](docs/benchmarks/2026-11-03-tts-benchmark.md).
-- **Playback resilience**: pause/calls/screen changes no longer leave TTS silent or stuck;
-  transient audio-focus loss resumes automatically. See
-  [docs/tts-playback-resilience.md](docs/tts-playback-resilience.md).
-- **Ad text no longer read aloud**: hidden ad blocks are dropped during extraction, a
-  document-start popup guard covers both the visible and prefetch views, and a bundled
-  supplement handles first-party ad code.
-- **Settings speed fix**: a cold Settings visit no longer clamps a saved 3.0× speed.
-- **On-device TTS benchmark**: every neural engine and system TTS measured in a fresh process;
-  results are in [docs/benchmarks/2026-11-03-tts-benchmark.md](docs/benchmarks/2026-11-03-tts-benchmark.md).
+- **Android 16 target (API 36)**, signed AAB packaging, 16 KB page-size alignment and a real
+  adaptive launcher icon.
+- **WebView hardening**: no reflected JavaScript bridge, HTTPS-only intent paths, file/content
+  access off, mixed content never, third-party cookies off and Safe Browsing on.
+- **Download consent** for neural models and filter lists, plus diagnostics and crash logs
+  redacted before they are written or shared.
+- **Reader polish** since 1.3.0: a collapsible 56 dp mini player, a two-column library at
+  tablet widths, reduced-motion support and 1.3×/2× text-scale layouts.
+- **Release packet** under `docs/play-store/`: Data safety, content rating, foreground-service
+  declaration, review notes, listing copy, icon, feature graphic and screenshots.
 
 Full history: [CHANGELOG.md](CHANGELOG.md).
 
@@ -115,10 +112,10 @@ Full history: [CHANGELOG.md](CHANGELOG.md).
 
 Download the latest APK from [GitHub Releases](https://github.com/vipulgote1999/NovelSpeak/releases/latest):
 
-- `NovelSpeak-1.3.0-arm64-v8a.apk` — Android 7.0 (API 24)+, arm64-v8a.
-- `NovelSpeak-1.3.0-arm64-v8a.apk.sha256` — verify with `sha256sum -c`.
+- `NovelSpeak-1.4.0-release-arm64-v8a.apk` — Android 7.0 (API 24)+, arm64-v8a.
+- `NovelSpeak-1.4.0-release-arm64-v8a.apk.sha256` — verify with `sha256sum -c`.
 
-The release APK is signed with a dedicated release key. If you previously installed a
+The release APK is signed with the dedicated release key. If you previously installed a
 debug-signed build, uninstall it first; that erases its settings and downloaded models.
 
 For development, `./build.sh` produces a debug-signed `build/NovelSpeak-debug.apk`:
@@ -269,10 +266,30 @@ ANDROID_JAR="$HOME/build/cache/sdk34/android-34/android.jar" \
 ```
 
 `build.sh` runs: `aapt2 link` → `kotlinc` → `d8` → package dex + `lib/arm64-v8a/*.so` → `zipalign`
-→ `apksigner`. The version comes from `app/AndroidManifest.xml`; debug builds use
-`build/debug.keystore` and are generated on first run. For a signed release build, set
-`KEYSTORE`, `KS_ALIAS`, `KS_PASS`, `KEY_PASS`, and `OUT_APK` — see [RELEASING.md](RELEASING.md).
-Use `ABI=armeabi-v7a ./build.sh` for 32-bit devices.
+→ `apksigner`. It checks for **Kotlin 2.2+** (the sources use `break`/`continue` inside inline
+lambdas, which 2.1 cannot compile). On Termux the bundled `kotlin` package is usually new enough;
+on a desktop set `KOTLIN_STDLIB` to that compiler's `lib/kotlin-stdlib.jar`, for example:
+
+```bash
+KOTLIN_STDLIB="$HOME/.local/share/kotlin-2.2.20/lib/kotlin-stdlib.jar" \
+  ANDROID_JAR="$HOME/Android/Sdk/platforms/android-36/android.jar" \
+  DEPS="$PWD/deps" ./build.sh
+```
+
+The version comes from `app/AndroidManifest.xml`; debug builds use `build/debug.keystore` and are
+generated on first run. For a signed release build, set `KEYSTORE`, `KS_ALIAS`, `KS_PASS`,
+`KEY_PASS`, and `OUT_APK` — see [RELEASING.md](RELEASING.md). Use `ABI=armeabi-v7a ./build.sh`
+for 32-bit devices.
+
+Host-only regression tests (no emulator) run with:
+
+```bash
+tools/test-host.sh
+```
+
+See [docs/testing.md](docs/testing.md) for the full matrix: focused host areas, headless
+Chromium regressions, Maestro device flows, share-intent/rotation/text-scale checks, and
+`tools/test-changed.sh` for selecting the tests that match a change.
 
 ### Side-by-side dev build
 
@@ -284,7 +301,7 @@ ABI=arm64-v8a tools/build-dev-variant.sh
 # output: build/NovelSpeak-dev-arm64-v8a.apk
 ```
 
-It builds package `app.novelspeak.dev` with label **NovelSpeak Dev**, version `1.3.0-dev`, the
+It builds package `app.novelspeak.dev` with label **NovelSpeak Dev**, version `1.4.0-dev`, the
 debug key, and its own data, notification channels and diagnostics provider authority. Android
 treats it as a separate app, so the release app's library, settings and models are untouched.
 The dev app downloads its own models on first use.
@@ -341,5 +358,5 @@ redistributed unmodified under their own licenses; see
    `WavReader` chain and `GenerationConfig.referenceAudio` (previews shipped; recording/import
    pending).
 2. Per-site extraction rules cache + "always use reader view" toggle.
-3. Export the spoken chapter as an audio file.
+3. Batch export of multiple chapters (single-chapter WAV capture ships today).
 4. Kokoro multi-lang + Kitten voices (deferred; see docs/voice-research.md).

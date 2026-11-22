@@ -53,11 +53,11 @@ GitHub Pages is enabled with **GitHub Actions** as the source. The workflow
 ## Audit evidence
 
 - The automated Play policy scan (data safety, login credentials, restricted permissions) is in
-  `.scratch/play_policy_insights_*/compliance_report.md` for this session. It reports no
+  [`compliance-report-2026-11-07.md`](compliance-report-2026-11-07.md). It reports no
   critical/important findings.
 - `build/NovelSpeak-1.4.0.aab` is signed with the upload key; `jarsigner -verify` passes.
-- `build/NovelSpeak-1.4.0-arm64-v8a.apk` is signed with the release key; `apksigner verify`
-  passes.
+- `build/NovelSpeak-1.4.0-release-arm64-v8a.apk` is signed with the release key;
+  `apksigner verify` passes.
 - `zipalign -c -P 16 -v 4` passes for both the APK and the Play-generated universal APK.
 - `aapt2 dump badging` shows `targetSdkVersion:'36'`, `versionCode='20'`,
   `versionName='1.4.0'`.

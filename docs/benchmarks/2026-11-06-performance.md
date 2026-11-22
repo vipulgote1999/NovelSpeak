@@ -78,7 +78,7 @@ Code: `LibraryActivity` now uses a `ListView` + `BaseAdapter` (`LibraryAdapter`)
 8 dp divider; search/filter replaces the adapter’s row list and resets to the top. Delete, search,
 and filter Maestro flows still pass.
 
-Renders/evidence: [200-row Library](../../media/benchmarks/library-200-stress.png) ·
+Renders/evidence: [200-row Library](../media/benchmarks/library-200-stress.png) ·
 `gfx-library-200-open.txt`, `gfx-library-200-scroll.txt`,
 `gfx-library-200-list-open.txt`, `gfx-library-200-list-scroll.txt`, `gfx-home-200.txt`,
 `library-200-seed.txt`.

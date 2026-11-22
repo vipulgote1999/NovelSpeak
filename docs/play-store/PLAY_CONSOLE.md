@@ -193,10 +193,10 @@ Demo video shot list (30–60 seconds):
 
 ```bash
 # Target SDK, version, permissions, icon
-"$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging build/NovelSpeak-1.4.0-arm64-v8a.apk | head -20
+"$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging build/NovelSpeak-1.4.0-release-arm64-v8a.apk | head -20
 
 # 16 KB ELF and ZIP alignment
-"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 build/NovelSpeak-1.4.0-arm64-v8a.apk | tail -1
+"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 build/NovelSpeak-1.4.0-release-arm64-v8a.apk | tail -1
 
 # AAB signature and config
 jarsigner -verify -verbose -certs build/NovelSpeak-1.4.0.aab | grep 'jar verified'
