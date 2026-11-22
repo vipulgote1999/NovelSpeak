@@ -51,9 +51,21 @@ object MenuPolicy {
      * @param hasContent a chapter or shared text is queued in the reader
      * @param canForward the WebView has a forward history entry
      */
-    fun items(home: Boolean, hasContent: Boolean, canForward: Boolean): List<Action> {
+    fun items(
+        home: Boolean,
+        hasContent: Boolean,
+        canForward: Boolean,
+        imported: Boolean = false
+    ): List<Action> {
         val order = ArrayList<Int>(13)
-        if (home) {
+        if (imported) {
+            // An imported book has no WebView page: every page-only action would be a no-op.
+            order.add(HOME)
+            order.add(LIBRARY)
+            order.add(IMPORT)
+            order.add(SETTINGS)
+            order.add(PRIVACY)
+        } else if (home) {
             // Everything here must work with no page behind it.
             order.add(IMPORT)
             order.add(LIBRARY)
@@ -65,7 +77,7 @@ object MenuPolicy {
             if (canForward) order.add(FORWARD)
             order.add(RELOAD)
             order.add(SHARE)
-            order.add(COPY)
+            // Copy link is redundant with Share and the page menu must fit one phone screen.
             order.add(EXTERNAL)
             order.add(SITE)
             if (hasContent) {

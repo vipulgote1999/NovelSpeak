@@ -100,6 +100,9 @@ class SettingsActivity : Activity() {
         savedInstanceState?.getString(KEY_PAGE)?.let { name ->
             try { page = Page.valueOf(name) } catch (t: Throwable) { }
         }
+        val requestedPage = intent?.getStringExtra(EXTRA_PAGE)?.let { name ->
+            try { Page.valueOf(name) } catch (t: Throwable) { null }
+        }
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -123,6 +126,12 @@ class SettingsActivity : Activity() {
         applyInsets(root)
         applyContentWidth()
 
+        if (requestedPage != null && requestedPage != Page.HUB) {
+            // A deep link from the player: keep Back going to the hub, not out of Settings.
+            pageStack.addLast(Page.HUB)
+            page = requestedPage
+            resetScroll = true
+        }
         build()
     }
 
@@ -1239,8 +1248,11 @@ class SettingsActivity : Activity() {
             showText = false
             thumbTintList = switchThumbColors()
             trackTintList = switchTrackColors()
-            contentDescription = title
-            setOnCheckedChangeListener { _, b -> onChange(b) }
+            contentDescription = title + ", " + (if (checked) "on" else "off")
+            setOnCheckedChangeListener { _, b ->
+                contentDescription = title + ", " + (if (b) "on" else "off")
+                onChange(b)
+            }
         }
         row.addView(sw)
         row.setOnClickListener { sw.toggle() }
@@ -1249,12 +1261,14 @@ class SettingsActivity : Activity() {
 
     private fun switchThumbColors(): ColorStateList = ColorStateList(
         arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-        intArrayOf(Palette.ACCENT, Palette.MUTED)
+        intArrayOf(Palette.ACCENT, Palette.TEXT_SECONDARY)
     )
 
     private fun switchTrackColors(): ColorStateList = ColorStateList(
         arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-        intArrayOf(0x666EE7B7, Palette.BORDER)
+        // The off track was BORDER, which vanishes into the card; a slate tone still reads as
+        // an interactive track next to the raised thumb.
+        intArrayOf(0x996EE7B7.toInt(), 0xFF3E4E5C.toInt())
     )
 
     /**
@@ -2144,6 +2158,13 @@ class SettingsActivity : Activity() {
             ringView.background = ring(checked)
             dot.visibility = if (checked) View.VISIBLE else View.INVISIBLE
         }
+    }
+
+    companion object {
+        /** Open Settings directly on one page, e.g. from the player's voice row. */
+        const val EXTRA_PAGE = "settingsPage"
+        const val PAGE_VOICES = "VOICES"
+        const val PAGE_ENGINE = "ENGINE"
     }
 }
 

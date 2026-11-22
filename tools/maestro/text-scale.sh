@@ -28,11 +28,11 @@ trap restore EXIT
 
 "$ADB" -s "$DEVICE" shell settings put system font_scale 2.0 >/dev/null
 "$ADB" -s "$DEVICE" shell am force-stop "$PKG" >/dev/null 2>&1
-"$ROOT/tools/maestro/run.sh" 23_text_scale.yaml
+"$ROOT/tools/maestro/run.sh" 23_text_scale.yaml 28_reader_text_scale.yaml
 status=$?
 if [ "$status" -eq 0 ]; then
-  echo "PASS text-scale: home and settings usable at 2.0"
+  echo "PASS text-scale: home, settings and reader usable at 2.0"
 else
-  echo "FAIL text-scale: flow 23 failed" >&2
+  echo "FAIL text-scale: flow 23/28 failed" >&2
 fi
 exit "$status"

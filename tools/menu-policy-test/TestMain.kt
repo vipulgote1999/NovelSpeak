@@ -44,6 +44,8 @@ fun main() {
     check("page offers reload", MenuPolicy.RELOAD in page)
     check("page offers share", MenuPolicy.SHARE in page)
     check("page offers translate", MenuPolicy.TRANSLATE in page)
+    check("page omits duplicate copy", MenuPolicy.COPY !in page)
+    check("page menu fits a phone", page.size <= 12, "size=${page.size}")
     check("page hides bookmark without content", MenuPolicy.BOOKMARK !in page)
     check("page hides sleep without content", MenuPolicy.SLEEP !in page)
     check("page hides forward without history", MenuPolicy.FORWARD !in page)
@@ -53,6 +55,21 @@ fun main() {
     check("content page offers sleep", MenuPolicy.SLEEP in withContent)
     check("history page offers forward", MenuPolicy.FORWARD in withContent)
     check("forward follows home", withContent.indexOf(MenuPolicy.FORWARD) == 1)
+
+    val imported = MenuPolicy.items(
+        home = false,
+        hasContent = true,
+        canForward = true,
+        imported = true
+    ).map { it.id }
+    check("imported offers home", MenuPolicy.HOME in imported)
+    check("imported offers library", MenuPolicy.LIBRARY in imported)
+    check("imported offers import", MenuPolicy.IMPORT in imported)
+    check("imported hides reload", MenuPolicy.RELOAD !in imported)
+    check("imported hides share", MenuPolicy.SHARE !in imported)
+    check("imported hides translate", MenuPolicy.TRANSLATE !in imported)
+    check("imported hides bookmark", MenuPolicy.BOOKMARK !in imported)
+    check("imported menu is short", imported.size <= 6, "size=${imported.size}")
 
     val labels = MenuPolicy.items(home = false, hasContent = true, canForward = true)
         .map { it.label }

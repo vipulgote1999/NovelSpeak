@@ -157,6 +157,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var miniPlayButton: FrameLayout
     private lateinit var miniPlayGlyph: GlyphView
     private lateinit var miniProgress: ProgressBar
+    private lateinit var sleepButton: FrameLayout
+    private lateinit var sleepGlyph: GlyphView
     private var playerCollapsed = false
     private lateinit var readChapterButton: TextView
     private lateinit var nextChapterButton: TextView
@@ -165,6 +167,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var homeColumn: LinearLayout
     private lateinit var homeContinue: LinearLayout
     private lateinit var homeMenuButton: FrameLayout
+    private lateinit var importMenuButton: FrameLayout
     private var homeVisible = false
     private var shieldBlocked = 0
     private var shieldHidden = 0
@@ -246,6 +249,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
     private var editingUrl = false
     private var pageLoading = false
+    private var mainFrameLoadFailed = false
+    private var pageFailureMessage: String? = null
     private var lastDisplayedUrl = ""
 
     private val reader: Reader get() = NovelSpeakApp.instance.reader
@@ -626,11 +631,21 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             text = ""
             textSize = 12f
             setTextColor(Palette.MUTED)
-            setPadding(dp(2), dp(2), 0, 0)
+            setPadding(dp(2), 0, 0, 0)
+            minHeight = dp(Design.DENSE_TOUCH_DP)
+            gravity = Gravity.CENTER_VERTICAL
             maxLines = if (resources.configuration.fontScale >= 1.5f) 2 else 1
             ellipsize = TextUtils.TruncateAt.END
             contentDescription = "Current voice"
             visibility = View.GONE
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                startActivity(
+                    Intent(this@MainActivity, SettingsActivity::class.java)
+                        .putExtra(SettingsActivity.EXTRA_PAGE, SettingsActivity.PAGE_VOICES)
+                )
+            }
         }
         card.addView(voiceView)
 
@@ -766,10 +781,18 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             gravity = Gravity.CENTER
             setPadding(0, dp(6), 0, 0)
         }
-        transportRow.addView(iconButton(Glyph.PREV, "Previous sentence", Design.TOUCH_DP) {
+        // Equal side columns keep the 56 dp Play button exactly on the card's centre line,
+        // even though the right cluster has two more controls than the left.
+        val leftTransport = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        leftTransport.addView(iconButton(Glyph.PREV, "Previous sentence", Design.TOUCH_DP) {
             cancelAutoAdvance()
             reader.prevSentence()
         })
+        transportRow.addView(leftTransport)
         playButton = iconButton(
             Glyph.PLAY, "Play", 56, Palette.ACCENT, Palette.BG, oval = true
         ) {
@@ -777,14 +800,26 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         playGlyph = playButton.getChildAt(0) as GlyphView
         transportRow.addView(playButton)
-        transportRow.addView(iconButton(Glyph.NEXT, "Next sentence", Design.TOUCH_DP) {
+        val rightTransport = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        rightTransport.addView(iconButton(Glyph.NEXT, "Next sentence", Design.TOUCH_DP) {
             cancelAutoAdvance()
             reader.nextSentence()
         })
-        transportRow.addView(iconButton(Glyph.STOP, "Stop", Design.DENSE_TOUCH_DP) {
+        rightTransport.addView(iconButton(Glyph.STOP, "Stop", Design.DENSE_TOUCH_DP) {
             cancelAutoAdvance()
             reader.stop()
         })
+        // Sleep timer belongs next to transport, not three taps deep in the overflow.
+        sleepButton = iconButton(Glyph.MOON, "Sleep timer", Design.DENSE_TOUCH_DP) {
+            showSleepTimerDialog()
+        }
+        sleepGlyph = sleepButton.getChildAt(0) as GlyphView
+        rightTransport.addView(sleepButton)
+        transportRow.addView(rightTransport)
         card.addView(transportRow)
         playerCard = card
 
@@ -1514,6 +1549,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 super.onPageStarted(view, url, favicon)
                 hideHome()
                 hideImportedMode()
+                mainFrameLoadFailed = false
+                pageFailureMessage = null
                 pageLoading = true
                 progressBar.visibility = View.VISIBLE
                 progressBar.progress = 0
@@ -1570,9 +1607,14 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             ) {
                 super.onReceivedError(view, request, error)
                 if (request?.isForMainFrame == true) {
+                    mainFrameLoadFailed = true
                     pageLoading = false
                     progressBar.visibility = View.GONE
                     setReloadGlyph(false)
+                    if (!reader.state().playing) {
+                        showPageFailure("Page didn't load — check the connection and try again")
+                        hideWallBanner()
+                    }
                 }
             }
 
@@ -1586,6 +1628,26 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     if (!editingUrl) updateAddressDisplay(url)
                 }
                 val pageTitle = view?.title ?: ""
+                if (mainFrameLoadFailed || PageFailure.isErrorPage(pageTitle)) {
+                    // WebView error/404 pages are prose-shaped enough for Readability. Never
+                    // replace the queue with them: the user would hear "Webpage not available".
+                    appendNext = false
+                    autoAdvance = false
+                    autoAdvanceCount = 0
+                    hideWallBanner()
+                    WebExtractor.setReader(web, false)
+                    if (!reader.state().playing) {
+                        showPageFailure(
+                            if (PageFailure.isErrorPage(pageTitle)) {
+                                "Page didn't load — check the connection and try again"
+                            } else {
+                                "This page isn't a readable chapter"
+                            }
+                        )
+                        chapterTitleView.visibility = View.GONE
+                    }
+                    return
+                }
                 chapterTitleView.text = pageTitle
                 chapterTitleView.visibility = if (pageTitle.isEmpty()) View.GONE else View.VISIBLE
                 getSharedPreferences("novelspeak", MODE_PRIVATE).edit()
@@ -1936,7 +1998,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val actions = MenuPolicy.items(
             home = homeVisible,
             hasContent = reader.hasContent(),
-            canForward = web.canGoForward()
+            canForward = web.canGoForward(),
+            imported = currentImportId != null
         )
         if (actions.isEmpty()) return
 
@@ -1999,11 +2062,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         dialog.setContentView(panel)
         dialog.setOnShowListener {
             val window = dialog.window ?: return@setOnShowListener
-            window.setLayout(
-                (resources.displayMetrics.widthPixels - dp(24)).coerceAtLeast(dp(280)),
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            window.setGravity(Gravity.BOTTOM)
+            // Modal sheets stay a thumb-sized panel on tablets instead of spanning 800 dp.
+            val width = min(
+                resources.displayMetrics.widthPixels - dp(24),
+                dp(560)
+            ).coerceAtLeast(dp(280))
+            window.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+            window.setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
             window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
             window.setDimAmount(0.55f)
         }
@@ -2267,8 +2332,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     lastExtractedBlocks = blocks.size
                     val badPage = title.contains("not found", true) ||
                         title.contains("404", true)
+                    val errorBody = blocks.size <= 3 &&
+                        PageFailure.isErrorBody(blocks.firstOrNull()?.text ?: "")
                     val blocked = badPage ||
+                        errorBody ||
                         wall == "challenge" ||
+                        PageFailure.isErrorPage(title) ||
                         title.contains("just a moment", true) ||
                         title.contains("security verification", true) ||
                         title.contains("cloudflare", true) ||
@@ -2301,8 +2370,29 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         WebExtractor.setReader(web, false)
                         return@runOnUiThread
                     }
-                    if (append && !wantsRestart && (blocked || blocks.size < 2)) {
-                        // Never append a 404/Cloudflare interstitial to the reading queue.
+                    if (blocked && !wantsRestart) {
+                        // Never replace or append the queue with a 404, error page or challenge
+                        // interstitial, even when the user opened it directly rather than via
+                        // Next chapter.
+                        appendNext = false
+                        autoAdvance = false
+                        reader.stop()
+                        showPageFailure(
+                            if (PageFailure.isErrorPage(title)) {
+                                "Page didn't load — check the connection and try again"
+                            } else {
+                                "This page isn't a readable chapter"
+                            }
+                        )
+                        hideWallBanner()
+                        chapterTitleView.visibility = View.GONE
+                        WebExtractor.setReader(web, false)
+                        if (append) {
+                            Toast.makeText(this, "Next chapter not found", Toast.LENGTH_SHORT).show()
+                        }
+                        return@runOnUiThread
+                    }
+                    if (append && !wantsRestart && blocks.size < 2) {
                         appendNext = false
                         autoAdvance = false
                         Toast.makeText(this, "Next chapter not found", Toast.LENGTH_SHORT).show()
@@ -2314,6 +2404,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         // reason to throw away the readable theme.
                         WebExtractor.setReader(web, p.readerMode)
                     } else {
+                        pageFailureMessage = null
                         val chapterTitle = title.ifEmpty { web.title ?: "" }
                         if (append && !wantsRestart && reader.hasContent()) {
                             autoAppendStart = reader.state().total
@@ -2326,7 +2417,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                             val queue = if (p.storyCast) castChapter(chapterTitle, blocks) ?: blocks else blocks
                             reader.setContent(chapterTitle, queue)
                         }
-                        statusView.text = "Extracted " + blocks.size + " sentences"
+                        statusView.text = "Extracted " + UiText.sentenceCount(blocks.size)
                         onExtracted(title, wall)
 
                         // Do not hide a Cloudflare challenge: it must stay interactive
@@ -2376,6 +2467,13 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 }
             }
         }
+    }
+
+    /** A failure message that survives the Reader's own "Stopped" state notification. */
+    private fun showPageFailure(message: String) {
+        pageFailureMessage = message
+        statusView.text = message
+        statusView.contentDescription = "Reader status, " + message
     }
 
     private fun cancelAutoAdvance() {
@@ -2714,8 +2812,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         }
                         runOnUiThread {
                             applyImported(
-                                if (name.isNullOrBlank()) "Imported PDF"
-                                else name.removeSuffix(".pdf").removeSuffix(".PDF"),
+                                UiText.titleFromFileName(name ?: "", "Imported PDF"),
                                 blocks,
                                 "PDF · " + plural(result.pages.size, "page", "pages"),
                                 ""
@@ -2733,8 +2830,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                         }
                         runOnUiThread {
                             applyImported(
-                                if (name.isNullOrBlank()) "Imported text"
-                                else name.removeSuffix(".txt").removeSuffix(".TXT"),
+                                UiText.titleFromFileName(name ?: "", "Imported text"),
                                 blocks,
                                 "Text",
                                 ""
@@ -2774,7 +2870,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         openImportedBook(book.id)
         Toast.makeText(
             this,
-            "Saved to Library · " + blocks.size + " sentences",
+            "Saved to Library · " + UiText.sentenceCount(blocks.size),
             Toast.LENGTH_SHORT
         ).show()
     }
@@ -2813,9 +2909,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         showImportPage(book)
         lastImportedCursor = -1
         lastImportedAt = 0L
-        statusView.text = "Imported · " + blocks.size + " sentences"
+        statusView.text = "Imported · " + UiText.sentenceCount(blocks.size)
         statusView.contentDescription =
-            "Reader status, imported book, " + blocks.size + " sentences"
+            "Reader status, imported book, " + UiText.sentenceCount(blocks.size)
         updateReaderButton()
         DiagLog.line(this, "import opened id=" + id + " sentences=" + blocks.size + " start=" + start)
     }
@@ -2826,12 +2922,22 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         setPadding(dp(28), dp(34), dp(28), dp(24))
         visibility = View.GONE
         contentDescription = "Imported book screen"
-        addView(TextView(this@MainActivity).apply {
+        val header = LinearLayout(this@MainActivity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(this@MainActivity).apply {
             text = "Imported"
             textSize = 12f
             letterSpacing = 0.14f
             setTextColor(Palette.AMBER)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
+        importMenuButton = iconButton(Glyph.MORE, "More options", Design.TOUCH_DP) {
+            showOverflowMenu()
+        }
+        header.addView(importMenuButton)
+        addView(header)
         addView(TextView(this@MainActivity).apply {
             id = View.generateViewId()
             tag = "import-title"
@@ -2885,6 +2991,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (::nextChapterButton.isInitialized) nextChapterButton.visibility = View.GONE
         if (::readerBtn.isInitialized) readerBtn.visibility = View.GONE
         if (::adblockView.isInitialized) adblockView.visibility = View.GONE
+        // The imported screen owns its header; there is no browser surface to control.
+        if (::topBar.isInitialized) topBar.visibility = View.GONE
     }
 
     /** Leaves imported-book mode (called when a web page starts loading or Home opens). */
@@ -2897,6 +3005,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         if (::nextChapterButton.isInitialized) nextChapterButton.visibility = View.VISIBLE
         if (::readerBtn.isInitialized) readerBtn.visibility = View.VISIBLE
         if (::adblockView.isInitialized) adblockView.visibility = View.VISIBLE
+        if (::topBar.isInitialized) topBar.visibility = View.VISIBLE
+        if (::navCluster.isInitialized) navCluster.visibility = View.VISIBLE
+        if (::addressBox.isInitialized) addressBox.visibility = View.VISIBLE
     }
 
     private fun documentName(uri: Uri): String? {
@@ -2995,11 +3106,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val data = intent.data
         val mime = intent.type ?: ""
         val isDocument = data != null && data.scheme == "content" &&
-            (mime.contains("epub") || mime.contains("pdf") ||
-                (data.path ?: "").lowercase().let { it.endsWith(".epub") || it.endsWith(".pdf") })
+            DocumentKind.isImportable(mime, data.path)
         if (action == Intent.ACTION_SEND && stream != null && stream.scheme == "content" &&
-            (mime.contains("epub") || mime.contains("pdf") ||
-                (stream.path ?: "").lowercase().let { it.endsWith(".epub") || it.endsWith(".pdf") })
+            DocumentKind.isImportable(mime, stream.path)
         ) {
             importDocument(stream, mime)
             return
@@ -3078,7 +3187,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         reader.setContent("Shared text", queue)
         hideWallBanner()
-        statusView.text = "Shared text · " + blocks.size + " sentences"
+        statusView.text = "Shared text · " + UiText.sentenceCount(blocks.size)
         statusView.contentDescription = "Reader status, shared text queued"
         WebExtractor.setReader(web, false)
         AppPermissions.requestNotificationsOnce(this)
@@ -3147,6 +3256,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private fun updateSleepTimerView() {
         if (!::sleepTimerView.isInitialized) return
         val remaining = sleepTimerEndsAt - System.currentTimeMillis()
+        if (::sleepGlyph.isInitialized) {
+            val active = remaining > 0L || sleepTimerChapter
+            sleepGlyph.setGlyph(Glyph.MOON, if (active) Palette.ACCENT else Palette.TEXT)
+            sleepButton.contentDescription =
+                if (active) "Sleep timer active. Change or turn off" else "Sleep timer"
+        }
         when {
             remaining > 0L -> {
                 val secs = (remaining / 1000L).toInt()
@@ -3244,7 +3359,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 cached
             }
             reader.appendContent(queue, chapterTitle)
-            statusView.text = "Prefetched chapter · " + cached.size + " sentences"
+            statusView.text = "Prefetched chapter · " + UiText.sentenceCount(cached.size)
             val p = NovelSpeakApp.instance.prefs
             if (wasPlaying || p.autoMode) {
                 val start = autoAppendStart
@@ -3343,14 +3458,21 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         val chapter = state.title.ifEmpty { web.title ?: "" }
         chapterTitleView.text = chapter
         chapterTitleView.visibility = if (chapter.isEmpty()) View.GONE else View.VISIBLE
-        statusView.text = state.status
-        statusView.contentDescription = "Reader status, " + state.status
+        val failure = pageFailureMessage
+        if (failure != null && total == 0) {
+            statusView.text = failure
+            statusView.contentDescription = "Reader status, " + failure
+        } else {
+            statusView.text = state.status
+            statusView.contentDescription = "Reader status, " + state.status
+        }
         engineChip.text = state.engine
         engineChip.visibility = if (state.engine.isEmpty()) View.GONE else View.VISIBLE
         val voice = currentVoiceLabel(state)
-        voiceView.text = if (voice.isEmpty()) "" else "Voice · " + voice
+        voiceView.text = if (voice.isEmpty()) "" else "Voice · " + voice + "  ›"
         voiceView.visibility = if (voice.isEmpty()) View.GONE else View.VISIBLE
-        voiceView.contentDescription = "Current voice, " + voice
+        voiceView.contentDescription =
+            "Current voice, " + voice + ". Open voice settings"
         if (::speakerView.isInitialized) {
             val speaker = state.speaker
             if (speaker.isNotEmpty() && speaker != CastIds.NARRATOR) {
@@ -3881,6 +4003,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     override fun onBackPressed() {
+        if (currentImportId != null) {
+            // Leave the stored book instead of driving the hidden WebView's history.
+            showHome()
+            return
+        }
         if (homeVisible) {
             super.onBackPressed()
             return
@@ -4060,7 +4187,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
 private enum class Glyph {
     PLAY, PAUSE, STOP, PREV, NEXT, BACK, FORWARD, RELOAD, GEAR, MENU, MORE,
-    CLOSE, LOCK, GLOBE, ALERT, PLUS, MINUS, SHIELD, BOOK
+    CLOSE, LOCK, GLOBE, ALERT, PLUS, MINUS, SHIELD, BOOK, MOON
 }
 
 private class GlyphView(
@@ -4188,6 +4315,20 @@ private class GlyphView(
                 for (i in -1..1) {
                     canvas.drawCircle(cx, cy + i * s * 0.58f, s * 0.14f, fill)
                 }
+            }
+            Glyph.MOON -> {
+                val crescent = Path().apply {
+                    fillType = Path.FillType.EVEN_ODD
+                    addOval(
+                        RectF(cx - s * 0.82f, cy - s * 0.95f, cx + s * 0.82f, cy + s * 0.95f),
+                        Path.Direction.CW
+                    )
+                    addOval(
+                        RectF(cx - s * 0.18f, cy - s * 1.05f, cx + s * 1.18f, cy + s * 0.78f),
+                        Path.Direction.CW
+                    )
+                }
+                canvas.drawPath(crescent, fill)
             }
             Glyph.CLOSE -> {
                 canvas.drawLine(

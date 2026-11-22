@@ -1,0 +1,46 @@
+appId: app.novelspeak
+name: "27 player shortcuts: voice opens its settings page and sleep timer arms in one tap"
+tags:
+  - reader
+  - settings
+  - regression
+---
+- clearState
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter1.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter1.html"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+|Restart chapter"
+    timeout: 30000
+# Tapping the voice row deep-links to the Voices page; Back goes to the hub, then the reader.
+- tapOn: "Current voice.*Open voice settings"
+- extendedWaitUntil:
+    visible: "Voices & previews"
+    timeout: 10000
+- assertVisible: "VOICE"
+- pressKey: Back
+- assertVisible: "Settings"
+- pressKey: Back
+- extendedWaitUntil:
+    visible: "Sleep timer"
+    timeout: 10000
+- tapOn: "Sleep timer"
+- tapOn: "15 minutes"
+- extendedWaitUntil:
+    visible: "Sleep timer · .*"
+    timeout: 10000
+- assertVisible: "Sleep timer active.*"

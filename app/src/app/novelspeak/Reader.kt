@@ -252,7 +252,7 @@ class Reader(private val app: NovelSpeakApp) {
         sentences = if (append) sentences + blocks else blocks
         cursor = 0
         submitted = -1
-        status = if (sentences.isEmpty()) "No readable text found" else "Ready · ${sentences.size} sentences"
+        status = if (sentences.isEmpty()) "No readable text found" else "Ready · " + UiText.sentenceCount(sentences.size)
         notifyState()
         notifyHighlight()
         if (sentences.isNotEmpty()) prepareForPlayback(forPlay = false)
@@ -262,7 +262,7 @@ class Reader(private val app: NovelSpeakApp) {
         if (blocks.isEmpty()) return
         if (newTitle.isNotEmpty()) title = newTitle
         sentences = sentences + blocks
-        status = "Chapter appended · ${sentences.size} sentences"
+        status = "Chapter appended · " + UiText.sentenceCount(sentences.size)
         notifyState()
         if (playing) {
             pump()
@@ -336,7 +336,7 @@ class Reader(private val app: NovelSpeakApp) {
         if (ok) {
             engine = e
             engineName = wanted
-            status = "Ready · ${sentences.size} sentences"
+            status = "Ready · " + UiText.sentenceCount(sentences.size)
         } else {
             status = "Engine error: ${message ?: "unknown"}"
             try { e.release() } catch (ignored: Throwable) {}
@@ -538,7 +538,7 @@ class Reader(private val app: NovelSpeakApp) {
         engine?.release()
         engine = null
         engineName = ""
-        status = if (sentences.isEmpty()) "Idle" else "Ready · " + sentences.size + " sentences"
+        status = if (sentences.isEmpty()) "Idle" else "Ready · " + UiText.sentenceCount(sentences.size)
         notifyState()
         if (sentences.isNotEmpty()) prepareForPlayback(forPlay = false)
     }
@@ -562,7 +562,7 @@ class Reader(private val app: NovelSpeakApp) {
         engine?.release()
         engine = null
         engineName = ""
-        status = if (sentences.isEmpty()) "Idle" else "Ready · " + sentences.size + " sentences"
+        status = if (sentences.isEmpty()) "Idle" else "Ready · " + UiText.sentenceCount(sentences.size)
         notifyState()
     }
 
@@ -582,7 +582,7 @@ class Reader(private val app: NovelSpeakApp) {
         cancelPreroll()
         if (wasPlaying) PlaybackService.stop(app)
         engine?.setVoice(id)
-        status = if (sentences.isEmpty()) "Idle" else "Ready · " + sentences.size + " sentences"
+        status = if (sentences.isEmpty()) "Idle" else "Ready · " + UiText.sentenceCount(sentences.size)
         notifyState()
         // Changing a voice must not silently stop the book. The queued audio was discarded,
         // so re-enter the normal Play path and rebuild the preroll with the new voice.

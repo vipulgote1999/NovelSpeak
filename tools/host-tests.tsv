@@ -16,6 +16,8 @@ pdf-test	import	app/src/app/novelspeak/PdfTextImporter.kt
 motion-test	ui	app/src/app/novelspeak/Motion.kt
 player-chrome-test	ui,playback	app/src/app/novelspeak/PlayerChrome.kt
 menu-policy-test	ui	app/src/app/novelspeak/MenuPolicy.kt
+error-page-test	ui,reader	app/src/app/novelspeak/PageFailure.kt app/src/app/novelspeak/UiText.kt
+document-kind-test	import,url	app/src/app/novelspeak/DocumentKind.kt
 voice-catalog-test	tts,cast	app/src/app/novelspeak/VoiceCatalog.kt
 cast-chunker-test	cast,tts	app/src/app/novelspeak/SentenceSplitter.kt app/src/app/novelspeak/cast/CastChunker.kt
 cast-store-test	cast,library	app/src/app/novelspeak/library/LibraryFile.kt app/src/app/novelspeak/library/LibraryStore.kt app/src/app/novelspeak/VoiceCatalog.kt app/src/app/novelspeak/SentenceSplitter.kt app/src/app/novelspeak/cast/CastModels.kt app/src/app/novelspeak/cast/CastStore.kt app/src/app/novelspeak/cast/CastCoordinator.kt app/src/app/novelspeak/cast/CastChunker.kt app/src/app/novelspeak/cast/DialogueParser.kt app/src/app/novelspeak/cast/VoiceCastPlanner.kt app/src/app/novelspeak/cast/VoiceSelection.kt
