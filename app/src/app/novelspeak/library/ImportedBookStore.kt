@@ -115,7 +115,9 @@ class ImportedBookStore(context: Context) {
             list[i] = old.copy(
                 position = safePos,
                 sentenceCount = safeTotal,
-                updatedAt = System.currentTimeMillis()
+                updatedAt = System.currentTimeMillis(),
+                // Re-reading from before the end clears the Finished badge, matching chapters.
+                finished = ImportedProgress.finishedAfterProgress(old.finished, safePos, safeTotal)
             )
             writeIndex(list)
             true

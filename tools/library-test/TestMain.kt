@@ -1,4 +1,5 @@
 import app.novelspeak.ReadingTick
+import app.novelspeak.library.ImportedProgress
 import app.novelspeak.library.Bookmark
 import app.novelspeak.library.BookmarkStore
 import app.novelspeak.library.InMemoryStorage
@@ -643,6 +644,17 @@ private fun testSharedStorage() {
     eq("stats write lands", 3, ReadingStats(storage).today(now).minutes)
 }
 
+private fun testImportedProgress() {
+    println()
+    println("== imported progress ==")
+    check("re-reading from the start clears finished", !ImportedProgress.finishedAfterProgress(true, 0, 10))
+    check("stopping mid-book clears finished", !ImportedProgress.finishedAfterProgress(true, 4, 10))
+    check("the last sentence keeps finished", ImportedProgress.finishedAfterProgress(true, 9, 10))
+    check("unfinished stays unfinished", !ImportedProgress.finishedAfterProgress(false, 0, 10))
+    check("unknown total keeps finished", ImportedProgress.finishedAfterProgress(true, 0, 0))
+    check("single-sentence book keeps finished", ImportedProgress.finishedAfterProgress(true, 0, 1))
+}
+
 private fun testReadingTick() {
     println()
     println("== reading tick ==")
@@ -697,6 +709,7 @@ fun main() {
     testStatsMidnightRollover()
     testStatsPruneAndFallback()
     testSharedStorage()
+    testImportedProgress()
     testReadingTick()
     testTimestamps()
 
