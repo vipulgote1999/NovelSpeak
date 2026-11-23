@@ -2,6 +2,7 @@ package app.novelspeak
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -27,6 +28,8 @@ import android.widget.TextView
  */
 class AboutPrivacyActivity : Activity() {
 
+    private lateinit var content: LinearLayout
+
     private companion object {
         const val PRIVACY_URL = "https://vipulgote1999.github.io/NovelSpeak/privacy/"
     }
@@ -47,17 +50,29 @@ class AboutPrivacyActivity : Activity() {
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
             )
         }
-        val content = LinearLayout(this).apply {
+        content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            val side = dp(Design.contentPadding(resources.configuration.screenWidthDp))
-            setPadding(side, dp(4), side, dp(28))
+            setPadding(0, dp(4), 0, dp(28))
         }
         scroll.addView(content)
         root.addView(scroll)
         setContentView(root)
         applyInsets(root)
+        applyContentWidth()
 
         populate(content)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyContentWidth()
+    }
+
+    /** Keep the readable measure centered after a tablet rotation; this activity is not recreated. */
+    private fun applyContentWidth() {
+        if (!::content.isInitialized) return
+        val side = dp(Design.contentPadding(resources.configuration.screenWidthDp))
+        content.setPadding(side, dp(4), side, dp(28))
     }
 
     private fun populate(content: LinearLayout) {
