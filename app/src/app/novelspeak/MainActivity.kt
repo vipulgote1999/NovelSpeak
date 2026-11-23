@@ -218,8 +218,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private lateinit var library: LibraryStore
     private lateinit var bookmarks: BookmarkStore
     private lateinit var readingStats: ReadingStats
-    private var lastSentenceTickMs = 0L
-    private var lastStatsCursor = -1
+    private val readingTick = ReadingTick()
     private lateinit var wallBanner: TextView
     private lateinit var sleepTimerView: TextView
     private lateinit var importPage: LinearLayout
@@ -1413,9 +1412,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         } catch (t: Throwable) {
             emptyList()
         }
-        val minutes = days.sumOf { it.minutes }
+        // Sum raw seconds first: rounding each day to minutes and then adding them reports a
+        // week of short sessions as more time than was actually read.
+        val seconds = days.sumOf { it.seconds }
+        val minutes = ((seconds + 30L) / 60L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         val sentences = days.sumOf { it.sentences }
-        val activeDays = days.count { it.minutes > 0 || it.sentences > 0 }
+        val activeDays = days.count { it.seconds > 0L || it.sentences > 0 }
         if (minutes <= 0 && sentences <= 0) {
             homeStats.visibility = View.GONE
             return
@@ -2878,15 +2880,18 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
 
     /** Accumulate reading time locally (no telemetry) for the stats screen. */
     private fun recordReadingTime(state: Reader.State) {
-        if (!state.playing || state.total <= 0) return
-        val now = SystemClock.elapsedRealtime()
-        if (state.cursor != lastStatsCursor) {
-            if (lastSentenceTickMs > 0L) {
-                val secs = ((now - lastSentenceTickMs) / 1000L).toInt().coerceIn(0, 120)
-                if (secs > 0) readingStats.addReading(secs, 1, UrlTools.host(web.url ?: "") ?: "")
-            }
-            lastStatsCursor = state.cursor
-            lastSentenceTickMs = now
+        val delta = readingTick.onState(
+            state.playing,
+            state.total,
+            state.cursor,
+            SystemClock.elapsedRealtime()
+        )
+        if (delta.seconds > 0 || delta.sentences > 0) {
+            readingStats.addReading(
+                delta.seconds,
+                delta.sentences,
+                UrlTools.host(web.url ?: "") ?: ""
+            )
         }
     }
 

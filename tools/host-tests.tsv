@@ -1,7 +1,7 @@
 # Host test manifest: name<TAB>areas<TAB>sources (space-separated).
 # Keep every tools/*-test/TestMain.kt registered here; --check enforces it.
 adblock-test	adblock,url,extraction	app/src/app/novelspeak/adblock
-library-test	library	app/src/app/novelspeak/library/LibraryFile.kt app/src/app/novelspeak/library/LibraryStore.kt app/src/app/novelspeak/library/ReadingStats.kt
+library-test	library	app/src/app/novelspeak/ReadingTick.kt app/src/app/novelspeak/library/LibraryFile.kt app/src/app/novelspeak/library/LibraryStore.kt app/src/app/novelspeak/library/ReadingStats.kt
 tts-cleaner-test	tts,reader,cast	app/src/app/novelspeak/SentenceSplitter.kt app/src/app/novelspeak/TtsTextCleaner.kt app/src/app/novelspeak/TtsOverrides.kt
 cast-parser-test	cast,tts	app/src/app/novelspeak/cast/CastModels.kt app/src/app/novelspeak/cast/DialogueParser.kt
 url-input-test	url,web	app/src/app/novelspeak/UrlInput.kt

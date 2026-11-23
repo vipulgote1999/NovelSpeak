@@ -10,7 +10,9 @@ import java.util.TimeZone
 data class DayStats(
     val date: String,
     val minutes: Int,
-    val sentences: Int
+    val sentences: Int,
+    /** Raw seconds for the day; callers that sum several days must round once, not per day. */
+    val seconds: Long = 0L
 )
 
 /**
@@ -75,10 +77,12 @@ class ReadingStats(private val storage: LibraryStorage) {
         synchronized(libraryLock) {
             val key = formatDay(now)
             val bucket = LibraryFile.read(storage).days[key]
+            val seconds = bucket?.seconds ?: 0L
             return DayStats(
                 key,
-                minutesOf(bucket?.seconds ?: 0L),
-                sentencesOf(bucket?.sentences ?: 0L)
+                minutesOf(seconds),
+                sentencesOf(bucket?.sentences ?: 0L),
+                seconds
             )
         }
     }
@@ -105,11 +109,13 @@ class ReadingStats(private val storage: LibraryStorage) {
             for (i in keys.indices.reversed()) {
                 val key = keys[i]
                 val bucket = document.days[key]
+                val seconds = bucket?.seconds ?: 0L
                 result.add(
                     DayStats(
                         key,
-                        minutesOf(bucket?.seconds ?: 0L),
-                        sentencesOf(bucket?.sentences ?: 0L)
+                        minutesOf(seconds),
+                        sentencesOf(bucket?.sentences ?: 0L),
+                        seconds
                     )
                 )
             }
