@@ -476,13 +476,13 @@ class LibraryActivity : Activity() {
                 Row.Empty(
                     when {
                         noneAtAll -> EMPTY_TEXT
+                        q.isNotEmpty() -> "No results for “" + query.trim() + "”."
                         importedEmpty -> "No imported books yet."
                         finishedEmpty -> "Nothing finished yet. Chapters you complete appear here."
-                        q.isNotEmpty() -> "No results for “" + query.trim() + "”."
                         else -> "No matches. Try a different search or filter."
                     },
                     libraryEmpty = noneAtAll,
-                    showImport = importedEmpty
+                    showImport = importedEmpty && q.isEmpty()
                 )
             )
             adapter.notifyDataSetChanged()
