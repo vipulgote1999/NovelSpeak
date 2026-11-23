@@ -2304,7 +2304,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 )
                 trackTintList = ColorStateList(
                     arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-                    intArrayOf(0x996EE7B7.toInt(), 0xFF3E4E5C.toInt())
+                    intArrayOf(Palette.SWITCH_ON_TRACK, Palette.SWITCH_OFF_TRACK)
                 )
                 setOnCheckedChangeListener { _, on -> onChange(on) }
             }

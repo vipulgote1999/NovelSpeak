@@ -1330,7 +1330,7 @@ class SettingsActivity : Activity() {
         arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
         // The off track was BORDER, which vanishes into the card; a slate tone still reads as
         // an interactive track next to the raised thumb.
-        intArrayOf(0x996EE7B7.toInt(), 0xFF3E4E5C.toInt())
+        intArrayOf(Palette.SWITCH_ON_TRACK, Palette.SWITCH_OFF_TRACK)
     )
 
     /**
