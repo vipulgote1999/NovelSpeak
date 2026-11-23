@@ -12,6 +12,20 @@ tags: [home, smoke]
       text: "Continue reading"
     direction: DOWN
 - assertVisible: "Continue reading"
+# Back from the Home search editor must cancel the edit, not leave the app.
+- scrollUntilVisible:
+    element:
+      text: "Home search"
+    direction: UP
+- tapOn: "Home search"
+- extendedWaitUntil:
+    visible: "Cancel"
+    timeout: 10000
+- hideKeyboard
+- pressKey: BACK
+- extendedWaitUntil:
+    visible: "Home search"
+    timeout: 10000
 - tapOn: "Shortcut Royal Road"
 - extendedWaitUntil:
     visible: "Address bar.*royalroad.*"

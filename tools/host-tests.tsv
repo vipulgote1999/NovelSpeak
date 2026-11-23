@@ -15,7 +15,7 @@ epub-test	import	app/src/app/novelspeak/EpubImporter.kt
 pdf-test	import	app/src/app/novelspeak/PdfTextImporter.kt
 motion-test	ui	app/src/app/novelspeak/Motion.kt
 player-chrome-test	ui,playback	app/src/app/novelspeak/PlayerChrome.kt
-menu-policy-test	ui	app/src/app/novelspeak/MenuPolicy.kt
+menu-policy-test	ui	app/src/app/novelspeak/MenuPolicy.kt app/src/app/novelspeak/BackPolicy.kt
 error-page-test	ui,reader	app/src/app/novelspeak/PageFailure.kt app/src/app/novelspeak/UiText.kt
 document-kind-test	import,url	app/src/app/novelspeak/DocumentKind.kt
 voice-catalog-test	tts,cast	app/src/app/novelspeak/VoiceCatalog.kt

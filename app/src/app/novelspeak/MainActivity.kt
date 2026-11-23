@@ -4269,28 +4269,22 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     }
 
     override fun onBackPressed() {
-        if (currentImportId != null) {
+        when (BackPolicy.decide(
+            imported = currentImportId != null,
+            editing = editingUrl,
+            suggestionsShowing = ::suggestionsPopup.isInitialized && suggestionsPopup.isShowing,
+            home = homeVisible,
+            canGoBack = web.canGoBack()
+        )) {
             // Leave the stored book instead of driving the hidden WebView's history.
-            showHome()
-            return
-        }
-        if (homeVisible) {
-            super.onBackPressed()
-            return
-        }
-        if (editingUrl) {
-            exitEditMode()
-            return
-        }
-        if (::suggestionsPopup.isInitialized && suggestionsPopup.isShowing) {
-            suggestionsPopup.dismiss()
-            return
-        }
-        if (web.canGoBack()) {
-            web.goBack()
-            updateNavButtons()
-        } else {
-            super.onBackPressed()
+            BackPolicy.Action.LEAVE_IMPORT -> showHome()
+            BackPolicy.Action.EXIT_EDIT -> exitEditMode()
+            BackPolicy.Action.DISMISS_SUGGESTIONS -> suggestionsPopup.dismiss()
+            BackPolicy.Action.EXIT_HOME, BackPolicy.Action.EXIT_APP -> super.onBackPressed()
+            BackPolicy.Action.WEB_BACK -> {
+                web.goBack()
+                updateNavButtons()
+            }
         }
     }
 

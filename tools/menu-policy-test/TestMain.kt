@@ -1,11 +1,12 @@
+import app.novelspeak.BackPolicy
 import app.novelspeak.MenuPolicy
 
 /**
- * Host-side checks for the overflow menu. Home must not offer page-only actions, and reader
- * menus must only offer actions that can actually run.
+ * Host-side checks for the overflow menu and Back precedence. Home must not offer page-only
+ * actions, and Back must cancel an edit before it leaves Home.
  *
- *   kotlinc app/src/app/novelspeak/MenuPolicy.kt tools/menu-policy-test/TestMain.kt \
- *     -include-runtime -d /tmp/menu-policy-test.jar
+ *   kotlinc app/src/app/novelspeak/MenuPolicy.kt app/src/app/novelspeak/BackPolicy.kt \
+ *     tools/menu-policy-test/TestMain.kt -include-runtime -d /tmp/menu-policy-test.jar
  *   java -jar /tmp/menu-policy-test.jar
  */
 fun main() {
@@ -76,6 +77,23 @@ fun main() {
     check("labels are non-blank", labels.all { it.isNotBlank() })
     check("labels are unique", labels.toSet().size == labels.size, labels.toString())
     check("last item is privacy", MenuPolicy.items(false, true, true).last().id == MenuPolicy.PRIVACY)
+
+    // Back precedence: from the Home search editor, Back must cancel the edit rather than
+    // leaving the app. Imported books own the first Back; web history comes last.
+    fun back(
+        imported: Boolean = false,
+        editing: Boolean = false,
+        suggestions: Boolean = false,
+        home: Boolean = false,
+        canGoBack: Boolean = false
+    ) = BackPolicy.decide(imported, editing, suggestions, home, canGoBack)
+
+    check("back cancels editing before leaving home", back(editing = true, home = true) == BackPolicy.Action.EXIT_EDIT)
+    check("back leaves an imported book first", back(imported = true, home = true) == BackPolicy.Action.LEAVE_IMPORT)
+    check("back dismisses suggestions before history", back(suggestions = true, canGoBack = true) == BackPolicy.Action.DISMISS_SUGGESTIONS)
+    check("back exits home when not editing", back(home = true) == BackPolicy.Action.EXIT_HOME)
+    check("back uses web history", back(canGoBack = true) == BackPolicy.Action.WEB_BACK)
+    check("back exits at the root", back() == BackPolicy.Action.EXIT_APP)
 
     println("$checks checks, $failures failure(s)")
     if (failures > 0) kotlin.system.exitProcess(1)
