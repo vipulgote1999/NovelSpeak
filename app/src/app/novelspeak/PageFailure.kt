@@ -16,8 +16,11 @@ object PageFailure {
         if (t.startsWith("this site can") || t.startsWith("site can")) return true
         if (t.startsWith("problem loading page")) return true
         if (t == "no internet" || t.startsWith("no internet ")) return true
-        if (t == "404" || t.startsWith("404 ")) return true
-        if (t == "not found" || t.endsWith(" not found")) return true
+        if (t == "404") return true
+        if (t.startsWith("404") && (t.contains("not found") || t.contains("error"))) {
+            return true
+        }
+        if (t == "not found" || t.startsWith("page not found")) return true
         return false
     }
 

@@ -2544,12 +2544,9 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     }
                     lastExtractedUrl = web.url
                     lastExtractedBlocks = blocks.size
-                    val badPage = title.contains("not found", true) ||
-                        title.contains("404", true)
                     val errorBody = blocks.size <= 3 &&
                         PageFailure.isErrorBody(blocks.firstOrNull()?.text ?: "")
-                    val blocked = badPage ||
-                        errorBody ||
+                    val blocked = errorBody ||
                         wall == "challenge" ||
                         PageFailure.isErrorPage(title) ||
                         title.contains("just a moment", true) ||
