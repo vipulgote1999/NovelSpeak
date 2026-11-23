@@ -220,7 +220,11 @@ object EpubImporter {
     }
 
     private fun hasDoctypeOrEntity(bytes: ByteArray): Boolean {
-        val text = String(bytes, Charsets.ISO_8859_1).lowercase()
+        // Decode as Latin-1 and drop NULs. Markup in UTF-16/UTF-32 has NUL bytes between the
+        // ASCII characters (`<\0!\0D…`), so a raw contains() would miss the DOCTYPE and let the
+        // plain fallback resolve external entities. Dropping NULs reconstructs the ASCII markup
+        // for every UTF width while leaving ordinary UTF-8/ASCII documents unchanged.
+        val text = String(bytes, Charsets.ISO_8859_1).replace("\u0000", "").lowercase()
         return text.contains("<!doctype") || text.contains("<!entity")
     }
 
