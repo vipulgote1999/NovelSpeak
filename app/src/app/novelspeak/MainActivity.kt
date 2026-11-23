@@ -744,7 +744,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 true
             }
         }
-        actionsRow.addView(castButton)
+        // At 1.5x+/narrow widths Read and Next alone fill the row; Cast moves beside speed.
+        val stackActions = PlayerChrome.stackActionRow(
+            resources.configuration.screenWidthDp,
+            resources.configuration.fontScale
+        )
+        if (!stackActions) actionsRow.addView(castButton)
         val speedGroup = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -773,6 +778,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(0, dp(2), 0, 0)
+                if (stackActions) addView(castButton)
                 addView(Space(this@MainActivity), LinearLayout.LayoutParams(0, 1, 1f))
                 addView(speedGroup)
             })
@@ -801,20 +807,22 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         }
         if (resources.configuration.screenWidthDp < 360) {
             // A 320 dp phone cannot fit two equal side columns around Play. Keep one compact
-            // strip so the sleep timer is not clipped off the card.
-            transportRow.addView(iconButton(Glyph.PREV, "Previous sentence", Design.DENSE_TOUCH_DP) {
+            // strip so the sleep timer is not clipped off the card; all targets still meet the
+            // dense minimum and Play keeps the 56 dp primary size.
+            val targets = PlayerChrome.compactTransportTargets()
+            transportRow.addView(iconButton(Glyph.PREV, "Previous sentence", targets.previousDp) {
                 previous()
             })
             playButton = iconButton(
-                Glyph.PLAY, "Play", 52, Palette.ACCENT, Palette.BG, oval = true
+                Glyph.PLAY, "Play", targets.playDp, Palette.ACCENT, Palette.BG, oval = true
             ) { togglePlayback() }
             playGlyph = playButton.getChildAt(0) as GlyphView
             transportRow.addView(playButton)
-            transportRow.addView(iconButton(Glyph.NEXT, "Next sentence", Design.DENSE_TOUCH_DP) {
+            transportRow.addView(iconButton(Glyph.NEXT, "Next sentence", targets.nextDp) {
                 next()
             })
-            transportRow.addView(iconButton(Glyph.STOP, "Stop", 40) { stop() })
-            sleepButton = iconButton(Glyph.MOON, "Sleep timer", 40) {
+            transportRow.addView(iconButton(Glyph.STOP, "Stop", targets.stopDp) { stop() })
+            sleepButton = iconButton(Glyph.MOON, "Sleep timer", targets.sleepDp) {
                 showSleepTimerDialog()
             }
             sleepGlyph = sleepButton.getChildAt(0) as GlyphView
@@ -832,7 +840,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             })
             transportRow.addView(leftTransport)
             playButton = iconButton(
-                Glyph.PLAY, "Play", 56, Palette.ACCENT, Palette.BG, oval = true
+                Glyph.PLAY, "Play", Design.PRIMARY_TOUCH_DP, Palette.ACCENT, Palette.BG, oval = true
             ) {
                 togglePlayback()
             }

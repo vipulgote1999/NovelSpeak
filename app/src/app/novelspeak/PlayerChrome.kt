@@ -28,4 +28,28 @@ object PlayerChrome {
     /** The Read/Next/Cast strip and speed controls cannot share a row below 360 dp. */
     fun stackSpeedRow(screenWidthDp: Int, fontScale: Float): Boolean =
         screenWidthDp < 360 || fontScale >= 1.2f
+
+    /**
+     * Read/Next/Cast also need their own row below 360 dp or at 1.5x+. At 320 dp and 2x the
+     * three labels otherwise squeeze Cast into a 47 dp column and wrap it onto three lines.
+     */
+    fun stackActionRow(screenWidthDp: Int, fontScale: Float): Boolean =
+        screenWidthDp < 360 || fontScale >= 1.5f
+
+    /** Compact transport targets; all meet the dense minimum, Play keeps the primary size. */
+    data class TransportTargets(
+        val previousDp: Int,
+        val playDp: Int,
+        val nextDp: Int,
+        val stopDp: Int,
+        val sleepDp: Int
+    )
+
+    fun compactTransportTargets(): TransportTargets = TransportTargets(
+        previousDp = Design.TOUCH_DP,
+        playDp = Design.PRIMARY_TOUCH_DP,
+        nextDp = Design.TOUCH_DP,
+        stopDp = Design.DENSE_TOUCH_DP,
+        sleepDp = Design.DENSE_TOUCH_DP
+    )
 }

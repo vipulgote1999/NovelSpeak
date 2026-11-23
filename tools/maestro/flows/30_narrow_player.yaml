@@ -31,6 +31,7 @@ tags:
 - assertVisible: "Next sentence"
 - assertVisible: "Stop"
 - assertVisible: "Sleep timer"
+- assertVisible: "Story cast.*"
 - tapOn: "Sleep timer"
 - tapOn: "15 minutes"
 - extendedWaitUntil:
