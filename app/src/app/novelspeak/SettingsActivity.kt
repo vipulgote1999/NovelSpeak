@@ -77,6 +77,7 @@ class SettingsActivity : Activity() {
     private val voiceRows = ArrayList<ChoiceRow>()
 
     private val KEY_PAGE = "settings_page"
+    private val KEY_STACK = "settings_stack"
 
     private enum class Page(val title: String) {
         HUB("Settings"),
@@ -101,8 +102,15 @@ class SettingsActivity : Activity() {
         savedInstanceState?.getString(KEY_PAGE)?.let { name ->
             try { page = Page.valueOf(name) } catch (t: Throwable) { }
         }
-        val requestedPage = intent?.getStringExtra(EXTRA_PAGE)?.let { name ->
-            try { Page.valueOf(name) } catch (t: Throwable) { null }
+        savedInstanceState?.getStringArrayList(KEY_STACK)?.forEach { name ->
+            try { pageStack.addLast(Page.valueOf(name)) } catch (t: Throwable) { }
+        }
+        val requestedPage = if (savedInstanceState == null) {
+            intent?.getStringExtra(EXTRA_PAGE)?.let { name ->
+                try { Page.valueOf(name) } catch (t: Throwable) { null }
+            }
+        } else {
+            null
         }
 
         val root = LinearLayout(this).apply {
@@ -132,6 +140,9 @@ class SettingsActivity : Activity() {
             pageStack.addLast(Page.HUB)
             page = requestedPage
             resetScroll = true
+        } else if (savedInstanceState != null && page != Page.HUB && pageStack.isEmpty()) {
+            // Older saved states only carried the page name; rebuild the Back path.
+            pageStack.addLast(Page.HUB)
         }
         build()
     }
@@ -1004,6 +1015,7 @@ class SettingsActivity : Activity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString(KEY_PAGE, page.name)
+        outState.putStringArrayList(KEY_STACK, ArrayList(pageStack.map { it.name }))
         super.onSaveInstanceState(outState)
     }
 
