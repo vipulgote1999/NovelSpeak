@@ -26,10 +26,25 @@ All notable changes to NovelSpeak are documented here. The format follows
   readable measure and 48 dp Back target on tablets.
 - **Reading this week.** Home surfaces recorded listening time, sentences and active days.
 
+### Review fixes
+
+- **EPUB import hardening.** The compatibility XML fallback now detects DOCTYPE/ENTITY in
+  UTF-16 and UTF-32 as well as UTF-8, closing a UTF-16 XXE bypass. Added a host regression.
+- **Back cancels Home search.** An active address edit is cancelled before the Home tab can
+  leave, and imported books still own the first Back.
+- **Player at 320 dp / 2×.** The Read/Next/Cast strip reflows so Cast keeps a usable width;
+  Stop and Sleep stay at the 44 dp dense target and Play stays 56 dp.
+- **State and stats.** Settings restores its subpage back stack; the privacy measure follows a
+  tablet rotation; weekly reading time no longer counts pauses or rounds each day separately;
+  re-reading an imported book clears its Finished state.
+- **Error-page guard.** Narrowed the 404/not-found title heuristic so legitimate chapter titles
+  such as “The City Not Found” are not rejected.
+
 ### Verification
 
 - Host suite: **28/28 harnesses**, browser regressions green.
-- Device suite: **27/27 Maestro flows** (14m 16s), plus `text-scale.sh` at 2.0×.
+- Device suite: **28/28 Maestro flows** (16m 59s), plus `text-scale.sh` at 2.0× and
+  `narrow.sh` at 320 dp at 1×/2×.
 
 ## [1.4.0] - 2026-11-22
 

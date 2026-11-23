@@ -7,10 +7,10 @@ NovelSpeak is deliberately Gradle-free, so its tests use four layers:
 | Host Kotlin harnesses | Pure policy, parsers, queues, storage, redaction, URL and model validation | `tools/test-host.sh` |
 | Headless Chromium | Real `extract.js` / `content.js` behavior in a browser DOM | `tools/extract-test/run.sh`, `tools/adblock-test/procedural.sh` |
 | Maestro + emulator | Real app journeys, navigation, playback controls, library and settings | `tools/maestro/run.sh` |
-| Device scripts | Share intent, rotation, 2× font scale, 320 dp phone | `08_share_intent.txt`, `adaptive.sh`, `text-scale.sh`, `narrow.sh` |
+| Device scripts | Share intent, rotation, 2× font scale, 320 dp phone at 1×/2× | `08_share_intent.txt`, `adaptive.sh`, `text-scale.sh`, `narrow.sh` |
 
 The host suite currently has **28 harnesses**. The device suite has **28 Maestro flows**
-plus the three device scripts.
+plus the four device scripts.
 
 ## Quick commands
 

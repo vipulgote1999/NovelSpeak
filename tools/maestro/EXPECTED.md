@@ -1,6 +1,6 @@
 # NovelSpeak Maestro E2E — expected results
 
-Last verified: **2026-11-22**, emulator-5554 (API 35, headless), Maestro 2.11.0.
+Last verified: **2026-11-23**, emulator-5554 (API 35, headless), Maestro 2.11.0.
 App under test: **app.novelspeak 1.4.0 (versionCode 20)**, test-only debug APK with the
 `res-dev` cleartext configuration for the localhost fixture.
 The first baseline (01–02) was taken on the previously installed **1.0.0 (versionCode 14)**.
@@ -43,7 +43,23 @@ Reports: `tools/maestro/reports/junit.xml` (Maestro 2.11 wants a **file** for `-
 | 27 | `flows/27_player_shortcuts.yaml` | Player shortcuts | voice row → `Voices & previews`; Back → hub → reader; Sleep timer → 15 minutes → live chip | Voice settings and the sleep timer are one tap from playback | **PASS** (2026-11-22: 37 s) |
 | 28 | `flows/28_reader_text_scale.yaml` | Reader at 2× | voice row, Sleep timer, Next chapter reachable; timer arms | Final controls fit at 2.0× text | **PASS** (2026-11-22: 33 s) |
 | 29 | `flows/29_library_imported_empty.yaml` | Imported filter empty | `No imported books yet`, `Import a book` | Empty Imported tab offers the picker | **PASS** (2026-11-22: 38 s) |
-| 30 | `flows/30_narrow_player.yaml` | 320 dp player | previous/play/next/stop/Sleep timer all present; timer arms | No transport control is clipped on a narrow phone | **PASS** (2026-11-22: 33 s, `narrow.sh`) |
+| 30 | `flows/30_narrow_player.yaml` | 320 dp player | previous/play/next/stop/Sleep timer/Cast all present; timer arms | No transport control is clipped on a narrow phone | **PASS** (2026-11-23: 320 dp at 1×/2×, `narrow.sh`) |
+
+### Review-fix gate (2026-11-23, versionCode 20)
+
+Run after the UTF-16 XXE guard, Back precedence, 320 dp/2× player reflow and state fixes:
+
+```
+28/28 Flows Passed in 16m 59s
+tests=28 failures=0 errors=0 skipped=0
+== RESULT: PASS
+```
+
+Host **28/28**, browser **4/4**, `08_share_intent.txt` **PASS**, `adaptive.sh` **PASS**
+(landscape two-pane and portrait single-column), `text-scale.sh` **PASS** (flows 23 + 28 at
+2.0×) and `narrow.sh` **PASS** at 320 dp at both 1× and 2×. Manual checks: Settings kept its
+Engine page and Back path across a font-scale recreation; a 320 dp/2× player measured Stop and
+Sleep at 44 dp, Play at 56 dp, and Cast at 69×44 dp.
 
 ### Full UI gate (2026-11-22, versionCode 20)
 
