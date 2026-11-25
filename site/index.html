@@ -61,7 +61,7 @@
         <div class="hero__text">
           <p class="eyebrow">Android 7.0+ · arm64 · Apache-2.0</p>
           <h1 id="hero-h">Read web novels out loud.</h1>
-          <p class="lede">It opens the chapter you are on, extracts the text, and speaks it with
+          <p class="lede">NovelSpeak opens the chapter you are on, extracts the text, and speaks it with
             voices that run on your phone. Screen off. No account, no ads, no telemetry.</p>
           <div class="actions">
             <a class="btn btn--primary" data-apk href="https://github.com/vipulgote1999/NovelSpeak/releases/download/v1.3.0/NovelSpeak-1.3.0-arm64-v8a.apk">Download the APK</a>
@@ -116,53 +116,48 @@
   <!-- 02 -->
   <section class="section section--hairline" id="listen" aria-labelledby="listen-h">
     <div class="wrap">
-      <div class="split">
-        <div>
-          <header class="chapter">
-            <span class="chapter__num" aria-hidden="true">02</span>
-            <span class="chapter__rule" aria-hidden="true"></span>
-            <span class="wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
-          </header>
-          <h2 id="listen-h">Four neural voices, downloaded once.</h2>
-          <div class="section__body">
-            <p>Use Android's own voice for instant offline playback in every language the phone
-              already ships, or install a neural voice. Kokoro, Supertonic 3, Pocket and ZipVoice
-              run on the phone after a one-time, SHA-256 verified download. Nothing is bundled in
-              the APK.</p>
-          </div>
-          <p class="note">Models download only after you confirm the size. They come from the
-            upstream sherpa-onnx release and are checked against pinned hashes.</p>
-          <p class="note"><a class="text-link" href="./voices/">Which voice should I pick?</a></p>
-        </div>
-        <div>
-          <ul class="models">
-            <li class="model">
-              <span class="model__name">Supertonic 3</span>
-              <span class="model__size">123 MB</span>
-              <p class="model__meta">Two curated styles from twenty. The fast default once installed.</p>
-            </li>
-            <li class="model">
-              <span class="model__name">Kokoro</span>
-              <span class="model__size">103 MB</span>
-              <p class="model__meta">Two curated English voices from eleven. Audiobook pacing, about 3× slower.</p>
-            </li>
-            <li class="model">
-              <span class="model__name">Pocket TTS</span>
-              <span class="model__size">98 MB</span>
-              <p class="model__meta">Clones a voice from a short reference clip.</p>
-            </li>
-            <li class="model">
-              <span class="model__name">ZipVoice</span>
-              <span class="model__size">104 MB + 52 MB</span>
-              <p class="model__meta">Cloning with a verbatim transcript, Chinese and English.</p>
-            </li>
-            <li class="model">
-              <span class="model__name">Android system TTS</span>
-              <span class="model__size">0 MB</span>
-              <p class="model__meta">Every language the device supports. No download.</p>
-            </li>
-          </ul>
-        </div>
+      <header class="chapter">
+        <span class="chapter__num" aria-hidden="true">02</span>
+        <span class="chapter__rule" aria-hidden="true"></span>
+        <span class="wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
+      </header>
+      <h2 id="listen-h">Four neural voices, downloaded once.</h2>
+      <div class="section__body">
+        <p>Use Android's own voice for instant offline playback in every language the phone
+          already ships, or install a neural voice. Kokoro, Supertonic 3, Pocket and ZipVoice run
+          on the phone after a one-time, SHA-256 verified download. Nothing is bundled in the APK.</p>
+      </div>
+      <ul class="models models--wide">
+        <li class="model">
+          <span class="model__name">Supertonic 3</span>
+          <span class="model__meta">Two curated styles from twenty. The fast default once installed.</span>
+          <span class="model__size">123 MB</span>
+        </li>
+        <li class="model">
+          <span class="model__name">Kokoro</span>
+          <span class="model__meta">Two curated English voices from eleven. Audiobook pacing, about 3× slower.</span>
+          <span class="model__size">103 MB</span>
+        </li>
+        <li class="model">
+          <span class="model__name">Pocket TTS</span>
+          <span class="model__meta">Clones a voice from a short reference clip.</span>
+          <span class="model__size">98 MB</span>
+        </li>
+        <li class="model">
+          <span class="model__name">ZipVoice</span>
+          <span class="model__meta">Cloning with a verbatim transcript, Chinese and English.</span>
+          <span class="model__size">104 MB + 52 MB</span>
+        </li>
+        <li class="model">
+          <span class="model__name">Android system TTS</span>
+          <span class="model__meta">Every language the device supports. No download.</span>
+          <span class="model__size">0 MB</span>
+        </li>
+      </ul>
+      <div class="split split--wide-right split--after">
+        <p class="note">Models download only after you confirm the size. They come from the upstream
+          sherpa-onnx release and are checked against pinned hashes.</p>
+        <p class="note"><a class="text-link" href="./voices/">Which voice should I pick?</a></p>
       </div>
     </div>
   </section>
@@ -202,46 +197,35 @@
   <!-- 04 -->
   <section class="section" id="away" aria-labelledby="away-h">
     <div class="wrap">
-      <div class="split split--wide-left">
-        <div>
-          <header class="chapter">
-            <span class="chapter__num" aria-hidden="true">04</span>
-            <span class="chapter__rule" aria-hidden="true"></span>
-          </header>
-          <h2 id="away-h">Pocket the phone. It keeps reading.</h2>
-          <div class="section__body">
-            <p>A foreground service, a wake lock and a media session keep the chapter going with
-              the screen off. Wired and Bluetooth buttons move by sentence, play and pause. The
-              sleep timer counts minutes or stops at the end of a chapter.</p>
-          </div>
-          <dl class="specs">
-            <div><dt>Screen off</dt><dd>Yes. Foreground service and wake lock</dd></div>
-            <div><dt>Headset buttons</dt><dd>Play, pause, next, previous</dd></div>
-            <div><dt>Sleep timer</dt><dd>Minutes, or end of chapter</dd></div>
-            <div><dt>Auto mode</dt><dd>Continues chapter to chapter. Off by default</dd></div>
-          </dl>
-        </div>
-        <div>
-          <p class="mono film__meta">Real recording · 23 s · sound on</p>
-          <figure class="film" data-film>
-            <video preload="none" controls playsinline width="1600" height="900"
-                   poster="assets/img/film-poster.jpg">
-              <source src="assets/media/film.mp4" type="video/mp4">
-              <a href="assets/media/film.mp4">Download the 23-second film</a>
-            </video>
-            <button class="film__play" type="button">Play the film</button>
-          </figure>
-        </div>
+      <header class="chapter">
+        <span class="chapter__num" aria-hidden="true">04</span>
+        <span class="chapter__rule" aria-hidden="true"></span>
+      </header>
+      <h2 id="away-h">Pocket the phone. It keeps reading.</h2>
+      <div class="section__body">
+        <p>A foreground service, a wake lock and a media session keep the chapter going with the
+          screen off. Wired and Bluetooth buttons move by sentence, play and pause. The sleep timer
+          counts minutes or stops at the end of a chapter.</p>
       </div>
-
-      <div class="figures figures--pair figures--spaced">
-        <figure class="plate">
+      <p class="mono film__meta after">Real recording · 23 s · sound on</p>
+      <figure class="film" data-film>
+        <video preload="none" controls playsinline width="1600" height="900"
+               poster="assets/img/film-poster.jpg">
+          <source src="assets/media/film.mp4" type="video/mp4">
+          <a href="assets/media/film.mp4">Download the 23-second film</a>
+        </video>
+        <button class="film__play" type="button">Play the film</button>
+      </figure>
+      <div class="split split--wide-left split--after">
+        <dl class="specs">
+          <div><dt>Screen off</dt><dd>Yes. Foreground service and wake lock</dd></div>
+          <div><dt>Headset buttons</dt><dd>Play, pause, next, previous</dd></div>
+          <div><dt>Sleep timer</dt><dd>Minutes, or end of chapter</dd></div>
+          <div><dt>Auto mode</dt><dd>Continues chapter to chapter. Off by default</dd></div>
+        </dl>
+        <figure class="plate plate--sm">
           <img src="assets/img/library-540.png" width="540" height="960" loading="lazy" decoding="async"
                alt="The library: search, All / Chapters / Imported / Finished filters, and a list of books with cover initials.">
-        </figure>
-        <figure class="plate">
-          <img src="assets/img/tablet-reader-600.png" width="600" height="960" loading="lazy" decoding="async"
-               alt="The reader on a tablet: two panes, the chapter on the left and the player controls on the right.">
         </figure>
       </div>
       <div class="section__body after">
