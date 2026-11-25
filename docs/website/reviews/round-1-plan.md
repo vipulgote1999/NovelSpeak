@@ -132,5 +132,16 @@ Severity: **B** = blocking (must change before code) · **N** = non-blocking (fi
 | XA-1 | §02 model rows, §04 film + library plate, §05 privacy plate: every landing section now has a picture, a spec with numbers, or both. |
 | XA-3 | "What it does not do" stays on the landing page and is echoed in the FAQ. |
 
+### Post-review corrections (recorded in round 2)
+
+- **MO-5 revised while implementing.** The plan said to give the read-along paragraph an
+  `aria-label` and hide its word spans. A `<p>` has no usable accessible name in ARIA 1.2, so the
+  shipped behaviour is the opposite: word spans stay exposed and hold whole words, and no
+  `aria-label` is set. Recorded rather than rewritten, because the review's job is to be auditable.
+- **Chapter numbering extended to 07.** The FAQ is its own section, so it takes a numeral; the
+  contract now lists `01`–`07`.
+- **The film label moved above the film** (`REAL RECORDING · 23 S · SOUND ON`, mono). It was first
+  drafted as a line under the visuals, which the house rule against captions forbids.
+
 Round 1 status: **closed**. No blocking finding remains in the plan. Code starts from the revised
 documents; any later change to this table is recorded in round 2.

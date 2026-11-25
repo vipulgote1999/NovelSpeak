@@ -1,0 +1,6 @@
+# Cloudflare Pages redirects. GitHub Pages ignores this file.
+/features /features/ 301
+/voices /voices/ 301
+/changelog /changelog/ 301
+/privacy /privacy/ 301
+/index.html / 301

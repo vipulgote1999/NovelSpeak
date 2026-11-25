@@ -30,7 +30,7 @@ already own. No stock photography, no third-party icon packs, no webfonts.
 | `docs/media/ui-audit/library-grid-tablet.png` | 780×1248 | 224 KB | tablet library grid |
 | `docs/media/ui-audit/chrome-compact-phone.png` | 540×960 | 115 KB | compact player / chrome |
 | `docs/media/novelspeak-launch-landscape.mp4` | 16:9, 23 s, 1.9 MB | — | film, poster-first, click to play |
-| `docs/media/novelspeak-launch-poster.jpg` | 1600×900 | 145 KB | film poster (→ 800×450) |
+| `docs/media/novelspeak-launch-poster.jpg` | 1600×900 | 145 KB | film poster (shipped native; no JPEG encoder) |
 | `docs/media/novelspeak-launch-contact-sheet.jpg` | 1104×1944 | 125 KB | not used (internal review artifact) |
 | `docs/play-store/graphics/icon-512.png` | 512×512 | 4 KB | favicon + nav mark |
 | `docs/play-store/graphics/feature-graphic-1024x500.png` | 1024×500 | 48 KB | not used (store asset) |
@@ -61,7 +61,7 @@ PNG downscale is exact 2× (no resampling artefacts, predictable weight). Derive
 | `assets/img/tablet-reader-600.png` | tablet-reader | 600×960 | ≤ 100 KB |
 | `assets/img/tablet-library-390.png` | library-grid-tablet | 390×624 | ≤ 70 KB |
 | `assets/img/player-540.png` | chrome-compact-phone | 540×960 | ≤ 60 KB |
-| `assets/img/film-poster.jpg` | novelspeak-launch-poster | 800×450 | ≤ 60 KB |
+| `assets/img/film-poster.jpg` | novelspeak-launch-poster | native 1600×900 | 145 KB — no JPEG encoder on this device, so the poster ships native and lazy; recorded as a deviation |
 | `assets/img/icon-96.png` | icon-512 | 96×96 | ≤ 8 KB |
 | `assets/img/icon-192.png` | icon-512 | 192×192 | ≤ 20 KB |
 
