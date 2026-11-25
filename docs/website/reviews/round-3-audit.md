@@ -42,6 +42,14 @@ original defect, so this file states both plainly.
 - `grep -rn "library-540\|tablet-library" site/` → nothing.
 - The `<img>` dimensions in `/features/` match the regenerated files (540×854, 540×848).
 
+## One more supplied-art quirk, disclosed
+
+The film poster is 16:9 and matches the frame it sits in, but its baked caption reads
+“9:16 · 1080 × 1920 · NO NARRATION”: it was drawn for the portrait original, and the page serves the
+1.9 MB 16:9 cut. Re-encoding or retouching the poster is not possible here (no JPEG encoder) and
+painting over supplied art would be a fabrication, so the quirk is written down in `assets.md`
+instead of hidden.
+
 ## The lesson, written down
 
 The review opened some screenshots and trusted the rest. A claim of "verified" that covers only the

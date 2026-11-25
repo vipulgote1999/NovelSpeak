@@ -30,7 +30,7 @@ already own. No stock photography, no third-party icon packs, no webfonts.
 | `docs/media/ui-audit/library-grid-tablet.png` | 780×1248 | 224 KB | **rejected on the final audit**, see below: a 26-row test-harness dump (“Prefetch regression”, “Adblock race regression”, “Error response”, “Auto One”) at legible size |
 | `docs/media/ui-audit/chrome-compact-phone.png` | 540×960 | 115 KB | player card, features — cropped below the browser chrome (112 px) for the same reason |
 | `docs/media/novelspeak-launch-landscape.mp4` | 16:9, 23 s, 1.9 MB | — | film, poster-first, click to play |
-| `docs/media/novelspeak-launch-poster.jpg` | 1600×900 | 145 KB | film poster (shipped native; no JPEG encoder) |
+| `docs/media/novelspeak-launch-poster.jpg` | 1600×900 | 145 KB | film poster (shipped native; no JPEG encoder). Its baked caption reads “9:16 · 1080 × 1920 · NO NARRATION” because it was drawn for the portrait original, while the page plays the 16:9 cut (1.9 MB instead of 8.7 MB). Supplied art, kept and disclosed rather than retouched. |
 | `docs/media/novelspeak-launch-contact-sheet.jpg` | 1104×1944 | 125 KB | not used (internal review artifact) |
 | `docs/play-store/graphics/icon-512.png` | 512×512 | 4 KB | favicon + nav mark |
 | `docs/play-store/graphics/feature-graphic-1024x500.png` | 1024×500 | 48 KB | not used (store asset) |
