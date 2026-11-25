@@ -35,7 +35,7 @@ What they need to see before downloading:
 2. It really keeps playing with the screen off, with headset buttons.
 3. The claims about privacy are structural, not marketing.
 4. How big the download is, and what the voices cost in storage.
-5. How to install an APK safely, and whether the Play listing exists yet (it does not: in review).
+5. How to install an APK safely, and whether the Play listing exists yet (it does not).
 
 ## The category's default page, and its predictable opposite
 
@@ -59,7 +59,7 @@ Secondary: see the features, read the privacy policy, browse the source.
 
 Google Play: **not live** (`play.google.com/store/apps/details?id=app.novelspeak` → 404). 1.4.0 is the
 store-ready build; no file in the repo proves the listing was submitted, so the site says "coming to
-Google Play" and never "in review". The state is a line of text, never a button that does nothing
+Google Play", with no claim about submission. The state is a line of text, never a button that does nothing
 (round 1: CO-2, XA-2).
 
 ## Information architecture
@@ -118,7 +118,7 @@ only in the form given; "drop" means it must not appear.
 | — | "Works on every site" | explicitly contradicted by Known limits | **soften** to "text-first pages" + limits |
 | — | "Bypasses paywalls / Cloudflare" | explicitly refused by the app | **drop** |
 | — | "AI-powered" / "revolutionary" / "seamless" | slop, and untrue of a deterministic pipeline | **drop** |
-| — | Play Store availability | listing returns 404 | **drop**; show "in review" |
+| — | Play Store availability | listing returns 404 | **drop**; show "coming" |
 
 ## Voice
 

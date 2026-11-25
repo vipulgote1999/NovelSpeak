@@ -56,3 +56,6 @@ videos/*/.hyperframes/video-state.json
 # ---- Python cache ----
 __pycache__/
 *.pyc
+
+# ---- agent goal state (local only) ----
+.pi/

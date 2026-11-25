@@ -161,7 +161,7 @@ scripts, autoplaying video with sound, fake Play badge, disabled buttons that lo
 | Surface | States covered |
 |---|---|
 | Nav | rest, hover, focus, current (`aria-current="page"`), sheet open/closed, reduced motion |
-| Install CTA | Play in review (status), Play live (link, only when configured), APK path always working, SHA line, no-JS identical |
+| Install CTA | Play "coming" status text, Play live (link, only when configured), APK path always working, SHA line, no-JS identical |
 | Film | poster, playing (native controls + pause), reduced motion (no autoplay) |
 | Links | rest, hover, focus-visible, visited (accent → accent, no colour shift), external (arrow + `rel="noreferrer"`) |
 | Images | alt text on all; decorative wave marked `aria-hidden`; explicit width/height so nothing shifts |
