@@ -20,12 +20,11 @@ const OUT = join(ROOT, 'site', 'assets', 'img');
 const jobs = [
   ['docs/play-store/screenshots/phone-02-reading.png', 'reader-540.png', 2],
   ['docs/play-store/screenshots/phone-01-home.png', 'home-540.png', 2],
-  ['docs/media/ui-audit/library-grid-phone.png', 'library-540.png', 1],
-  ['docs/media/ui-audit/phone-cast.png', 'cast-540.png', 2],
   ['docs/play-store/screenshots/phone-03-settings.png', 'settings-540.png', 2],
   ['docs/play-store/screenshots/phone-04-privacy.png', 'privacy-540.png', 2],
-  ['docs/media/ui-audit/library-grid-tablet.png', 'tablet-library-390.png', 2],
-  ['docs/media/ui-audit/chrome-compact-phone.png', 'player-540.png', 2],
+  // Cropped below the browser chrome: the address bar in these captures shows an emulator host.
+  ['docs/media/ui-audit/phone-cast.png', 'cast-540.png', 2, 212],
+  ['docs/media/ui-audit/chrome-compact-phone.png', 'player-540.png', 1, 112],
   ['docs/play-store/graphics/icon-512.png', 'icon-192.png', 2.6667],
   ['docs/play-store/graphics/icon-512.png', 'icon-96.png', 5.3334],
 ];
@@ -135,6 +134,13 @@ function decodePng(buf) {
 
 // ---------- box downscale ----------
 
+function cropTop({ w, h, rgba }, pixels) {
+  if (!pixels) return { w, h, rgba };
+  const keep = h - pixels;
+  if (keep <= 0) throw new Error("cropTop removes the whole image");
+  return { w, h: keep, rgba: rgba.subarray(pixels * w * 4) };
+}
+
 function downscale({ w, h, rgba }, scale) {
   const outW = Math.max(1, Math.round(w / scale));
   const outH = Math.max(1, Math.round(h / scale));
@@ -204,11 +210,11 @@ function encodePng({ w, h, rgba }) {
 mkdirSync(OUT, { recursive: true });
 let total = 0;
 const rows = [];
-for (const [src, dest, scale] of jobs) {
+for (const [src, dest, scale, crop] of jobs) {
   const abs = join(ROOT, src);
   if (!existsSync(abs)) throw new Error(`missing source ${src}`);
   const decoded = decodePng(readFileSync(abs));
-  const scaled = downscale(decoded, scale);
+  const scaled = downscale(cropTop(decoded, crop || 0), scale);
   const png = encodePng(scaled);
   writeFileSync(join(OUT, dest), png);
   total += png.length;

@@ -23,12 +23,12 @@ already own. No stock photography, no third-party icon packs, no webfonts.
 | `docs/play-store/screenshots/phone-02-reading.png` | 1080×1920 | 357 KB | hero plate (reader with read-along) |
 | `docs/play-store/screenshots/phone-03-settings.png` | 1080×1920 | 177 KB | settings hub, features |
 | `docs/play-store/screenshots/phone-04-privacy.png` | 1080×1920 | 269 KB | privacy page figure |
-| `docs/media/ui-audit/library-grid-phone.png` | 540×960 | 105 KB | library with search + filters, landing §04 and /features/ |
-| `docs/media/ui-audit/phone-cast.png` | 1080×1920 | 200 KB | story cast, features |
+| `docs/media/ui-audit/library-grid-phone.png` | 540×960 | 105 KB | **rejected on the final audit**, see below: the row sources read `10.0.2.2` / `localhost`, one row is a Cloudflare interstitial (“Just a moment…”) captured as a book, and titles repeat. No clean library capture exists in the repo, so the library is described in text and specs, not illustrated. |
+| `docs/media/ui-audit/phone-cast.png` | 1080×1920 | 200 KB | story cast, features — cropped below the browser chrome (212 px) because the address bar showed an emulator host |
 | `docs/media/ui-audit/scale20-reader.png` | 1080×1920 | 190 KB | **rejected**, see below: at 2× the compact player ellipsises its own labels |
 | `docs/media/ui-audit/tablet-reader.png` | 1200×1920 | 212 KB | **rejected**, see below: about 40% of the frame is empty black below the two panes |
-| `docs/media/ui-audit/library-grid-tablet.png` | 780×1248 | 224 KB | tablet library grid |
-| `docs/media/ui-audit/chrome-compact-phone.png` | 540×960 | 115 KB | compact player / chrome |
+| `docs/media/ui-audit/library-grid-tablet.png` | 780×1248 | 224 KB | **rejected on the final audit**, see below: a 26-row test-harness dump (“Prefetch regression”, “Adblock race regression”, “Error response”, “Auto One”) at legible size |
+| `docs/media/ui-audit/chrome-compact-phone.png` | 540×960 | 115 KB | player card, features — cropped below the browser chrome (112 px) for the same reason |
 | `docs/media/novelspeak-launch-landscape.mp4` | 16:9, 23 s, 1.9 MB | — | film, poster-first, click to play |
 | `docs/media/novelspeak-launch-poster.jpg` | 1600×900 | 145 KB | film poster (shipped native; no JPEG encoder) |
 | `docs/media/novelspeak-launch-contact-sheet.jpg` | 1104×1944 | 125 KB | not used (internal review artifact) |
@@ -44,31 +44,39 @@ already own. No stock photography, no third-party icon packs, no webfonts.
 | `docs/media/novelspeak-launch.mp4` (portrait) | 8.7 MB | the 16:9 cut is enough; portrait is a store asset |
 | `docs/media/ui-audit/*` duplicates (wave1/wave3/chrome-13/2x variants) | 100–270 KB each | same screens twice; the set above is one per screen |
 | `docs/play-store/screenshots/phone-01..04` beyond the two above | — | the store set duplicates the audit set |
-| `docs/media/ui-audit/phone-library.png` | 179 KB | QA fixture rows (“Adblock race regression”, “Prefetch regression”) are visible; `library-grid-phone.png` shows the search and filters instead |
+| `docs/media/ui-audit/phone-library.png` | 179 KB | QA fixture rows (“Adblock race regression”, “Prefetch regression”) are visible |
+| `docs/media/ui-audit/library-grid-phone.png` | 105 KB | search and filters are visible, but the sources read `10.0.2.2` / `localhost`, a “Just a moment…” interstitial is captured as a title, and two titles repeat |
+| `docs/media/ui-audit/library-grid-tablet.png` | 224 KB | a 26-row test-harness dump: “Prefetch regression”, “Adblock race regression”, “Error response” ×3, “Fallback Chapter 1”, “Auto One/Two”, all at 0% |
 | `docs/media/ui-audit/tablet-reader.png` | 212 KB | two-pane view with about 40% empty black below it; it would read as a broken frame |
 | `docs/media/ui-audit/scale20-reader.png` | 190 KB | at 2× the player's status and voice labels ellipsise (“Ready · 18 senten…”). Publishing it as proof of the accessibility claim would undercut the claim; the claim stays, the picture goes |
 
 ## Ship list (derived, target sizes)
 
-PNG downscale is exact 2× (no resampling artefacts, predictable weight). Derive once, commit:
+PNG downscale is an integer box filter (exact 2×, no resampling artefacts) after an optional crop of
+the browser chrome. Derive once, commit:
 
 | Output | From | Target | Budget |
 |---|---|---|---|
 | `assets/img/reader-540.png` | phone-02-reading | 540×960 | ≤ 110 KB |
 | `assets/img/home-540.png` | phone-01-home | 540×960 | ≤ 70 KB |
-| `assets/img/library-540.png` | library-grid-phone | 540×960 (native) | ≤ 110 KB |
-| `assets/img/cast-540.png` | phone-cast | 540×960 | ≤ 80 KB |
+| `assets/img/cast-540.png` | phone-cast, cropped 212 px | 540×854 | ≤ 80 KB |
 | `assets/img/settings-540.png` | phone-03-settings | 540×960 | ≤ 80 KB |
 | `assets/img/privacy-540.png` | phone-04-privacy | 540×960 | ≤ 90 KB |
-| `assets/img/tablet-library-390.png` | library-grid-tablet | 390×624 | ≤ 70 KB |
-| `assets/img/player-540.png` | chrome-compact-phone | 540×960 | ≤ 60 KB |
+| `assets/img/player-540.png` | chrome-compact-phone, cropped 112 px | 540×848 | ≤ 110 KB |
 | `assets/img/film-poster.jpg` | novelspeak-launch-poster | native 1600×900 | 145 KB — no JPEG encoder on this device, so the poster ships native and lazy; recorded as a deviation |
 | `assets/img/icon-96.png` | icon-512 | 96×96 | ≤ 8 KB |
 | `assets/img/icon-192.png` | icon-512 | 192×192 | ≤ 20 KB |
 
-Every image now ships at most at its source resolution; nothing is upscaled. Total image budget for the whole site: **≤ 900 KB** (lazy-loaded except the hero plate and icons).
+Every image now ships at most at its source resolution; nothing is upscaled. Total image weight as
+shipped: **498 KB** plus the 145 KB lazy poster, against a 900 KB ceiling.
+
 The film MP4 (1.9 MB) is never fetched until the visitor presses play: `<video preload="none">`
 with `poster`, plus a visible play control and a pause control.
+
+`cropTop` in `tools/site-assets.mjs` removes browser chrome before downscaling. Cropping is a
+legitimate edit — the pixels shown are still the app's own — whereas blurring a dev host or
+painting over a row would be a fabrication, which is why the library captures were dropped instead
+of retouched.
 
 ## Dual-host path rules
 

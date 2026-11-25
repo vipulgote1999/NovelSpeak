@@ -52,9 +52,15 @@ recorded limitation, not fixed.
 - **AR2-1 (B)** Alt text described things the captures do not contain. Every shipped PNG was opened:
   the "cast roster" is a dialog; the settings "voice list" is a hub of five rows; the library
   capture shows chapter rows, not search and filters. All alts rewritten.
-- **AR2-2 (B)** The library capture showed QA fixture rows ("Adblock race regression", "Prefetch
-  regression"). Replaced with `library-grid-phone.png`, which shows the search field and the four
-  filters.
+- **AR2-2 (B, and wrongly closed)** The library capture showed QA fixture rows ("Adblock race
+  regression", "Prefetch regression"). It was swapped for `library-grid-phone.png`, which shows the
+  search field and the four filters — but that capture still carries `10.0.2.2` / `localhost` row
+  sources, a "Just a moment…" Cloudflare interstitial captured as a book title, and two repeated
+  titles. The tablet library capture was not re-checked at all, and it is a 26-row test-harness dump
+  that was shipping on `/features/`. **The independent audit found both.** Neither library image is
+  on the site now; the section is text plus specs, because no clean capture of the library exists in
+  the repository and retouching a screenshot would be a fabrication. See
+  `reviews/round-3-audit.md`.
 - **AR2-3 (B)** The 2× text capture shows the compact player ellipsising its own labels
   ("Ready · 18 senten…", "Voice · Supertonic · F1 (female, U…"). Publishing it as proof of the
   accessibility claim would undercut the claim. Removed; the section now carries the documented
@@ -74,7 +80,8 @@ recorded limitation, not fixed.
 - **PE2-1 (B)** The landing page shipped two tall screenshots side by side in §04, pushing the
   section past two screens for no extra information. One remains; the tablet library moved to
   `/features/`.
-- **PE2-2 (N)** Total image weight dropped from 871 KB to 625 KB, and no image is upscaled past its
+- **PE2-2 (N)** Total image weight dropped from 871 KB to 625 KB after round 2, and to **498 KB**
+  after the audit (eight images plus the 145 KB lazy poster); no image is upscaled past its source.
   source. The film poster (145 KB, native JPEG — no encoder on this device) stays lazy, behind
   `preload="none"`.
 - **PE2-3 (R)** The poster is 145 KB because there is no JPEG encoder here; a 60 KB 800×450 version
@@ -102,7 +109,7 @@ recorded limitation, not fixed.
 
 | Check | Result |
 |---|---|
-| `node tools/site-check.mjs` | `SITE: PASS` — 6 pages, 11 images, 625 KB of images |
+| `node tools/site-check.mjs` | `SITE: PASS` — 6 pages, 9 images, 498 KB of images + 145 KB poster (after the round-3 audit; round 2 ran at 11 images / 625 KB) |
 | All links and assets resolve relative to their page | pass (checker resolves every `href`/`src`/`poster`) |
 | Heading order, one `h1` per page, no duplicate ids | pass |
 | Every image alt checked against the opened PNG | pass (12 alts rewritten or verified) |

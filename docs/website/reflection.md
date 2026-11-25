@@ -23,8 +23,12 @@ novels out loud", because "any" is contradicted by the app's own list of limits.
    gesture rather than a progress bar.
 3. **Two screenshots were not usable as proof.** The library capture showed QA fixture rows
    ("Adblock race regression"), and the 2× text capture shows the player ellipsising its own labels.
-   The first was swapped for the capture with the search field and filters; the second was removed
-   rather than published as evidence for the accessibility claim it weakens.
+   The 2× capture was removed rather than published as evidence for the accessibility claim it
+   weakens. The library capture was first swapped for another one — and round 2 then reported that as
+   a fix. The independent audit found the replacement still showed `10.0.2.2` and `localhost` row
+   sources, a "Just a moment…" interstitial captured as a title, and duplicate titles; and that a
+   second library screenshot, a 26-row test dump, was still shipping on `/features/`. Both were
+   removed. The library is now text and specs only. See `reviews/round-3-audit.md`.
 
 ## The review changed the page's shape, not just its details
 
