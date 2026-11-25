@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en" data-type="software">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Features — NovelSpeak</title>
+  <meta name="description" content="Extraction, reader mode, neural voices, screen-off playback, library, EPUB and PDF import, ad blocking and story cast — with the limits written down.">
+  <meta name="page-type" content="software">
+  <meta name="site-kind" content="software">
+  <meta name="theme-color" content="#0e1318">
+  <meta name="color-scheme" content="dark light">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NovelSpeak">
+  <meta property="og:title" content="Features — NovelSpeak">
+  <meta property="og:description" content="Extraction, reader mode, neural voices, screen-off playback, library, EPUB and PDF import, ad blocking and story cast — with the limits written down.">
+  <meta property="og:image" content="https://vipulgote1999.github.io/NovelSpeak/assets/img/film-poster.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="../assets/img/icon-96.png" sizes="96x96" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/img/icon-192.png">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <a class="brand" href="../">
+      <img src="../assets/img/icon-96.png" alt="" width="24" height="24">
+      NovelSpeak
+    </a>
+    <nav class="nav" aria-label="Site">
+      <ul class="nav__list">
+        <li><a href="../features/">Features</a></li>
+        <li><a href="../voices/">Voices</a></li>
+        <li><a href="../changelog/">Changelog</a></li>
+        <li><a href="../privacy/">Privacy</a></li>
+        <li><a href="https://github.com/vipulgote1999/NovelSpeak" rel="noreferrer">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="more">
+      <summary class="more__summary">Menu</summary>
+      <nav class="more__panel" aria-label="Site, phone">
+        <a href="../features/">Features</a>
+        <a href="../voices/">Voices</a>
+        <a href="../changelog/">Changelog</a>
+        <a href="../privacy/">Privacy</a>
+        <a href="https://github.com/vipulgote1999/NovelSpeak" rel="noreferrer">GitHub</a>
+      </nav>
+    </details>
+    <a class="btn btn--primary btn--sm header__cta" data-apk href="https://github.com/vipulgote1999/NovelSpeak/releases/download/v1.3.0/NovelSpeak-1.3.0-arm64-v8a.apk">Download</a>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap page-head">
+    <p class="eyebrow">Features · Android 7.0+</p>
+    <h1>What it does, in detail.</h1>
+    <p class="lede">Every feature here is in the app today. The last section is what it does not do.</p>
+  </div>
+
+  <div class="wrap">
+    <section class="feature" id="reading">
+      <div class="feature__body">
+        <div>
+          <h2>The chapter, not the chrome.</h2>
+          <div class="section__body">
+            <p>The browser takes any HTTPS URL, and the shortcut grid opens six sites that serialise
+              chapters. Readability extracts the article; when a site's markup defeats it, a
+              text-density pass takes over. Navigation, ad slots and cookie strips stay out of the
+              queue.</p>
+            <p>Reader mode is per site, so one stubborn site does not change the others. The next
+              chapter is found from the page's own next link and extracted in a hidden view. Auto
+              mode opens it, waits 2.5 s and continues; it is off by default.</p>
+          </div>
+          <dl class="specs">
+            <div><dt>Extraction</dt><dd>Readability, then a text-density fallback</dd></div>
+            <div><dt>Shortcuts</dt><dd>Royal Road, Scribble Hub, WebNovel, Wattpad, Project Gutenberg, Wikipedia</dd></div>
+            <div><dt>Reader mode</dt><dd>Per site</dd></div>
+            <div><dt>Next chapter</dt><dd>From the page's own link, prefetched in a hidden view</dd></div>
+            <div><dt>Paywalls</dt><dd>Detected and named. Never bypassed, never read aloud</dd></div>
+          </dl>
+        </div>
+        <figure class="plate">
+          <img src="../assets/img/home-540.png" width="540" height="960" loading="lazy" decoding="async"
+               alt="The NovelSpeak home screen: wordmark, search field, the shortcut grid of novel sites and Continue reading below.">
+        </figure>
+      </div>
+    </section>
+
+    <section class="feature" id="voices">
+      <div class="feature__body feature__body--reverse">
+        <div>
+          <h2>Two engines, four neural voices.</h2>
+          <div class="section__body">
+            <p>Android's system voice is instant, offline, and available in every language the
+              device already ships. The neural path is sherpa-onnx on the phone: Supertonic 3,
+              Kokoro, Pocket TTS and ZipVoice, each downloaded once and verified.</p>
+            <p>Sentences are pre-split and the next one or two are synthesised while the current
+              one plays; up to about 12 s of audio is buffered ahead. Before neural synthesis, text
+              is normalised for the model — quote glyphs, asterisks, ellipses and dashes — without
+              touching the words. A saturated or garbage chunk is dropped instead of played, and
+              vocoder hiss is suppressed.</p>
+          </div>
+          <dl class="specs">
+            <div><dt>System voice</dt><dd>0 MB, every language the device supports</dd></div>
+            <div><dt>Neural models</dt><dd>98–156 MB, SHA-256 verified, download on request</dd></div>
+            <div><dt>Look-ahead</dt><dd>About 12 s of audio buffered ahead</dd></div>
+            <div><dt>Previews</dt><dd>Audition a voice without disturbing the active engine</dd></div>
+          </dl>
+          <p class="note after"><a class="text-link" href="../voices/">Compare the voices and their sizes</a></p>
+        </div>
+        <figure class="plate plate--sm">
+          <img src="../assets/img/settings-540.png" width="540" height="960" loading="lazy" decoding="async"
+               alt="Settings: the voice engine, the installed model and the voice list, one row each.">
+        </figure>
+      </div>
+    </section>
+
+    <section class="feature" id="controls">
+      <div class="feature__body">
+        <div>
+          <h2>A player that survives the pocket.</h2>
+          <div class="section__body">
+            <p>A foreground service, a wake lock and a media session keep playback alive with the
+              screen off. Wired and Bluetooth buttons work with both engines because system TTS is
+              rendered to PCM and played in-process, so Android routes media keys to NovelSpeak.</p>
+            <p>Speed, pitch, volume boost and skip-silence sit one tap from the player. The card
+              collapses to a 56 dp mini bar when the page needs the space.</p>
+          </div>
+          <dl class="specs">
+            <div><dt>Screen off</dt><dd>Foreground service and wake lock</dd></div>
+            <div><dt>Headset buttons</dt><dd>Play, pause, next, previous</dd></div>
+            <div><dt>Sleep timer</dt><dd>Minutes, or end of chapter</dd></div>
+            <div><dt>Skip silence</dt><dd>On request</dd></div>
+            <div><dt>Mini player</dt><dd>56 dp when the page needs the space</dd></div>
+          </dl>
+        </div>
+        <figure class="plate plate--sm">
+          <img src="../assets/img/player-540.png" width="270" height="480" loading="lazy" decoding="async"
+               alt="The compact player: status, voice, progress and the read and cast controls above play, pause and speed.">
+        </figure>
+      </div>
+    </section>
+
+    <section class="feature" id="library">
+      <div class="feature__body feature__body--reverse">
+        <div>
+          <h2>A library that remembers the page.</h2>
+          <div class="section__body">
+            <p>Reading position is kept per chapter and per imported book. Search, filters for
+              chapters, imports and finished books, and a two-column grid from 600 dp. Bookmarks
+              save the sentence, not just the page, and reading statistics count time listened,
+              sentences and active days.</p>
+            <p>EPUB, PDF with a text layer, and plain text import into app-private storage. A
+              scanned PDF without a text layer is not read: there is no OCR.</p>
+          </div>
+          <dl class="specs">
+            <div><dt>Storage</dt><dd>Local, app-private. No account, no sync</dd></div>
+            <div><dt>Imports</dt><dd>EPUB, PDF (text layer), plain text</dd></div>
+            <div><dt>Bookmarks</dt><dd>Saved sentences with snippets</dd></div>
+            <div><dt>Tablet</dt><dd>Two-column library, two-pane reader</dd></div>
+          </dl>
+        </div>
+        <div class="feature__figures">
+          <figure class="plate">
+            <img src="../assets/img/library-540.png" width="540" height="960" loading="lazy" decoding="async"
+                 alt="The library: search, All / Chapters / Imported / Finished filters, and a list of books with cover initials.">
+          </figure>
+          <figure class="plate plate--flush">
+            <img src="../assets/img/tablet-library-390.png" width="390" height="624" loading="lazy" decoding="async"
+                 alt="The same library on a tablet: two columns of books at 600 dp.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature" id="cast">
+      <div class="feature__body">
+        <div>
+          <h2>Story cast, with the caveats attached.</h2>
+          <div class="section__body">
+            <p>The narrator and each character can take different on-device voices. Analysis runs
+              locally and preserves the author's text; it only adds speaker labels and voice ids.
+              Supertonic exposes ten speakers in one model, so a cast does not download a model per
+              character.</p>
+            <p>Lines the parser cannot resolve stay with the narrator and are counted as
+              <em>to review</em>. It requires Supertonic or Kokoro; system TTS, Pocket and ZipVoice
+              fall back to a narrator-only queue. This is the most experimental feature in the app,
+              and the numbers below are the project's own, not a marketing figure.</p>
+          </div>
+          <dl class="specs">
+            <div><dt>Distinction</dt><dd>4–5/5 voice distinction</dd></div>
+            <div><dt>Word accuracy</dt><dd>96.2% after spelling normalisation</dd></div>
+            <div><dt>Supertonic RTF</dt><dd>0.168 on the host, ~0.50 on the emulator</dd></div>
+            <div><dt>Still open</dt><dd>Ultra-short lines, emotional range, a Kokoro listening test</dd></div>
+          </dl>
+          <p class="note after">Source: the project's 2026-11-06 story-cast benchmark, reproducible
+            with <a href="https://github.com/vipulgote1999/NovelSpeak/tree/main/tools/cast-benchmark">tools/cast-benchmark</a>.</p>
+        </div>
+        <figure class="plate plate--sm">
+          <img src="../assets/img/cast-540.png" width="540" height="960" loading="lazy" decoding="async"
+               alt="The story cast roster: narrator and characters with their assigned voices and a preview control.">
+        </figure>
+      </div>
+    </section>
+
+    <section class="feature" id="ad-blocking">
+      <div class="feature__body">
+        <div>
+          <h2>Ad blocking that stays inside the app.</h2>
+          <div class="section__body">
+            <p>Requests are matched against EasyList, EasyPrivacy and uBlock rules and answered with
+              an empty body. Site selectors are hidden, including <code>:has-text</code>,
+              <code>:upward</code>, <code>:style</code> and <code>:remove</code>. Popups, redirects
+              and fake notification nags are refused, with small surrogates for tracker scripts so
+              pages keep working.</p>
+            <p>The lists are bundled (about 5 MB) and can be updated on request. A per-site switch
+              sits in the address bar.</p>
+          </div>
+          <ul class="bullets after">
+            <li>A WebView exposes no resource type, no redirect targets and no response bodies, so
+              blocking is inferred and imperfect.</li>
+            <li><code>$csp</code>, <code>$removeparam</code>, trusted scriptlets and device-wide VPN
+              or DNS blocking are out of scope.</li>
+          </ul>
+        </div>
+        <div>
+          <dl class="specs">
+            <div><dt>Network</dt><dd>EasyList, EasyPrivacy, uBlock, indexed by a rare token</dd></div>
+            <div><dt>Cosmetic</dt><dd>Site selectors, procedural operators</dd></div>
+            <div><dt>Behavioural</dt><dd>Popups, redirects, notification nags</dd></div>
+            <div><dt>Scope</dt><dd>NovelSpeak's WebView only. Never device-wide</dd></div>
+            <div><dt>Lists</dt><dd>Bundled ~5 MB, updatable on request</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature" id="accessibility">
+      <div class="feature__body feature__body--reverse">
+        <div>
+          <h2>Large text, reduced motion, real insets.</h2>
+          <div class="section__body">
+            <p>The reader honours the system reduced-motion setting. Layouts reflow at 1.3× and 2×
+              text scale: two-column shortcuts, two-row filters and scrollable sheets. Status and
+              navigation bar insets are respected on every screen, and the two-pane layout returns
+              on tablets and in landscape.</p>
+          </div>
+          <dl class="specs">
+            <div><dt>Text scale</dt><dd>1.3× and 2× layouts</dd></div>
+            <div><dt>Reduced motion</dt><dd>Honoured by the reader and the player</dd></div>
+            <div><dt>Back targets</dt><dd>48 dp on legal and reading pages</dd></div>
+            <div><dt>Layout</dt><dd>Two panes at tablet widths and in landscape</dd></div>
+          </dl>
+        </div>
+        <figure class="plate plate--sm">
+          <img src="../assets/img/scale2x-540.png" width="540" height="960" loading="lazy" decoding="async"
+               alt="The reader at 200% text scale: the paragraph reflows and the player controls stay reachable.">
+        </figure>
+      </div>
+    </section>
+
+    <section class="feature" id="limits">
+      <h2>What it does not do.</h2>
+      <ul class="limits limits--tight">
+        <li>It does not host, publish or distribute books, and it is not affiliated with any site or
+          publisher.</li>
+        <li>It does not bypass a paywall, a login or a Cloudflare challenge. It detects those pages,
+          says so, and does not read them aloud.</li>
+        <li>It does not OCR a scanned PDF.</li>
+        <li>It does not run on 32-bit-only devices in the default build.</li>
+        <li>It does not sync between devices. There is no account to sync with.</li>
+      </ul>
+      <div class="cta after">
+        <h2>Read a chapter tonight.</h2>
+        <div class="actions">
+          <a class="btn btn--primary" data-apk href="https://github.com/vipulgote1999/NovelSpeak/releases/download/v1.3.0/NovelSpeak-1.3.0-arm64-v8a.apk">Download the APK</a>
+          <a class="btn btn--ghost" href="../voices/">Choose a voice first</a>
+        </div>
+        <p class="status" data-play-status>Google Play — coming</p>
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<footer class="closing">
+  <div class="wrap closing__grid">
+    <div>
+      <h2>A quiet reader that speaks.</h2>
+      <p class="note">NovelSpeak is not affiliated with any website or publisher. The text stays
+        the author's.</p>
+    </div>
+    <nav class="closing__links" aria-label="Footer">
+      <a href="../features/">Features</a>
+      <a href="../voices/">Voices</a>
+      <a href="../changelog/">Changelog</a>
+      <a href="../privacy/">Privacy</a>
+      <a href="https://github.com/vipulgote1999/NovelSpeak" rel="noreferrer">Source</a>
+      <a href="https://github.com/vipulgote1999/NovelSpeak/releases" rel="noreferrer">Releases</a>
+    </nav>
+  </div>
+  <div class="wrap">
+    <p class="closing__legal"><span>Apache-2.0 · 1.3.0 · Built for Android 7.0+</span><span>© 2026 NovelSpeak contributors</span></p>
+  </div>
+</footer>
+
+<script src="../assets/site.js"></script>
+</body>
+</html>

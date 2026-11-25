@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en" data-type="software">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Voices — NovelSpeak</title>
+  <meta name="description" content="Android system TTS and four on-device neural voices: Supertonic 3, Kokoro, Pocket TTS and ZipVoice. Sizes, speaker counts, download and verification.">
+  <meta name="page-type" content="software">
+  <meta name="site-kind" content="software">
+  <meta name="theme-color" content="#0e1318">
+  <meta name="color-scheme" content="dark light">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NovelSpeak">
+  <meta property="og:title" content="Voices — NovelSpeak">
+  <meta property="og:description" content="Android system TTS and four on-device neural voices: Supertonic 3, Kokoro, Pocket TTS and ZipVoice. Sizes, speaker counts, download and verification.">
+  <meta property="og:image" content="https://vipulgote1999.github.io/NovelSpeak/assets/img/film-poster.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="../assets/img/icon-96.png" sizes="96x96" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/img/icon-192.png">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <a class="brand" href="../">
+      <img src="../assets/img/icon-96.png" alt="" width="24" height="24">
+      NovelSpeak
+    </a>
+    <nav class="nav" aria-label="Site">
+      <ul class="nav__list">
+        <li><a href="../features/">Features</a></li>
+        <li><a href="../voices/">Voices</a></li>
+        <li><a href="../changelog/">Changelog</a></li>
+        <li><a href="../privacy/">Privacy</a></li>
+        <li><a href="https://github.com/vipulgote1999/NovelSpeak" rel="noreferrer">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="more">
+      <summary class="more__summary">Menu</summary>
+      <nav class="more__panel" aria-label="Site, phone">
+        <a href="../features/">Features</a>
+        <a href="../voices/">Voices</a>
+        <a href="../changelog/">Changelog</a>
+        <a href="../privacy/">Privacy</a>
+        <a href="https://github.com/vipulgote1999/NovelSpeak" rel="noreferrer">GitHub</a>
+      </nav>
+    </details>
+    <a class="btn btn--primary btn--sm header__cta" data-apk href="https://github.com/vipulgote1999/NovelSpeak/releases/download/v1.3.0/NovelSpeak-1.3.0-arm64-v8a.apk">Download</a>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap page-head">
+    <p class="eyebrow">Voices · on-device</p>
+    <h1>Voices that run on the phone.</h1>
+    <p class="lede">Two ways to speak: the voice Android already has, or a neural model you install
+      once. Both work offline. Neither sends your text anywhere.</p>
+  </div>
+
+  <div class="wrap">
+    <section class="feature" id="system">
+      <div class="feature__body">
+        <div>
+          <h2>The voice Android already has.</h2>
+          <div class="section__body">
+            <p>Instant, offline, and available in every language the device supports. There is no
+              download and no licence step: it works on the first launch. Quality depends on the
+              engine the phone ships with, which is the honest trade.</p>
+          </div>
+          <dl class="specs">
+            <div><dt>Download</dt><dd>None</dd></div>
+            <div><dt>Network</dt><dd>Not used by NovelSpeak</dd></div>
+            <div><dt>Media keys</dt><dd>Work: system TTS is rendered to PCM in-process</dd></div>
+            <div><dt>Pause</dt><dd>Resumes at the start of the current sentence</dd></div>
+          </dl>
+        </div>
+        <div>
+          <h2>Four neural voices.</h2>
+          <ul class="models">
+            <li class="model">
+              <span class="model__name">Supertonic 3</span>
+              <span class="model__size">123 MB</span>
+              <p class="model__meta">Two curated styles from twenty. The fast default once installed, and the benchmark's speed and memory winner.</p>
+            </li>
+            <li class="model">
+              <span class="model__name">Kokoro</span>
+              <span class="model__size">103 MB</span>
+              <p class="model__meta">Two curated English voices from eleven. Audiobook pacing, about 3× slower in absolute synthesis; still the quality option pending a listening test.</p>
+            </li>
+            <li class="model">
+              <span class="model__name">Pocket TTS</span>
+              <span class="model__size">98 MB</span>
+              <p class="model__meta">Zero-shot cloning from a short reference clip. Audio only.</p>
+            </li>
+            <li class="model">
+              <span class="model__name">ZipVoice</span>
+              <span class="model__size">104 MB + 52 MB</span>
+              <p class="model__meta">Cloning driven by a clip plus a verbatim transcript, Chinese and English. Needs the 24 kHz vocoder.</p>
+            </li>
+            <li class="model">
+              <span class="model__name">Vocoder 24 kHz</span>
+              <span class="model__size">52 MB</span>
+              <p class="model__meta">The dependency ZipVoice needs. Nothing else uses it.</p>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature" id="install">
+      <h2>How an install works.</h2>
+      <div class="feature__body">
+        <div>
+          <ol class="steps">
+            <li>You pick a model and confirm the download size. Nothing downloads before that.</li>
+            <li>The bundle comes from the upstream <code>k2-fsa/sherpa-onnx</code> <code>tts-models</code> release.</li>
+            <li>Every file is checked against a SHA-256 pinned in the app.</li>
+            <li>Extraction shows per-file progress and holds a wake lock so the phone does not sleep
+              through it. It takes about one to three minutes; a 45 s no-progress watchdog aborts
+              with a readable error.</li>
+          </ol>
+        </div>
+        <div>
+          <dl class="specs">
+            <div><dt>Downloaded</dt><dd>On request, after a size confirmation</dd></div>
+            <div><dt>Verified</dt><dd>SHA-256, pinned per file</dd></div>
+            <div><dt>Bundled in the APK</dt><dd>Nothing</dd></div>
+            <div><dt>Install time</dt><dd>About 1–3 minutes on a phone</dd></div>
+            <div><dt>Failure</dt><dd>45 s no-progress watchdog with a readable error</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature" id="measured">
+      <h2>Measured, not asserted.</h2>
+      <div class="feature__body">
+        <div class="section__body">
+          <p>The project measures its own synthesis rather than describing it. The 2026-11-06
+            story-cast benchmark covers host and on-device real-time factor, speaker-switch
+            overhead, word error rate, pitch separation and an audio-capable judge.</p>
+          <p>The harness is in the repository, so the numbers can be reproduced on another phone:
+            <a href="https://github.com/vipulgote1999/NovelSpeak/tree/main/tools/cast-benchmark">tools/cast-benchmark</a>
+            and <a href="https://github.com/vipulgote1999/NovelSpeak/tree/main/tools/tts-benchmark">tools/tts-benchmark</a>.</p>
+          <p class="note">Not measured yet: a listening test for Kokoro's pacing, emotional range,
+            and ultra-short lines, which are the weakest case for the cast parser.</p>
+        </div>
+        <div>
+          <dl class="specs">
+            <div><dt>Voice distinction</dt><dd>4–5/5</dd></div>
+            <div><dt>Word accuracy</dt><dd>96.2% after spelling normalisation</dd></div>
+            <div><dt>Supertonic RTF</dt><dd>0.168 host / ~0.50 emulator</dd></div>
+            <div><dt>Speaker switch</dt><dd>Near zero overhead</dd></div>
+            <div><dt>Benchmark</dt><dd>docs/benchmarks/2026-11-06-story-cast-quality.md</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature" id="offline">
+      <div class="feature__body">
+        <div>
+          <h2>No network after install.</h2>
+          <div class="section__body">
+            <p>Playback with an installed voice does not touch the network. Previewing a voice does
+              not disturb the active engine, and changing the model updates the live engine instead
+              of reloading it.</p>
+            <p>The app still needs the network to fetch a chapter you open, because that is the
+              page. What it never does is send the text somewhere to be spoken.</p>
+          </div>
+        </div>
+        <div class="cta">
+          <h2>Hear it on your own phone.</h2>
+          <div class="actions">
+            <a class="btn btn--primary" data-apk href="https://github.com/vipulgote1999/NovelSpeak/releases/download/v1.3.0/NovelSpeak-1.3.0-arm64-v8a.apk">Download the APK</a>
+            <a class="btn btn--ghost" href="../features/">All features</a>
+          </div>
+          <p class="status" data-play-status>Google Play — coming</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<footer class="closing">
+  <div class="wrap closing__grid">
+    <div>
+      <h2>A quiet reader that speaks.</h2>
+      <p class="note">NovelSpeak is not affiliated with any website or publisher. The text stays
+        the author's.</p>
+    </div>
+    <nav class="closing__links" aria-label="Footer">
+      <a href="../features/">Features</a>
+      <a href="../voices/">Voices</a>
+      <a href="../changelog/">Changelog</a>
+      <a href="../privacy/">Privacy</a>
+      <a href="https://github.com/vipulgote1999/NovelSpeak" rel="noreferrer">Source</a>
+      <a href="https://github.com/vipulgote1999/NovelSpeak/releases" rel="noreferrer">Releases</a>
+    </nav>
+  </div>
+  <div class="wrap">
+    <p class="closing__legal"><span>Apache-2.0 · 1.3.0 · Built for Android 7.0+</span><span>© 2026 NovelSpeak contributors</span></p>
+  </div>
+</footer>
+
+<script src="../assets/site.js"></script>
+</body>
+</html>
