@@ -35,13 +35,17 @@ value appears outside `:root`.
 | `--accent-ink` | `#06231a` | text on an accent fill | 11.0:1 |
 | `--paper` | `#f2ece2` | the one light section | — |
 | `--paper-2` | `#e8dfd0` | paper surface inset | — |
+| `--paper-accent` | `#0f5138` | the accent on paper (lit word, underline, focus) | 7.9:1 |
+| `--ring-on-accent` | `#06231a` | focus ring on an accent-filled button | 11.0:1 |
 | `--paper-rule` | `#cfc3ae` | hairline on paper | 1.4:1, decoration |
 | `--paper-text` | `#191c1f` | body on paper | 14.6:1 |
 | `--paper-text-2` | `#4b5157` | secondary on paper | 6.8:1 |
 | `--lamp` | `radial-gradient(60% 50% at 70% 30%, rgba(111,231,190,.10), transparent 70%)` | the single glow, hero only | non-text |
 
 No amber, no violet, no second accent. The app's own amber warning colour is deliberately not
-carried over: caution is expressed with a label and a rule, not a hue.
+carried over: caution is expressed with a label and a rule, not a hue. `--paper-accent` is the same
+hue family rendered for the one light surface, not a second brand colour; it exists because mint on
+cream is 1.5:1 and would be unreadable (round 1: MO-3).
 
 ### Type
 
@@ -80,8 +84,10 @@ Weights used: 400, 500, 600. No 700+ (ink on dark gains nothing). `text-wrap: ba
 Grid: `.wrap` max **1200px**, gutter `clamp(20px, 5vw, 48px)`. 12 columns; prose 7, split 6/6 or
 5/7; nothing sits outside `.wrap` except a full-bleed ground.
 
-Section box: `padding-block: clamp(72px, 11vh, 132px)`, `min-height: min(88svh, 980px)`.
-Hero: `min-height: 100svh`, content top-aligned at `--nav-h + clamp(32px, 7vh, 72px)`.
+Section box: `padding-block: clamp(72px, 11vh, 132px)`, `min-height: min(88svh, 980px)`,
+`scroll-margin-top: calc(var(--nav-h) + 16px)` so an anchor never lands under the sticky header.
+Hero: `min-height: 100svh`, content top-aligned at `--nav-h + clamp(32px, 7vh, 72px)`, split 5/7 at
+≥ 900 px with the reader plate in the 7 column and never narrower than 380 px (round 1: AD-4, AR-3).
 Every section opens with its chapter rule and h2; no section is vertically centred; no section
 carries a second h2.
 
@@ -90,15 +96,15 @@ carries a second h2.
 | Component | Classes | Spec |
 |---|---|---|
 | Skip link | `.skip` | first focusable, visible on focus, jumps to `#main` |
-| Header | `.site-header` | 64 px, ink with a 1 px `--rule` bottom, wordmark + real app icon 24 px, links, one primary button; sticky only at ≥ 900 px |
-| Mobile nav | `.nav-toggle` + `.sheet` | full-screen sheet, `aria-expanded`, focus trapped while open, Escape closes, 200 ms in / 120 ms out |
+| Header | `.site-header` | 64 px, ink with a 1 px `--rule` bottom, real app icon 24 px + wordmark, links, one primary button; sticky only at ≥ 900 px |
+| Mobile nav | `<details class="more">` + `.more__panel` | native disclosure, no script, no focus trap: `summary` is the button and says its state; Escape closes (native); panel drops 6 px and fades in 200 ms, out 120 ms (round 1: AR-1) |
 | Buttons | `.btn`, `.btn--primary`, `.btn--ghost`, `.btn--sm` | primary = accent fill/ink text; ghost = `--rule-ui` border, text; one pair only; 44 px min height; 1 px step on hover, 1 px sink + `.985` on press |
-| Status chip | `.chip`, `.chip--status` | non-interactive `<p>`; "Google Play — in review"; becomes `<a>` only when `SITE.playUrl` is set |
+| Status text | `.status` | plain mono label `GOOGLE PLAY — COMING`, no border, no hover, not a control; becomes `<a>` only when `SITE.playUrl` is set (round 1: XA-2) |
 | Chapter head | `.chapter`, `.chapter__num`, `.chapter__title` | mono numeral `01`, 48 px rule, serif h2, optional kicker |
 | Plate | `.plate`, `.plate--phone`, `.plate--tablet` | `--ink-2` frame, 1 px `--rule`, `--r3`, image with explicit dimensions; no caption; zooms 1.02 inside on hover when linked |
-| Film | `.film`, `.film__play` | `<video preload="none" controls poster>` plus a visible overlay button that calls `play()`; poster 800×450; no autoplay |
+| Film | `.film`, `.film__play` | `<video preload="none" controls poster>` plus a visible overlay button that calls `play()`; poster 800×450; no autoplay; placed in §04 where screen-off playback is the argument (round 1: AD-2) |
 | Spec list | `.specs`, `.spec` | `<dl>`: mono label, value; one line each; tabular numerals |
-| Model card | `.model`, `.model__size`, `.model__meta` | name, size, voices, what it is for; one `--ink-2` card; no CTA unless it explains a real step |
+| Model row | `.model`, `.model__size`, `.model__meta` | five compact rows on the landing page (name, size, one clause); the full comparison is stacked `<dl>` rows on `/voices/`, never a wide table (round 1: AD-5, AR-2) |
 | Waveform | `.wave` | 5 bars, 3.2 s cycle, three cycles then rest, one instance on the page, `aria-hidden` |
 | Paper page | `.paper`, `.page`, `.readalong` | cream ground, one page sheet, serif 20–24 px, the read-along sentence inside |
 | Limits block | `.limits`, `.limit` | honest "what it does not do"; 1 px left rule, no colour |
@@ -114,13 +120,13 @@ margin, padding; no bounce; reduced motion rests everything.
 
 | # | Motion | Tokens | Purpose |
 |---|---|---|---|
-| 1 | Hero entrance, once on load: h1 lines rise out of masks (700 ms each, 80 ms apart), then lead and buttons fade up 12 px (520 ms, 60 ms apart); hero plate settles 1.05 → 1 over 1.1 s | `--m-enter`, `--m-ease-enter` | the title arrives first, then what to do |
-| 2 | Read-along: the sentence's words take the accent in 60 ms steps as the section is 35 % visible; underline sweep follows; once | `--m-read` 60 ms, `--m-ease` | shows the feature using the page |
-| 3 | Waveform: five bars, 3.2 s cycle, three cycles then stop; off-screen pauses | `--m-cycle` 3.2 s, linear | a voice is a physical thing; no perpetual motion |
+| 1 | Hero entrance, once on load: h1 rises as one block (opacity + 16 px, 700 ms), then lead and buttons fade up 12 px (520 ms, 60 ms apart); hero plate settles 1.05 → 1 over 1.1 s inside `overflow:hidden`. CSS only, no word masks, wrapped in `prefers-reduced-motion: no-preference` (round 1: MO-1, MO-2) | `--m-enter`, `--m-ease-enter` | the title arrives first, then what to do |
+| 2 | Read-along: the sentence's words take `--paper-accent` in 60 ms steps as the section is 35 % visible; underline sweep follows; once. The paragraph carries `aria-label` with the full sentence and `aria-hidden` word spans (round 1: MO-5) | `--m-read` 60 ms, `--m-ease` | shows the feature using the page |
+| 3 | Waveform: five bars, 3.2 s cycle, three cycles then stop; `animation-play-state: paused` while off-screen | `--m-cycle` 3.2 s, linear | a voice is a physical thing; no perpetual motion |
 | 4 | Hover: buttons step 1 px and their fill steps 14 % toward ink; links draw a 1 px underline left→right; linked plates lift 2 px and darken their border, the image zooms 1.02; arrow nudges 3 px | `--m-in` 150, `--m-out` 120 | every control answers the pointer |
 | 5 | Press: 1 px down + `scale(.985)` | `--m-press` 90 | the press is felt |
 | 6 | Nav sheet: fade + 6 px drop in, 120 ms out | `--m-panel` 200, `--m-close` 120 | the menu is a place, it arrives |
-| 7 | Focus: 2 px accent ring, 2 px offset, no transition | — | keyboard is never lost |
+| 7 | Focus: 2 px ring — `--accent` on ink, `--paper-accent` on paper, `--ring-on-accent` on an accent fill — 2 px offset, no transition (round 1: AR-4) | — | keyboard is never lost |
 
 Curves: `--ease: cubic-bezier(.2,.8,.2,1)`, `--ease-enter: cubic-bezier(.22,1,.36,1)`,
 `--ease-io: cubic-bezier(.65,0,.35,1)` (travel only). No curve overshoots.
@@ -186,6 +192,9 @@ Chrome. Chrome is not installed here and cannot be installed on this device, so:
 | No shader or WebGL effect | not needed for a reading app; costs weight and battery | the signature moment is type-led |
 | System font stacks instead of a self-hosted display face | zero-webfont constraint and no licence to redistribute a face | Android renders Noto Serif where iOS renders Iowan/Palatino |
 | Waveform runs three cycles then rests | a perpetual loop needs a pause control, which would clutter a card | motion is bounded; no pause button needed |
+| Native `<details>` nav instead of a full-screen sheet | a sheet needs focus trapping, inert content and focus return, none verifiable here | the menu is keyboard-native and works without script; the footer repeats every link |
+| No word-mask entrance | line measurement and font fallback cannot be checked without a renderer | the h1 enters as one block; nothing can stay hidden |
+| `/voices/` uses stacked rows, not a table | a five-column table overflows at 320 px | no horizontal scrolling at any width |
 
 ## 9. Verification contract
 
@@ -206,6 +215,9 @@ Chrome. Chrome is not installed here and cannot be installed on this device, so:
    secondary ≥ 4.5:1, UI boundaries ≥ 3:1.
 8. Host parity: resolve every internal link both as Cloudflare root and as `/NovelSpeak/` subpath;
    fail if the two disagree.
+9. Round-1 regressions: no `chip`-styled inert control (status text must have no border), the
+   read-along paragraph must have an `aria-label`, every section must carry `scroll-margin-top`, and
+   every entrance keyframe must sit inside a `prefers-reduced-motion: no-preference` block.
 
 Visual judgement remains with the user: open the branch on a phone, or connect the Cloudflare
 Pages project and review the preview. The report must say so rather than claim a browser pass.

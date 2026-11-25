@@ -26,19 +26,18 @@ game-changing · your new reading companion · immersive experience · take cont
 
 **Hero** (`data-enter`)
 - eyebrow (mono): `ANDROID 7.0+ · ARM64 · APACHE-2.0`
-- h1: **Read any web novel out loud.**
+- h1: **Read web novels out loud.**
 - lead: It opens the chapter you are on, extracts the text, and speaks it with voices that run on
   your phone. Screen off. No account, no ads, no telemetry.
 - primary: `Download the APK` → GitHub release asset v1.3.0
 - secondary: `See what it does` → `./features/`
 - fact line (mono, small): `v1.3.0 · 15.5 MB · arm64-v8a · SHA-256 published`
-- status chip: `Google Play — listing in review` (evidence 28; not a link)
 - plate: `reader-540.png`, alt: "The NovelSpeak reader. The sentence being spoken is highlighted on
   the page, with the player card and its progress bar underneath."
 
 **Dock** (three facts, one row, still)
 - `No account` — nothing to sign in to.
-- `No analytics or ads` — no advertising ID, no crash SDK.
+- `No ads or analytics` — no advertising ID, no crash SDK.
 - `Voices on the device` — after one download, no network.
 
 **01 — Read**
@@ -54,13 +53,13 @@ game-changing · your new reading companion · immersive experience · take cont
   grid of novel sites, with Continue reading below."
 
 **02 — Listen**
-- h2: **Four neural voices, one download each.**
+- h2: **Four neural voices, downloaded once.**
 - body: Use Android's own voice for instant offline playback in every language the phone already
   ships, or install a neural voice. Kokoro, Supertonic 3, Pocket and ZipVoice run on the phone after
   a one-time, SHA-256 verified download. Nothing is bundled in the APK.
-- cards:
-  - **Supertonic 3** · `123 MB` · Two curated styles from twenty · The fast default once installed.
-  - **Kokoro** · `103 MB` · Two curated English voices from eleven · The quality option.
+- rows (five, compact; full comparison on `/voices/`):
+  - **Supertonic 3** · `123 MB` · Two curated styles from twenty. The fast default once installed.
+  - **Kokoro** · `103 MB` · Two curated English voices from eleven. Audiobook pacing, about 3× slower.
   - **Pocket TTS** · `98 MB` · Clones a voice from a short reference clip.
   - **ZipVoice** · `104 MB + 52 MB vocoder` · Cloning with a verbatim transcript, Chinese and English.
   - **Android system TTS** · `0 MB` · Every language the device supports, no download.
@@ -87,6 +86,9 @@ game-changing · your new reading companion · immersive experience · take cont
   or stops at the end of a chapter.
 - specs: `Screen off` yes · `Headset buttons` play, pause, next, previous · `Sleep timer` minutes or
   end of chapter · `Auto mode` continues chapter to chapter, off by default
+- film plate: poster `film-poster.jpg`, overlay play button, `<video preload="none" controls>`;
+  line under it: `Real recording. 23 seconds. Sound on.` · alt "Poster for the 23-second NovelSpeak
+  film: the app reading a chapter with the screen about to go off."
 - plates: `library-540.png` alt "The library: search, All / Chapters / Imported / Finished filters
   and a list of books with cover initials." · `tablet-reader-600.png` alt "The reader on a tablet:
   two panes, the chapter on the left and the player on the right."
@@ -98,6 +100,8 @@ game-changing · your new reading companion · immersive experience · take cont
 - body: There is no NovelSpeak server, so there is nowhere for your reading to go. No account, no
   advertising ID, no analytics SDK, no crash-reporting SDK, no push service. Ad blocking runs inside
   NovelSpeak's own browser view and touches nothing else on the phone.
+- plate: `privacy-540.png`, alt "The in-app privacy page: a plain-language list of what stays on the
+  device and what leaves it."
 - specs: `Account` none · `Analytics` none · `Ads` none · `Diagnostics` created and shared only when
   you ask, redacted before writing
 - limits heading: **What it does not do**
@@ -111,7 +115,7 @@ game-changing · your new reading companion · immersive experience · take cont
   install. Android asks once whether your browser may install apps.
 - primary: `Download NovelSpeak 1.3.0 — 15.5 MB`
 - secondary: `Release notes` → `./changelog/`
-- status chip: `Google Play — listing in review`
+- status line (mono label, plain text, no border, no hover): `GOOGLE PLAY — COMING`
 - verify (mono): `sha256sum -c NovelSpeak-1.3.0-arm64-v8a.apk.sha256`
 - notes: Android 7.0 or newer · arm64-v8a · neural voices download separately (98–156 MB) · a
   debug-signed build must be uninstalled first, and that erases its data.
@@ -126,8 +130,8 @@ game-changing · your new reading companion · immersive experience · take cont
 4. **Can I listen with the screen off?** Yes. Playback runs in a foreground service with a wake
    lock, and lock-screen, notification and headset controls work with both engines.
 5. **Is it free?** Yes. Apache-2.0, no account, no ads, no paid tier. The source is on GitHub.
-6. **Why is it not on Google Play yet?** The 1.4.0 listing is in review. Until it is live, the signed
-   1.3.0 APK from GitHub Releases is the supported install.
+6. **Why is it not on Google Play yet?** The listing is not live. 1.4.0 is the store-ready build;
+   until the listing publishes, the signed 1.3.0 APK from GitHub Releases is the supported install.
 
 **Close** (`footer.closing`)
 - statement: **A quiet reader that speaks.**
@@ -225,12 +229,13 @@ game-changing · your new reading companion · immersive experience · take cont
 - No download, no licence step, works on the first launch.
 - Quality depends on the phone's engine.
 
-**Neural voices** (table: model · size · voices · best for)
-| Supertonic 3 | 123 MB | 2 curated styles (20 upstream) | speed and memory; the default once installed |
-| Kokoro | 103 MB | 2 curated English voices (11 upstream) | the quality option; about 3× slower in absolute synthesis |
-| Pocket TTS | 98 MB | clones from a reference clip | a narrator in a voice you supply |
-| ZipVoice | 104 MB + 52 MB vocoder | clones with a verbatim transcript, zh + en | Chinese and English cloning |
-| Vocoder 24 kHz | 52 MB | — | required by ZipVoice |
+**Neural voices** (stacked spec rows, no table: a definition list that collapses to one column)
+- **Supertonic 3** · 123 MB · 2 curated styles (20 upstream) · Speed and memory; the default once installed.
+- **Kokoro** · 103 MB · 2 curated English voices (11 upstream) · Audiobook pacing; about 3× slower in
+  absolute synthesis. Still the quality option pending a listening test.
+- **Pocket TTS** · 98 MB · clones from a reference clip · A narrator in a voice you supply.
+- **ZipVoice** · 104 MB + 52 MB vocoder · clones with a verbatim transcript, Chinese and English.
+- **Vocoder 24 kHz** · 52 MB · required by ZipVoice.
 
 **How an install works**
 1. You pick a model and confirm the download size.
@@ -264,10 +269,10 @@ game-changing · your new reading companion · immersive experience · take cont
 <meta description>Every NovelSpeak release with dates, what changed, and which version is actually downloadable today.</meta>
 
 - h1: **Every release, and what you can download.**
-- lede: The app is at 1.4.0 and the Play listing is in review. The newest signed APK you can install
-  today is 1.3.0.
+- lede: The app is at 1.4.0, which is the store-ready build. The Play listing is not live yet, so the
+  newest signed APK you can install today is 1.3.0.
 
-**1.4.0 — 22 November 2026** · status: **in review, not downloadable**
+**1.4.0 — 22 November 2026** · status: **store-ready; listing not live; not downloadable**
 - Android 16 (API 36) target, signed AAB path, 16 KB page-size alignment, adaptive launcher icon.
 - WebView hardening: no reflected JavaScript bridge, HTTPS-only intents, file and content access off,
   mixed content never, third-party cookies off, Safe Browsing on.

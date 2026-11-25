@@ -57,9 +57,10 @@ page's one type-led moment. One section is actual paper: a cream page inside the
 **Download the APK** (v1.3.0, arm64-v8a, 15.5 MB) — the only transaction that works today.
 Secondary: see the features, read the privacy policy, browse the source.
 
-Google Play: **not live** (`play.google.com/store/apps/details?id=app.novelspeak` → 404). The
-listing is in review for 1.4.0. The site shows that state as a labelled status, never as a button
-that does nothing.
+Google Play: **not live** (`play.google.com/store/apps/details?id=app.novelspeak` → 404). 1.4.0 is the
+store-ready build; no file in the repo proves the listing was submitted, so the site says "coming to
+Google Play" and never "in review". The state is a line of text, never a button that does nothing
+(round 1: CO-2, XA-2).
 
 ## Information architecture
 
@@ -109,7 +110,7 @@ only in the form given; "drop" means it must not appear.
 | 25 | Two-pane tablet/landscape layout, two-column library at ≥ 600 dp | README §Around the reader, §Library | say |
 | 26 | Android 7.0 (API 24)+, arm64-v8a | README §Install; release notes v1.3.0 | say |
 | 27 | v1.3.0 APK is 15,526,233 bytes and signed with the release key | GitHub release v1.3.0 assets; README §Install note | say |
-| 28 | 1.4.0 targets API 36, adds AAB signing and WebView hardening | CHANGELOG 1.4.0 | say, labelled **in review** |
+| 28 | 1.4.0 targets API 36, adds AAB signing and WebView hardening | CHANGELOG 1.4.0 | say, labelled **store-ready; listing not live** (never "in review": submission is not evidenced) |
 | 29 | Apache-2.0 licensed | LICENSE; README §License | say |
 | 30 | Open source, issue tracker on GitHub | README links | say |
 | — | Ratings, download counts, "trusted by N readers", awards | none in repo | **drop** |
