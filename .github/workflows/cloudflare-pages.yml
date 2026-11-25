@@ -1,0 +1,73 @@
+name: Website
+
+# Optional Cloudflare Pages deploy plus a static contract check for site/.
+# The deploy job no-ops when CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not configured;
+# the check job always runs. GitHub Pages keeps publishing site/ through pages.yml.
+
+on:
+  push:
+    branches: [main, "site/**"]
+    paths:
+      - "site/**"
+      - "tools/site-check.mjs"
+      - ".github/workflows/cloudflare-pages.yml"
+  pull_request:
+    paths:
+      - "site/**"
+      - "tools/site-check.mjs"
+      - ".github/workflows/cloudflare-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Static site check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run site-check
+        run: node tools/site-check.mjs
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: check
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/site/'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for Cloudflare credentials
+        id: credentials
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is not set; skipping deploy. See docs/cloudflare-pages.md."
+          fi
+
+      - name: Deploy site/
+        if: steps.credentials.outputs.ready == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "3"
+          command: pages deploy site --project-name novelspeak --branch=${{ github.ref_name }}
