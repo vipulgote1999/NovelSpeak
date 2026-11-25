@@ -111,7 +111,7 @@ recorded limitation, not fixed.
 | 13 contrast pairs ≥ 4.5:1 text / 3:1 UI | pass (checker recomputes from tokens) |
 | Workflow YAML parses; deploy job no-ops without secrets | pass (`yaml` parse + explicit `ready` guard) |
 | Privacy policy substance preserved | 0 words lost against the previous file |
-| App test suite | 26/28 host harnesses pass; `epub-test` and `pdf-test` fail on this device because they write to `/tmp`, which is not writable here — pre-existing and unrelated to the site |
+| App test suite | **28/28 host harnesses pass** (`tools/test-all.sh --quick`) when run under `proot -b <writable>:/tmp`: `epub-test` and `pdf-test` hard-code `/tmp`, and this device's `/tmp` is not writable. Browser regressions skip (no Chromium); device tests are skipped by `--quick` |
 
 ## Residual limitations (not fixed, stated)
 
