@@ -25,12 +25,12 @@
 <header class="site-header">
   <div class="wrap site-header__inner">
     <a class="brand" href="../">
-      <img src="../assets/img/icon-96.png" alt="" width="24" height="24">
+      <img src="../assets/img/icon-96.png" alt="" width="24" height="24" loading="eager">
       NovelSpeak
     </a>
     <nav class="nav" aria-label="Site">
       <ul class="nav__list">
-        <li><a href="../features/">Features</a></li>
+        <li><a href="../features/" aria-current="page">Features</a></li>
         <li><a href="../voices/">Voices</a></li>
         <li><a href="../changelog/">Changelog</a></li>
         <li><a href="../privacy/">Privacy</a></li>
@@ -40,7 +40,7 @@
     <details class="more">
       <summary class="more__summary">Menu</summary>
       <nav class="more__panel" aria-label="Site, phone">
-        <a href="../features/">Features</a>
+        <a href="../features/" aria-current="page">Features</a>
         <a href="../voices/">Voices</a>
         <a href="../changelog/">Changelog</a>
         <a href="../privacy/">Privacy</a>
@@ -272,7 +272,7 @@
         <li>It does not sync between devices. There is no account to sync with.</li>
       </ul>
       <div class="cta after">
-        <h2>Read a chapter tonight.</h2>
+        <h3 class="cta__title">Read a chapter tonight.</h3>
         <div class="actions">
           <a class="btn btn--primary" data-apk href="https://github.com/vipulgote1999/NovelSpeak/releases/download/v1.3.0/NovelSpeak-1.3.0-arm64-v8a.apk">Download the APK</a>
           <a class="btn btn--ghost" href="../voices/">Choose a voice first</a>

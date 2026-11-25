@@ -26,7 +26,7 @@
 <header class="site-header">
   <div class="wrap site-header__inner">
     <a class="brand" href="./">
-      <img src="assets/img/icon-96.png" alt="" width="24" height="24">
+      <img src="assets/img/icon-96.png" alt="" width="24" height="24" loading="eager">
       NovelSpeak
     </a>
     <nav class="nav" aria-label="Site">
@@ -83,7 +83,7 @@
   </section>
 
   <!-- 01 -->
-  <section class="section section--hairline" id="read" aria-labelledby="read-h">
+  <section class="section" id="read" aria-labelledby="read-h">
     <div class="wrap">
       <div class="split split--wide-left">
         <div>
@@ -114,7 +114,7 @@
   </section>
 
   <!-- 02 -->
-  <section class="section" id="listen" aria-labelledby="listen-h">
+  <section class="section section--hairline" id="listen" aria-labelledby="listen-h">
     <div class="wrap">
       <div class="split">
         <div>
@@ -200,9 +200,8 @@
   </section>
 
   <!-- 04 -->
-  <section class="section section--hairline" id="away" aria-labelledby="away-h">
+  <section class="section" id="away" aria-labelledby="away-h">
     <div class="wrap">
-      <p class="mono film__meta">Real recording · 23 s · sound on</p>
       <div class="split split--wide-left">
         <div>
           <header class="chapter">
@@ -222,14 +221,17 @@
             <div><dt>Auto mode</dt><dd>Continues chapter to chapter. Off by default</dd></div>
           </dl>
         </div>
-        <figure class="film" data-film>
-          <video preload="none" controls playsinline width="1600" height="900"
-                 poster="assets/img/film-poster.jpg">
-            <source src="assets/media/film.mp4" type="video/mp4">
-            <a href="assets/media/film.mp4">Download the 23-second film</a>
-          </video>
-          <button class="film__play" type="button">Play the film</button>
-        </figure>
+        <div>
+          <p class="mono film__meta">Real recording · 23 s · sound on</p>
+          <figure class="film" data-film>
+            <video preload="none" controls playsinline width="1600" height="900"
+                   poster="assets/img/film-poster.jpg">
+              <source src="assets/media/film.mp4" type="video/mp4">
+              <a href="assets/media/film.mp4">Download the 23-second film</a>
+            </video>
+            <button class="film__play" type="button">Play the film</button>
+          </figure>
+        </div>
       </div>
 
       <div class="figures figures--pair figures--spaced">
@@ -251,7 +253,7 @@
   </section>
 
   <!-- 05 -->
-  <section class="section" id="quiet" aria-labelledby="quiet-h">
+  <section class="section section--hairline" id="quiet" aria-labelledby="quiet-h">
     <div class="wrap">
       <div class="split">
         <div>
@@ -312,7 +314,7 @@
   </section>
 
   <!-- 07 -->
-  <section class="section section--tight" id="questions" aria-labelledby="questions-h">
+  <section class="section section--tight section--hairline" id="questions" aria-labelledby="questions-h">
     <div class="wrap">
       <header class="chapter chapter--above">
         <span class="chapter__num" aria-hidden="true">07</span>
