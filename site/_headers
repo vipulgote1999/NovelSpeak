@@ -1,4 +1,8 @@
 # Cloudflare Pages headers. GitHub Pages ignores this file; nothing on the site depends on it.
+#
+# style-src allows inline styles for one reason: the read-along sets a per-word --i custom property
+# through CSSOM. CSSOM is not normally covered by style-src, but one unverifiable browser difference
+# is not worth a broken moment. No HTML file contains a style attribute (site-check can grep for it).
 # Contract: docs/website/design-contract.md § Verification, docs/cloudflare-pages.md
 
 /*
@@ -8,7 +12,7 @@
   Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
-  Content-Security-Policy: default-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; upgrade-insecure-requests
   Cache-Control: public, max-age=0, must-revalidate
 
 /assets/*

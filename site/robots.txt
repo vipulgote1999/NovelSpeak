@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# No Sitemap directive: the same files are served from two origins, so an absolute sitemap URL
+# would be wrong on one of them.

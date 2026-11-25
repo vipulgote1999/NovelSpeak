@@ -20,12 +20,10 @@ const OUT = join(ROOT, 'site', 'assets', 'img');
 const jobs = [
   ['docs/play-store/screenshots/phone-02-reading.png', 'reader-540.png', 2],
   ['docs/play-store/screenshots/phone-01-home.png', 'home-540.png', 2],
-  ['docs/media/ui-audit/phone-library.png', 'library-540.png', 2],
+  ['docs/media/ui-audit/library-grid-phone.png', 'library-540.png', 1],
   ['docs/media/ui-audit/phone-cast.png', 'cast-540.png', 2],
   ['docs/play-store/screenshots/phone-03-settings.png', 'settings-540.png', 2],
   ['docs/play-store/screenshots/phone-04-privacy.png', 'privacy-540.png', 2],
-  ['docs/media/ui-audit/scale20-reader.png', 'scale2x-540.png', 2],
-  ['docs/media/ui-audit/tablet-reader.png', 'tablet-reader-600.png', 2],
   ['docs/media/ui-audit/library-grid-tablet.png', 'tablet-library-390.png', 2],
   ['docs/media/ui-audit/chrome-compact-phone.png', 'player-540.png', 2],
   ['docs/play-store/graphics/icon-512.png', 'icon-192.png', 2.6667],
