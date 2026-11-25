@@ -49,6 +49,22 @@ const textOf = (html) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+function imageSize(file) {
+  const buf = readFileSync(file);
+  if (buf.readUInt32BE(0) === 0x89504e47) return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+  if (buf[0] === 0xff && buf[1] === 0xd8) {
+    let i = 2;
+    while (i < buf.length - 9) {
+      if (buf[i] !== 0xff) { i++; continue; }
+      const marker = buf[i + 1];
+      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+        return { height: buf.readUInt16BE(i + 5), width: buf.readUInt16BE(i + 7) };
+      }
+      i += 2 + buf.readUInt16BE(i + 2);
+    }
+  }
+  return null;
+}
 const titleOf = (html) => (html.match(/<title>([^<]*)<\/title>/) || [, ''])[1].trim();
 const descOf = (html) => (html.match(/<meta name="description" content="([^"]*)"/) || [, ''])[1].trim();
 const h1s = (html) => [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => textOf(m[1]));
@@ -167,6 +183,23 @@ for (const page of pages) {
     if (!/\balt="/.test(tag)) fail(page.rel, `img without alt: ${tag.slice(0, 80)}`);
     if (!/\bwidth="\d+"/.test(tag) || !/\bheight="\d+"/.test(tag)) {
       fail(page.rel, `img without width/height: ${tag.slice(0, 80)}`);
+    }
+    // intrinsic size must match the declared attributes, or the layout shifts when the file loads
+    const src = (tag.match(/\bsrc="([^"]+)"/) || [, ''])[1];
+    if (src && !/^https?:/.test(src)) {
+      const file = resolve(page.dir, src);
+      if (existsSync(file)) {
+        const dims = imageSize(file);
+        const w = Number((tag.match(/\bwidth="(\d+)"/) || [, 0])[1]);
+        const h = Number((tag.match(/\bheight="(\d+)"/) || [, 0])[1]);
+        if (dims) {
+          const upscaled = w > dims.width || h > dims.height;
+          const skew = Math.abs(w / h - dims.width / dims.height) > 0.02;
+          if (upscaled || skew) {
+            fail(page.rel, 'img ' + src + ' is ' + dims.width + '×' + dims.height + ' but declares ' + w + '×' + h);
+          }
+        }
+      }
     }
     const eager = /fetchpriority="high"/.test(tag) || /loading="eager"/.test(tag);
     const small = Number((tag.match(/\bwidth="(\d+)"/) || [, 0])[1]) <= 64;

@@ -205,7 +205,8 @@ Chrome. Chrome is not installed here and cannot be installed on this device, so:
    root-absolute, is not protocol-relative; external links only to `github.com/vipulgote1999/…`
    (and the Play URL once configured).
 3. Assets: every `<img>` has `alt`, `width`, `height`, and `loading="lazy"` unless marked
-   `fetchpriority="high"`; no `<video autoplay>`; poster present.
+   `fetchpriority="high"` (or genuinely small); the declared size may not exceed the file (no
+   upscaling) and may not change its aspect ratio; no `<video autoplay>`; poster present.
 4. Motion: `prefers-reduced-motion` block exists; every `animation:` and `transition:` in
    component rules is covered by it; no `transition: all`.
 5. Tokens: no hex outside `:root`; only the documented radius values; only the documented spacings.
