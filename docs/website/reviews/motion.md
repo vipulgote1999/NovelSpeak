@@ -16,7 +16,7 @@ animations still paints the h1, the buttons and the pictures.
 | # | Where | What | Tokens | Purpose | Reduced motion | No JS |
 |---|---|---|---|---|---|---|
 | 1 | Hero, every page | h1 rises as one block (16 px, opacity), then lead, actions and the fact line at 80/140/200 ms; the hero plate settles 1.05 → 1 inside `overflow:hidden` | `--m-enter` 700 ms, `--m-ease-enter` | the title arrives before the promise | not applied at all (base state visible) | entrance still runs; it is pure CSS |
-| 2 | Landing §03, paper | the Alice sentence lights word by word in `--paper-accent` with a 2 px underline | `--m-read` 120 ms, `--m-read-step` 28 ms (≈1.7 s total) | demonstrates read-along with the page itself | JS refuses to split the sentence; it stays plain body text | sentence is plain text, no split |
+| 2 | Landing §03, paper | a 2 px underline in `--paper-accent` sweeps under each word via `transform: scaleX(0 → 1)`, 28 ms apart | `--m-read` 120 ms, `--m-read-step` 28 ms (≈1.7 s total) | demonstrates read-along with the page itself | JS refuses to split the sentence; it stays plain body text | sentence is plain text, no split |
 | 3 | Landing §02, chapter head | five bars, `scaleY(.35 → 1)`, 3.2 s, three cycles then rest; `animation-play-state: paused` while off-screen | `--m-cycle` 3.2 s, `--ease-io` | a voice is a physical thing, briefly | animation killed globally; bars rest at 0.7 | bars rest still |
 | 4 | Buttons | 1 px lift on hover (fine pointer only), fill steps to `--accent-hover`; press sinks 1 px and scales .985 | `--m-in` 150, `--m-press` 90 | every control answers the pointer | instantaneous state change | href works |
 | 5 | Links | underline thickens 1 → 2 px; nav and footer words take an underline at 6 px offset | `--m-in` 150 / `--m-out` 120 | links look like links | instantaneous | unchanged |
@@ -33,11 +33,10 @@ it stops after three cycles.
 
 ## Properties
 
-Animated: `transform`, `opacity`, `color`, `text-decoration-color`, `background-color`,
-`border-color`. Never `width`, `height`, `top`, `left`, `margin`, `padding`, `filter` or
-`box-shadow`. No `transition: all` anywhere (checked by `site-check`). The read-along's only
-non-composited property is `color`/`text-decoration-color`, which is the point of the effect and is
-bounded to one sentence once per visit.
+Animated: `transform` and `opacity` only. Never `color`, `background-color`, `border-color`,
+`width`, `height`, `top`, `left`, `margin`, `padding`, `filter` or `box-shadow`. Hover and press
+change colour **instantly**; only the geometry moves. No `transition: all` anywhere, and
+`site-check` now fails any `transition` that names a property other than `transform` or `opacity`.
 
 ## Findings and fixes made during this pass
 

@@ -89,6 +89,8 @@ body {
   font-family: var(--sans);
   font-size: var(--t-body);
   line-height: 1.65;
+  /* FOREGROUND_SERVICE_MEDIA_PLAYBACK and long URLs have no break opportunity of their own. */
+  overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -302,8 +304,7 @@ code, kbd, samp { font-family: var(--mono); font-size: 0.92em; }
   line-height: 1.2;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color var(--m-in) var(--ease), border-color var(--m-in) var(--ease),
-    color var(--m-in) var(--ease), transform var(--m-in) var(--ease);
+  transition: transform var(--m-in) var(--ease);
 }
 .btn:active { transform: translateY(1px) scale(0.985); transition-duration: var(--m-press); }
 
@@ -396,7 +397,7 @@ code, kbd, samp { font-family: var(--mono); font-size: 0.92em; }
   border-radius: var(--r3);
   padding: 10px;
   overflow: hidden;
-  transition: transform var(--m-in) var(--ease), border-color var(--m-in) var(--ease);
+  transition: transform var(--m-in) var(--ease);
 }
 .plate img { width: 100%; height: auto; border-radius: calc(var(--r3) - 7px); }
 a.plate { display: block; color: inherit; text-decoration: none; }
@@ -459,7 +460,7 @@ a.plate:hover img { transform: scale(1.02); }
   font: inherit;
   font-size: var(--t-small);
   cursor: pointer;
-  transition: background-color var(--m-in) var(--ease), transform var(--m-in) var(--ease);
+  transition: transform var(--m-in) var(--ease);
 }
 .js .film__play { display: inline-flex; }
 .film__play:hover { background: var(--ink-3); transform: translateY(-1px); }
@@ -559,15 +560,21 @@ a.plate:hover img { transform: scale(1.02); }
   margin: 0;
   color: var(--paper-text);
 }
-.readalong span {
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 4px;
-  transition: color var(--m-read) linear, text-decoration-color var(--m-read) linear;
+.readalong span { position: relative; }
+/* The sweep is a transform on a pseudo-element: nothing but transform and opacity moves on this site. */
+.readalong span::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 2px;
+  height: 2px;
+  background: var(--paper-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--m-read) linear;
   transition-delay: calc(var(--i, 0) * var(--m-read-step));
 }
-.readalong.is-lit span { color: var(--paper-accent); text-decoration-color: var(--paper-accent); }
+.readalong.is-lit span::after { transform: scaleX(1); }
 
 /* ---------- limits ---------- */
 
@@ -754,7 +761,7 @@ a.plate:hover img { transform: scale(1.02); }
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
   }
-  .readalong span { color: var(--paper-text); text-decoration-color: transparent; }
+  .readalong span::after { transform: scaleX(0); }
   .wave span { transform: scaleY(0.7); }
 }
 

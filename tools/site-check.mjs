@@ -250,6 +250,17 @@ for (const m of outsideMotion.matchAll(/(^|[;{\s])animation:\s*([^;}]+)/g)) {
   if (/animation:\s*none/.test(m[0])) continue;
   fail(cssWhere, `animation outside the no-preference block: ${m[0].trim().slice(0, 70)}`);
 }
+
+// GPU-only motion: a transition may name only transform or opacity
+for (const m of outsideMotion.matchAll(/(^|[;{\s])transition:\s*([^;}]+)/g)) {
+  const declared = m[2];
+  const properties = declared.split(',').map((part) => part.trim().split(/\s+/)[0]);
+  for (const property of properties) {
+    if (!['transform', 'opacity', 'none'].includes(property)) {
+      fail(cssWhere, 'non-composited transition: ' + property);
+    }
+  }
+}
 const keyframes = [...css.matchAll(/@keyframes\s+([a-z-]+)/g)].map((m) => m[1]);
 for (const name of keyframes) {
   if (!motionBlock.includes(name)) fail(cssWhere, `@keyframes ${name} is not used inside the no-preference block`);
@@ -272,6 +283,9 @@ if (/\.chip\b/.test(css)) fail(cssWhere, 'inert chip component reintroduced');
 const statusBlock = blockAt(css, '.status {');
 if (/border/.test(statusBlock)) fail(cssWhere, '.status has a border (must read as text, not a control)');
 if (!/scroll-margin-top/.test(blockAt(css, '.section {'))) fail(cssWhere, '.section has no scroll-margin-top');
+if (!/overflow-wrap:\s*break-word/.test(blockAt(css, 'body {'))) {
+  fail(cssWhere, 'body has no overflow-wrap rule (long tokens such as FOREGROUND_SERVICE_MEDIA_PLAYBACK would scroll the page sideways)');
+}
 
 /* ---------------------------------------------------------------- 5. contrast from tokens */
 

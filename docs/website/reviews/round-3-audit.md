@@ -62,5 +62,39 @@ files someone happened to look at is not verification; it is sampling described 
 auditor did what the review should have done first: look at every image that ships, at the size it
 ships.
 
-Round 3 status: **closed** with the library unillustrated. That is a gap in the page, not a defect in
+Round 3 status: **closed** with the library unillustrated; reopened by the third audit above and closed again after its fixes. That is a gap in the page, not a defect in
 its honesty — and a cleaner capture is the obvious follow-up when a device is available.
+
+## Third audit round: a real overflow, a stale record, a contradicted property list
+
+The next independent audit rejected completion on three findings. All three were correct.
+
+1. **`/privacy/` scrolled sideways at 320 px and 360 px.** The permissions list contains
+   `FOREGROUND_SERVICE_MEDIA_PLAYBACK` — 33 characters with no break opportunity — inside
+   `<strong>`. At 16 px Roboto that word measures about 315 px; the content box at 320 px is 256 px
+   (320 − 2×20 gutter − 24 list padding) and 296 px at 360 px. Nothing in the stylesheet applied
+   `overflow-wrap` to prose, so the line box ran past the viewport. The a11y audit had listed the
+   320 px check as "for a person", which was how a measurable defect survived three rounds.
+   Fixed with `body { overflow-wrap: break-word }`: it inherits, so the permission token, its
+   `<strong>` and the long issue-tracker URL all break. `site-check` now fails if that rule
+   disappears.
+2. **The round-2 record still carried the drift the summary claimed to have swept.** Two lines: a
+   duplicated "source." left by an earlier edit, and a limitation bullet still saying "some captures
+   still show fixture data (a `10.0.2.2` source line…)" after the crops removed every dev host. Both
+   corrected; the bullet now says a sample story is visible and no dev host, harness title or
+   duplicate ships.
+3. **The motion layer was not GPU-only.** `.btn`, `.plate` and `.film__play` transitioned
+   `background-color`, `border-color` and `color`, and the read-along transitioned `color` and
+   `text-decoration-color`. The contract claimed transform/opacity only. Fixed properly rather than
+   reworded: every colour, fill and border change is now instant, and the read-along is a 2 px
+   accent underline that sweeps under each word via `transform: scaleX(0 → 1)`. Nothing but
+   `transform` and `opacity` animates, and the checker fails any `transition` that names another
+   property (both guards were negative-tested: injecting `transition: color` and deleting the
+   `overflow-wrap` rule each produced a FAIL before the file was restored).
+
+Non-blocking notes from the same audit were also taken: the design contract's `--lamp` gradient now
+matches the CSS (72 % 28 %), §9 no longer claims checks the harness does not run, and the 404 and
+`og:image` cross-host behaviour is stated as a limitation in the PR.
+
+Status after this round: `SITE: PASS` (6 pages, 8 images, 498 KB), with two new regression guards
+(body break rule; GPU-only transitions).

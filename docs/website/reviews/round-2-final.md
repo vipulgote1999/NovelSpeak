@@ -81,9 +81,9 @@ recorded limitation, not fixed.
   section past two screens for no extra information. One remains; the tablet library moved to
   `/features/`.
 - **PE2-2 (N)** Total image weight dropped from 871 KB to 625 KB after round 2, and to **498 KB**
-  after the audit (eight images, no poster); no image is upscaled past its source.
-  source. The film has no poster (round 3): its pre-play still is the app’s reader, behind
-  `preload="none"`, with a plain MP4 link under the frame.
+  after the audit (eight images, no poster); no image is upscaled past its source. The film has no
+  poster (round 3): its pre-play still is the app’s reader, behind `preload="none"`, with a plain
+  MP4 link under the frame.
 - **PE2-3 (R)** The supplied poster is not shipped: its baked 9:16 caption contradicts the 16:9
   film, and re-cutting it needs a JPEG encoder this machine does not have. Recorded in `assets.md`.
 
@@ -125,8 +125,9 @@ recorded limitation, not fixed.
 1. No browser, no screenshots: the site has never been rendered. Visual claims are source-level.
 2. System serif stacks mean Android shows Noto Serif where iOS shows Iowan/Palatino.
 3. The Play listing is not live; the only working install is the 1.3.0 APK.
-4. Some captures still show fixture data (a `10.0.2.2` source line, a sample story). They are real
-   app screens, not mockups; the cleanest available captures were chosen.
+4. The captures show a sample story (“The Lantern”, “Marshal Rennick”), which is the app’s own
+   test content. No dev host, no harness title and no duplicate ships; the library is not
+   illustrated at all.
 5. The film has no poster: the only supplied poster states 9:16 · 1080 × 1920 while the served
    film is 16:9, and there is no JPEG encoder here to re-cut it. The pre-play still is the app’s
    reader inside a 16:9 stage, plus a plain MP4 link (round 3).
