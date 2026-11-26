@@ -88,9 +88,12 @@ resolution or an audio track the file does not have.
 
 1. Root pages (`site/index.html`) reference `assets/...`, `./features/`, `./privacy/`.
 2. Subpages (`site/features/index.html`) reference `../assets/...`, `../features/`, `../privacy/`.
-3. `404.html` cannot know its depth, so its home link is `/` and a 6-line inline script rewrites it
-   to `/NovelSpeak/` when `location.pathname` starts with that prefix. With JS off the link still
-   reads "Home" and lands on the Cloudflare root.
+3. `404.html` cannot know its depth, so it cannot use a relative home link. Its static href is the
+   absolute GitHub Pages URL, which always resolves; a 4-line inline script then rewrites it to `/`
+   on any host that is not `github.io`, and to `/NovelSpeak/` when the path already starts there. With
+   JS off, both hosts send the visitor to the GitHub Pages site rather than to a broken path — the
+   one case where a working cross-host link beats host accuracy. The page carries its own styles for
+   the same reason (no relative asset paths at unknown depth).
 4. No `<base>`, no root-absolute asset paths, no protocol-relative URLs, no external origins.
 5. `_headers` and `_redirects` are Cloudflare-only and are ignored by GitHub Pages; nothing depends
    on them for correctness.
