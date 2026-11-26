@@ -86,9 +86,10 @@ game-changing · your new reading companion · immersive experience · take cont
   or stops at the end of a chapter.
 - specs: `Screen off` yes · `Headset buttons` play, pause, next, previous · `Sleep timer` minutes or
   end of chapter · `Auto mode` continues chapter to chapter, off by default
-- film plate: poster `film-poster.jpg`, overlay play button, `<video preload="none" controls>`;
-  line under it: `Real recording. 23 seconds. Sound on.` · alt "Poster for the 23-second NovelSpeak
-  film: the app reading a chapter with the screen about to go off."
+- film plate: the reader still fills a 16:9 stage, an overlay `Play the film` button sits on it, and
+  `<video preload="none" controls hidden>` swaps in on the press; line above: `Real recording ·
+  23 s · sound on`; link under the frame: `Watch the 23-second film — MP4, 1.9 MB, sound on.`
+  No poster attribute: the only supplied poster states 9:16 while the film is 16:9.
 - plates: `library-540.png` alt "The library: search, All / Chapters / Imported / Finished filters
   and a list of books with cover initials." · `tablet-reader-600.png` alt "The reader on a tablet:
   two panes, the chapter on the left and the player on the right."

@@ -49,19 +49,20 @@ var SITE = {
     shas[k].href = SITE.release.base + SITE.release.file + '.sha256';
   }
 
-  // --- Film: poster first, nothing fetched until a real press ---------------------------
+  // --- Film: a still first, nothing fetched until a real press ---------------------------
   var films = doc.querySelectorAll('[data-film]');
   Array.prototype.forEach.call(films, function (film) {
     var video = film.querySelector('video');
     var button = film.querySelector('.film__play');
+    var still = film.querySelector('.film__still');
     if (!video || !button) return;
     button.addEventListener('click', function () {
+      if (still) still.hidden = true;
+      video.hidden = false;
+      button.hidden = true;
       var playing = video.play();
       if (playing && playing.catch) playing.catch(function () { video.controls = true; });
     });
-    video.addEventListener('play', function () { button.hidden = true; });
-    video.addEventListener('pause', function () { button.hidden = false; });
-    video.addEventListener('ended', function () { button.hidden = false; });
   });
 
   // --- Read-along: the page's one type-led moment, once, and only with motion allowed ---

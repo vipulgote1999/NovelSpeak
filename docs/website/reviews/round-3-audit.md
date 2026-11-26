@@ -35,20 +35,25 @@ original defect, so this file states both plainly.
 
 ## Re-checked after the fixes
 
-- `node tools/site-check.mjs` → `SITE: PASS` — 6 pages, 9 images (8 derived + the poster).
-- `assets/img` total: 498 KB + the 145 KB lazy poster, down from 770 KB.
+- `node tools/site-check.mjs` → `SITE: PASS` — 6 pages, 8 images (the poster was removed in the second audit round).
+- `assets/img` total: 498 KB across eight files, down from 770 KB.
 - Both cropped images were opened and read after regeneration: no status bar, no address bar, no
   host string anywhere in either frame.
 - `grep -rn "library-540\|tablet-library" site/` → nothing.
 - The `<img>` dimensions in `/features/` match the regenerated files (540×854, 540×848).
 
-## One more supplied-art quirk, disclosed
+## Second audit round: the poster came out
 
-The film poster is 16:9 and matches the frame it sits in, but its baked caption reads
-“9:16 · 1080 × 1920 · NO NARRATION”: it was drawn for the portrait original, and the page serves the
-1.9 MB 16:9 cut. Re-encoding or retouching the poster is not possible here (no JPEG encoder) and
-painting over supplied art would be a fabrication, so the quirk is written down in `assets.md`
-instead of hidden.
+The second independent audit found the film poster still shipping after round 3. Its baked caption
+reads “9:16 · 1080 × 1920 · NO NARRATION” while the page plays the 16:9 cut, so the primary page made
+a false statement about its own asset; disclosing it in `assets.md` was not enough.
+
+The poster file is no longer served. The film now has a designed pre-play state: the app’s reader
+still fills a 16:9 stage, a visible `Play the film` button sits on it, and a plain MP4 link
+(“MP4, 1.9 MB”) is visible under the frame. With JavaScript off, the still and the link remain and
+the video stays hidden. `og:image` moved to `reader-540.png`, which is shipped.
+
+Total image weight fell to 498 KB across eight files.
 
 ## The lesson, written down
 

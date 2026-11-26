@@ -81,7 +81,7 @@ recorded limitation, not fixed.
   section past two screens for no extra information. One remains; the tablet library moved to
   `/features/`.
 - **PE2-2 (N)** Total image weight dropped from 871 KB to 625 KB after round 2, and to **498 KB**
-  after the audit (eight images plus the 145 KB lazy poster); no image is upscaled past its source.
+  after the audit (eight images, no poster); no image is upscaled past its source.
   source. The film poster (145 KB, native JPEG — no encoder on this device) stays lazy, behind
   `preload="none"`.
 - **PE2-3 (R)** The poster is 145 KB because there is no JPEG encoder here; a 60 KB 800×450 version
@@ -109,7 +109,7 @@ recorded limitation, not fixed.
 
 | Check | Result |
 |---|---|
-| `node tools/site-check.mjs` | `SITE: PASS` — 6 pages, 9 images, 498 KB of images + 145 KB poster (after the round-3 audit; round 2 ran at 11 images / 625 KB) |
+| `node tools/site-check.mjs` | `SITE: PASS` — 6 pages, 8 images, 498 KB (after the second audit round; round 2 ran at 11 images / 625 KB) |
 | All links and assets resolve relative to their page | pass (checker resolves every `href`/`src`/`poster`) |
 | Heading order, one `h1` per page, no duplicate ids | pass |
 | Every image alt checked against the opened PNG | pass (12 alts rewritten or verified) |
@@ -127,7 +127,9 @@ recorded limitation, not fixed.
 3. The Play listing is not live; the only working install is the 1.3.0 APK.
 4. Some captures still show fixture data (a `10.0.2.2` source line, a sample story). They are real
    app screens, not mockups; the cleanest available captures were chosen.
-5. The film poster is native-size because this machine cannot encode JPEG.
+5. The film has no poster: the only supplied poster states 9:16 · 1080 × 1920 while the served
+   film is 16:9, and there is no JPEG encoder here to re-cut it. The pre-play still is the app’s
+   reader inside a 16:9 stage, plus a plain MP4 link (round 3).
 
 Round 2 status: **closed** — every blocking finding is fixed and re-checked. The remaining items are
 recorded limitations, not open defects.

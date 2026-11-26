@@ -101,7 +101,7 @@ carries a second h2.
 | Status text | `.status` | plain mono label `GOOGLE PLAY — COMING`, no border, no hover, not a control; becomes `<a>` only when `SITE.playUrl` is set (round 1: XA-2) |
 | Chapter head | `.chapter`, `.chapter__num`, `.chapter__rule` | mono numeral `01`–`07` (Read, Listen, Read-along, Away, Quiet, Install, Questions), hairline rule, serif h2 follows; numeral is `aria-hidden` |
 | Plate | `.plate`, `.plate--phone`, `.plate--tablet` | `--ink-2` frame, 1 px `--rule`, `--r3`, image with explicit dimensions; no caption; zooms 1.02 inside on hover when linked |
-| Film | `.film`, `.film__play` | `<video preload="none" controls poster>` plus a visible overlay button that calls `play()`; poster 800×450; no autoplay; placed in §04 where screen-off playback is the argument (round 1: AD-2) |
+| Film | `.film`, `.film__stage`, `.film__still`, `.film__video`, `.film__play` | a 16:9 stage holding the app’s reader still, a hidden `<video preload="none" controls>` and one visible play button; the press swaps the still for the film; a plain MP4 link sits under the frame for no-JS; no autoplay and no poster attribute, because the only poster in the repo states 9:16 while the film is 16:9 (round 3) |
 | Spec list | `.specs`, `.spec` | `<dl>`: mono label, value; one line each; tabular numerals |
 | Model row | `.model`, `.model__size`, `.model__meta` | five compact rows on the landing page (name, size, one clause); the full comparison is stacked `<dl>` rows on `/voices/`, never a wide table (round 1: AD-5, AR-2) |
 | Waveform | `.wave` | 5 bars, 3.2 s cycle, three cycles then rest, one instance on the page, `aria-hidden` |
@@ -206,7 +206,8 @@ Chrome. Chrome is not installed here and cannot be installed on this device, so:
    (and the Play URL once configured).
 3. Assets: every `<img>` has `alt`, `width`, `height`, and `loading="lazy"` unless marked
    `fetchpriority="high"` (or genuinely small); the declared size may not exceed the file (no
-   upscaling) and may not change its aspect ratio; no `<video autoplay>`; poster present.
+   upscaling) and may not change its aspect ratio; no `<video autoplay>`; a video has either a
+   poster or a labelled still plus a working MP4 link.
 4. Motion: `prefers-reduced-motion` block exists; every `animation:` and `transition:` in
    component rules is covered by it; no `transition: all`.
 5. Tokens: no hex outside `:root`; only the documented radius values; only the documented spacings.

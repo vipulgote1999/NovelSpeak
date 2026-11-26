@@ -50,9 +50,9 @@ does.
   lazy rather than being re-encoded to 800×450.
 - **The display face is a system stack.** Android renders Noto Serif where iOS renders Iowan or
   Palatino. Zero webfont bytes, zero third-party origins, at the cost of one less piece of control.
-- **Some captures still show fixture data** — a `10.0.2.2` source line, a sample story. They are
-  real app screens; the cleanest available captures were used, and the alts describe what is
-  actually in the frame.
+- **A sample story is visible** in the reader, cast and player captures ("The Lantern", "Marshal
+  Rennick"). It is the app's own test content, not a fixture row: no dev host, no harness title and
+  no duplicate ships. Every screenshot was opened and checked after the round-3 crops.
 - **The 404 duplicates its styles.** It is served at unknown depths, so a shared stylesheet would
   need a root-absolute path, which would break the GitHub Pages subpath. Duplication is the correct
   trade.
