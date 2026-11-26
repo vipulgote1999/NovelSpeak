@@ -82,10 +82,10 @@ recorded limitation, not fixed.
   `/features/`.
 - **PE2-2 (N)** Total image weight dropped from 871 KB to 625 KB after round 2, and to **498 KB**
   after the audit (eight images, no poster); no image is upscaled past its source.
-  source. The film poster (145 KB, native JPEG — no encoder on this device) stays lazy, behind
-  `preload="none"`.
-- **PE2-3 (R)** The poster is 145 KB because there is no JPEG encoder here; a 60 KB 800×450 version
-  would need one. Recorded in `assets.md`.
+  source. The film has no poster (round 3): its pre-play still is the app’s reader, behind
+  `preload="none"`, with a plain MP4 link under the frame.
+- **PE2-3 (R)** The supplied poster is not shipped: its baked 9:16 caption contradicts the 16:9
+  film, and re-cutting it needs a JPEG encoder this machine does not have. Recorded in `assets.md`.
 
 ## Adversarial critic
 

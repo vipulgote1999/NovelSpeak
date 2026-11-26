@@ -116,7 +116,7 @@ game-changing · your new reading companion · immersive experience · take cont
   install. Android asks once whether your browser may install apps.
 - primary: `Download NovelSpeak 1.3.0 — 15.5 MB`
 - secondary: `Release notes` → `./changelog/`
-- status line (mono label, plain text, no border, no hover): `GOOGLE PLAY — COMING`
+- status line (mono label, plain text, no border, no hover): `COMING TO GOOGLE PLAY`
 - verify (mono): `sha256sum -c NovelSpeak-1.3.0-arm64-v8a.apk.sha256`
 - notes: Android 7.0 or newer · arm64-v8a · neural voices download separately (98–156 MB) · a
   debug-signed build must be uninstalled first, and that erases its data.

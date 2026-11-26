@@ -54,4 +54,4 @@ bounded to one sentence once per visit.
 The entrance timing, the sweep speed and the plate settle cannot be judged from source. Open the
 branch on a phone (or the Cloudflare preview) with motion on and off, and check: the h1 is never
 invisible, the read-along finishes within two seconds, the five bars stop, and nothing shifts when
-the film's poster loads. That is the one check this document cannot perform.
+the film's still loads. That is the one check this document cannot perform.

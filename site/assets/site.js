@@ -35,7 +35,7 @@ var SITE = {
       el.appendChild(a);
       el.appendChild(doc.createTextNode(' \u2014 available'));
     } else {
-      el.textContent = 'Google Play \u2014 coming';
+      el.textContent = 'Coming to Google Play';
     }
   }
 

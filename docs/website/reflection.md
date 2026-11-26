@@ -46,8 +46,9 @@ does.
   implying a browser pass.
 - **Play is not live.** The only working install is the signed 1.3.0 APK. The site says "coming",
   and the changelog says plainly that 1.4.0 is store-ready but not downloadable.
-- **The poster is 145 KB.** No JPEG encoder exists here, so the 1600×900 poster ships native and
-  lazy rather than being re-encoded to 800×450.
+- **The film has no poster.** The only supplied poster states 9:16 · 1080 × 1920 while the served
+  film is 16:9, and there is no JPEG encoder here to re-cut it. The pre-play state is the app’s
+  reader still with a plain MP4 link under it.
 - **The display face is a system stack.** Android renders Noto Serif where iOS renders Iowan or
   Palatino. Zero webfont bytes, zero third-party origins, at the cost of one less piece of control.
 - **A sample story is visible** in the reader, cast and player captures ("The Lantern", "Marshal

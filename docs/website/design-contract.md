@@ -98,7 +98,7 @@ carries a second h2.
 | Header | `.site-header` | 64 px, ink with a 1 px `--rule` bottom, real app icon 24 px + wordmark, links, one primary button; sticky only at ≥ 900 px |
 | Mobile nav | `<details class="more">` + `.more__panel` | native disclosure, no script, no focus trap: `summary` is the button and says its state; Escape closes (native); panel drops 6 px and fades in 200 ms, out 120 ms (round 1: AR-1) |
 | Buttons | `.btn`, `.btn--primary`, `.btn--ghost`, `.btn--sm` | primary = accent fill/ink text; ghost = `--rule-ui` border, text; one pair only; 44 px min height; 1 px step on hover, 1 px sink + `.985` on press |
-| Status text | `.status` | plain mono label `GOOGLE PLAY — COMING`, no border, no hover, not a control; becomes `<a>` only when `SITE.playUrl` is set (round 1: XA-2) |
+| Status text | `.status` | plain mono label `COMING TO GOOGLE PLAY`, no border, no hover, not a control; becomes `<a>` only when `SITE.playUrl` is set (round 1: XA-2) |
 | Chapter head | `.chapter`, `.chapter__num`, `.chapter__rule` | mono numeral `01`–`07` (Read, Listen, Read-along, Away, Quiet, Install, Questions), hairline rule, serif h2 follows; numeral is `aria-hidden` |
 | Plate | `.plate`, `.plate--phone`, `.plate--tablet` | `--ink-2` frame, 1 px `--rule`, `--r3`, image with explicit dimensions; no caption; zooms 1.02 inside on hover when linked |
 | Film | `.film`, `.film__stage`, `.film__still`, `.film__video`, `.film__play` | a 16:9 stage holding the app’s reader still, a hidden `<video preload="none" controls>` and one visible play button; the press swaps the still for the film; a plain MP4 link sits under the frame for no-JS; no autoplay and no poster attribute, because the only poster in the repo states 9:16 while the film is 16:9 (round 3) |
@@ -161,7 +161,7 @@ scripts, autoplaying video with sound, fake Play badge, disabled buttons that lo
 |---|---|
 | Nav | rest, hover, focus, current (`aria-current="page"`), sheet open/closed, reduced motion |
 | Install CTA | Play "coming" status text, Play live (link, only when configured), APK path always working, SHA line, no-JS identical |
-| Film | poster, playing (native controls + pause), reduced motion (no autoplay) |
+| Film | still, playing (native controls), ended, reduced motion (no autoplay) |
 | Links | rest, hover, focus-visible, visited (accent → accent, no colour shift), external (arrow + `rel="noreferrer"`) |
 | Images | alt text on all; decorative wave marked `aria-hidden`; explicit width/height so nothing shifts |
 | 404 | own title, home link, source link, no fake search |
