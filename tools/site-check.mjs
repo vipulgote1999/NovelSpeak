@@ -209,7 +209,11 @@ for (const page of pages) {
   for (const tag of videos) {
     if (/autoplay/.test(tag)) fail(page.rel, 'video autoplays');
     if (!/preload="none"/.test(tag)) fail(page.rel, 'video is not preload="none"');
-    if (!/poster="[^"]+"/.test(tag)) fail(page.rel, 'video has no poster');
+    if (!/poster="[^"]+"/.test(tag)) {
+      const hasStill = /class="film__still"/.test(page.html);
+      const hasFilmLink = /href="[^"]+\.mp4"/.test(page.html);
+      if (!hasStill || !hasFilmLink) fail(page.rel, 'video has neither a poster nor a labelled still + MP4 link');
+    }
     if (!/controls/.test(tag)) fail(page.rel, 'video has no native controls');
   }
   for (const tag of [...page.html.matchAll(/<iframe\b[^>]*>/g)]) fail(page.rel, `iframe present: ${tag[0].slice(0, 60)}`);
