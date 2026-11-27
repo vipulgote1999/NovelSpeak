@@ -179,9 +179,12 @@ Ultra-short lines and emotional range are the open quality work.
 
 Open a manga chapter in the browser and tap **Manga**. The extractor walks the page, reads the
 site's serialized page list when it has one, rejects logos/avatars, and keeps the longest run of
-consecutive page images. The dedicated reader stacks those pages in one continuous scroll, runs
-ML Kit OCR on-device page by page, and streams the text into the existing TTS queue while later
-pages are still being processed.
+consecutive page images. MangaDex, Webtoons and Tapas chapter URLs resolve through native
+API/HTML adapters as soon as they are opened, so their reader pages do not need to render in the
+WebView. See [docs/manga-providers.md](docs/manga-providers.md) for the verified provider
+matrix. The dedicated reader stacks those pages in one continuous scroll, runs ML Kit OCR
+on-device page by page, and streams the text into the existing TTS queue while later pages are
+still being processed.
 
 The bubble being spoken is outlined on the page (all boxes when short bubbles were joined), the
 feed scrolls it into view, and the text panel shows the current chunk with word-level read-along.

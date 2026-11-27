@@ -9,7 +9,7 @@ NovelSpeak is deliberately Gradle-free, so its tests use four layers:
 | Maestro + emulator | Real app journeys, navigation, playback controls, library and settings | `tools/maestro/run.sh` |
 | Device scripts | Share intent, rotation, 2× font scale, 320 dp phone at 1×/2× | `08_share_intent.txt`, `adaptive.sh`, `text-scale.sh`, `narrow.sh` |
 
-The host suite currently has **29 harnesses**. The device suite has **28 Maestro flows**
+The host suite currently has **30 harnesses**. The device suite has **28 Maestro flows**
 plus the four device scripts.
 
 ## Quick commands
@@ -41,7 +41,7 @@ tools/test-all.sh
 | Playback cursor, drain, engine teardown, voice/focus | `playback,tts` | — | `reader,tts,regression` |
 | Privacy, diagnostics redaction, logs | `privacy,diagnostics` | — | `privacy` |
 | Extraction, next links, oversized pages | `extraction,url` | `extract-test` | `reading,fixture,url` |
-| Manga page detection, order and TTS chunks | `manga,tts,extraction` | `manga-extract-test` | `manga` |
+| Manga page detection, provider parsing and TTS chunks | `manga,tts,extraction` | `manga-extract-test` | `manga` |
 | Ad blocking, filter parsing, URL policy | `adblock,url` | `adblock-test/procedural.sh` | — |
 | Library, bookmarks, reading stats | `library` | — | `library` |
 | Story cast parser/chunker/store/voices | `cast,tts` | — | no device flow yet |

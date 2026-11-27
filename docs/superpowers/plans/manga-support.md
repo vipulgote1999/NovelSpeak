@@ -55,6 +55,11 @@
 - **Validation.** Host harness `tools/manga-text-test/` (reading order and chunk rules), browser
   fixture `tools/manga-extract-test/`, and Maestro flows `33`/`34` for feed sync and TTS scrolling.
   Real One Piece chapter 1: 57/57 pages, 56 with text, 708 chunks, max 177/180 chars.
+- **Provider matrix (2026-11-27).** MangaDex resolves through its public at-home API (52 pages),
+  Webtoons through desktop HTML `img._images[data-url]` (8 pages), Tapas through episode HTML
+  `img.content__img[data-src]` (19 pages), and WeebCentral through the generic extractor
+  (57 pages). See [docs/manga-providers.md](../../manga-providers.md) for the full matrix and
+  the providers that remain blocked (MangaFire VRF, Comick/Asura Cloudflare, Manga Plus DRM).
 
 ## Known limits
 

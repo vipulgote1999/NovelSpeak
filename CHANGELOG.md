@@ -25,6 +25,15 @@ All notable changes to NovelSpeak are documented here. The format follows
   pages, reads Next.js/Nuxt serialized page lists, resolves `srcset`/`data-src`/CSS/preload
   candidates, rejects logos/avatars, and keeps the longest numbered run, so a 57-page One Piece
   chapter is recovered completely even though only two `<img>` tags exist at load time.
+- **Popular providers resolve directly.** MangaDex chapter URLs use its public at-home API
+  (52-page chapter verified), while Webtoons and Tapas chapter URLs are parsed from their
+  server-rendered HTML (8- and 19-page episodes verified) before a heavy reader page can render
+  in the WebView. WeebCentral and generic image sites continue through the browser extractor
+  (57-page chapter verified). The verified matrix and limits are in
+  [docs/manga-providers.md](docs/manga-providers.md).
+- **Viewer-stack extraction.** When page URLs have no numeric run (Webtoons/Tapas use unique
+  CDN directories), the extractor chooses the largest repeated page container, honours declared
+  width/height on lazy placeholder images, and preserves DOM order.
 - **Validated speech chunks.** Bubbles are sorted into reading order (including right-to-left
   manga), OCR line-break hyphens are repaired, empty/SFX-only/page-number fragments are dropped,
   and speech is split at sentence/clause boundaries to a configurable cap (180 characters by
@@ -80,8 +89,8 @@ All notable changes to NovelSpeak are documented here. The format follows
 
 ### Verification
 
-- Host suite: **29/29 harnesses**, browser regressions green (including the new
-  consecutive-page extractor fixture).
+- Host suite: **30/30 harnesses**, browser regressions green (consecutive, Webtoons and Tapas
+  fixtures).
 - Manga device suite: flows **31–34, 4/4** on emulator-5554, including TTS-driven scrolling.
   The full 28-flow suite remains the release gate.
 - Real-chapter check: One Piece chapter 1 from onpiecemanga.online, 57/57 pages extracted,
