@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Read Tapas Fixture :: Episode 4 | Tapas Community</title>
+  <style>
+    body { background: #111; color: #eee; font-family: sans-serif; }
+    .content__img { display: block; width: 300px; height: 450px; }
+    #out { white-space: pre-wrap; color: #7fe; padding: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Tapas Fixture</h1>
+  <div class="viewer__body">
+    <img class="content__img js-lazy" width="940" alt="page 1" data-src="viewer/a.png">
+    <img class="content__img js-lazy" width="940" alt="page 2" data-src="viewer/b.png">
+    <img class="content__img js-lazy" width="940" alt="page 3" data-src="viewer/c.png">
+    <img class="content__img js-lazy" width="940" alt="page 4" data-src="viewer/d.png">
+  </div>
+  <img class="logo" src="logo.png" width="80" height="80" alt="site logo">
+  <pre id="out">PENDING</pre>
+  <script src="../../app/assets/manga-extract.js"></script>
+  <script>
+    (function wait() {
+      if (window.__nsMangaDone) {
+        document.getElementById('out').textContent = JSON.stringify(window.__nsMangaResult);
+      } else {
+        setTimeout(wait, 50);
+      }
+    })();
+  </script>
+</body>
+</html>

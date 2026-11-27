@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Webtoons Fixture Episode 3 | WEBTOON</title>
+  <style>
+    body { background: #111; color: #eee; font-family: sans-serif; }
+    #_imageList img { display: block; width: 300px; height: 450px; }
+    #out { white-space: pre-wrap; color: #7fe; padding: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Webtoons Fixture Episode 3</h1>
+  <div id="_imageList">
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+         width="700" height="1140" class="_images" alt="image"
+         data-url="viewer/a.png">
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+         width="700" height="1140" class="_images" alt="image"
+         data-url="viewer/b.png">
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+         width="700" height="1140" class="_images" alt="image"
+         data-url="viewer/c.png">
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+         width="700" height="1140" class="_images" alt="image"
+         data-url="viewer/d.png">
+  </div>
+  <!-- Episode-list thumbnails must not become pages. -->
+  <img src="viewer/a.png" width="92" height="87" class="_thumbnailImages" alt="Ep 1">
+  <img src="viewer/b.png" width="92" height="87" class="_thumbnailImages" alt="Ep 2">
+  <pre id="out">PENDING</pre>
+  <script src="../../app/assets/manga-extract.js"></script>
+  <script>
+    (function wait() {
+      if (window.__nsMangaDone) {
+        document.getElementById('out').textContent = JSON.stringify(window.__nsMangaResult);
+      } else {
+        setTimeout(wait, 50);
+      }
+    })();
+  </script>
+</body>
+</html>
