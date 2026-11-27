@@ -29,3 +29,4 @@ model-install-policy-test	model,tts	app/src/app/novelspeak/ModelInstallPolicy.kt
 model-validation-test	model,tts	app/src/app/novelspeak/ModelValidation.kt
 url-tools-test	url,adblock,web	app/src/app/novelspeak/adblock/UrlTools.kt app/src/app/novelspeak/adblock/PublicSuffixList.kt app/src/app/novelspeak/adblock/AdBlockModels.kt
 manga-text-test	manga,tts,extraction	app/src/app/novelspeak/SentenceSplitter.kt app/src/app/novelspeak/manga/MangaTextLayout.kt
+manga-provider-test	manga,extraction	app/src/app/novelspeak/manga/MangaProvider.kt app/src/app/novelspeak/manga/MangaHtmlParser.kt
