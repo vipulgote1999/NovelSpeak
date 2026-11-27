@@ -125,6 +125,10 @@ a[href^="http"]:not(.btn):not(.brand)::after {
   font-size: 0.78em;
   line-height: 1;
   text-decoration: none;
+  transition: transform var(--m-in) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  a[href^="http"]:not(.btn):not(.brand):hover::after { transform: translate(2px, -2px); }
 }
 
 ::selection { background: var(--accent); color: var(--accent-ink); }
