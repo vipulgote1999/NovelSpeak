@@ -1,7 +1,8 @@
 # NovelSpeak Maestro E2E — expected results
 
-Last verified: **2026-10-24 ~23:00 IST**, emulator-5554 (API 35, headless), Maestro 2.11.0.
-App under test: **app.novelspeak 1.2.0-dev (versionCode 16)**.
+Last verified: **2026-11-23**, emulator-5554 (API 35, headless), Maestro 2.11.0.
+App under test: **app.novelspeak 1.4.0 (versionCode 20)**, test-only debug APK with the
+`res-dev` cleartext configuration for the localhost fixture.
 The first baseline (01–02) was taken on the previously installed **1.0.0 (versionCode 14)**.
 
 Status key: **PASS** = verified on the installed build; **PENDING** = feature/build not present;
@@ -36,6 +37,91 @@ Reports: `tools/maestro/reports/junit.xml` (Maestro 2.11 wants a **file** for `-
 | 07 | `flows/07_library_resume.yaml` | Library + resume | `Library`, `Library entry`, `.*Salt Road.*`, `.*[0-9]+%.*`; row reopens chapter2 and shows sentence state; row survives relaunch | Opened chapters are recorded, show progress, and resume | **PASS** (1.2.0-dev: 40 s) |
 | 08 | `flows/08_share_intent.txt` | Share-sheet ingestion | adb `ACTION_SEND text/plain` → `Shared text` status, `Sentence N of M`, `Read` | Shared prose reaches the reader | **PASS** (script, 1.2.0-dev) |
 | 09 | `flows/09_privacy_about.yaml` | Privacy / about | overflow `About & privacy`; `Privacy & licences`, `PRIVACY`, `.*no analytics.*`; `Back` | Privacy page states the no-analytics posture and returns | **PASS** (1.2.0-dev: 11 s) |
+| 24 | `flows/24_library_empty.yaml` | First-run Library | `Your library is empty`, `Import a book`, `Browse a site`; picker cancel returns to Library; Browse returns Home | Empty Library explains the state and both ways to fill it | **PASS** (2026-11-22: 11 s) |
+| 25 | `flows/25_home_overflow.yaml` | Home action sheet | sheet `Import EPUB or PDF`, `Library`, `NovelSpeak settings`, `About & privacy`; no `Reload`/`Copy link`/`Site settings`/`Translate page` | Home never offers page-only actions | **PASS** (2026-11-22: 13 s) |
+| 26 | `flows/26_error_page.yaml` | Error page guard | 404 document → `Page didn't load.*`/`This page isn't a readable chapter`; no `Ready ·`, no `Pause` | A failed page is never queued for speech | **PASS** (2026-11-22: 30 s) |
+| 27 | `flows/27_player_shortcuts.yaml` | Player shortcuts | voice row → `Voices & previews`; Back → hub → reader; Sleep timer → 15 minutes → live chip | Voice settings and the sleep timer are one tap from playback | **PASS** (2026-11-22: 37 s) |
+| 28 | `flows/28_reader_text_scale.yaml` | Reader at 2× | voice row, Sleep timer, Next chapter reachable; timer arms | Final controls fit at 2.0× text | **PASS** (2026-11-22: 33 s) |
+| 29 | `flows/29_library_imported_empty.yaml` | Imported filter empty | `No imported books yet`, `Import a book` | Empty Imported tab offers the picker | **PASS** (2026-11-22: 38 s) |
+| 30 | `flows/30_narrow_player.yaml` | 320 dp player | previous/play/next/stop/Sleep timer/Cast all present; timer arms | No transport control is clipped on a narrow phone | **PASS** (2026-11-23: 320 dp at 1×/2×, `narrow.sh`) |
+
+### Review-fix gate (2026-11-23, versionCode 20)
+
+Run after the UTF-16 XXE guard, Back precedence, 320 dp/2× player reflow and state fixes:
+
+```
+28/28 Flows Passed in 16m 59s
+tests=28 failures=0 errors=0 skipped=0
+== RESULT: PASS
+```
+
+Host **28/28**, browser **4/4**, `08_share_intent.txt` **PASS**, `adaptive.sh` **PASS**
+(landscape two-pane and portrait single-column), `text-scale.sh` **PASS** (flows 23 + 28 at
+2.0×) and `narrow.sh` **PASS** at 320 dp at both 1× and 2×. Manual checks: Settings kept its
+Engine page and Back path across a font-scale recreation; a 320 dp/2× player measured Stop and
+Sleep at 44 dp, Play at 56 dp, and Cast at 69×44 dp.
+
+### Full UI gate (2026-11-22, versionCode 20)
+
+Clean-state run of every YAML flow on the dedicated `NovelSpeak_API35` AVD:
+
+```
+28/28 Flows Passed in 14m 42s
+tests=28 failures=0 errors=0 skipped=0
+== RESULT: PASS
+```
+
+The same build passed **28/28 host harnesses**, the headless Chromium regressions,
+`tools/maestro/text-scale.sh` (flows 23 + 28 at 2.0×) and `tools/maestro/narrow.sh` (flow 30 at 320 dp). Manual coverage: a real
+text-file import, imported-book Back, site-settings switches, the confirm sheet,
+and Home/Settings/Library/reader at 800 dp.
+
+### UI hardening gate (2026-11-22, versionCode 20)
+
+Focused run after the player shortcuts, error-page guard, import-mode and Library tablet fixes:
+
+```
+6/6 Flows Passed in 2m 56s
+tests=6 failures=0 errors=0 skipped=0
+== RESULT: PASS
+```
+
+The same build passed **28/28 host harnesses** and the two 2× text-scale flows
+(23 and 28). Manual checks covered a real text-file import, imported-book Back,
+and the Library two-column grid at 800 dp. That check found and fixed a 1 px
+imported-card measurement bug.
+
+### Continuous-improvement gate (2026-11-22, versionCode 20)
+
+Run after the Home header, action-sheet, Library first-run and reader-highlight work, from a
+cleared app state on a dedicated `NovelSpeak_API35` AVD (1080×2400 @420):
+
+```
+23/23 Flows Passed in 11m 36s
+tests=23 failures=0 errors=0 skipped=0
+== RESULT: PASS
+```
+
+Host + browser quick gate: **26/26 host harnesses pass**, including the new
+`menu-policy-test` (25 checks) and the extended `player-chrome-test` (13 checks).
+The run also fixed a real Settings bug: opening a hub page kept the hub's scroll
+offset, hiding the Speech engine choice (flow 02 now covers the footer explicitly).
+
+### 1.4.0 gate (2026-11-22, versionCode 20)
+
+Run against a test-only debug APK using the `res-dev` cleartext config for `localhost`,
+`127.0.0.1` and `10.0.2.2`:
+
+```
+21/21 Flows Passed in 11m 23s
+tests=21 failures=0 errors=0 skipped=0
+== RESULT: PASS
+```
+
+`flows/08_share_intent.txt` separately: **PASS**. `tools/maestro/adaptive.sh` **PASS**
+(landscape two-pane and portrait single-column). `tools/maestro/text-scale.sh` **PASS**
+(flow 23 at 2.0×; font scale restored afterward). The new flow 22 proves a `file:` next
+link is refused and leaves the reader on the chapter.
 
 ### Full gate run (1.2.0-dev / versionCode 16)
 
@@ -154,10 +240,10 @@ flow was then updated for the new player status wording (`Playing`, not `Extract
 
 | Flow | Feature | Assertions | Expected | Status |
 |---|---|---|---|---|
-| 22_manga_launch.yaml | Manga home shortcut | Manga reader shell with `OCR + READ` | opens the image reader | PASS |
-| 23_manga_ocr_read.yaml | Sample OCR | sample loads, OCR queue is ready | sample can be read | PASS |
-| 24_manga_page_sync.yaml | Browser → page image + box | `1 / 2`; next text → `2 / 2`; page cd and text panel both say `PAGE TWO FIRST` | image, box, and text stay on the same page | PASS |
-| 25_manga_tts_page_turn.yaml | TTS-driven page turn | Play → `PAGE TWO FIRST` appears without manual seeking | speech turns the page automatically | PASS |
+| 31_manga_launch.yaml | Manga home shortcut | Manga reader shell with `OCR + READ` | opens the image reader | PASS |
+| 32_manga_ocr_read.yaml | Sample OCR | sample loads, OCR queue is ready | sample can be read | PASS |
+| 33_manga_page_sync.yaml | Browser → page image + box | `1 / 2`; next text → `2 / 2`; page cd and text panel both say `PAGE TWO FIRST` | image, box, and text stay on the same page | PASS |
+| 34_manga_tts_page_turn.yaml | TTS-driven page turn | Play → `PAGE TWO FIRST` appears without manual seeking | speech turns the page automatically | PASS |
 
 Fixture: `tools/test-page/manga.html` with two generated page PNGs. Run through
 `tools/maestro/run.sh` so the fixture server is on `localhost:8765`.

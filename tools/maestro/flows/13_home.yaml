@@ -1,19 +1,33 @@
 appId: app.novelspeak
 name: "13 home: new-tab page shows wordmark, search, shortcuts, continue reading"
-tags: [home]
+tags: [home, smoke]
 ---
 - launchApp
 - assertVisible: "NovelSpeak"
 - assertVisible: "Search or enter a web address"
 - assertVisible: "Shortcuts"
-- assertVisible: "EmpireNovel"
+- assertVisible: "Royal Road"
 - scrollUntilVisible:
     element:
       text: "Continue reading"
     direction: DOWN
 - assertVisible: "Continue reading"
-- tapOn: "Shortcut EmpireNovel"
+# Back from the Home search editor must cancel the edit, not leave the app.
+- scrollUntilVisible:
+    element:
+      text: "Home search"
+    direction: UP
+- tapOn: "Home search"
 - extendedWaitUntil:
-    visible: "Address bar.*empirenovel.*"
+    visible: "Cancel"
+    timeout: 10000
+- hideKeyboard
+- pressKey: BACK
+- extendedWaitUntil:
+    visible: "Home search"
+    timeout: 10000
+- tapOn: "Shortcut Royal Road"
+- extendedWaitUntil:
+    visible: "Address bar.*royalroad.*"
     timeout: 20000
 - assertVisible: "Read"

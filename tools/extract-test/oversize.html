@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Oversized extraction regression</title>
+</head>
+<body>
+<article id="article"></article>
+<pre id="out">waiting</pre>
+<script>
+  (function () {
+    var article = document.getElementById('article');
+    var sentence = 'The lantern burned low while the harbour slept and the reader kept going. ';
+    for (var i = 0; i < 4200; i++) {
+      var p = document.createElement('p');
+      p.textContent = 'Paragraph ' + i + '. ' + sentence + sentence;
+      article.appendChild(p);
+    }
+  })();
+</script>
+<script src="../../app/assets/readability.js"></script>
+<script src="../../app/assets/extract.js"></script>
+<script>
+  setTimeout(function () {
+    try {
+      document.getElementById('out').textContent = window.__nsExtract();
+    } catch (e) {
+      document.getElementById('out').textContent = 'ERROR ' + e;
+    }
+  }, 500);
+</script>
+</body>
+</html>

@@ -35,6 +35,10 @@ object Palette {
     val RIPPLE = 0x33FFFFFF
     val ICON_PLATE = 0xFFEEF2F5.toInt()
 
+    /** Switch tracks: the raised thumb needs a visible track in both states. */
+    val SWITCH_ON_TRACK = 0x996EE7B7.toInt()
+    val SWITCH_OFF_TRACK = 0xFF3E4E5C.toInt()
+
     /** Softer shortcut plate: still light enough for favicons, less glaring than pure white. */
     val PLATE = 0xFFE9EEF2.toInt()
     val ON_LIGHT = 0xFF1B2430.toInt()

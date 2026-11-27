@@ -10,7 +10,11 @@ import app.novelspeak.UrlInput
 fun main() {
     val cases = listOf(
         "https://example.com/a" to "https://example.com/a",
-        "http://example.com" to "http://example.com",
+        "http://example.com" to "https://example.com",
+        "http://localhost:8765/chapter1.html" to "http://localhost:8765/chapter1.html",
+        "http://127.0.0.1:8765/chapter1.html" to "http://127.0.0.1:8765/chapter1.html",
+        "http://10.0.2.2:8765/chapter1.html" to "http://10.0.2.2:8765/chapter1.html",
+        "http://[::1]:8765/chapter1.html" to "http://[::1]:8765/chapter1.html",
         "example.com" to "https://example.com",
         "example.com/path?q=1" to "https://example.com/path?q=1",
         "localhost:3000" to "https://localhost:3000",

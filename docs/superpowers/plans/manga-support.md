@@ -34,7 +34,8 @@
 - `app/src/app/novelspeak/MangaReaderActivity.kt`
 - `app/src/app/novelspeak/Prefs.kt` (manga settings)
 - `app/AndroidManifest.xml` (ML Kit init provider + activity)
-- `tools/maestro/flows/22_manga_launch.yaml`, `23_manga_ocr_read.yaml`
+- `tools/maestro/flows/31_manga_launch.yaml`, `32_manga_ocr_read.yaml`,
+  `33_manga_page_sync.yaml`, `34_manga_tts_page_turn.yaml`
 
 ## Known limits
 

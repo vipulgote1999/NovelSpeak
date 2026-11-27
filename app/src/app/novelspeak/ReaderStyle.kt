@@ -114,7 +114,8 @@ data class ReaderStyle(
                 "color:var(--ns-fg)!important" +
                 "}\n" +
                 "html.ns-reader body{" +
-                "max-width:var(--ns-width)!important;" +
+                "box-sizing:border-box!important;" +
+                "max-width:min(var(--ns-width),100%)!important;" +
                 "margin:0 auto!important;" +
                 "padding:16px 16px 56px!important;" +
                 "font-family:var(--ns-font-family)!important;" +
@@ -136,7 +137,7 @@ data class ReaderStyle(
                 "html.ns-reader article,html.ns-reader main," +
                 "html.ns-reader [class*=\"chapter\"],html.ns-reader [id*=\"chapter\"]," +
                 "html.ns-reader [class*=\"content\"],html.ns-reader [id*=\"content\"]{" +
-                "max-width:var(--ns-width)!important;" +
+                "max-width:min(var(--ns-width),100%)!important;" +
                 "margin-left:auto!important;" +
                 "margin-right:auto!important" +
                 "}\n" +

@@ -153,6 +153,95 @@ object AdBlocker {
     /** Keeps a weak handle so cosmetic rules can be applied when the engine finishes after a page load. */
     fun attach(web: WebView) {
         webRef = WeakReference(web)
+        attachWebMessages(web)
+    }
+
+    /**
+     * Cosmetic filtering used to expose a reflected Java object to page JavaScript. Play's
+     * Device and Network Abuse policy calls out WebViews that expose a JavaScript bridge to
+     * untrusted content, so use the origin-scoped WebMessage API instead. The listener only
+     * answers adblock selector lookups and a hidden counter; it has no file, network, reflection
+     * or account access.
+     */
+    private val messageStates = java.util.WeakHashMap<WebView, Boolean>()
+
+    fun attachWebMessages(web: WebView) {
+        if (messageStates.containsKey(web)) return
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            messageStates[web] = false
+            DiagLog.line(web.context, "adblock webmessage unsupported")
+            return
+        }
+        try {
+            val listener = object : WebViewCompat.WebMessageListener {
+                override fun onPostMessage(
+                    view: WebView,
+                    message: androidx.webkit.WebMessageCompat,
+                    sourceOrigin: android.net.Uri,
+                    isMainFrame: Boolean,
+                    replyProxy: androidx.webkit.JavaScriptReplyProxy
+                ) {
+                    if (!isMainFrame) return
+                    if (!sourceOrigin.scheme.equals("https", ignoreCase = true)) return
+                    val data = message.data ?: return
+                    if (data.length > 64_000) return
+                    try {
+                        val obj = JSONObject(data)
+                        when (obj.optString("t")) {
+                            "lookup" -> {
+                                val id = obj.optInt("id", -1)
+                                // Trust the browser-provided origin, not the page-supplied
+                                // host field, so one site cannot ask for another site's rules.
+                                val host = sourceOrigin.host.orEmpty()
+                                    .ifBlank { currentDocumentHost() ?: "" }
+                                val selectors = genericSelectors(
+                                    names(obj.optJSONArray("c")),
+                                    names(obj.optJSONArray("i")),
+                                    host
+                                )
+                                replyProxy.postMessage(
+                                    JSONObject()
+                                        .put("id", id)
+                                        .put("s", JSONArray(selectors))
+                                        .toString()
+                                )
+                            }
+                            "hidden" -> addHidden(obj.optInt("n", 0))
+                        }
+                    } catch (t: Throwable) {
+                        // A malformed page message is ignored; it can never reach native state.
+                    }
+                }
+            }
+            // AndroidX rejects a bare "https://*" origin rule. Use the wildcard rule and
+            // enforce HTTPS in onPostMessage, where the real source origin is available.
+            WebViewCompat.addWebMessageListener(web, "NSAdBlock", setOf("*"), listener)
+            messageStates[web] = true
+            DiagLog.line(web.context, "adblock webmessage installed")
+        } catch (t: Throwable) {
+            messageStates[web] = false
+            DiagLog.line(
+                web.context,
+                "adblock webmessage unavailable: ${t.javaClass.simpleName}: ${t.message}"
+            )
+        }
+    }
+
+    private fun names(arr: JSONArray?): List<String> {
+        if (arr == null) return emptyList()
+        val out = ArrayList<String>(minOf(arr.length(), 400))
+        var i = 0
+        while (i < arr.length() && out.size < 400) {
+            val s = arr.optString(i, "")
+            if (s.length in 1..80 && s.all {
+                    it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it == '_' || it == '-'
+                }
+            ) {
+                out.add(s)
+            }
+            i++
+        }
+        return out
     }
 
     /**

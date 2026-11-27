@@ -4,6 +4,20 @@ An Android browser that reads any serialized novel aloud — with neural voices 
 screen-off controls, and no account, meter or telemetry.
 
 <p align="center">
+  <a href="https://novelspeak.pages.dev/"><strong>Website</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://novelspeak.pages.dev/features/">Features</a>
+  &nbsp;·&nbsp;
+  <a href="https://novelspeak.pages.dev/voices/">Voices</a>
+  &nbsp;·&nbsp;
+  <a href="https://novelspeak.pages.dev/changelog/">Changelog</a>
+  &nbsp;·&nbsp;
+  <a href="https://novelspeak.pages.dev/privacy/">Privacy</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/vipulgote1999/NovelSpeak/releases/latest">Download</a>
+</p>
+
+<p align="center">
   <a href="docs/media/novelspeak-launch-landscape.mp4" title="Watch the 23-second launch film (with audio)">
     <img src="docs/media/novelspeak-launch-landscape.gif" alt="NovelSpeak launch film — real reader with read-along highlight and player" width="960">
   </a>
@@ -53,8 +67,8 @@ signed model-catalog verification (`tools/model-catalog-sign.sh`).
   shown in Library and Continue reading, reopen in the reader, and keep their playback position.
 - **Library**: search, All/Chapters/Imported/Finished filters, a two-column grid at ≥600 dp, and
   recycled rows so large libraries open without a long frame.
-- **Generic extraction**: Mozilla Readability + a text-density fallback; works on empirenovel and
-  any similar serialized-novel site (chapter pages, next-chapter detection, append-as-you-go).
+- **Generic extraction**: Mozilla Readability + a text-density fallback; works on serialized
+  chapter pages and standard article layouts (next-chapter detection, append-as-you-go).
 - **Two TTS backends**, switchable in settings:
   - **Android system TTS** — instant, offline, every language the device ships, no download.
   - **Neural voices (sherpa-onnx)** — downloaded on demand from upstream, SHA-256 verified:
@@ -90,24 +104,21 @@ Tuning values are not guesses: they were reverse-engineered from two shipped app
 NekoSpeak) and are listed with their provenance in [OPTIMIZATIONS.md](OPTIMIZATIONS.md).
 The reverse-engineering notes are in [docs/re-natural-ai-voices.md](docs/re-natural-ai-voices.md).
 
-## What's new in 1.3.0
+## What's new in 1.4.0
 
-Highlights since v1.2.1:
+This is the Play Store readiness release. It keeps the reader and voice features from 1.3.0
+and closes the submission blockers found in the 2026 audit:
 
-- **New neural voices**: Supertonic 3 (fast, 2 curated styles) and ZipVoice (transcript-based
-  cloning, zh + en), alongside Kokoro and Pocket TTS. Supertonic is the default once installed.
-- **First-audio latency**: engine prewarm on content queue + preroll of up to 8 s / 4 sentences;
-  play starts as soon as the first PCM arrives. See
-  [docs/benchmarks/2026-11-03-tts-benchmark.md](docs/benchmarks/2026-11-03-tts-benchmark.md).
-- **Playback resilience**: pause/calls/screen changes no longer leave TTS silent or stuck;
-  transient audio-focus loss resumes automatically. See
-  [docs/tts-playback-resilience.md](docs/tts-playback-resilience.md).
-- **Ad text no longer read aloud**: hidden ad blocks are dropped during extraction, a
-  document-start popup guard covers both the visible and prefetch views, and a bundled
-  supplement handles first-party ad code.
-- **Settings speed fix**: a cold Settings visit no longer clamps a saved 3.0× speed.
-- **On-device TTS benchmark**: every neural engine and system TTS measured in a fresh process;
-  results are in [docs/benchmarks/2026-11-03-tts-benchmark.md](docs/benchmarks/2026-11-03-tts-benchmark.md).
+- **Android 16 target (API 36)**, signed AAB packaging, 16 KB page-size alignment and a real
+  adaptive launcher icon.
+- **WebView hardening**: no reflected JavaScript bridge, HTTPS-only intent paths, file/content
+  access off, mixed content never, third-party cookies off and Safe Browsing on.
+- **Download consent** for neural models and filter lists, plus diagnostics and crash logs
+  redacted before they are written or shared.
+- **Reader polish** since 1.3.0: a collapsible 56 dp mini player, a two-column library at
+  tablet widths, reduced-motion support and 1.3×/2× text-scale layouts.
+- **Release packet** under `docs/play-store/`: Data safety, content rating, foreground-service
+  declaration, review notes, listing copy, icon, feature graphic and screenshots.
 
 Full history: [CHANGELOG.md](CHANGELOG.md).
 
@@ -115,10 +126,10 @@ Full history: [CHANGELOG.md](CHANGELOG.md).
 
 Download the latest APK from [GitHub Releases](https://github.com/vipulgote1999/NovelSpeak/releases/latest):
 
-- `NovelSpeak-1.3.0-arm64-v8a.apk` — Android 7.0 (API 24)+, arm64-v8a.
-- `NovelSpeak-1.3.0-arm64-v8a.apk.sha256` — verify with `sha256sum -c`.
+- `NovelSpeak-1.4.0-release-arm64-v8a.apk` — Android 7.0 (API 24)+, arm64-v8a.
+- `NovelSpeak-1.4.0-release-arm64-v8a.apk.sha256` — verify with `sha256sum -c`.
 
-The release APK is signed with a dedicated release key. If you previously installed a
+The release APK is signed with the dedicated release key. If you previously installed a
 debug-signed build, uninstall it first; that erases its settings and downloaded models.
 
 For development, `./build.sh` produces a debug-signed `build/NovelSpeak-debug.apk`:
@@ -132,7 +143,8 @@ permission (needed for the playback notification).
 
 ## Use
 
-1. Open a chapter (default start page: `https://www.empirenovel.com/`).
+1. Open a chapter (the home screen offers Royal Road, Scribble Hub, WebNovel, Wattpad,
+   Project Gutenberg and Wikipedia shortcuts; the address bar accepts any HTTPS URL).
 2. Tap **Read** — the page is extracted and queued.
 3. **▶ / ⏸**, **⏮ / ⏭** move by sentence, **■** stops, **− / +** change speed.
 4. **Next ch** follows the page's own "next chapter" link and appends it to the queue.
@@ -223,8 +235,8 @@ Licences and sources are in `app/assets/adblock/NOTICE.txt`.
   carries a cancellation epoch). See [docs/tts-playback-resilience.md](docs/tts-playback-resilience.md).
 - **Ad text is no longer read aloud**: extraction drops a block when its only live match is
   hidden (`display:none`, `visibility:hidden` or zero client rects), and waits for the filter
-  engine + cosmetic CSS before cloning. A bundled local supplement covers first-party ad code
-  (`empirenovel.com/po.js`, `.pub`, `#reader-bottom`).
+  engine + cosmetic CSS before cloning. A bundled local supplement covers first-party popunder
+  scripts and reader-bottom ad slots that upstream lists miss.
 - **Settings no longer slows saved speech speed**: slider rows do not write preferences while
   the page is being built; both engines report a 3.0× ceiling before preparation.
 
@@ -245,13 +257,23 @@ Root causes and on-device evidence: [docs/reader-fixes.md](docs/reader-fixes.md)
 Nothing is bundled in the APK. Downloads come from the official
 `k2-fsa/sherpa-onnx` `tts-models` release; hashes are pinned in `ModelManager.kt`.
 
+## Website
+
+The project site is live at **https://novelspeak.pages.dev/** (Cloudflare Pages) and
+**https://vipulgote1999.github.io/NovelSpeak/** (GitHub Pages mirror; the privacy-policy URL
+registered in Play Console). It is plain HTML, CSS and one small script in [`site/`](site/) — no
+build step. Links are relative so the same files work at a domain root and under `/NovelSpeak/`. Edit `site/`, then run `node tools/site-check.mjs` (structure, paths, budgets,
+tokens, contrast). Deployment, custom domains and the token-gated workflow are in
+[`docs/cloudflare-pages.md`](docs/cloudflare-pages.md); the design contract and claim ledger are in
+[`docs/website/`](docs/website/).
+
 ## Build
 
 ### On-device (Termux, no Android SDK/Gradle)
 
 ```bash
 pkg install -y openjdk-21 kotlin d8 aapt2 apksigner zip
-# platform android.jar (API 34) — aapt2 in Termux cannot read the API 35/36 jars
+# platform android.jar (API 34 is enough for resource linking in Termux; the manifest targets 36)
 mkdir -p ~/build/cache && cd ~/build/cache
 curl -LO https://dl.google.com/android/repository/platform-34-ext7_r03.zip
 unzip -o platform-34-ext7_r03.zip "android-34/android.jar" -d sdk34
@@ -262,14 +284,36 @@ curl -LO https://repo1.maven.org/maven2/org/apache/commons/commons-compress/1.27
 curl -LO https://repo1.maven.org/maven2/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar
 # d8 9.x from Google Maven (Termux's d8 3.3 crashes on commons-io)
 curl -LO https://dl.google.com/dl/android/maven2/com/android/tools/r8/9.5.28/r8-9.5.28.jar && mv r8-9.5.28.jar r8.jar
-cd - && DEPS="$HOME/build/deps" tools/fetch-webkit-deps.sh && ./build.sh
+cd - && DEPS="$HOME/build/deps" tools/fetch-webkit-deps.sh
+ANDROID_JAR="$HOME/build/cache/sdk34/android-34/android.jar" \
+  TARGET_SDK=36 DEPS="$HOME/build/deps" ./build.sh
 ```
 
 `build.sh` runs: `aapt2 link` → `kotlinc` → `d8` → package dex + `lib/arm64-v8a/*.so` → `zipalign`
-→ `apksigner`. The version comes from `app/AndroidManifest.xml`; debug builds use
-`build/debug.keystore` and are generated on first run. For a signed release build, set
-`KEYSTORE`, `KS_ALIAS`, `KS_PASS`, `KEY_PASS`, and `OUT_APK` — see [RELEASING.md](RELEASING.md).
-Use `ABI=armeabi-v7a ./build.sh` for 32-bit devices.
+→ `apksigner`. It checks for **Kotlin 2.2+** (the sources use `break`/`continue` inside inline
+lambdas, which 2.1 cannot compile). On Termux the bundled `kotlin` package is usually new enough;
+on a desktop set `KOTLIN_STDLIB` to that compiler's `lib/kotlin-stdlib.jar`, for example:
+
+```bash
+KOTLIN_STDLIB="$HOME/.local/share/kotlin-2.2.20/lib/kotlin-stdlib.jar" \
+  ANDROID_JAR="$HOME/Android/Sdk/platforms/android-36/android.jar" \
+  DEPS="$PWD/deps" ./build.sh
+```
+
+The version comes from `app/AndroidManifest.xml`; debug builds use `build/debug.keystore` and are
+generated on first run. For a signed release build, set `KEYSTORE`, `KS_ALIAS`, `KS_PASS`,
+`KEY_PASS`, and `OUT_APK` — see [RELEASING.md](RELEASING.md). Use `ABI=armeabi-v7a ./build.sh`
+for 32-bit devices.
+
+Host-only regression tests (no emulator) run with:
+
+```bash
+tools/test-host.sh
+```
+
+See [docs/testing.md](docs/testing.md) for the full matrix: focused host areas, headless
+Chromium regressions, Maestro device flows, share-intent/rotation/text-scale checks, and
+`tools/test-changed.sh` for selecting the tests that match a change.
 
 ### Side-by-side dev build
 
@@ -281,7 +325,7 @@ ABI=arm64-v8a tools/build-dev-variant.sh
 # output: build/NovelSpeak-dev-arm64-v8a.apk
 ```
 
-It builds package `app.novelspeak.dev` with label **NovelSpeak Dev**, version `1.3.0-dev`, the
+It builds package `app.novelspeak.dev` with label **NovelSpeak Dev**, version `1.4.0-dev`, the
 debug key, and its own data, notification channels and diagnostics provider authority. Android
 treats it as a separate app, so the release app's library, settings and models are untouched.
 The dev app downloads its own models on first use.
@@ -313,9 +357,9 @@ PlaybackService     foreground service + MediaSession + wake lock (screen-off pl
 
 ## Known limits
 
-- **Cloudflare-protected sites** (empirenovel included) may show a challenge inside the WebView;
-  solve it once in the browser view and the session cookie persists. Extraction then works on the
-  real chapter page.
+- **Cloudflare-protected sites** may show a challenge inside the WebView; solve it once in the
+  browser view and the session cookie persists. NovelSpeak detects the challenge page and does
+  not queue its text for speech; extraction resumes on the real chapter page.
 - **Pause** stops the engine and resumes at the start of the current sentence (system TTS has no
   pause primitive; this is what all shipped readers do).
 - **ZipVoice** transcript-based cloning is now wired (audio + verbatim transcript, zh + en); it
@@ -338,5 +382,5 @@ redistributed unmodified under their own licenses; see
    `WavReader` chain and `GenerationConfig.referenceAudio` (previews shipped; recording/import
    pending).
 2. Per-site extraction rules cache + "always use reader view" toggle.
-3. Export the spoken chapter as an audio file.
+3. Batch export of multiple chapters (single-chapter WAV capture ships today).
 4. Kokoro multi-lang + Kitten voices (deferred; see docs/voice-research.md).

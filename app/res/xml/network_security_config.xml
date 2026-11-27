@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Cleartext is denied globally; only the loopback hosts used by the on-device
-     Maestro fixture server are exempt. No real site can be reached over HTTP. -->
+<!-- Play release: cleartext is denied globally. The Maestro fixture server exception lives in
+     network_security_config_dev.xml and is referenced only by the side-by-side dev manifest. -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">localhost</domain>
-        <domain includeSubdomains="false">127.0.0.1</domain>
-        <domain includeSubdomains="false">10.0.2.2</domain>
-    </domain-config>
 </network-security-config>

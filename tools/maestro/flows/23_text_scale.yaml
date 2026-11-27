@@ -1,0 +1,32 @@
+appId: app.novelspeak
+name: "23 text scale: home and settings stay usable at 2x"
+tags:
+  - ui
+  - settings
+  - a11y
+---
+- launchApp
+- assertVisible: "NovelSpeak"
+- assertVisible: "Search or enter a web address"
+- assertVisible: "Shortcuts"
+- tapOn: "More options"
+# At 2x the overflow menu scrolls; settings is below the first screenful.
+- scrollUntilVisible:
+    element:
+      text: "NovelSpeak settings"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "NovelSpeak settings"
+- assertVisible: "Settings"
+- scrollUntilVisible:
+    element:
+      text: "Reading aloud"
+    direction: UP
+    timeout: 15000
+- assertVisible: "Reading aloud"
+- scrollUntilVisible:
+    element:
+      text: "Privacy & data"
+    direction: DOWN
+    timeout: 15000
+- assertVisible: "Privacy & data"

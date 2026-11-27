@@ -605,21 +605,32 @@ class PcmPlayer {
      *
      * The wall-clock cap is a last-resort watchdog: if an audio route change silently loses
      * frames without an epoch change, the sentence fails instead of leaving "Playing" forever.
+     * A deliberate preroll hold does not count against the cap, and a timeout returns false
+     * so the engine reports the sentence as unheard instead of advancing the cursor.
+     *
+     * @return true only when the target frame count was actually reached.
      */
-    fun awaitDrained(targetFrames: Long, epochAtStart: Int, stopFlag: () -> Boolean) {
-        val startedAt = SystemClock.elapsedRealtime()
-        while (!stopFlag() && playbackEpoch == epochAtStart &&
-            !hasWriteError() && playedFrames() < targetFrames
-        ) {
-            if (SystemClock.elapsedRealtime() - startedAt > MAX_DRAIN_WAIT_MS) {
+    fun awaitDrained(
+        targetFrames: Long,
+        epochAtStart: Int,
+        stopFlag: () -> Boolean
+    ): Boolean {
+        var startedAt = SystemClock.elapsedRealtime()
+        while (true) {
+            if (stopFlag() || playbackEpoch != epochAtStart || hasWriteError()) return false
+            if (playedFrames() >= targetFrames) return true
+            val now = SystemClock.elapsedRealtime()
+            val held = holdPlayback
+            if (held) startedAt = now
+            if (DrainGuard.timedOut(now - startedAt, MAX_DRAIN_WAIT_MS, held)) {
                 Log.w(
                     "NovelSpeak",
                     "PcmPlayer drain timeout target=$targetFrames played=${playedFrames()} " +
                         "state=${track?.playState} broken=$trackBroken"
                 )
-                return
+                return false
             }
-            try { Thread.sleep(15) } catch (e: InterruptedException) { return }
+            try { Thread.sleep(15) } catch (e: InterruptedException) { return false }
         }
     }
 

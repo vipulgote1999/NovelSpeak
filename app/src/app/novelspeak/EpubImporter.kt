@@ -206,6 +206,10 @@ object EpubImporter {
             null
         }
         if (hardened != null) return hardened
+        // The hardened parser can fail because a vendor rejects one of the optional knobs.
+        // Do not retry a document that contains a DOCTYPE/ENTITY declaration: the plain
+        // parser would resolve external entities (XXE), as this test demonstrates.
+        if (hasDoctypeOrEntity(bytes)) return null
         return try {
             val plain = DocumentBuilderFactory.newInstance()
             plain.isNamespaceAware = true
@@ -213,6 +217,15 @@ object EpubImporter {
         } catch (_: Throwable) {
             null
         }
+    }
+
+    private fun hasDoctypeOrEntity(bytes: ByteArray): Boolean {
+        // Decode as Latin-1 and drop NULs. Markup in UTF-16/UTF-32 has NUL bytes between the
+        // ASCII characters (`<\0!\0D…`), so a raw contains() would miss the DOCTYPE and let the
+        // plain fallback resolve external entities. Dropping NULs reconstructs the ASCII markup
+        // for every UTF width while leaving ordinary UTF-8/ASCII documents unchanged.
+        val text = String(bytes, Charsets.ISO_8859_1).replace("\u0000", "").lowercase()
+        return text.contains("<!doctype") || text.contains("<!entity")
     }
 
     private fun firstDcText(doc: Document, local: String): String {

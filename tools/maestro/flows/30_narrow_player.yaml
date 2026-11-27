@@ -1,0 +1,39 @@
+appId: app.novelspeak
+name: "30 narrow player: every transport and sleep control is reachable at 320 dp"
+tags:
+  - reader
+  - ui
+  - regression
+---
+- clearState
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter1.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter1.html"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+|Restart chapter"
+    timeout: 30000
+- assertVisible: "Previous sentence"
+- assertVisible: "Play"
+- assertVisible: "Next sentence"
+- assertVisible: "Stop"
+- assertVisible: "Sleep timer"
+- assertVisible: "Story cast.*"
+- tapOn: "Sleep timer"
+- tapOn: "15 minutes"
+- extendedWaitUntil:
+    visible: "Sleep timer active.*"
+    timeout: 10000

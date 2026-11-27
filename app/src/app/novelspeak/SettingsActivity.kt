@@ -19,6 +19,7 @@ import android.os.PowerManager
 import android.speech.tts.TextToSpeech
 import android.text.Editable
 import android.text.InputType
+import android.text.TextUtils
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextWatcher
@@ -76,6 +77,7 @@ class SettingsActivity : Activity() {
     private val voiceRows = ArrayList<ChoiceRow>()
 
     private val KEY_PAGE = "settings_page"
+    private val KEY_STACK = "settings_stack"
 
     private enum class Page(val title: String) {
         HUB("Settings"),
@@ -100,6 +102,16 @@ class SettingsActivity : Activity() {
         savedInstanceState?.getString(KEY_PAGE)?.let { name ->
             try { page = Page.valueOf(name) } catch (t: Throwable) { }
         }
+        savedInstanceState?.getStringArrayList(KEY_STACK)?.forEach { name ->
+            try { pageStack.addLast(Page.valueOf(name)) } catch (t: Throwable) { }
+        }
+        val requestedPage = if (savedInstanceState == null) {
+            intent?.getStringExtra(EXTRA_PAGE)?.let { name ->
+                try { Page.valueOf(name) } catch (t: Throwable) { null }
+            }
+        } else {
+            null
+        }
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -123,6 +135,15 @@ class SettingsActivity : Activity() {
         applyInsets(root)
         applyContentWidth()
 
+        if (requestedPage != null && requestedPage != Page.HUB) {
+            // A deep link from the player: keep Back going to the hub, not out of Settings.
+            pageStack.addLast(Page.HUB)
+            page = requestedPage
+            resetScroll = true
+        } else if (savedInstanceState != null && page != Page.HUB && pageStack.isEmpty()) {
+            // Older saved states only carried the page name; rebuild the Back path.
+            pageStack.addLast(Page.HUB)
+        }
         build()
     }
 
@@ -195,6 +216,9 @@ class SettingsActivity : Activity() {
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(Palette.TEXT)
             setPadding(dp(12), 0, 0, 0)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         bar.addView(pageTitle)
         return bar
@@ -243,8 +267,15 @@ class SettingsActivity : Activity() {
     }
 
     private fun build() {
-        val y = if (resetScroll) 0 else scroll.scrollY
+        val entering = resetScroll
+        val y = if (entering) 0 else scroll.scrollY
         resetScroll = false
+        if (!entering) {
+            // A toggle can rebuild the page while its entry fade is still running.
+            container.animate().cancel()
+            container.alpha = 1f
+            container.translationY = 0f
+        }
         container.removeAllViews()
         voiceRows.clear()
         // Views belong to the previous build; drop stale handles before rebuilding.
@@ -265,6 +296,7 @@ class SettingsActivity : Activity() {
         if (page == Page.HUB) {
             buildHub()
             scroll.post { scroll.scrollTo(0, 0) }
+            if (entering) animatePageEntry()
             return
         }
 
@@ -302,7 +334,7 @@ class SettingsActivity : Activity() {
         }
 
         if (page == Page.ENGINE) {
-            hubRow("Voices & previews", currentVoiceLabelText(), Page.VOICES)
+            hubRow("Voices & previews", currentVoiceLabelText(), Page.VOICES, mark = "V")
             hubRow(
                 "Speed, pitch & sleep",
                 "%.2f× speed · ".format(prefs.speed) +
@@ -772,7 +804,27 @@ class SettingsActivity : Activity() {
         container.addView(adblockCard)
         }
 
-        if (y > 0) scroll.post { scroll.scrollTo(0, y) }
+        // y is 0 when a page was just opened (resetScroll) and the previous offset when a
+        // toggle rebuilt the same page. Apply it either way; the old `y > 0` guard left a
+        // newly opened page scrolled to the hub's offset, hiding the first section.
+        scroll.post { scroll.scrollTo(0, y) }
+        if (entering) animatePageEntry()
+    }
+
+    private fun animatePageEntry() {
+        container.animate().cancel()
+        if (!MotionAndroid.animationsEnabled(this)) {
+            container.alpha = 1f
+            container.translationY = 0f
+            return
+        }
+        container.alpha = 0f
+        container.translationY = dp(6).toFloat()
+        container.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(Motion.durationMs(Design.MOTION_FAST, 1f))
+            .start()
     }
 
     /** Hub: one screen, four categories and About; each row navigates to a short page. */
@@ -786,16 +838,17 @@ class SettingsActivity : Activity() {
         })
 
         section("READING")
-        hubRow("Reading aloud", engineSummary() + " · " + shortVoiceLabel(), Page.ENGINE)
-        hubRow("Reading & display", readingSummary(), Page.READING)
+        hubRow("Reading aloud", engineSummary() + " · " + shortVoiceLabel(), Page.ENGINE, mark = "R")
+        hubRow("Reading & display", readingSummary(), Page.READING, mark = "Aa")
 
         section("VOICE & PLAYBACK")
-        hubRow("Voices & previews", voiceSummary(), Page.VOICES)
+        hubRow("Voices & previews", voiceSummary(), Page.VOICES, mark = "V")
         hubRow(
             "Playback & sleep",
             "%.2f× speed · ".format(prefs.speed) +
                 if (prefs.sleepTimerMinutes > 0) prefs.sleepTimerMinutes.toString() + " min sleep" else "sleep off",
-            Page.PLAYBACK
+            Page.PLAYBACK,
+            mark = "P"
         )
 
         section("STORY")
@@ -821,11 +874,14 @@ class SettingsActivity : Activity() {
         container.addView(castCard)
 
         section("PRIVACY & APP")
-        hubRow("Privacy & data", privacySummary(), Page.PRIVACY)
-        hubRow("Advanced", advancedSummary(), Page.ADVANCED)
-        hubRow("About NovelSpeak", "Privacy, licences and version") {
-            startActivity(Intent(this, AboutPrivacyActivity::class.java))
-        }
+        hubRow("Privacy & data", privacySummary(), Page.PRIVACY, mark = "S")
+        hubRow("Advanced", advancedSummary(), Page.ADVANCED, mark = "A")
+        hubRow(
+            "About NovelSpeak",
+            "Privacy, licences and version",
+            onClick = { startActivity(Intent(this, AboutPrivacyActivity::class.java)) },
+            mark = "i"
+        )
 
         container.addView(TextView(this).apply {
             text = "Changes are saved instantly."
@@ -835,7 +891,13 @@ class SettingsActivity : Activity() {
         })
     }
 
-    private fun hubRow(title: String, subtitle: String, target: Page? = null, onClick: (() -> Unit)? = null) {
+    private fun hubRow(
+        title: String,
+        subtitle: String,
+        target: Page? = null,
+        onClick: (() -> Unit)? = null,
+        mark: String = ""
+    ) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -850,6 +912,17 @@ class SettingsActivity : Activity() {
             setOnClickListener {
                 if (target != null) openPage(target) else onClick?.invoke()
             }
+        }
+        if (mark.isNotEmpty() && resources.configuration.fontScale < 1.5f) {
+            row.addView(TextView(this).apply {
+                text = mark
+                textSize = 13f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                setTextColor(Palette.ACCENT)
+                gravity = Gravity.CENTER
+                background = rounded(Palette.SURFACE_HIGH, 12)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(38), dp(38)).apply { marginEnd = dp(12) })
         }
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -942,6 +1015,7 @@ class SettingsActivity : Activity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString(KEY_PAGE, page.name)
+        outState.putStringArrayList(KEY_STACK, ArrayList(pageStack.map { it.name }))
         super.onSaveInstanceState(outState)
     }
 
@@ -1236,8 +1310,11 @@ class SettingsActivity : Activity() {
             showText = false
             thumbTintList = switchThumbColors()
             trackTintList = switchTrackColors()
-            contentDescription = title
-            setOnCheckedChangeListener { _, b -> onChange(b) }
+            contentDescription = title + ", " + (if (checked) "on" else "off")
+            setOnCheckedChangeListener { _, b ->
+                contentDescription = title + ", " + (if (b) "on" else "off")
+                onChange(b)
+            }
         }
         row.addView(sw)
         row.setOnClickListener { sw.toggle() }
@@ -1246,12 +1323,14 @@ class SettingsActivity : Activity() {
 
     private fun switchThumbColors(): ColorStateList = ColorStateList(
         arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-        intArrayOf(Palette.ACCENT, Palette.MUTED)
+        intArrayOf(Palette.ACCENT, Palette.TEXT_SECONDARY)
     )
 
     private fun switchTrackColors(): ColorStateList = ColorStateList(
         arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-        intArrayOf(0x666EE7B7, Palette.BORDER)
+        // The off track was BORDER, which vanishes into the card; a slate tone still reads as
+        // an interactive track next to the raised thumb.
+        intArrayOf(Palette.SWITCH_ON_TRACK, Palette.SWITCH_OFF_TRACK)
     )
 
     /**
@@ -1521,6 +1600,27 @@ class SettingsActivity : Activity() {
             Toast.makeText(this, "An install is already running", Toast.LENGTH_SHORT).show()
             return
         }
+        // Deceptive Behavior policy 3.2: prompt and disclose the download size before any
+        // additional app resource is fetched. The size is also shown on the model card, but
+        // the confirmation makes the network transfer an explicit, informed action.
+        AlertDialog.Builder(this)
+            .setTitle("Download ${m.label}?")
+            .setMessage(
+                "This downloads ${m.sizeMb} MB from GitHub and unpacks about " +
+                    "${m.unpackedMb} MB into this app's private storage. The archive is " +
+                    "verified with SHA-256 before use. Mobile data charges may apply.\n\n" +
+                    "Model licence: Apache-2.0 (upstream model card)."
+            )
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Download") { _, _ -> startDownload(m) }
+            .show()
+    }
+
+    private fun startDownload(m: ModelManager.Model) {
+        if (installing) {
+            Toast.makeText(this, "An install is already running", Toast.LENGTH_SHORT).show()
+            return
+        }
         installing = true
         installModelId = m.id
         installPct = -1
@@ -1582,6 +1682,22 @@ class SettingsActivity : Activity() {
     }
 
     private fun updateAdBlockLists() {
+        if (adblockUpdating) {
+            Toast.makeText(this, "A list update is already running", Toast.LENGTH_SHORT).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Update filter lists?")
+            .setMessage(
+                "This downloads about 5 MB of EasyList and uBlock Origin filter lists over " +
+                    "the network. Mobile data charges may apply."
+            )
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Update") { _, _ -> startAdBlockUpdate() }
+            .show()
+    }
+
+    private fun startAdBlockUpdate() {
         if (adblockUpdating) {
             Toast.makeText(this, "A list update is already running", Toast.LENGTH_SHORT).show()
             return
@@ -2104,6 +2220,13 @@ class SettingsActivity : Activity() {
             ringView.background = ring(checked)
             dot.visibility = if (checked) View.VISIBLE else View.INVISIBLE
         }
+    }
+
+    companion object {
+        /** Open Settings directly on one page, e.g. from the player's voice row. */
+        const val EXTRA_PAGE = "settingsPage"
+        const val PAGE_VOICES = "VOICES"
+        const val PAGE_ENGINE = "ENGINE"
     }
 }
 

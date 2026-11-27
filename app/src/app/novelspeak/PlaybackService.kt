@@ -304,7 +304,15 @@ class PlaybackService : Service(), Reader.Listener {
     private fun play() {
         val reader = NovelSpeakApp.instance.reader
         when (requestFocus()) {
-            AudioManager.AUDIOFOCUS_REQUEST_GRANTED -> reader.play()
+            AudioManager.AUDIOFOCUS_REQUEST_GRANTED -> {
+                if (reader.state().playing) {
+                    // Reader.startPlayback() queued the start and is holding the track until
+                    // focus is ours. Release it now rather than calling play() again.
+                    reader.onFocusGrantedStart()
+                } else {
+                    reader.play()
+                }
+            }
             AudioManager.AUDIOFOCUS_REQUEST_DELAYED -> {
                 // A call or another exclusive app owns audio right now. Keep the intent and
                 // wait for AUDIOFOCUS_GAIN instead of silently consuming the book during it.
@@ -702,10 +710,19 @@ class PlaybackService : Service(), Reader.Listener {
 
         fun start(ctx: Context) {
             val i = Intent(ctx, PlaybackService::class.java).setAction(ACTION_PLAY)
-            if (Build.VERSION.SDK_INT >= 26) {
-                ctx.startForegroundService(i)
-            } else {
-                ctx.startService(i)
+            try {
+                if (Build.VERSION.SDK_INT >= 26) {
+                    ctx.startForegroundService(i)
+                } else {
+                    ctx.startService(i)
+                }
+            } catch (t: Throwable) {
+                // Android 12+ may refuse a background FGS start (for example auto-advance
+                // with the screen off after the service was stopped). Do not let that
+                // escape as a crash; cancel the queued Play with a visible status.
+                DiagLog.exception(ctx, "playback service start rejected", t)
+                (ctx.applicationContext as? NovelSpeakApp)?.reader
+                    ?.cancelFocusWait("Playback service unavailable")
             }
         }
 

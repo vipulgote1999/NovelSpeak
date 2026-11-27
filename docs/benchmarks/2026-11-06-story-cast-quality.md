@@ -323,9 +323,9 @@ Kokoro setup for reproduction: the en-v0_19 tarball has no lexicon; the harness 
 eSpeak path, so device output may differ from this host run.
 
 Listen to both rendered scenes:
-[Supertonic full scene](../../media/benchmarks/story-cast-supertonic.mp3) ·
-[Kokoro full scene](../../media/benchmarks/story-cast-kokoro.mp3). The corrected 45-second excerpt
-is [here](../../media/benchmarks/story-cast-scene-45s.mp3).
+[Supertonic full scene](../media/benchmarks/story-cast-supertonic.mp3) ·
+[Kokoro full scene](../media/benchmarks/story-cast-kokoro.mp3). The corrected 45-second excerpt
+is [here](../media/benchmarks/story-cast-scene-45s.mp3).
 
 ## 10. Limitations
 

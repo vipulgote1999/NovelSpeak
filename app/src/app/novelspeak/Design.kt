@@ -27,6 +27,7 @@ object Design {
     // Touch targets.
     const val TOUCH_DP = 48
     const val DENSE_TOUCH_DP = 44
+    const val PRIMARY_TOUCH_DP = 56
 
     // Reading surfaces keep a finite measure on tablets.
     const val MAX_CONTENT_DP = 720

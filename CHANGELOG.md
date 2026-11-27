@@ -22,7 +22,114 @@ All notable changes to NovelSpeak are documented here. The format follows
 
 - Manga pages are downloaded with the site referer and cookies, so hotlink-protected images
   load, and the page viewer supports pinch zoom, double-tap zoom, panning, and fit-page.
-- Added Maestro coverage for browser-to-page sync (`24`) and TTS-driven page turns (`25`).
+- Added Maestro coverage for browser-to-page sync (`33`) and TTS-driven page turns (`34`).
+
+### Reader and Home UI
+
+- **Home owns its header.** The empty 60 dp browser strip is gone; the menu sits with the
+  wordmark and Home content starts immediately. The new-tab surface hides while the address
+  editor is open.
+- **Context-aware action sheet.** The platform overflow menu became a scrollable Harbor-ink
+  sheet. Home and imported books no longer offer page-only actions. The sheet caps at 560 dp
+  on tablets.
+- **Player thumb-reach.** Sleep timer and voice settings are one tap from the player; Play
+  stays centred with the extra control. Player surfaces fade in, respecting reduced motion.
+- **Imported books own their surface.** No dead browser chrome, a header menu, Back to Home,
+  humanised filenames (`the-salt-road.txt` → “The Salt Road”) and a working text/plain import.
+- **Library polish.** Cover initials, a designed first-run and Imported empty state, quote
+  tiles for bookmarks, branded destructive confirmations, and a fix for imported cards
+  collapsing to 1 px in the tablet two-column grid.
+- **Safety and copy.** WebView error/404 pages are never queued for speech; “1 sentence” and
+  “1 line” are singular; the site dialog is a branded switch sheet; the privacy page keeps a
+  readable measure and 48 dp Back target on tablets.
+- **Reading this week.** Home surfaces recorded listening time, sentences and active days.
+
+### Review fixes
+
+- **EPUB import hardening.** The compatibility XML fallback now detects DOCTYPE/ENTITY in
+  UTF-16 and UTF-32 as well as UTF-8, closing a UTF-16 XXE bypass. Added a host regression.
+- **Back cancels Home search.** An active address edit is cancelled before the Home tab can
+  leave, and imported books still own the first Back.
+- **Player at 320 dp / 2×.** The Read/Next/Cast strip reflows so Cast keeps a usable width;
+  Stop and Sleep stay at the 44 dp dense target and Play stays 56 dp.
+- **State and stats.** Settings restores its subpage back stack; the privacy measure follows a
+  tablet rotation; weekly reading time no longer counts pauses or rounds each day separately;
+  re-reading an imported book clears its Finished state.
+- **Error-page guard.** Narrowed the 404/not-found title heuristic so legitimate chapter titles
+  such as “The City Not Found” are not rejected.
+
+### Verification
+
+- Host suite: **28/28 harnesses**, browser regressions green.
+- Device suite: **28/28 Maestro flows** (16m 59s), plus `text-scale.sh` at 2.0× and
+  `narrow.sh` at 320 dp at 1×/2×.
+
+## [1.4.0] - 2026-11-22
+
+### Play Store readiness
+
+- **Target Android 16 (API 36)** and compile against SDK 36. This is required for new apps
+  and updates submitted to Google Play since 31 August 2026.
+- **Ship an Android App Bundle.** The new `tools/build-aab.sh` re-links resources in proto
+  format, assembles a bundletool base module, writes a `PAGE_ALIGNMENT_16K` bundle config and
+  signs the `.aab` with the Play upload key.
+- **16 KB page-size compatibility:** native libraries are stored uncompressed, zipaligned with
+  `-P 16`, and `extractNativeLibs` is false.
+- **Real app icon:** adaptive/legacy launcher icons and a 512 px Play icon replace the Android
+  system default icon.
+- **No exported debug harness:** `BenchmarkActivity` is not exported in the Play release; the
+  side-by-side dev variant still exports it for `adb` benchmarks.
+- **WebView hardening:** removed the reflected JavaScript bridge in favour of an origin-scoped
+  `WebViewCompat` WebMessage listener (HTTPS only); disabled file/content access, mixed content,
+  form saving, geolocation and third-party cookies; enabled Safe Browsing; non-HTTP(S) links
+  and intents are rejected instead of being loaded.
+- **Download consent:** neural model and ad-block list updates now show the download size and
+  require confirmation before starting.
+- **Diagnostics redaction:** exported event logs and crash reports have URLs and
+  credential-shaped values redacted before the zip is created.
+- **Cleartext lockdown:** the release network security config no longer allows localhost; the
+  Maestro exception moved to the dev-only resource set.
+- **Back navigation:** `enableOnBackInvokedCallback="false"` keeps the custom WebView back stack
+  working for apps targeting Android 16 until the `OnBackInvokedDispatcher` migration lands.
+- **Store packet:** privacy policy, Data safety, content rating, foreground-service declaration,
+  review notes, listing copy, icons, feature graphic, screenshots and a release checklist under
+  `docs/play-store/`.
+- Version 1.4.0 (versionCode 20).
+
+### Fixed
+
+- **Preroll no longer silently skips sentences.** The PcmPlayer drain watchdog no longer
+  counts deliberate preroll hold time, and a drain timeout returns failure instead of
+  reporting the sentence as heard. A chapter left paused for more than two minutes can no
+  longer advance the cursor with no audio.
+- **Neural engine teardown no longer frees native state under a live generation thread.**
+  Engine workers are stopped and joined before `OfflineTts.release()`; a stuck native
+  generation is leaked rather than risking a use-after-free crash.
+- **Audio focus is acquired before the first sample.** The reader holds the track until
+  PlaybackService confirms focus, so a resume cannot briefly mix over another app.
+- **Changing voice resumes playback.** A voice change still discards prerendered audio and
+  updates the live model, but no longer stops the book.
+- **The 24 kHz vocoder installs.** A bare `.onnx` model is moved into place after checksum
+  verification instead of being sent through the tar.bz2 extractor.
+- **Diagnostics redaction covers library and transcript data.** `library_v1`,
+  `zipvoice_transcript`, allow-listed sites and URLs embedded in ordinary values are
+  redacted before sharing; the on-device log and crash dump also scrub URLs.
+- **Playback service start failures no longer crash.** Android 12+ background FGS refusals
+  are caught and reported as a stopped Play instead of escaping the main thread.
+- **Extraction is bounded.** A page is capped at 4,000 blocks / 250,000 characters, and the
+  density fallback scans at most 400 candidates. Results from a page that navigated during
+  the asynchronous extraction chain are discarded.
+- **Next-chapter and prefetch links must be HTTP(S).** A page-controlled `file:`, `content:`,
+  `data:` or `javascript:` next link is rejected before `loadUrl`.
+- **HTTP loopback stays usable in dev builds.** Explicit `http://localhost`, `127.0.0.1`,
+  `10.0.2.2` and `[::1]` URLs are not upgraded to HTTPS, so the Maestro fixture server works;
+  the release network config still blocks cleartext for those hosts.
+- **EPUB XML fallback rejects DOCTYPE/ENTITY.** The compatibility parser can no longer
+  resolve external entities after the hardened parser declines a malicious OPF.
+- **Host regression suite is runnable in one command.** `tools/test-host.sh` covers 25
+  harnesses via `tools/host-tests.tsv`, with `--area` focus, `--check` manifest
+  enforcement, `tools/test-changed.sh` for diff-based selection, and `tools/test-all.sh`
+  for the full host + browser + device gate.
 
 ## [1.3.0] - 2026-11-04
 

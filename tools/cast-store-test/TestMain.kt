@@ -21,9 +21,14 @@ import java.io.File
  *   kotlinc app/src/app/novelspeak/library/LibraryFile.kt \
  *     app/src/app/novelspeak/library/LibraryStore.kt \
  *     app/src/app/novelspeak/VoiceCatalog.kt \
+ *     app/src/app/novelspeak/SentenceSplitter.kt \
  *     app/src/app/novelspeak/cast/CastModels.kt \
  *     app/src/app/novelspeak/cast/CastStore.kt \
+ *     app/src/app/novelspeak/cast/CastCoordinator.kt \
+ *     app/src/app/novelspeak/cast/CastChunker.kt \
+ *     app/src/app/novelspeak/cast/DialogueParser.kt \
  *     app/src/app/novelspeak/cast/VoiceCastPlanner.kt \
+ *     app/src/app/novelspeak/cast/VoiceSelection.kt \
  *     tools/cast-store-test/TestMain.kt -include-runtime -d /tmp/cast-store-test.jar
  *   java -jar /tmp/cast-store-test.jar
  */

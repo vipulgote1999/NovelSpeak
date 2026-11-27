@@ -44,10 +44,11 @@ for n in root.iter('node'):
     if d: descs.append(d)
 shared = any(t == 'Shared text' or re.fullmatch(r'Shared text · \d+ sentences', t) for t in texts)
 sentence = any(re.fullmatch(r'Sentence \d+ of \d+', d) for d in descs)
-player = 'Read' in texts
+# A shared-text queue exists immediately, so the player action is "Restart".
+player = ('Read' in texts) or ('Restart' in texts)
 print(f"  'Shared text · N sentences' status: {shared}")
 print(f"  sentence seek-bar state:            {sentence}")
-print(f"  player Read visible:                {player}")
+print(f"  player Read/Restart visible:         {player}")
 if shared and sentence and player:
     print("PASS: shared text was ingested into the reader")
     sys.exit(0)

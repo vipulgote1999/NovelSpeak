@@ -9,16 +9,21 @@ tags:
     when:
       visible: "Home search"
     commands:
+      - scrollUntilVisible:
+          element:
+            text: "Shortcut Library"
+          direction: DOWN
+          timeout: 15000
       - tapOn: "Shortcut Library"
 - extendedWaitUntil:
     visible: "Search library"
     timeout: 15000
 - scrollUntilVisible:
     element:
-      text: "Prefetch regression"
+      text: "The Lamplighter's Daughter — The Wick Chronicle"
     direction: DOWN
     timeout: 15000
-- tapOn: "Delete entry: Prefetch regression"
+- tapOn: "Delete entry: The Lamplighter's Daughter — The Wick Chronicle"
 - assertVisible: "Remove from library?"
 - tapOn: "Cancel"
-- assertVisible: "Prefetch regression"
+- assertVisible: "The Lamplighter's Daughter — The Wick Chronicle"

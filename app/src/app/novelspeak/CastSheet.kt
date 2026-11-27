@@ -230,7 +230,7 @@ class CastSheet(
                 append(", ")
                 append(subtitle)
                 if (confidence != null) append(", ").append(confidenceLabel(confidence))
-                if (lines > 0) append(", ").append(lines).append(" lines")
+                if (lines > 0) append(", ").append(UiText.lineCount(lines))
                 if (current) append(", current speaker")
             }
             if (onChange != null) setOnClickListener { onChange() }

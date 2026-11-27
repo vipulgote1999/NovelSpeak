@@ -1,0 +1,21 @@
+appId: app.novelspeak
+name: "25 home overflow: page-only actions are not offered on the new-tab page"
+tags:
+  - home
+  - regression
+---
+- clearState
+- launchApp
+- tapOn: "More options"
+- assertVisible: "Import EPUB or PDF"
+- assertVisible: "Library"
+- assertVisible: "NovelSpeak settings"
+- assertVisible: "About & privacy"
+- assertNotVisible: "Reload"
+- assertNotVisible: "Copy link"
+- assertNotVisible: "Site settings"
+- assertNotVisible: "Translate page"
+- tapOn: "About & privacy"
+- assertVisible: "Privacy & licences"
+- tapOn: "Back"
+- assertVisible: "NovelSpeak"

@@ -1,0 +1,29 @@
+appId: app.novelspeak
+name: "26 error page: a 404 document is not queued for speech"
+tags:
+  - reader
+  - regression
+---
+- clearState
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/missing-chapter.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/missing-chapter.html"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Page didn't load.*|This page isn't a readable chapter"
+    timeout: 20000
+- assertNotVisible: "Ready ·.*"
+- assertNotVisible: "Pause"

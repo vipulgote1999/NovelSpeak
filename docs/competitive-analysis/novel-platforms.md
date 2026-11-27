@@ -115,7 +115,7 @@ All prices below are **Apple App Store US in-app-purchase listings observed 2026
 
 | Structural constraint | Evidence | Consequence for NovelSpeak |
 |---|---|---|
-| **Owned catalog only** — no arbitrary URL import in any of the 12 | All store listings describe their own libraries [S1–S12]; no "browser" or "add URL" claim anywhere | NovelSpeak can serve the sites these apps will never license: empirenovel, lightnovelworld, royalroad, aggregator sites, public-domain catalogs |
+| **Owned catalog only** — no arbitrary URL import in any of the 12 | All store listings describe their own libraries [S1–S12]; no "browser" or "add URL" claim anywhere | NovelSpeak can open long-tail chapter sites, original-fiction platforms and public-domain catalogs the user chooses |
 | **Revenue depends on chapter locks** | Coin/subscription economics above [S17–S24] | They cannot make paywalled chapters free; NovelSpeak never holds the content, so it has no reason to lock it |
 | **TTS is an accessory** | Wattpad TTS beta/English-only [S15]; WebNovel TTS regressions [S1]; NovelUP audiobook broken [S10]; audio split into Dreame FM/Pocket FM [S13,S14] | A reader whose *core* is playback (streaming pipeline, screen-off, MediaSession, read-along) can be materially better at the one thing they treat as a side feature |
 | **Account + ads + tracking** | All apps account-based; 8 of 12 carry "Contains ads" [S1–S12] | NovelSpeak can be account-free, ad-free (blocker built in), and offline-first — a privacy position none of them can adopt without breaking their model |
@@ -138,7 +138,7 @@ All prices below are **Apple App Store US in-app-purchase listings observed 2026
 - **"Read-along highlight"** — no competitor evidence of TTS-linked highlighting (Unknown; opportunity).
 
 **Partnership / go-to-market angles:**
-1. **Long-tail web-novel sites** (empirenovel, lightnovelworld, royalroad and similar) — offer a "Listen in NovelSpeak" deep link / share target. Their content is free-to-read; NovelSpeak adds listening time without touching their ads. This is additive, not competitive.
+1. **Long-tail web-novel sites** (Royal Road and similar original-fiction platforms) — offer a "Listen in NovelSpeak" deep link / share target. Their content is free-to-read; NovelSpeak adds listening time without touching their ads. This is additive, not competitive.
 2. **RoyalRoad / Wattpad authors** — authors want audio for their own works; a "read my story aloud" flow with user-recorded Pocket voice clones is a legitimate creator tool (NovelSpeak already supports zero-shot cloning from a reference clip).
 3. **Public-domain presets** (Project Gutenberg etc.) — a legal, zero-friction demo catalog that shows the reader at its best, with no rights issues.
 4. **Anti-positioning against coin apps** — comparison landing page: "the same chapters you already read, read aloud, for free, with the screen off". Cite the observed competitor complaints (anonymised) as social proof.

@@ -35,6 +35,7 @@ fun main() {
     check("medium classification", Design.isMedium(700) && !Design.isMedium(599) && !Design.isMedium(840))
     check("expanded classification", Design.isExpanded(840) && Design.isExpanded(1200) && !Design.isExpanded(839))
     check("touch tokens", Design.TOUCH_DP == 48 && Design.DENSE_TOUCH_DP == 44)
+    check("primary touch token", Design.PRIMARY_TOUCH_DP == 56, Design.PRIMARY_TOUCH_DP.toString())
     check("motion tokens ordered", Design.MOTION_FAST < Design.MOTION_NORMAL && Design.MOTION_NORMAL < Design.MOTION_SLOW)
 
     println("$checks checks, $failures failure(s)")

@@ -8,6 +8,12 @@
 
   var BLOCK_SEL = 'p, h1, h2, h3, h4, h5, li, blockquote, pre, td, dd';
   var SKIP_SEL = 'script, style, noscript, nav, header, footer, aside, form, button, select, svg, iframe';
+  // Extraction is fed straight into TTS and transported as one JSON string. Bound both the
+  // returned text and the density-candidate scan so a pathological page cannot freeze the
+  // WebView or allocate an unbounded queue.
+  var MAX_BLOCKS = 4000;
+  var MAX_CHARS = 250000;
+  var MAX_DENSITY_CANDIDATES = 400;
 
   function norm(s) {
     return (s || '')
@@ -74,9 +80,13 @@
       '[class*="read"], [id*="read"], [class*="text"], [id*="text"], [class*="entry"], [class*="post"], div, section'
     );
     var best = null, bestScore = 0;
-    for (var i = 0; i < cands.length; i++) {
+    var limit = Math.min(cands.length, MAX_DENSITY_CANDIDATES);
+    for (var i = 0; i < limit; i++) {
       var el = cands[i];
       if (el.closest(SKIP_SEL)) continue;
+      // innerText forces layout; a cheap textContent prefilter keeps div-heavy pages from
+      // becoming quadratic before the real candidate is scored.
+      if ((el.textContent || '').length < 400) continue;
       var t = norm(el.innerText);
       if (t.length < 400) continue;
       var links = el.querySelectorAll('a').length;
@@ -176,11 +186,25 @@
       if (t) blocks = [{ i: 0, text: t, tag: 'body' }];
     }
 
+    var kept = [], keptChars = 0, truncated = false;
+    for (var k = 0; k < blocks.length; k++) {
+      var text = blocks[k].text;
+      if (kept.length >= MAX_BLOCKS || keptChars + text.length > MAX_CHARS) {
+        truncated = true;
+        break;
+      }
+      kept.push(blocks[k]);
+      keptChars += text.length;
+    }
+    blocks = kept;
+    if (usedReadability) blocks = tagLive(blocks);
+
     var total = 0;
     for (var j = 0; j < blocks.length; j++) total += blocks[j].text.length;
     var wall = detectWall(total);
     return JSON.stringify({
-      title: title, blocks: blocks, chars: total, url: location.href, wall: wall
+      title: title, blocks: blocks, chars: total, url: location.href,
+      wall: wall, truncated: truncated
     });
   }
 
@@ -189,9 +213,19 @@
   function detectWall(total) {
     if (total >= 1200) return '';
     var bodyText = '';
+    var pageTitle = '';
     try {
       bodyText = norm(document.body ? document.body.innerText : '').toLowerCase();
-    } catch (e) { bodyText = ''; }
+      pageTitle = norm(document.title || '').toLowerCase();
+    } catch (e) { bodyText = ''; pageTitle = ''; }
+    // Cloudflare and similar interstitials often expose more than 200 characters of
+    // explanatory copy, so the title/body marker is checked before the generic text rule.
+    if (/(just a moment|performing security verification|checking your browser|attention required|verify you are human)/.test(pageTitle)) {
+      return 'challenge';
+    }
+    if (total < 4000 && /(performing security verification|checking your browser|verify you are human|attention required|just a moment)/.test(bodyText)) {
+      return 'challenge';
+    }
     var hasPassword = false;
     try {
       hasPassword = !!document.querySelector('input[type="password"]');
@@ -293,7 +327,8 @@
       color:#EAF0F5 !important;
     }
     html.ns-reader body {
-      max-width:var(--ns-width,760px) !important; margin:0 auto !important;
+      box-sizing:border-box !important;
+      max-width:min(var(--ns-width,760px), 100%) !important; margin:0 auto !important;
       padding:16px 16px 56px !important;
       font-family:var(--ns-font-family,Georgia,'Times New Roman',serif) !important;
       font-size:var(--ns-font-size,17px) !important;
@@ -320,7 +355,7 @@
     html.ns-reader [class*="chapter"], html.ns-reader [id*="chapter"],
     html.ns-reader [class*="content"], html.ns-reader [id*="content"] {
       background:transparent !important; color:#EAF0F5 !important;
-      max-width:var(--ns-width,760px) !important;
+      max-width:min(var(--ns-width,760px), 100%) !important;
       margin-left:auto !important; margin-right:auto !important;
     }
     /* Word-level read-along uses the CSS Custom Highlight API (Chromium 105+). */
@@ -355,6 +390,9 @@
       background:rgba(244,198,106,.10) !important;
       box-shadow:inset 3px 0 0 #F4C66A !important;
       border-radius:4px !important;
+      /* Extend the amber rule into the gutter without moving a single glyph. */
+      padding-left:12px !important;
+      margin-left:-12px !important;
     }
     html.ns-reader h1[data-ns].ns-active, html.ns-reader h2[data-ns].ns-active,
     html.ns-reader h3[data-ns].ns-active, html.ns-reader h4[data-ns].ns-active,

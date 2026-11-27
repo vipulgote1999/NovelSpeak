@@ -33,6 +33,31 @@
     NS.nagSeen = NS.nagSeen || (typeof WeakSet !== 'undefined' ? new WeakSet() : null);
     NS.nagTimer = NS.nagTimer || null;
     NS.nagLast = NS.nagLast || 0;
+    NS.lookupId = NS.lookupId || 0;
+    NS.lookupWait = NS.lookupWait || {};
+    NS.hiddenPending = NS.hiddenPending || 0;
+    NS.hiddenTimer = NS.hiddenTimer || null;
+
+    // The native side exposes an origin-scoped WebMessage listener (never a reflected Java
+    // object). Older fixtures still provide a synchronous lookup()/hidden() pair.
+    function installBridgeReply() {
+        var b = window.NSAdBlock;
+        if (!b || !b.postMessage || b.__nsReplyInstalled) return;
+        try {
+            b.__nsReplyInstalled = true;
+            b.onmessage = function (event) {
+                try {
+                    var msg = JSON.parse(event.data);
+                    if (!msg || msg.t !== 'lookup' || msg.id == null) return;
+                    var cb = NS.lookupWait[msg.id];
+                    if (!cb) return;
+                    delete NS.lookupWait[msg.id];
+                    cb(msg.s || []);
+                } catch (e) {}
+            };
+        } catch (e) {}
+    }
+    installBridgeReply();
 
     var AD_TEXT = /(sponsor|advert|promo|bonus|welcome|cash|casino|betting|\bbet\b|offer|prize|reward|download now|install now)/i;
     var NAG_TEXT = /(chrome mobile webview|notification system|allow notifications|enable notifications|push notifications|subscribe to notifications|click ["']?ok["']? and then ["']?allow)/i;
@@ -56,9 +81,21 @@
 
     function count(n) {
         NS.hidden += n;
-        try {
-            if (window.NSAdBlock && window.NSAdBlock.hidden) window.NSAdBlock.hidden(n);
-        } catch (e) {}
+        NS.hiddenPending += n;
+        if (NS.hiddenTimer) return;
+        NS.hiddenTimer = setTimeout(function () {
+            NS.hiddenTimer = null;
+            var pending = NS.hiddenPending;
+            NS.hiddenPending = 0;
+            if (pending <= 0) return;
+            try {
+                var b = window.NSAdBlock;
+                if (b && b.hidden) b.hidden(pending);
+                else if (b && b.postMessage) {
+                    b.postMessage(JSON.stringify({t: 'hidden', n: pending}));
+                }
+            } catch (e) {}
+        }, 250);
     }
 
     function hideDirect(list) {
@@ -585,10 +622,25 @@
         if (!classes.length && !ids.length) return;
         try {
             var bridge = window.NSAdBlock;
-            if (!bridge || !bridge.lookup) return;
-            var raw = bridge.lookup(JSON.stringify({c: classes, i: ids}), window.location.hostname);
-            var list = JSON.parse(raw);
-            if (list && list.length) addCssList(list);
+            if (!bridge) return;
+            if (bridge.lookup) {
+                var raw = bridge.lookup(JSON.stringify({c: classes, i: ids}), window.location.hostname);
+                var list = JSON.parse(raw);
+                if (list && list.length) addCssList(list);
+                return;
+            }
+            if (!bridge.postMessage) return;
+            installBridgeReply();
+            var id = ++NS.lookupId;
+            NS.lookupWait[id] = function (selectors) {
+                if (selectors && selectors.length) addCssList(selectors);
+            };
+            bridge.postMessage(JSON.stringify({
+                t: 'lookup', id: id, c: classes, i: ids, h: window.location.hostname
+            }));
+            // A hostile or broken page can stop replying; cap the pending map.
+            var pending = Object.keys(NS.lookupWait);
+            if (pending.length > 20) delete NS.lookupWait[pending[0]];
         } catch (e) {}
     }
 

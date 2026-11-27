@@ -1,0 +1,27 @@
+appId: app.novelspeak
+name: "24 library empty: explains the state and offers browse/import actions"
+tags:
+  - library
+  - smoke
+---
+- clearState
+- launchApp
+- assertVisible: "Import a book"
+- tapOn: "Open library"
+- extendedWaitUntil:
+    visible: "Your library is empty"
+    timeout: 10000
+- assertVisible: "Chapters and imported books appear here."
+- assertVisible: "Import a book"
+- assertVisible: "Browse a site"
+# The import path leaves the Library for the document picker; cancel it and return.
+- tapOn: "Import a book"
+- extendedWaitUntil:
+    visible: "Recent|Open from|Documents|Downloads|No items"
+    timeout: 10000
+- pressKey: Back
+- assertVisible: "Your library is empty"
+- tapOn: "Browse a site"
+- extendedWaitUntil:
+    visible: "NovelSpeak"
+    timeout: 10000

@@ -1,3 +1,5 @@
+import app.novelspeak.ReadingTick
+import app.novelspeak.library.ImportedProgress
 import app.novelspeak.library.Bookmark
 import app.novelspeak.library.BookmarkStore
 import app.novelspeak.library.InMemoryStorage
@@ -548,9 +550,11 @@ private fun testStatsMidnightRollover() {
     eq("lastDays older day date", dateKey(lateNight), last[0].date)
     eq("lastDays older day minutes", 5, last[0].minutes)
     eq("lastDays older day sentences", 20, last[0].sentences)
+    eq("lastDays older day seconds", 300L, last[0].seconds)
     eq("lastDays newer day date", dateKey(afterMidnight), last[1].date)
     eq("lastDays newer day minutes", 1, last[1].minutes)
     eq("lastDays newer day sentences", 7, last[1].sentences)
+    eq("lastDays newer day seconds", 60L, last[1].seconds)
 
     eq("totals across midnight minutes", 6, stats.totalMinutes())
     eq("totals across midnight sentences", 27, stats.totalSentences())
@@ -640,6 +644,32 @@ private fun testSharedStorage() {
     eq("stats write lands", 3, ReadingStats(storage).today(now).minutes)
 }
 
+private fun testImportedProgress() {
+    println()
+    println("== imported progress ==")
+    check("re-reading from the start clears finished", !ImportedProgress.finishedAfterProgress(true, 0, 10))
+    check("stopping mid-book clears finished", !ImportedProgress.finishedAfterProgress(true, 4, 10))
+    check("the last sentence keeps finished", ImportedProgress.finishedAfterProgress(true, 9, 10))
+    check("unfinished stays unfinished", !ImportedProgress.finishedAfterProgress(false, 0, 10))
+    check("unknown total keeps finished", ImportedProgress.finishedAfterProgress(true, 0, 0))
+    check("single-sentence book keeps finished", ImportedProgress.finishedAfterProgress(true, 0, 1))
+}
+
+private fun testReadingTick() {
+    println()
+    println("== reading tick ==")
+    val tick = ReadingTick()
+    eq("first playing state is quiet", ReadingTick.Delta(0, 0), tick.onState(true, 10, 0, 1_000L))
+    eq("normal advance reports time and a sentence", ReadingTick.Delta(5, 1), tick.onState(true, 10, 1, 6_000L))
+    eq("pause flushes time without a sentence", ReadingTick.Delta(3, 0), tick.onState(false, 10, 1, 9_000L))
+    eq("paused state stays quiet", ReadingTick.Delta(0, 0), tick.onState(false, 10, 1, 20_000L))
+    eq("resume is quiet", ReadingTick.Delta(0, 0), tick.onState(true, 10, 1, 21_000L))
+    eq("resume does not count the pause", ReadingTick.Delta(4, 1), tick.onState(true, 10, 2, 25_000L))
+    eq("seek jump adds time but no sentence", ReadingTick.Delta(5, 0), tick.onState(true, 10, 5, 30_000L))
+    eq("long gap is capped", ReadingTick.Delta(120, 1), tick.onState(true, 10, 6, 200_000L))
+    eq("empty queue is ignored", ReadingTick.Delta(0, 0), tick.onState(true, 0, 0, 201_000L))
+}
+
 private fun testTimestamps() {
     println()
     println("== strictly increasing timestamps ==")
@@ -679,6 +709,8 @@ fun main() {
     testStatsMidnightRollover()
     testStatsPruneAndFallback()
     testSharedStorage()
+    testImportedProgress()
+    testReadingTick()
     testTimestamps()
 
     println()

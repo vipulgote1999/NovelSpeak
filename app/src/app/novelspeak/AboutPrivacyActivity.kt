@@ -1,9 +1,13 @@
 package app.novelspeak
 
 import android.app.Activity
+import android.content.Intent
+import android.content.res.Configuration
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
@@ -24,6 +28,12 @@ import android.widget.TextView
  */
 class AboutPrivacyActivity : Activity() {
 
+    private lateinit var content: LinearLayout
+
+    private companion object {
+        const val PRIVACY_URL = "https://vipulgote1999.github.io/NovelSpeak/privacy/"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyWindowTheme()
@@ -40,16 +50,29 @@ class AboutPrivacyActivity : Activity() {
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
             )
         }
-        val content = LinearLayout(this).apply {
+        content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(4), dp(20), dp(28))
+            setPadding(0, dp(4), 0, dp(28))
         }
         scroll.addView(content)
         root.addView(scroll)
         setContentView(root)
         applyInsets(root)
+        applyContentWidth()
 
         populate(content)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyContentWidth()
+    }
+
+    /** Keep the readable measure centered after a tablet rotation; this activity is not recreated. */
+    private fun applyContentWidth() {
+        if (!::content.isInitialized) return
+        val side = dp(Design.contentPadding(resources.configuration.screenWidthDp))
+        content.setPadding(side, dp(4), side, dp(28))
     }
 
     private fun populate(content: LinearLayout) {
@@ -57,30 +80,33 @@ class AboutPrivacyActivity : Activity() {
         paragraph(
             content,
             "NovelSpeak has no account system, no analytics, no advertising and no third-party " +
-                "SDKs. Your reading position, library, pronunciation rules and settings stay on " +
-                "this device. Nothing is uploaded automatically."
+                "analytics, advertising or crash-reporting SDKs. Your reading position, library, " +
+                "pronunciation rules and settings stay on this device. Nothing is uploaded " +
+                "automatically."
         )
 
         heading(content, "WHAT USES THE NETWORK")
-        bullet(content, "Pages you open in the browser are loaded from their own site, exactly as a browser would fetch them.")
-        bullet(content, "Neural voices are downloaded once, on demand, from the official k2-fsa/sherpa-onnx release when you tap Install.")
-        bullet(content, "Ad-block filter lists are updated only when you tap Update lists, from the EasyList/uBlock sources listed below.")
-        bullet(content, "There are no other destinations. NovelSpeak does not contact an update server, an analytics endpoint or an ad network.")
+        bullet(content, "Pages you open in the browser are loaded from their own site, exactly as a browser would fetch them. Those sites may set cookies and receive your IP address under their own privacy policies.")
+        bullet(content, "Search text is sent to Google Search when you type a query instead of a URL. The Translate action sends the current page address to Google Translate. Both are optional, user-initiated navigations.")
+        bullet(content, "Neural voices are downloaded once, on demand, from the official k2-fsa/sherpa-onnx GitHub release when you confirm the download and its size.")
+        bullet(content, "Ad-block filter lists are updated only when you confirm Update lists, from the EasyList/uBlock sources listed below.")
+        bullet(content, "There are no other destinations. NovelSpeak does not contact an update server, an analytics endpoint, an advertising network or a crash-reporting service.")
         paragraph(
             content,
             "Everything else works offline: extraction, system TTS, playback, the reader, the " +
                 "library and the network-free features in Settings. Neural voices work fully " +
-                "offline once their model file has been installed."
+                "offline once their model file has been installed.",
+            topDp = 10
         )
 
         heading(content, "DIAGNOSTICS")
         paragraph(
             content,
             "Share diagnostics creates a zip on this device containing the app version, SDK, " +
-                "device model, ABI, settings snapshot (URLs, tokens and pronunciation rules are " +
-                "redacted), the event log and the last crash if one exists. It is capped at 2 MB, " +
-                "handed to the app you choose through the system share sheet, and never uploaded " +
-                "by NovelSpeak. Delete it like any other file."
+                "device model, ABI, settings snapshot (URLs, library entries, transcripts, tokens and " +
+                "pronunciation rules are redacted), the event log and the last crash if one exists. " +
+                "It is capped at 2 MB, handed to the app you choose through the system share sheet, " +
+                "and never uploaded by NovelSpeak. Delete it like any other file."
         )
 
         heading(content, "PERMISSIONS")
@@ -144,6 +170,33 @@ class AboutPrivacyActivity : Activity() {
                 "licence texts with it."
         )
 
+        heading(content, "YOUR DATA")
+        paragraph(
+            content,
+            "Reading positions, the library, imported books, bookmarks, pronunciation rules " +
+                "and settings are stored in this app's private storage. NovelSpeak has no " +
+                "account to delete. To remove everything, clear the app's storage in Android " +
+                "Settings or uninstall the app. Diagnostics files you export to Downloads are " +
+                "ordinary files you control and can delete at any time."
+        )
+        paragraph(
+            content,
+            "The app has no server of its own, so there is nothing to request from the " +
+                "developer and no account data to retain."
+        )
+
+        heading(content, "ONLINE PRIVACY POLICY")
+        paragraph(
+            content,
+            "The same policy is published at a stable, publicly accessible URL for Google Play " +
+                "and for anyone who wants to read it outside the app:"
+        )
+        link(content, PRIVACY_URL, PRIVACY_URL)
+        paragraph(
+            content,
+            "Questions, privacy requests or bug reports: github.com/vipulgote1999/NovelSpeak/issues"
+        )
+
         heading(content, "VERSION")
         paragraph(content, versionLine())
         paragraph(
@@ -169,7 +222,7 @@ class AboutPrivacyActivity : Activity() {
                 shape = GradientDrawable.OVAL
                 setColor(Palette.SURFACE_HIGH)
             }
-            layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+            layoutParams = LinearLayout.LayoutParams(dp(Design.TOUCH_DP), dp(Design.TOUCH_DP))
             contentDescription = "Back"
             isClickable = true
             isFocusable = true
@@ -197,12 +250,36 @@ class AboutPrivacyActivity : Activity() {
         })
     }
 
-    private fun paragraph(parent: LinearLayout, text: String) {
+    private fun paragraph(parent: LinearLayout, text: String, topDp: Int = 0) {
         parent.addView(TextView(this).apply {
             this.text = text
             textSize = 14f
             setTextColor(Palette.TEXT)
             setLineSpacing(dp(3).toFloat(), 1f)
+            setPadding(0, dp(topDp), 0, 0)
+        })
+    }
+
+    private fun link(parent: LinearLayout, label: String, url: String) {
+        parent.addView(TextView(this).apply {
+            text = label
+            textSize = 14f
+            setTextColor(Palette.ACCENT)
+            paintFlags = paintFlags or Paint.UNDERLINE_TEXT_FLAG
+            setPadding(0, dp(4), 0, dp(8))
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Open privacy policy in browser"
+            setOnClickListener {
+                try {
+                    startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                } catch (t: Throwable) {
+                    // No browser installed: the URL remains selectable on screen.
+                }
+            }
         })
     }
 

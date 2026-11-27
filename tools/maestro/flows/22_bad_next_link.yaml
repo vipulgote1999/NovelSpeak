@@ -1,0 +1,36 @@
+appId: app.novelspeak
+name: "22 bad next link: a file: next link stays out of the reader"
+tags:
+  - reader
+  - url
+  - regression
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Home search"
+    commands:
+      - tapOn: "Home search"
+- runFlow:
+    when:
+      visible: "Edit address"
+    commands:
+      - tapOn: "Edit address"
+- eraseText: 200
+- inputText: "http://localhost:8765/chapter-bad-next.html"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Address bar, http://localhost:8765/chapter-bad-next.html"
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Read chapter"
+    commands:
+      - tapOn: "Read chapter"
+- extendedWaitUntil:
+    visible: "Sentence [0-9]+ of [0-9]+"
+    timeout: 30000
+- tapOn: "Next ch"
+# The guard must refuse the page-controlled file: URL and leave the current chapter intact.
+- assertVisible: "Address bar, http://localhost:8765/chapter-bad-next.html"
+- assertVisible: "Sentence [0-9]+ of [0-9]+"
