@@ -1,10 +1,17 @@
 // NovelSpeak manga chapter extractor.
 //
 // Runs inside the page WebView (or a headless browser in the regression test). It collects
-// page-image candidates from three places: rendered <img>/<picture> elements, CSS backgrounds,
-// and the page's own JavaScript payload (Next.js/Nuxt chapters often put the whole page list in a
-// serialized JSON blob while only rendering the first two <img> tags). Candidates are then
-// grouped by directory, scored by how many form a numbered run, and returned in page order.
+// page-image candidates from four places:
+//   1. rendered <img>/<picture> elements, including lazy data-* attributes and declared sizes
+//   2. page backgrounds and preload links
+//   3. the largest repeated viewer stack on the page (works when every page lives in its own
+//      timestamped CDN directory, as on Webtoons and Tapas)
+//   4. the page's own JavaScript payload (Next.js/Nuxt chapters often put the whole page list in
+//      a serialized JSON blob while only rendering the first two <img> tags)
+//
+// Candidates are grouped by directory and scored by how many form a numbered run. When a site
+// has no numbered URLs, the viewer stack is used in DOM order. Chrome, thumbnails, covers and
+// recommendation cards are rejected before either path runs.
 //
 // The result is a JSON object on window.__nsMangaResult:
 //   { title, urls: [...], count, groups, scanMs }
@@ -16,15 +23,41 @@
   window.__nsMangaResult = null;
   window.__nsMangaProgress = 'starting';
 
-  var MAX_SCAN_MS = 15000;
+  var MAX_SCAN_MS = 22000;
+  var MAX_PAGES = 400;
   var started = Date.now();
   var candidates = {};
   var orderSeq = 0;
+  var viewerUrls = [];
+  var viewerSeen = {};
+  var domCandidates = [];
 
-  var BAD = /(logo|icon|avatar|sprite|favicon|banner|advert|promo|emoji|badge|profile|thumb|social|share|related|recommend|placeholder|spinner|loading|blank|pixel)/i;
-  var BAD_DIR = /(thumb|avatar|icon|banner|sprite|emoji|profile|social|related|recommend)/i;
-  var PAGE_HINT = /(page|chapter|manga|comic|panel|scan|raw|webtoon)/i;
+  var BAD = /(logo|icon|avatar|sprite|favicon|banner|advert|promo|emoji|badge|profile|thumb|thmb|social|share|related|recommend|placeholder|spinner|loading|blank|pixel)/i;
+  var BAD_DIR = /(thumb|thmb|avatar|icon|banner|sprite|emoji|profile|social|related|recommend)/i;
+  var CHROME_NODE = /(logo|avatar|thumb|thmb|card|cover|banner|nav|header|footer|sidebar|related|recommend|splash|sprite|badge|emoji|comment|social|share)/i;
+  var PAGE_HINT = /(page|chapter|manga|comic|panel|scan|raw|webtoon|episode)/i;
   var IMG_EXT = /\.(png|jpe?g|webp|avif)(?:[?#][^\s"'<>\\]*)?$/i;
+
+  // These selectors are unambiguous page containers, so a lazy image is accepted even when
+  // its height is not known until the browser decodes it (Tapas leaves height empty).
+  var STRONG_VIEWER_SELECTORS = [
+    '#_imageList img',
+    '.content__img',
+    'img.reader-img',
+    'img.episode__img',
+    '#readerarea img',
+    '.reading-content img',
+    '.chapter-images img',
+    '.episode__content img'
+  ];
+  var VIEWER_SELECTORS = STRONG_VIEWER_SELECTORS.concat([
+    '.viewer_img img',
+    '.chapter-content img',
+    '.page-break img',
+    '.viewer__body img',
+    '.episode-body img',
+    '[data-reader] img'
+  ]);
 
   function abs(u) {
     if (!u) return null;
@@ -42,11 +75,11 @@
 
   function add(raw, width, height, alt, fromDom) {
     var u = abs(raw);
-    if (!u || !IMG_EXT.test(u)) return;
-    if (BAD.test(u) || BAD.test(alt || '')) return;
+    if (!u || !IMG_EXT.test(u)) return null;
+    if (BAD.test(u) || BAD.test(alt || '')) return null;
     var existing = candidates[u];
     if (!existing) {
-      candidates[u] = {
+      existing = {
         url: u,
         w: width || 0,
         h: height || 0,
@@ -54,12 +87,31 @@
         order: orderSeq++,
         dom: !!fromDom
       };
+      candidates[u] = existing;
     } else {
       if (width > existing.w) existing.w = width;
       if (height > existing.h) existing.h = height;
       if (fromDom) existing.dom = true;
       if (alt) existing.alt = alt;
     }
+    return existing;
+  }
+
+  function viewerKey(url) {
+    var parts = String(url).split('?');
+    if (parts.length < 2) return parts[0];
+    var keep = parts[1].split('&').filter(function (part) {
+      return !/^(type|quality|q|w|width|h|height|resize|fit)=/i.test(part);
+    });
+    return parts[0] + (keep.length ? '?' + keep.join('&') : '');
+  }
+
+  function markViewer(candidate) {
+    if (!candidate) return;
+    var key = viewerKey(candidate.url);
+    if (viewerSeen[key]) return;
+    viewerSeen[key] = true;
+    viewerUrls.push(candidate.url);
   }
 
   function bestSrcset(value) {
@@ -83,36 +135,70 @@
     return best;
   }
 
+  function number(value) {
+    var n = parseFloat(value);
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+
+  function declaredSize(img) {
+    var nw = img.naturalWidth || 0;
+    var nh = img.naturalHeight || 0;
+    var w = nw > 2 ? nw : (number(img.getAttribute('width')) || img.width || 0);
+    var h = nh > 2 ? nh : (number(img.getAttribute('height')) || img.height || 0);
+    return { w: w, h: h };
+  }
+
   function isPageShape(w, h, url, alt) {
-    if (w >= 150 && h >= 250) {
-      return h > w * 1.05 || PAGE_HINT.test(url + ' ' + (alt || ''));
+    // Real page slices are large. A 280x400 cover card is below this area threshold; viewer
+    // pages on Webtoons/Tapas declare 700x1140 or 940x1280.
+    if (w >= 250 && h >= 250 && w * h >= 100000) return true;
+    if (w >= 400 && h >= 400) return true;
+    // Lazy placeholders may have no usable dimensions yet. Keep an explicit page URL.
+    if ((!w || !h) && PAGE_HINT.test(url + ' ' + (alt || ''))) return true;
+    return false;
+  }
+
+  function isChromeNode(img) {
+    var node = img;
+    for (var depth = 0; node && depth < 5; depth++) {
+      var label = (node.id || '') + ' ' + (node.className || '') + ' ' +
+        (node.getAttribute ? (node.getAttribute('role') || '') : '');
+      if (CHROME_NODE.test(label)) return true;
+      node = node.parentElement;
     }
-    // Lazy images may not have decoded dimensions yet. Keep them when the URL or alt says
-    // "page", or when they are wide/tall enough to plausibly be a scan.
-    return (PAGE_HINT.test(url + ' ' + (alt || '')) || (w >= 400 && h >= 400));
+    return false;
+  }
+
+  function imageUrl(img) {
+    var src = img.currentSrc || img.src || '';
+    if (/^data:/i.test(src) || /(spacer|blank|pixel|loading)[.\-_]/i.test(src)) src = '';
+    var srcset = bestSrcset(img.getAttribute('srcset'));
+    return img.getAttribute('data-original') ||
+      img.getAttribute('data-src') ||
+      img.getAttribute('data-lazy-src') ||
+      img.getAttribute('data-url') ||
+      img.getAttribute('data-echo') ||
+      img.getAttribute('data-cfsrc') ||
+      srcset || src;
   }
 
   function collectDom() {
     var imgs = document.querySelectorAll('img');
     for (var i = 0; i < imgs.length; i++) {
       var img = imgs[i];
-      var src = img.currentSrc || img.src || '';
-      if (/^data:/i.test(src) || /(spacer|blank|pixel|loading)[.\-_]/i.test(src)) src = '';
-      var srcset = bestSrcset(img.getAttribute('srcset'));
-      var url = img.getAttribute('data-original') ||
-        img.getAttribute('data-src') ||
-        img.getAttribute('data-lazy-src') ||
-        img.getAttribute('data-url') ||
-        srcset || src;
-      var w = img.naturalWidth || img.width || 0;
-      var h = img.naturalHeight || img.height || 0;
+      if (isChromeNode(img)) continue;
+      var size = declaredSize(img);
       var alt = img.getAttribute('alt') || '';
-      if (url && isPageShape(w, h, url, alt)) add(url, w, h, alt, true);
+      var url = imageUrl(img);
+      if (url && isPageShape(size.w, size.h, url, alt)) {
+        var candidate = add(url, size.w, size.h, alt, true);
+        if (candidate) domCandidates.push({ candidate: candidate, node: img });
+      }
 
       var sources = img.querySelectorAll ? img.querySelectorAll('source') : [];
       for (var s = 0; s < sources.length; s++) {
         var su = bestSrcset(sources[s].getAttribute('srcset')) || sources[s].getAttribute('src');
-        if (su && isPageShape(w, h, su, alt)) add(su, w, h, alt, true);
+        if (su && isPageShape(size.w, size.h, su, alt)) add(su, size.w, size.h, alt, true);
       }
     }
 
@@ -125,14 +211,75 @@
 
     var backgrounds = document.querySelectorAll('[style*="background-image"]');
     for (var b = 0; b < backgrounds.length; b++) {
-      var m = backgrounds[b].style.backgroundImage.match(/url\(["']?([^"')]+)["']?\)/);
-      if (m && IMG_EXT.test(m[1])) add(m[1], 0, 0, '', true);
+      var bg = backgrounds[b];
+      if (isChromeNode(bg)) continue;
+      var m = bg.style.backgroundImage.match(/url\(["']?([^"')]+)["']?\)/);
+      if (m && IMG_EXT.test(m[1])) {
+        add(m[1], bg.clientWidth || 0, bg.clientHeight || 0, '', true);
+      }
     }
 
     var preloads = document.querySelectorAll('link[rel="preload"][as="image"]');
     for (var l = 0; l < preloads.length; l++) {
       var href = preloads[l].getAttribute('href');
       if (href && IMG_EXT.test(href)) add(href, 0, 0, '', true);
+    }
+  }
+
+  /**
+   * Known viewer containers first, then the largest repeated ancestor stack. This is what makes
+   * Webtoons (every page has a unique timestamp directory) and Tapas (one class per page image)
+   * work without a site-specific rule.
+   */
+  function collectViewer() {
+    for (var s = 0; s < VIEWER_SELECTORS.length; s++) {
+      var strong = STRONG_VIEWER_SELECTORS.indexOf(VIEWER_SELECTORS[s]) >= 0;
+      var imgs = document.querySelectorAll(VIEWER_SELECTORS[s]);
+      for (var i = 0; i < imgs.length; i++) {
+        var img = imgs[i];
+        if (isChromeNode(img)) continue;
+        var size = declaredSize(img);
+        var alt = img.getAttribute('alt') || '';
+        var url = imageUrl(img);
+        if (!url) continue;
+        if (!strong && !isPageShape(size.w, size.h, url, alt)) continue;
+        markViewer(add(url, size.w, size.h, alt, true));
+      }
+    }
+    if (viewerUrls.length >= 3) return;
+
+    // No selector matched. Walk ancestors of every large DOM image and keep the deepest
+    // container that holds the most pages.
+    var containers = new Map();
+    for (var d = 0; d < domCandidates.length; d++) {
+      var node = domCandidates[d].node;
+      var candidate = domCandidates[d].candidate;
+      var parent = node.parentElement;
+      var depth = 0;
+      while (parent && parent !== document.body && parent !== document.documentElement && depth < 7) {
+        var entry = containers.get(parent);
+        if (!entry) {
+          entry = { element: parent, items: [], depth: depth };
+          containers.set(parent, entry);
+        }
+        entry.items.push(candidate);
+        parent = parent.parentElement;
+        depth++;
+      }
+    }
+    var best = null;
+    var bestScore = -1;
+    containers.forEach(function (entry) {
+      if (entry.items.length < 3) return;
+      var score = entry.items.length * 100 + entry.depth;
+      if (score > bestScore) {
+        bestScore = score;
+        best = entry;
+      }
+    });
+    if (best) {
+      best.items.sort(function (a, b) { return a.order - b.order; });
+      for (var k = 0; k < best.items.length; k++) markViewer(best.items[k]);
     }
   }
 
@@ -214,6 +361,7 @@
 
     var bestGroup = null;
     var bestScore = -1;
+    var bestRun = 0;
     var groupReport = [];
     for (var gk in groups) {
       if (!Object.prototype.hasOwnProperty.call(groups, gk)) continue;
@@ -230,14 +378,27 @@
       if (score > bestScore) {
         bestScore = score;
         bestGroup = arr;
+        bestRun = run;
       }
+    }
+
+    var viewer = [];
+    for (var v = 0; v < viewerUrls.length; v++) {
+      var vc = candidates[viewerUrls[v]];
+      if (vc) viewer.push(vc);
     }
 
     var domPages = all.filter(function (c) {
       return c.dom && isPageShape(c.w, c.h, c.url, c.alt);
     });
     var chosen;
-    if (bestGroup && bestGroup.length >= 3) {
+    var usingViewer = false;
+    if (bestGroup && bestGroup.length >= 3 && bestRun >= 3) {
+      chosen = bestGroup.slice();
+    } else if (viewer.length >= 3) {
+      chosen = viewer.slice();
+      usingViewer = true;
+    } else if (bestGroup && bestGroup.length >= 3) {
       chosen = bestGroup.slice();
     } else if (domPages.length >= 2) {
       chosen = domPages.slice();
@@ -267,7 +428,7 @@
     }
     pageList.sort(function (a, b) { return pageNumber(a.url) - pageNumber(b.url); });
 
-    if (pageList.length >= 3) {
+    if (pageList.length >= 3 && !usingViewer) {
       // A cover/credits image without a number sometimes sits before page 1. Keep unnumbered
       // DOM images that were collected before the first numbered page, drop the rest.
       var firstOrder = pageList.length ? pageList[0].order : Infinity;
@@ -276,18 +437,21 @@
       });
       before.sort(function (a, b) { return a.order - b.order; });
       chosen = before.concat(pageList);
-    } else {
+    } else if (!usingViewer) {
       chosen = chosen.sort(function (a, b) {
         var na = pageNumber(a.url);
         var nb = pageNumber(b.url);
         if (na > 0 && nb > 0 && na !== nb) return na - nb;
         return a.order - b.order;
       });
+    } else {
+      // Viewer order is already the reading order; do not re-sort by URL.
+      chosen = viewer.slice();
     }
 
     var urls = [];
     var seen = {};
-    for (var x = 0; x < chosen.length; x++) {
+    for (var x = 0; x < chosen.length && urls.length < MAX_PAGES; x++) {
       if (!seen[chosen[x].url]) {
         seen[chosen[x].url] = true;
         urls.push(chosen[x].url);
@@ -299,6 +463,7 @@
       urls: urls,
       count: urls.length,
       groups: groupReport.sort(function (a, b) { return b.score - a.score; }).slice(0, 5),
+      source: usingViewer ? 'viewer' : 'numbered',
       scanMs: Date.now() - started
     };
     window.__nsMangaProgress = 'done';
@@ -308,6 +473,7 @@
 
   function step() {
     collectDom();
+    collectViewer();
     var doc = document.documentElement;
     var max = Math.max(
       document.body ? document.body.scrollHeight : 0,
@@ -325,18 +491,21 @@
       // final collection.
       setTimeout(function () {
         collectDom();
+        collectViewer();
         collectScripts();
         window.scrollTo(0, 0);
         setTimeout(function () {
           collectDom();
+          collectViewer();
           finish();
         }, 350);
       }, 500);
     }
   }
 
-  // Collect what is already rendered (often the first two pages), then walk the chapter so
-  // lazy-loaded page tags exist, then finish with the framework payload.
+  // Collect what is already rendered, then walk the chapter so lazy-loaded page tags exist,
+  // then finish with the viewer stack and the framework payload.
   collectDom();
+  collectViewer();
   setTimeout(step, 250);
 })();
