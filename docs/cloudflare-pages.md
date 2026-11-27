@@ -58,6 +58,11 @@ Branch builds deploy as previews named after the branch. Use only one mechanism 
 Git integration is connected, either remove it or drop the token secrets, so two deploys do not race
 for the same project.
 
+**Live production:** `https://novelspeak.pages.dev/` — project `novelspeak`, branch `main`, deployed
+on 2026-11-27 from `8dd67d3` with Wrangler 3.114.17. No custom domain is attached. The GitHub
+Actions deploy job still no-ops because `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are not
+set; add both to make pushes to `main` deploy automatically.
+
 ## Option C — from this machine, by hand
 
 ```bash
@@ -119,9 +124,13 @@ finishing in under two seconds, 200 % text reflow, and the film playing only aft
 - The site lives in its own commits, so `git revert <sha>` on `main` restores the previous site
   without touching the app.
 
-## What was not verified here
+## What was verified here
 
-No Cloudflare account, token or dashboard access exists on the machine this site was built on, so
-the first deploy and the custom domain are the user's step. There is also no Chromium binary, so the
-visual checks in the section above are written down as a checklist rather than claimed as done. The
-static contract, byte budgets and CSP are verified; the rendering is not.
+The production site was deployed on 2026-11-27 from `8dd67d3` with the authenticated Wrangler
+session on this machine: `https://novelspeak.pages.dev/` returns 200 with the new CSP, `/features`
+301s to `/features/`, and `/no-such-page` returns the custom 404; its inline host rewrite resolves
+Home to `/` under the `/*` CSP hash. The static contract and byte budgets pass on `main`.
+
+The GitHub Actions deploy still no-ops until `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are
+added. No custom domain is attached. The five physical-device checks in `reviews/a11y.md` §7 still
+need a phone; the browser pass covers 320–1440 and 200% text in Chromium.
