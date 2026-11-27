@@ -243,6 +243,16 @@ Root causes and on-device evidence: [docs/reader-fixes.md](docs/reader-fixes.md)
 Nothing is bundled in the APK. Downloads come from the official
 `k2-fsa/sherpa-onnx` `tts-models` release; hashes are pinned in `ModelManager.kt`.
 
+## Website
+
+The project site is plain HTML, CSS and one small script in [`site/`](site/) — no build step. It
+publishes to Cloudflare Pages and still to GitHub Pages, which serves the privacy-policy URL
+registered in Play Console. Links are relative so the same files work at a domain root and under
+`/NovelSpeak/`. Edit `site/`, then run `node tools/site-check.mjs` (structure, paths, budgets,
+tokens, contrast). Deployment, custom domains and the token-gated workflow are in
+[`docs/cloudflare-pages.md`](docs/cloudflare-pages.md); the design contract and claim ledger are in
+[`docs/website/`](docs/website/).
+
 ## Build
 
 ### On-device (Termux, no Android SDK/Gradle)

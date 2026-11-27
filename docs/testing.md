@@ -131,3 +131,18 @@ device is connected and skips them (loudly) otherwise.
 - Audio route changes (`ERROR_DEAD_OBJECT`) still have no on-device recovery test.
 - Release APK startup/settings are smoke-tested, but Store review and Play pre-launch report
   remain manual.
+
+## Website
+
+The marketing site is checked statically, because it is plain HTML with no build step:
+
+```bash
+node tools/site-check.mjs          # structure, relative paths, assets, motion gating, tokens, contrast, budgets
+node tools/site-check.mjs --verbose
+```
+
+It fails on a root-absolute URL (which would break the GitHub Pages subpath), a broken link or
+image, a missing `alt`/dimensions, an animation outside the reduced-motion opt-in block, a hex
+colour outside `:root`, a contrast pair below its threshold, or a page over its byte budget. The
+`.github/workflows/cloudflare-pages.yml` workflow runs it on every change under `site/`. It is not a
+renderer: the visual checklist it cannot perform is in `docs/website/design-contract.md`.
