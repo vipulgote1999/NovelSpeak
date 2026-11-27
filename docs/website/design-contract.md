@@ -37,18 +37,18 @@ value appears outside `:root`.
 | `--paper` | `#f1e8d6` | the one light section (parchment) | — |
 | `--paper-2` | `#e6dbc6` | paper surface inset | — |
 | `--paper-sheet` | `#fbf5e9` | the sheet inside the paper section | text 15.1:1 |
-| `--paper-accent` | `#2e5a43` | the accent on paper (lit word, highlight, focus) | 6.5:1 on paper, 7.3:1 on sheet |
-| `--paper-highlight` | `rgba(46, 90, 67, 0.14)` | the marker behind read-along words | non-text |
+| `--paper-accent` | `#6b4a12` | the accent on paper (lit word, highlight, focus) | 6.6:1 on paper, 7.4:1 on sheet |
+| `--paper-highlight` | `rgba(226, 185, 109, 0.22)` | the brass marker behind read-along words | non-text |
 | `--paper-rule` | `#cfc1a8` | hairline on paper | 1.5:1, decoration |
 | `--paper-text` | `#1b211b` | body on paper | 13.5:1 |
 | `--paper-text-2` | `#4e574e` | secondary on paper | 6.2:1 |
 | `--lamp` | `radial-gradient(60% 50% at 72% 28%, rgba(226,185,109,.10), transparent 70%)` | the single brass glow, hero only | non-text |
 
 One accent. The brass is the site's frame; the app's mint stays inside the screenshots as the
-product's own signal and is not promoted to a site colour. `--paper-accent` is a deep green rendered
-for parchment, not a second brand colour; it exists because brass on parchment is 1.8:1 and would be
-unreadable. No violet, no second accent, and no colour used as a warning: caution is a label and a
-rule.
+product's own signal and is not promoted to a site colour. `--paper-accent` is a deeper brass
+rendered for parchment, not a second brand colour; it exists because the site brass on parchment is
+1.8:1 and would be unreadable. The same hue carries through the dark ground and the paper section.
+No violet, no second accent, and no colour used as a warning: caution is a label and a rule.
 
 ### Type
 

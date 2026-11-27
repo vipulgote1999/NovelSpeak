@@ -28,8 +28,8 @@
   --paper-rule: #cfc1a8;
   --paper-text: #1b211b;
   --paper-text-2: #4e574e;
-  --paper-accent: #2e5a43;
-  --paper-highlight: rgba(46, 90, 67, 0.14);
+  --paper-accent: #6b4a12;
+  --paper-highlight: rgba(226, 185, 109, 0.22);
 
   /* the one glow, and the one shadow */
   --lamp: radial-gradient(60% 50% at 72% 28%, rgba(226, 185, 109, 0.10), transparent 70%);
