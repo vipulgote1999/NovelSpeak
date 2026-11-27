@@ -8,10 +8,10 @@ already own. No stock photography, no third-party icon packs, no webfonts.
 - Hosts: Cloudflare Pages serves `site/` at `/`; GitHub Pages serves `site/` at `/NovelSpeak/`.
   Every reference is **relative**, resolved from the page, never root-absolute.
 - No build step and no npm: the bytes committed under `site/assets/` are the bytes served.
-- No image encoder on this machine: `identify`, `convert`, `ffmpeg`, `sharp` and Python are all
-  absent. Half-size PNGs are produced by `tools/site-assets.mjs` (Node `zlib` only: decode, 2× box
-  filter, re-encode). If that tool fails a visual check, the fallback is native size plus
-  `loading="lazy"` and explicit `width`/`height`, and this file records the fallback.
+- Half-size PNGs are produced by `tools/site-assets.mjs` (Node `zlib` only: decode, 2× box filter,
+  re-encode). The film still is a frame extracted from the committed MP4 with `ffmpeg`; the social
+  card is composed from `player-540.png` and the site tokens. Both are committed, not generated at
+  runtime.
 - Screens are presented at device scale (a 360 dp phone screen shown at ~300–360 CSS px), so a
   540 px-wide PNG is still ~1.5× and stays sharp.
 
@@ -29,7 +29,7 @@ already own. No stock photography, no third-party icon packs, no webfonts.
 | `docs/media/ui-audit/tablet-reader.png` | 1200×1920 | 212 KB | **rejected**, see below: about 40% of the frame is empty black below the two panes |
 | `docs/media/ui-audit/library-grid-tablet.png` | 780×1248 | 224 KB | **rejected on the final audit**, see below: a 26-row test-harness dump (“Prefetch regression”, “Adblock race regression”, “Error response”, “Auto One”) at legible size |
 | `docs/media/ui-audit/chrome-compact-phone.png` | 540×960 | 115 KB | player card, features — cropped below the browser chrome (112 px) for the same reason |
-| `docs/media/novelspeak-launch-landscape.mp4` | 16:9, 23 s, 1.9 MB | — | film: reader still first, click to play |
+| `docs/media/novelspeak-launch-landscape.mp4` | 16:9, 23 s, 1.9 MB | — | film: a frame from the film first, click to play |
 | `docs/media/novelspeak-launch-poster.jpg` | 1600×900 | 145 KB | **not shipped**, see below: its baked caption reads “9:16 · 1080 × 1920 · NO NARRATION” while the page plays the 16:9 cut |
 | `docs/media/novelspeak-launch-contact-sheet.jpg` | 1104×1944 | 125 KB | not used (internal review artifact) |
 | `docs/play-store/graphics/icon-512.png` | 512×512 | 4 KB | favicon + nav mark |
@@ -64,25 +64,27 @@ the browser chrome. Derive once, commit:
 | `assets/img/settings-540.png` | phone-03-settings | 540×960 | ≤ 80 KB |
 | `assets/img/privacy-540.png` | phone-04-privacy | 540×960 | ≤ 90 KB |
 | `assets/img/player-540.png` | chrome-compact-phone, cropped 112 px | 540×848 | ≤ 110 KB |
+| `assets/img/film-1280.png` | `novelspeak-launch-landscape.mp4`, 18 s | 1280×720 | ≤ 180 KB |
+| `assets/img/og-1200x630.png` | composed from `player-540.png` and the site tokens | 1200×630 | ≤ 200 KB |
 | `assets/img/icon-96.png` | icon-512 | 96×96 | ≤ 8 KB |
 | `assets/img/icon-192.png` | icon-512 | 192×192 | ≤ 20 KB |
 
 Every image now ships at most at its source resolution; nothing is upscaled. Total image weight as
-shipped: **498 KB** across eight files, against a 900 KB ceiling.
+shipped: **836 KB** across ten files, against a 900 KB ceiling.
 
 The film MP4 (1.9 MB) is never fetched until the visitor presses play: `<video preload="none">`
-hidden behind the reader still, with a visible play control and a plain MP4 link under the frame.
-Native controls take over once it plays.
+hidden behind a 1280×720 frame from the film, with a visible play control and a plain MP4 link under
+the frame. Native controls take over once it plays.
 
 `cropTop` in `tools/site-assets.mjs` removes browser chrome before downscaling. Cropping is a
 legitimate edit — the pixels shown are still the app's own — whereas blurring a dev host or
 painting over a row would be a fabrication, which is why the library captures were dropped instead
 of retouched.
 
-The film has no poster attribute. Its pre-play state is the app’s own reader still inside a 16:9
-frame, with a visible play control and a plain MP4 link under it; with JavaScript off, the still and
-the link remain and the video stays hidden. Nothing on the page claims an aspect ratio, a
-resolution or an audio track the file does not have.
+The film has no poster attribute. Its pre-play state is a 1280×720 frame from the film itself (the
+“Screen off. Still reading.” title card), with a visible play control and a plain MP4 link under it;
+with JavaScript off, the still and the link remain and the video stays hidden. Nothing on the page
+claims an aspect ratio, a resolution or an audio track the file does not have.
 
 ## Dual-host path rules
 

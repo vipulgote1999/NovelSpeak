@@ -32,13 +32,14 @@ game-changing · your new reading companion · immersive experience · take cont
 - primary: `Download the APK` → GitHub release asset v1.3.0
 - secondary: `See what it does` → `./features/`
 - fact line (mono, small): `v1.3.0 · 15.5 MB · arm64-v8a · SHA-256 published`
-- plate: `reader-540.png`, alt: "The NovelSpeak reader. The sentence being spoken is highlighted on
-  the page, with the player card and its progress bar underneath."
+- plate: `player-540.png`, alt: "The NovelSpeak reader with a chapter open. The player card shows
+  Ready · 18 sentences, the selected voice, progress, Read, Next ch and Cast, with play, pause and
+  speed controls below."
 
 **Dock** (three facts, one row, still)
-- `No account` — nothing to sign in to.
-- `No ads or analytics` — no advertising ID, no crash SDK.
-- `Voices on the device` — after one download, no network.
+- `No account`: nothing to sign in to.
+- `No ads or analytics`: no advertising ID, no crash SDK.
+- `Voices on the device`: after one download, no network.
 
 **01 — Read**
 - h2: **The chapter, not the chrome.**
@@ -86,10 +87,11 @@ game-changing · your new reading companion · immersive experience · take cont
   or stops at the end of a chapter.
 - specs: `Screen off` yes · `Headset buttons` play, pause, next, previous · `Sleep timer` minutes or
   end of chapter · `Auto mode` continues chapter to chapter, off by default
-- film plate: the reader still fills a 16:9 stage, an overlay `Play the film` button sits on it, and
+- film plate: a 1280×720 frame from the film itself (the “Screen off. Still reading.” title card)
+  fills a 16:9 stage, an overlay `Play the film` button sits on it, and
   `<video preload="none" controls hidden>` swaps in on the press; line above: `Real recording ·
   23 s · sound on`; link under the frame: `Watch the 23-second film — MP4, 1.9 MB, sound on.`
-  No poster attribute: the only supplied poster states 9:16 while the film is 16:9.
+  No poster attribute: the still is a frame from the film, so it cannot contradict the cut.
 - plates: `library-540.png` alt "The library: search, All / Chapters / Imported / Finished filters
   and a list of books with cover initials." · `tablet-reader-600.png` alt "The reader on a tablet:
   two panes, the chapter on the left and the player on the right."
@@ -97,10 +99,10 @@ game-changing · your new reading companion · immersive experience · take cont
   grid from 600 dp. EPUB, PDF with a text layer, and plain text import into app-private storage.
 
 **05 — Quiet**
-- h2: **Nothing to sign up for. Nothing to report back.**
-- body: There is no NovelSpeak server, so there is nowhere for your reading to go. No account, no
-  advertising ID, no analytics SDK, no crash-reporting SDK, no push service. Ad blocking runs inside
-  NovelSpeak's own browser view and touches nothing else on the phone.
+- h2: **Nothing to sign up for, and nothing to report back.**
+- body: There is no NovelSpeak server, so there is nowhere for your reading to go. The app has no
+  account, advertising ID, analytics or crash-reporting SDK, and no push service. Ad blocking runs
+  inside NovelSpeak's own browser view and touches nothing else on the phone.
 - plate: `privacy-540.png`, alt "The in-app privacy page: a plain-language list of what stays on the
   device and what leaves it."
 - specs: `Account` none · `Analytics` none · `Ads` none · `Diagnostics` created and shared only when
@@ -114,7 +116,7 @@ game-changing · your new reading companion · immersive experience · take cont
 - h2: **Install it from a file you can check.**
 - body: The APK is signed with the project's release key. Download it, compare the SHA-256, and
   install. Android asks once whether your browser may install apps.
-- primary: `Download NovelSpeak 1.3.0 — 15.5 MB`
+- primary: `Download the APK`; notes line starts `15.5 MB APK · Android 7.0 or newer · arm64-v8a`
 - secondary: `Release notes` → `./changelog/`
 - status line (mono label, plain text, no border, no hover): `COMING TO GOOGLE PLAY`
 - verify (mono): `sha256sum -c NovelSpeak-1.3.0-arm64-v8a.apk.sha256`

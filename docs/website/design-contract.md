@@ -35,7 +35,7 @@ value appears outside `:root`.
 | `--accent-ink` | `#06231a` | text on an accent fill | 11.0:1 |
 | `--paper` | `#f2ece2` | the one light section | — |
 | `--paper-2` | `#e8dfd0` | paper surface inset | — |
-| `--paper-accent` | `#0f5138` | the accent on paper (lit word, underline, focus) | 7.9:1 |
+| `--paper-accent` | `#0f5138` | the accent on paper (lit word, highlight, focus) | 7.9:1 |
 | `--paper-rule` | `#cfc3ae` | hairline on paper | 1.4:1, decoration |
 | `--paper-text` | `#191c1f` | body on paper | 14.6:1 |
 | `--paper-text-2` | `#4b5157` | secondary on paper | 6.8:1 |
@@ -101,7 +101,7 @@ carries a second h2.
 | Status text | `.status` | plain mono label `COMING TO GOOGLE PLAY`, no border, no hover, not a control; becomes `<a>` only when `SITE.playUrl` is set (round 1: XA-2) |
 | Chapter head | `.chapter`, `.chapter__num`, `.chapter__rule` | mono numeral `01`–`07` (Read, Listen, Read-along, Away, Quiet, Install, Questions), hairline rule, serif h2 follows; numeral is `aria-hidden` |
 | Plate | `.plate`, `.plate--phone`, `.plate--tablet` | `--ink-2` frame, 1 px `--rule`, `--r3`, image with explicit dimensions; no caption; zooms 1.02 inside on hover when linked |
-| Film | `.film`, `.film__stage`, `.film__still`, `.film__video`, `.film__play` | a 16:9 stage holding the app’s reader still, a hidden `<video preload="none" controls>` and one visible play button; the press swaps the still for the film; a plain MP4 link sits under the frame for no-JS; no autoplay and no poster attribute, because the only poster in the repo states 9:16 while the film is 16:9 (round 3) |
+| Film | `.film`, `.film__stage`, `.film__still`, `.film__video`, `.film__play` | a 16:9 stage holding a 1280×720 frame from the film itself (the “Screen off. Still reading.” title card), a hidden `<video preload="none" controls>` and one visible play button; the press swaps the still for the film; a plain MP4 link sits under the frame for no-JS; no autoplay and no poster attribute, so the pre-play image cannot contradict the cut |
 | Spec list | `.specs`, `.spec` | `<dl>`: mono label, value; one line each; tabular numerals |
 | Model row | `.model`, `.model__size`, `.model__meta` | five compact rows on the landing page (name, size, one clause); the full comparison is stacked `<dl>` rows on `/voices/`, never a wide table (round 1: AD-5, AR-2) |
 | Waveform | `.wave` | 5 bars, 3.2 s cycle, three cycles then rest, one instance on the page, `aria-hidden` |
@@ -120,7 +120,7 @@ margin, padding; no bounce; reduced motion rests everything.
 | # | Motion | Tokens | Purpose |
 |---|---|---|---|
 | 1 | Hero entrance, once on load: h1 rises as one block (opacity + 16 px, 700 ms), then lead and buttons fade up 12 px (520 ms, 60 ms apart); hero plate settles 1.05 → 1 over 1.1 s inside `overflow:hidden`. CSS only, no word masks, wrapped in `prefers-reduced-motion: no-preference` (round 1: MO-1, MO-2) | `--m-enter`, `--m-ease-enter` | the title arrives first, then what to do |
-| 2 | Read-along: a 2 px `--paper-accent` underline sweeps under each word (`transform: scaleX(0 → 1)`, 120 ms, 28 ms steps ≈ 1.7 s) as the section is 35 % visible; once. Word spans hold whole words, so reading order and pronunciation are unchanged; no `aria-label` on the `<p>` (a paragraph has no usable accessible name in ARIA 1.2 — round 1 MO-5 was corrected during implementation) | `--m-read` 120 ms, `--m-read-step` 28 ms | shows the feature using the page |
+| 2 | Read-along: a low-contrast `--paper-highlight` marker sweeps behind each word (`transform: scaleX(0 → 1)`, 120 ms, 28 ms steps ≈ 1.7 s) as the section is 35 % visible; once. Word spans hold whole words, so reading order and pronunciation are unchanged; no `aria-label` on the `<p>` (a paragraph has no usable accessible name in ARIA 1.2 — round 1 MO-5 was corrected during implementation) | `--m-read` 120 ms, `--m-read-step` 28 ms | shows the feature using the page, without turning the sentence into a row of links |
 | 3 | Waveform: five bars, 3.2 s cycle, three cycles then stop; `animation-play-state: paused` while off-screen | `--m-cycle` 3.2 s, linear | a voice is a physical thing; no perpetual motion |
 | 4 | Hover: buttons step 1 px and their fill steps 14 % toward ink; links draw a 1 px underline left→right; linked plates lift 2 px and darken their border, the image zooms 1.02; arrow nudges 3 px | `--m-in` 150, `--m-out` 120 | every control answers the pointer |
 | 5 | Press: 1 px down + `scale(.985)` | `--m-press` 90 | the press is felt |

@@ -13,9 +13,10 @@
   <meta property="og:site_name" content="NovelSpeak">
   <meta property="og:title" content="Voices — NovelSpeak">
   <meta property="og:description" content="Android system TTS and four on-device neural voices: Supertonic 3, Kokoro, Pocket TTS and ZipVoice. Sizes, speaker counts, download and verification.">
-  <meta property="og:image" content="https://vipulgote1999.github.io/NovelSpeak/assets/img/reader-540.png">
-  <meta property="og:image:width" content="540">
-  <meta property="og:image:height" content="960">
+  <meta property="og:image" content="https://vipulgote1999.github.io/NovelSpeak/assets/img/og-1200x630.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="NovelSpeak — read web novels out loud. An Android reader with on-device voices, shown beside a real player screen.">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="../assets/img/icon-96.png" sizes="96x96" type="image/png">
   <link rel="apple-touch-icon" href="../assets/img/icon-192.png">
@@ -92,27 +93,27 @@
           <ul class="models">
             <li class="model">
               <span class="model__name">Supertonic 3</span>
-              <span class="model__size">123 MB</span>
-              <p class="model__meta">Two curated styles from twenty. The fast default once installed, and the benchmark's speed and memory winner.</p>
+              <span class="model__size">123&nbsp;MB</span>
+              <p class="model__meta">Two curated styles from twenty. The fast default once installed, and the benchmark’s speed and memory winner.</p>
             </li>
             <li class="model">
               <span class="model__name">Kokoro</span>
-              <span class="model__size">103 MB</span>
+              <span class="model__size">103&nbsp;MB</span>
               <p class="model__meta">Two curated English voices from eleven. Audiobook pacing, about 3× slower in absolute synthesis; still the quality option pending a listening test.</p>
             </li>
             <li class="model">
               <span class="model__name">Pocket TTS</span>
-              <span class="model__size">98 MB</span>
+              <span class="model__size">98&nbsp;MB</span>
               <p class="model__meta">Zero-shot cloning from a short reference clip. Audio only.</p>
             </li>
             <li class="model">
               <span class="model__name">ZipVoice</span>
-              <span class="model__size">104 MB + 52 MB</span>
+              <span class="model__size">104&nbsp;MB + 52&nbsp;MB</span>
               <p class="model__meta">Cloning driven by a clip plus a verbatim transcript, Chinese and English. Needs the 24 kHz vocoder.</p>
             </li>
             <li class="model">
               <span class="model__name">Vocoder 24 kHz</span>
-              <span class="model__size">52 MB</span>
+              <span class="model__size">52&nbsp;MB</span>
               <p class="model__meta">The dependency ZipVoice needs. Nothing else uses it.</p>
             </li>
           </ul>
@@ -137,7 +138,7 @@
             <li>The bundle comes from the upstream <code>k2-fsa/sherpa-onnx</code> <code>tts-models</code> release.</li>
             <li>Every file is checked against a SHA-256 pinned in the app.</li>
             <li>Extraction shows per-file progress and holds a wake lock so the phone does not sleep
-              through it. It takes about one to three minutes; a 45 s no-progress watchdog aborts
+              through it. It takes about one to three minutes; a 45&nbsp;s no-progress watchdog aborts
               with a readable error.</li>
           </ol>
         </div>
@@ -147,7 +148,7 @@
             <div><dt>Verified</dt><dd>SHA-256, pinned per file</dd></div>
             <div><dt>Bundled in the APK</dt><dd>Nothing</dd></div>
             <div><dt>Install time</dt><dd>About 1–3 minutes on a phone</dd></div>
-            <div><dt>Failure</dt><dd>45 s no-progress watchdog with a readable error</dd></div>
+            <div><dt>Failure</dt><dd>45&nbsp;s no-progress watchdog with a readable error</dd></div>
           </dl>
         </div>
       </div>
@@ -163,7 +164,7 @@
           <p>The harness is in the repository, so the numbers can be reproduced on another phone:
             <a href="https://github.com/vipulgote1999/NovelSpeak/tree/main/tools/cast-benchmark">tools/cast-benchmark</a>
             and <a href="https://github.com/vipulgote1999/NovelSpeak/tree/main/tools/tts-benchmark">tools/tts-benchmark</a>.</p>
-          <p class="note">Not measured yet: a listening test for Kokoro's pacing, emotional range,
+          <p class="note">Not measured yet: a listening test for Kokoro’s pacing, emotional range,
             and ultra-short lines, which are the weakest case for the cast parser.</p>
         </div>
         <div>
@@ -209,7 +210,7 @@
     <div>
       <h2>A quiet reader that speaks.</h2>
       <p class="note">NovelSpeak is not affiliated with any website or publisher. The text stays
-        the author's.</p>
+        the author’s.</p>
     </div>
     <nav class="closing__links" aria-label="Footer">
       <a href="../features/">Features</a>
@@ -221,7 +222,7 @@
     </nav>
   </div>
   <div class="wrap">
-    <p class="closing__legal"><span>Apache-2.0 · 1.3.0 · Built for Android 7.0+</span><span>© 2026 NovelSpeak contributors</span></p>
+    <p class="closing__legal"><span>Apache-2.0 · APK 1.3.0 · Built for Android 7.0+</span><span>© 2026 NovelSpeak contributors</span></p>
   </div>
 </footer>
 
