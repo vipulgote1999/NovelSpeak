@@ -4,36 +4,36 @@
    Every colour, radius, space and duration below is a token; no component rule invents one. */
 
 :root {
-  /* ground and ink */
-  --ink: #0e1318;
-  --ink-2: #161d24;
-  --ink-3: #1d262e;
-  --rule: #2c3944;
-  --rule-ui: #5b6f80;
+  /* ground and ink: a deeper green-black, warmed for the brass lamp */
+  --ink: #101915;
+  --ink-2: #17221c;
+  --ink-3: #1f2c25;
+  --rule: #2d3b32;
+  --rule-ui: #617b6c;
 
-  /* text on ink */
-  --text: #f1f6fa;
-  --text-2: #b9c6d2;
-  --text-3: #9aa9b8;
+  /* text on ink: bone, not blue-white */
+  --text: #f2ece1;
+  --text-2: #c4cdc0;
+  --text-3: #9fb0a2;
 
-  /* the one accent */
-  --accent: #6fe7be;
-  --accent-hover: #5fd6ae;
-  --accent-ink: #06231a;
+  /* the one accent: brass, the reading lamp */
+  --accent: #e2b96d;
+  --accent-hover: #d4a95c;
+  --accent-ink: #241a08;
 
-  /* the one light surface */
-  --paper: #f2ece2;
-  --paper-2: #e8dfd0;
-  --paper-sheet: #fbf7ef;
-  --paper-rule: #cfc3ae;
-  --paper-text: #191c1f;
-  --paper-text-2: #4b5157;
-  --paper-accent: #0f5138;
-  --paper-highlight: rgba(15, 81, 56, 0.14);
+  /* the one light surface: parchment */
+  --paper: #f1e8d6;
+  --paper-2: #e6dbc6;
+  --paper-sheet: #fbf5e9;
+  --paper-rule: #cfc1a8;
+  --paper-text: #1b211b;
+  --paper-text-2: #4e574e;
+  --paper-accent: #2e5a43;
+  --paper-highlight: rgba(46, 90, 67, 0.14);
 
   /* the one glow, and the one shadow */
-  --lamp: radial-gradient(60% 50% at 72% 28%, rgba(111, 231, 190, 0.10), transparent 70%);
-  --shadow-paper: 0 32px 64px -40px rgba(25, 28, 31, 0.55);
+  --lamp: radial-gradient(60% 50% at 72% 28%, rgba(226, 185, 109, 0.10), transparent 70%);
+  --shadow-paper: 0 32px 64px -40px rgba(20, 26, 21, 0.55);
 
   /* type */
   --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
