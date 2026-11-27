@@ -47,7 +47,7 @@ fi
 
 echo
 echo "== Browser regressions"
-for script in tools/extract-test/run.sh tools/adblock-test/procedural.sh; do
+for script in tools/extract-test/run.sh tools/manga-extract-test/run.sh tools/adblock-test/procedural.sh; do
   if bash "$script"; then
     :
   else

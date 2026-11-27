@@ -2508,28 +2508,25 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         extractNow(append = false)
     }
 
-    /** Read a manga chapter: collect page images in the browser, then open the image reader. */
+    /** Read a manga chapter: collect consecutive page images in the browser, then open the reader. */
     private fun readMangaChapter() {
         if (mangaExtractionRunning) return
         mangaExtractionRunning = true
-        statusView.text = "Collecting manga images…"
-        web.evaluateJavascript("window.__mangaUrls=[]; window.__mangaDone=false; window.__mangaExtracting=false;", null)
-        val inject = "(function(){ if(window.__mangaExtracting) return; window.__mangaExtracting=true; window.__mangaUrls=[]; window.__mangaDone=false; " +
-            "var seen={}; var bad=/logo|icon|avatar|report|\\.svg(\\?|$)|data:image|web-app-manifest/i; " +
-            "function collect(){ var imgs=Array.from(document.querySelectorAll('img')); imgs.forEach(function(i){ " +
-            "var u=i.getAttribute('data-src')||i.getAttribute('data-lazy-src')||i.getAttribute('data-original')||i.getAttribute('srcset')||i.src; " +
-            "if(u && u.indexOf('http')!==0 && u.indexOf('//')===0) u=location.protocol+u; " +
-            "if(u && u.indexOf('http')!==0 && u.charAt(0)==='/') u=location.origin+u; " +
-            "if(u && u.indexOf(' ')>=0) u=u.split(' ')[0]; " +
-            "var nw=i.naturalWidth||i.width||0; var nh=i.naturalHeight||i.height||0; " +
-            "var isPage=(nh>=250 && nw>=150) && (nh>nw*1.05 || /page|chapter|manga|ch[0-9]/i.test((i.alt||'')+' '+u)); " +
-            "if(u && u.indexOf('http')===0 && !seen[u] && !bad.test(u) && !bad.test(i.alt||'') && isPage){ seen[u]=1; window.__mangaUrls.push(u); } }); " +
-            "if(window.__mangaUrls.length===0){ var bg=document.querySelectorAll('[style*=\"background-image\"]'); bg.forEach(function(e){ var m=e.style.backgroundImage.match(/url\\([\\\"']?([^\\\"')]+)[\\\"']?\\)/); if(m){ var u=m[1]; if(u.indexOf('http')!==0 && u.charAt(0)==='/') u=location.origin+u; if(u.indexOf('http')===0 && !seen[u] && !bad.test(u)){ seen[u]=1; window.__mangaUrls.push(u); } } }); } " +
-            "} " +
-            "function step(){ collect(); var before=window.scrollY; window.scrollBy(0, Math.max(window.innerHeight*0.75, 500)); " +
-            "if(window.scrollY > before + 2){ setTimeout(step, 750); } else { collect(); window.scrollTo(0,0); window.__mangaExtracting=false; window.__mangaDone=true; } } " +
-            "step(); })();"
-        web.evaluateJavascript(inject, null)
+        statusView.text = "Scanning manga pages…"
+        val script = try {
+            assets.open("manga-extract.js").bufferedReader().use { it.readText() }
+        } catch (t: Throwable) {
+            DiagLog.exception(this, "manga extractor asset missing", t)
+            mangaExtractionRunning = false
+            statusView.text = "Manga extractor unavailable"
+            return
+        }
+        web.evaluateJavascript(
+            "window.__nsMangaDone=false;window.__nsMangaRunning=false;" +
+                "window.__nsMangaResult=null;window.__nsMangaProgress='';",
+            null
+        )
+        web.evaluateJavascript(script, null)
 
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         val start = System.currentTimeMillis()
@@ -2539,58 +2536,88 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                     mangaExtractionRunning = false
                     return
                 }
-                web.evaluateJavascript("window.__mangaDone", { doneVal ->
+                web.evaluateJavascript(
+                    "window.__nsMangaDone ? window.__nsMangaResult : null"
+                ) { value ->
                     if (isFinishing || isDestroyed) return@evaluateJavascript
-                    val done = doneVal == "true"
-                    if (done || System.currentTimeMillis() - start > 25000) {
+                    val result = parseMangaResult(value)
+                    val elapsed = System.currentTimeMillis() - start
+                    if (result != null && result.second.isNotEmpty()) {
                         mangaExtractionRunning = false
-                        web.evaluateJavascript("window.__mangaUrls", { value ->
-                            val urls = parseJsonStringArray(value)
-                            if (urls.isEmpty()) {
-                                statusView.text = "No manga images found on this page"
-                            } else {
-                                // Keep OCR and the page images together in the dedicated
-                                // reader: it overlays each OCR box on the exact page bitmap
-                                // and follows the TTS cursor from page to page.
-                                statusView.text =
-                                    "Found ${urls.size} manga pages. Opening image reader…"
-                                mangaReadingActive = true
-                                val intent = Intent(
-                                    this@MainActivity, MangaReaderActivity::class.java
-                                ).apply {
-                                    putStringArrayListExtra(
-                                        MangaReaderActivity.EXTRA_IMAGE_URLS,
-                                        ArrayList(urls)
-                                    )
-                                    putExtra(
-                                        MangaReaderActivity.EXTRA_TITLE,
-                                        web.title ?: "Manga"
-                                    )
-                                    putExtra(
-                                        MangaReaderActivity.EXTRA_REFERER,
-                                        web.url ?: lastDisplayedUrl
-                                    )
-                                }
-                                startActivity(intent)
-                            }
-                        })
+                        val urls = result.second
+                        val title = cleanMangaTitle(result.first, web.title ?: "Manga")
+                        DiagLog.line(
+                            this@MainActivity,
+                            "manga extract pages=${urls.size} elapsed=${elapsed}ms " +
+                                "title=\"${title.take(80)}\" first=${urls.first().take(120)}"
+                        )
+                        // Keep OCR and the page images together in the dedicated reader: it
+                        // stacks the chapter, overlays each OCR box and follows the TTS cursor.
+                        statusView.text = "Found ${urls.size} manga pages. Opening reader…"
+                        mangaReadingActive = true
+                        val intent = Intent(
+                            this@MainActivity, MangaReaderActivity::class.java
+                        ).apply {
+                            putStringArrayListExtra(
+                                MangaReaderActivity.EXTRA_IMAGE_URLS,
+                                ArrayList(urls)
+                            )
+                            putExtra(MangaReaderActivity.EXTRA_TITLE, title)
+                            putExtra(
+                                MangaReaderActivity.EXTRA_REFERER,
+                                web.url ?: lastDisplayedUrl
+                            )
+                        }
+                        startActivity(intent)
+                    } else if (elapsed > 30000) {
+                        mangaExtractionRunning = false
+                        statusView.text = "No consecutive manga pages found on this page"
+                        DiagLog.line(this@MainActivity, "manga extract empty elapsed=${elapsed}ms")
                     } else {
-                        handler.postDelayed(this, 1000)
+                        handler.postDelayed(this, 500)
                     }
-                })
+                }
             }
         }
-        handler.postDelayed(poll, 1500)
+        handler.postDelayed(poll, 700)
     }
 
-    private fun parseJsonStringArray(value: String?): List<String> {
-        if (value.isNullOrBlank() || value == "null") return emptyList()
+    /**
+     * The extractor returns `{title, urls, count, ...}`; evaluateJavascript gives us that object
+     * as JSON text. Defensive parsing keeps a malformed page from crashing the browser activity.
+     */
+    private fun parseMangaResult(value: String?): Pair<String, List<String>>? {
+        if (value.isNullOrBlank() || value == "null") return null
         return try {
-            val arr = org.json.JSONArray(value)
-            (0 until arr.length()).map { arr.getString(it) }
+            val obj = org.json.JSONObject(value)
+            val arr = obj.optJSONArray("urls") ?: return null
+            val urls = ArrayList<String>(arr.length())
+            for (i in 0 until arr.length()) {
+                val url = arr.optString(i)
+                if (url.startsWith("http://") || url.startsWith("https://")) urls.add(url)
+            }
+            val title = obj.optString("title")
+            title to urls
         } catch (t: Throwable) {
-            emptyList()
+            null
         }
+    }
+
+    /** "Read One Piece Manga Chapter 1 in English - Free Online" -> "One Piece Manga Chapter 1". */
+    private fun cleanMangaTitle(extracted: String, pageTitle: String): String {
+        var title = extracted.ifBlank { pageTitle }
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        title = title.replace(Regex("^read\\s+", RegexOption.IGNORE_CASE), "")
+        title = title.replace(
+            Regex("\\s+in\\s+English\\b.*$", RegexOption.IGNORE_CASE),
+            ""
+        )
+        title = title.replace(
+            Regex("\\s*[-|–—]\\s*(read|free|online|manga online).*$", RegexOption.IGNORE_CASE),
+            ""
+        )
+        return title.ifBlank { "Manga" }.take(80)
     }
 
     private fun extractNow(append: Boolean) {

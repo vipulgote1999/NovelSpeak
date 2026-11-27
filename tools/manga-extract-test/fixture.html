@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fixture Manga Chapter 3 - Read Free Online</title>
+  <style>
+    body { background: #1a1d23; color: #eee; font-family: sans-serif; margin: 0; }
+    .page { width: 300px; margin: 8px auto; display: block; }
+    #out { white-space: pre-wrap; color: #7fe; padding: 12px; }
+  </style>
+  <!-- Simulates a Next.js chapter payload: all five pages exist in the serialized data,
+       but only the first two <img> tags are rendered at load time. The extractor must
+       recover the complete consecutive run from the payload, not just the visible DOM. -->
+  <script>
+    window.__NEXT_DATA__ = {
+      props: {
+        pageProps: {
+          pages: [
+            { page: 1, url: 'pages\/p01.png' },
+            { page: 2, url: 'pages\/p02.png' },
+            { page: 3, url: 'pages\/p03.png' },
+            { page: 4, url: 'pages\/p04.png' },
+            { page: 5, url: 'pages\/p05.png' }
+          ]
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+  <h1>Fixture Manga Chapter 3</h1>
+  <img class="page" src="pages/p01.png" width="300" height="450" alt="Page 1">
+  <img class="page" src="pages/p02.png" width="300" height="450" alt="Page 2">
+  <img src="logo.png" width="80" height="80" alt="site logo">
+  <img src="avatar.png" width="80" height="80" alt="reader avatar">
+  <pre id="out">PENDING</pre>
+  <script src="../../app/assets/manga-extract.js"></script>
+  <script>
+    (function wait() {
+      if (window.__nsMangaDone) {
+        document.getElementById('out').textContent =
+          JSON.stringify(window.__nsMangaResult);
+      } else {
+        setTimeout(wait, 50);
+      }
+    })();
+  </script>
+</body>
+</html>
