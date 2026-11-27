@@ -16,6 +16,9 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.BackgroundColorSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -25,28 +28,27 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import app.novelspeak.manga.MangaCue
+import app.novelspeak.manga.MangaFeedView
 import app.novelspeak.manga.MangaOcr
 import app.novelspeak.manga.MangaPageLoader
 import app.novelspeak.manga.MangaPageSource
-import app.novelspeak.manga.MangaPageView
 import app.novelspeak.manga.MangaSession
-import app.novelspeak.manga.OcrBlock
+import app.novelspeak.manga.MangaTextLayout
 import java.io.File
 
 /**
- * Page-synchronised manga reader.
+ * Page-synchronised manga reader with a continuous vertical feed.
  *
- * The page image is the primary surface: OCR boxes are drawn over it and the bubble currently
- * being spoken is highlighted. As the shared [Reader] advances, the view automatically turns to
- * the page that owns the active text, so image and speech always come from the same page.
+ * Pages are extracted from the browser as a consecutive image chapter and stacked in one scroll
+ * surface. OCR runs page by page on a worker thread; each page's bubbles are sorted into reading
+ * order and split into validated speech chunks. As the shared [Reader] advances, the feed scrolls
+ * the spoken bubble into view and highlights its box, so image, text and speech always agree.
  *
- * OCR runs page by page on a worker thread. Text is appended to the reader queue as pages
- * finish, which means playback can start after the first page instead of waiting for a whole
- * chapter, while later pages keep streaming in behind it.
+ * Playback can start after the first page while OCR keeps streaming later pages behind it.
  */
 class MangaReaderActivity : Activity(), Reader.Listener {
 
-    private lateinit var pageView: MangaPageView
+    private lateinit var feedView: MangaFeedView
     private lateinit var emptyHint: TextView
     private lateinit var titleView: TextView
     private lateinit var pageBadge: TextView
@@ -69,7 +71,6 @@ class MangaReaderActivity : Activity(), Reader.Listener {
     private val loader by lazy { MangaPageLoader(this) }
 
     private val pages = ArrayList<MangaPageSource>()
-    private val pageResults = ArrayList<MangaSession.PageResult?>()
     private val cues = ArrayList<MangaCue>()
     private val cueByReaderIndex = HashMap<Int, MangaCue>()
 
@@ -84,10 +85,8 @@ class MangaReaderActivity : Activity(), Reader.Listener {
     private var playbackStarted = false
     private var autoResumeWhenBuffered = false
 
-    private var currentPage = -1
-    private var currentBlocks: List<OcrBlock> = emptyList()
-    private var currentPageBlock = -1
-    private var pageLoadToken = 0
+    private var activePage = -1
+    private var activeCue: MangaCue? = null
     private var sessionGeneration = 0
     private var destroyed = false
 
@@ -97,6 +96,7 @@ class MangaReaderActivity : Activity(), Reader.Listener {
         title = intent.getStringExtra(EXTRA_TITLE)?.takeIf { it.isNotBlank() } ?: "Manga page"
         referer = intent.getStringExtra(EXTRA_REFERER)
         buildUi()
+        reader.setWordHighlightOverride(true)
         reader.addListener(this)
 
         val urls = intent.getStringArrayListExtra(EXTRA_IMAGE_URLS)
@@ -108,7 +108,6 @@ class MangaReaderActivity : Activity(), Reader.Listener {
             }
             !uriStr.isNullOrBlank() -> {
                 setPages(listOf(MangaPageSource(uriStr, referer)))
-                loadPageBitmap(0)
                 statusView.text = "Page loaded. Tap OCR + READ."
             }
             else -> {
@@ -166,13 +165,20 @@ class MangaReaderActivity : Activity(), Reader.Listener {
             setBackgroundColor(Color.BLACK)
             clipToPadding = false
         }
-        pageView = MangaPageView(this).apply {
+        feedView = MangaFeedView(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
             )
-            onBlockTap = { blockIndex -> jumpToBox(blockIndex) }
+            onBlockTap = { page, block -> jumpToBox(page, block) }
+            onVisiblePageChanged = { page ->
+                // While speech owns the scroll, the spoken page is authoritative. Only a
+                // manual browse (playback stopped) moves the badge with the viewport.
+                if (pages.isNotEmpty() && !reader.state().playing) {
+                    pageBadge.text = "${page + 1} / ${pages.size}"
+                }
+            }
         }
-        imageFrame.addView(pageView)
+        imageFrame.addView(feedView)
         emptyHint = TextView(this).apply {
             text = "Open a page or load the sample"
             textSize = 14f
@@ -198,7 +204,12 @@ class MangaReaderActivity : Activity(), Reader.Listener {
             isClickable = true
             isFocusable = true
             setOnClickListener { showFullTextDialog() }
-            contentDescription = "Current manga text. Tap to see all text"
+            setOnLongClickListener {
+                showChunkList()
+                true
+            }
+            contentDescription =
+                "Current manga text. Tap to see all text; long press for the chunk list"
         }
         currentText = TextView(this).apply {
             textSize = 15f
@@ -297,7 +308,7 @@ class MangaReaderActivity : Activity(), Reader.Listener {
         }
         actions.addView(ocrButton)
         actions.addView(
-            textAction("Fit", "Fit the whole page") { pageView.resetZoom() }
+            textAction("Chunks", "Show every detected text chunk") { showChunkList() }
         )
         root.addView(actions)
 
@@ -326,7 +337,7 @@ class MangaReaderActivity : Activity(), Reader.Listener {
 
         // The user asked for image + text together; make the relationship explicit to
         // screen readers too.
-        pageView.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+        feedView.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
         textPanel.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
     }
 
@@ -392,8 +403,6 @@ class MangaReaderActivity : Activity(), Reader.Listener {
         sessionGeneration++
         pages.clear()
         pages.addAll(newPages)
-        pageResults.clear()
-        repeat(pages.size) { pageResults.add(null) }
         cues.clear()
         cueByReaderIndex.clear()
         queueStarted = false
@@ -402,19 +411,18 @@ class MangaReaderActivity : Activity(), Reader.Listener {
         ocrProcessed = 0
         ocrFailed = 0
         autoResumeWhenBuffered = false
-        currentPage = -1
-        currentPageBlock = -1
-        currentBlocks = emptyList()
+        activePage = -1
+        activeCue = null
         textPanel.visibility = View.GONE
         originalText.visibility = View.GONE
         pageBadge.text = if (pages.isEmpty()) "0 / 0" else "1 / ${pages.size}"
         emptyHint.text = if (pages.isEmpty()) {
             "Open a page or load the sample"
         } else {
-            "Loading page…"
+            "Loading pages…"
         }
         emptyHint.visibility = View.VISIBLE
-        pageView.setPage(null, emptyList(), -1)
+        feedView.setPages(pages.toList(), loader)
         ocrProgress.text = if (pages.isEmpty()) "" else "0 / ${pages.size}"
         ocrButton.isEnabled = pages.isNotEmpty()
         ocrButton.alpha = if (pages.isNotEmpty()) 1f else 0.4f
@@ -430,9 +438,7 @@ class MangaReaderActivity : Activity(), Reader.Listener {
             val bmp = BitmapFactory.decodeFile(f.absolutePath)
             setPages(listOf(MangaPageSource(Uri.fromFile(f).toString())))
             if (bmp != null) {
-                currentPage = 0
-                pageView.setPage(bmp, emptyList(), -1, NovelSpeakApp.instance.prefs.highlight)
-                pageBadge.text = "1 / 1"
+                feedView.setPageImage(0, bmp)
                 emptyHint.visibility = View.GONE
             }
             statusView.text = "Sample loaded. Tap OCR + READ."
@@ -456,14 +462,16 @@ class MangaReaderActivity : Activity(), Reader.Listener {
         queueStarted = false
         cues.clear()
         cueByReaderIndex.clear()
-        repeat(pages.size) { if (it >= pageResults.size) pageResults.add(null) else pageResults[it] = null }
         ocrComplete = false
         ocrProcessed = 0
         ocrFailed = 0
         ocrTotal = pages.size
         autoResumeWhenBuffered = false
         playbackStarted = false
-        currentPageBlock = -1
+        activeCue = null
+        feedView.setPages(pages.toList(), loader)
+        emptyHint.text = "Loading pages…"
+        emptyHint.visibility = View.VISIBLE
         textPanel.visibility = View.GONE
         currentText.text = "OCR text appears here while the page is read aloud."
         originalText.visibility = View.GONE
@@ -481,10 +489,16 @@ class MangaReaderActivity : Activity(), Reader.Listener {
             configured
         }
         val translateTo = if (prefs.mangaTranslate) prefs.mangaTargetLanguage else null
+        val rightToLeft = when (prefs.mangaReadingDirection) {
+            "rtl" -> true
+            "ltr" -> false
+            else -> ocrLang == MangaOcr.LANG_JAPANESE || ocrLang == MangaOcr.LANG_CHINESE
+        }
         DiagLog.line(
             this,
             "manga reader start pages=${pages.size} ocr=$ocrLang " +
-                "translate=${translateTo ?: "off"} title=\"${title.take(60)}\""
+                "translate=${translateTo ?: "off"} rtl=$rightToLeft " +
+                "maxChunk=${prefs.maxSentenceChars} title=\"${title.take(60)}\""
         )
 
         val newSession = MangaSession(
@@ -493,6 +507,8 @@ class MangaReaderActivity : Activity(), Reader.Listener {
             loader = loader,
             ocrLanguage = ocrLang,
             translateTo = translateTo,
+            maxChunkChars = prefs.maxSentenceChars,
+            rightToLeft = rightToLeft,
             listener = object : MangaSession.Listener {
                 override fun onPageStarted(pageIndex: Int, total: Int) {
                     postUi {
@@ -505,16 +521,9 @@ class MangaReaderActivity : Activity(), Reader.Listener {
                 override fun onPageImage(pageIndex: Int, bitmap: Bitmap) {
                     postUi {
                         if (gen != sessionGeneration) return@postUi
-                        if (currentPage < 0) {
-                            currentPage = pageIndex
-                            currentBlocks = pageResults.getOrNull(pageIndex)?.blocks ?: emptyList()
-                            pageView.setPage(
-                                bitmap, currentBlocks, -1,
-                                NovelSpeakApp.instance.prefs.highlight
-                            )
-                            pageBadge.text = "${pageIndex + 1} / ${pages.size}"
-                            emptyHint.visibility = View.GONE
-                        }
+                        feedView.setPageImage(pageIndex, bitmap)
+                        emptyHint.visibility = View.GONE
+                        pageBadge.text = "${(activePage.takeIf { it >= 0 } ?: pageIndex) + 1} / ${pages.size}"
                     }
                 }
 
@@ -554,28 +563,22 @@ class MangaReaderActivity : Activity(), Reader.Listener {
     }
 
     private fun onPageTextReady(result: MangaSession.PageResult) {
-        while (pageResults.size <= result.pageIndex) pageResults.add(null)
-        pageResults[result.pageIndex] = result
         ocrProcessed++
         ocrProgress.text = "$ocrProcessed / $ocrTotal"
+        feedView.setPageResult(result.pageIndex, result)
 
-        if (result.pageIndex == currentPage) {
-            currentBlocks = result.blocks
-            pageView.setBlocks(result.blocks, currentPageBlock)
-            if (NovelSpeakApp.instance.prefs.highlight) pageView.setBoxesVisible(true)
-        }
-
+        val translate = NovelSpeakApp.instance.prefs.mangaTranslate
         var added = 0
-        for (i in result.blocks.indices) {
-            val block = result.blocks[i]
-            val text = result.texts.getOrNull(i)?.takeIf { it.isNotBlank() } ?: block.text
-            if (text.isBlank()) continue
+        for (chunk in result.chunks) {
+            if (!MangaTextLayout.isSpeakable(chunk.text)) continue
+            val block = result.blocks.getOrNull(chunk.blockIndex) ?: continue
             val cue = MangaCue(
                 readerIndex = cues.size,
                 pageIndex = result.pageIndex,
-                pageBlockIndex = i,
-                text = text,
-                originalText = block.text,
+                pageBlockIndex = chunk.blockIndex,
+                blockIndices = chunk.blockIndices,
+                text = chunk.text,
+                originalText = if (translate) chunk.originalText else "",
                 boundingBox = block.boundingBox
             )
             cues.add(cue)
@@ -583,25 +586,26 @@ class MangaReaderActivity : Activity(), Reader.Listener {
             added++
         }
         if (added > 0) appendToReader(result, added)
-        if (cues.isEmpty()) {
-            statusView.text = "No text on page ${result.pageIndex + 1}…"
+        if (result.chunks.isEmpty()) {
+            statusView.text = "No speech on page ${result.pageIndex + 1} · OCR ${ocrProcessed}/${ocrTotal}"
         }
         syncControls()
     }
 
     private fun appendToReader(result: MangaSession.PageResult, added: Int) {
         val newCues = cues.subList(cues.size - added, cues.size)
-        val blocks = newCues.map { cue ->
+        val newBlocks = newCues.map { cue ->
             Reader.Block(text = cue.text, blockIndex = cue.readerIndex, charStart = -1, charEnd = -1)
         }
         if (!queueStarted) {
-            reader.setContent(title, blocks)
+            reader.setContent(title, newBlocks)
             queueStarted = true
-            statusView.text = "Page ${result.pageIndex + 1} ready · ${blocks.size} lines. Tap Play."
+            statusView.text =
+                "Page ${result.pageIndex + 1} ready · ${newBlocks.size} chunks. Tap Play."
             playButton.alpha = 1f
             playButton.isEnabled = true
         } else {
-            reader.appendContent(blocks)
+            reader.appendContent(newBlocks)
             if (autoResumeWhenBuffered && !reader.state().playing) {
                 autoResumeWhenBuffered = false
                 // finishQueue() leaves the cursor on the last spoken line; move it to the
@@ -610,7 +614,8 @@ class MangaReaderActivity : Activity(), Reader.Listener {
                 reader.play()
                 statusView.text = "Resuming with page ${result.pageIndex + 1}…"
             } else if (!reader.state().playing) {
-                statusView.text = "${cues.size} lines ready · page ${result.pageIndex + 1}"
+                statusView.text =
+                    "${cues.size} chunks ready · OCR ${ocrProcessed}/${ocrTotal}"
             }
         }
         syncControls()
@@ -628,9 +633,9 @@ class MangaReaderActivity : Activity(), Reader.Listener {
         } else {
             val readerState = reader.state()
             statusView.text = when {
-                readerState.playing -> "Playing"
+                readerState.playing -> "Playing · ${cues.size} chunks"
                 readerState.status == "Finished" -> "Finished"
-                else -> "Ready · ${cues.size} lines. Tap Play."
+                else -> "Ready · ${cues.size} chunks. Tap Play."
             }
         }
         syncControls()
@@ -640,103 +645,80 @@ class MangaReaderActivity : Activity(), Reader.Listener {
     // Page + box synchronisation
     // ------------------------------------------------------------------------------------
 
-    private fun showPage(pageIndex: Int, activeBlockIndex: Int) {
-        if (pageIndex !in pages.indices) return
-        val pageChanged = pageIndex != currentPage
-        currentPage = pageIndex
-        currentPageBlock = activeBlockIndex
-        pageBadge.text = "${pageIndex + 1} / ${pages.size}"
-        currentBlocks = pageResults.getOrNull(pageIndex)?.blocks ?: emptyList()
-
-        val cached = loader.cached(pages[pageIndex].uri)
-        if (cached != null) {
-            emptyHint.visibility = View.GONE
-            if (pageChanged) {
-                pageView.setPage(
-                    cached, currentBlocks, activeBlockIndex,
-                    NovelSpeakApp.instance.prefs.highlight
-                )
-            } else {
-                pageView.setBlocks(currentBlocks, activeBlockIndex)
-                pageView.setActiveBlock(activeBlockIndex)
-            }
-            return
-        }
-
-        val token = ++pageLoadToken
-        if (pageChanged) pageView.setPage(null, emptyList(), -1)
-        emptyHint.text = "Loading page ${pageIndex + 1}…"
-        emptyHint.visibility = View.VISIBLE
-        statusView.text = "Loading page ${pageIndex + 1}…"
-        Thread {
-            val bmp = loader.load(pages[pageIndex])
-            postUi {
-                if (token != pageLoadToken || currentPage != pageIndex) return@postUi
-                if (bmp == null) {
-                    emptyHint.text = "Could not load page ${pageIndex + 1}"
-                    statusView.text = "Could not load page ${pageIndex + 1}"
-                    return@postUi
-                }
-                emptyHint.visibility = View.GONE
-                currentBlocks = pageResults.getOrNull(pageIndex)?.blocks ?: currentBlocks
-                pageView.setPage(
-                    bmp, currentBlocks, currentPageBlock,
-                    NovelSpeakApp.instance.prefs.highlight
-                )
-            }
-        }.start()
-    }
-
-    private fun loadPageBitmap(pageIndex: Int) {
-        if (pageIndex !in pages.indices) return
-        showPage(pageIndex, -1)
-    }
-
-    private fun jumpToBox(pageBlockIndex: Int) {
+    private fun jumpToBox(pageIndex: Int, pageBlockIndex: Int) {
         val cue = cues.firstOrNull {
-            it.pageIndex == currentPage && it.pageBlockIndex == pageBlockIndex
+            it.pageIndex == pageIndex && it.blockIndices.contains(pageBlockIndex)
         } ?: return
+        activePage = pageIndex
         reader.seek(cue.readerIndex)
+        feedView.resumeFollowing()
+        feedView.setActive(pageIndex, cue.blockIndices)
         statusView.text = if (reader.state().playing) {
-            "Jumped to this line"
+            "Jumped to this bubble"
         } else {
-            "Selected page ${currentPage + 1} line"
+            "Selected page ${pageIndex + 1} bubble"
         }
     }
 
     private fun jumpPage(delta: Int) {
-        if (cues.isEmpty()) return
-        val from = currentPage.coerceAtLeast(0)
-        var target = -1
-        if (delta > 0) {
-            for (cue in cues) {
-                if (cue.pageIndex > from && (target < 0 || cue.pageIndex < target)) {
-                    target = cue.pageIndex
-                }
-            }
+        if (pages.isEmpty()) return
+        val from = activePage
+            .takeIf { it >= 0 }
+            ?: feedView.currentPage().coerceAtLeast(0)
+        val range = if (delta > 0) (from + 1 until pages.size) else (from - 1 downTo 0)
+        val pageWithCue = range.firstOrNull { page -> cues.any { it.pageIndex == page } }
+        if (pageWithCue != null) {
+            val cue = cues.first { it.pageIndex == pageWithCue }
+            activePage = pageWithCue
+            reader.seek(cue.readerIndex)
+            feedView.resumeFollowing()
+            feedView.setActive(pageWithCue, cue.blockIndices)
         } else {
-            for (cue in cues) {
-                if (cue.pageIndex < from && cue.pageIndex > target) target = cue.pageIndex
-            }
+            val target = (from + delta).coerceIn(0, pages.lastIndex)
+            activePage = target
+            feedView.scrollToPage(target)
+            pageBadge.text = "${target + 1} / ${pages.size}"
         }
-        if (target < 0) return
-        val cue = cues.firstOrNull { it.pageIndex == target } ?: return
-        reader.seek(cue.readerIndex)
     }
 
     private fun showFullTextDialog() {
-        val cue = cues.lastOrNull { it.readerIndex == reader.currentIndex() } ?: return
+        val cue = activeCue ?: return
         val message = buildString {
             append(cue.text)
             if (cue.originalText.isNotBlank() && cue.originalText != cue.text) {
                 append("\n\nOriginal: ")
                 append(cue.originalText)
             }
+            append("\n\nPage ${cue.pageIndex + 1} of ${pages.size}")
         }
         AlertDialog.Builder(this)
-            .setTitle("Page ${cue.pageIndex + 1}")
+            .setTitle("Current chunk")
             .setMessage(message)
             .setPositiveButton("Close", null)
+            .show()
+    }
+
+    /** Every detected chunk, so the reader can see the queue and jump to any bubble. */
+    private fun showChunkList() {
+        if (cues.isEmpty()) {
+            Toast.makeText(this, "No OCR chunks yet", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val snapshot = cues.toList()
+        val labels = snapshot.map { cue ->
+            "P${cue.pageIndex + 1} · ${cue.text.take(110)}"
+        }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("Text chunks · ${snapshot.size}")
+            .setItems(labels) { dialog, which ->
+                val cue = snapshot[which]
+                activePage = cue.pageIndex
+                reader.seek(cue.readerIndex)
+                feedView.resumeFollowing()
+                feedView.setActive(cue.pageIndex, cue.blockIndices)
+                dialog.dismiss()
+            }
+            .setNegativeButton("Close", null)
             .show()
     }
 
@@ -750,11 +732,11 @@ class MangaReaderActivity : Activity(), Reader.Listener {
         playButton.contentDescription = if (state.playing) "Pause" else "Play"
         if (queueStarted && reader.hasContent()) {
             statusView.text = when {
-                state.playing -> "Playing"
+                state.playing -> "Playing · ${cues.size} chunks · page ${(activePage + 1).coerceAtLeast(1)}/${pages.size}"
                 state.status.startsWith("Chapter appended") ->
-                    "Ready · ${cues.size} lines"
+                    "Ready · ${cues.size} chunks"
                 state.status.startsWith("Ready ·") && !state.playing ->
-                    "Ready · ${cues.size} lines. Tap Play."
+                    "Ready · ${cues.size} chunks. Tap Play."
                 else -> state.status
             }
         }
@@ -764,7 +746,8 @@ class MangaReaderActivity : Activity(), Reader.Listener {
 
     override fun onHighlight(blockIndex: Int) {
         val cue = cueByReaderIndex[blockIndex] ?: return
-        currentPageBlock = cue.pageBlockIndex
+        activeCue = cue
+        activePage = cue.pageIndex
         currentText.text = cue.text
         if (cue.originalText.isNotBlank() && cue.originalText != cue.text) {
             originalText.text = cue.originalText
@@ -776,11 +759,7 @@ class MangaReaderActivity : Activity(), Reader.Listener {
         textPanel.contentDescription =
             "Current manga text, page ${cue.pageIndex + 1} of ${pages.size}: ${cue.text}"
 
-        if (cue.pageIndex != currentPage) {
-            showPage(cue.pageIndex, cue.pageBlockIndex)
-        } else {
-            pageView.setActiveBlock(cue.pageBlockIndex)
-        }
+        feedView.setActive(cue.pageIndex, cue.blockIndices)
         pageBadge.text = "${cue.pageIndex + 1} / ${pages.size}"
         syncControls()
     }
@@ -801,7 +780,27 @@ class MangaReaderActivity : Activity(), Reader.Listener {
     ) {
     }
 
+    /**
+     * Approximate read-along inside the current bubble. The engine's boundary callbacks are
+     * chunk-based, so the Reader estimates the word range from elapsed time and speed; painting
+     * that range makes the "which words are being spoken" feedback immediate.
+     */
     override fun onWordHighlight(blockIndex: Int, charStart: Int, charEnd: Int) {
+        val cue = cueByReaderIndex[blockIndex] ?: return
+        if (cue !== activeCue) return
+        val text = cue.text
+        if (text.isEmpty()) return
+        val start = charStart.coerceIn(0, text.length)
+        val end = charEnd.coerceIn(start, text.length)
+        if (end <= start) return
+        val span = SpannableString(text)
+        span.setSpan(
+            BackgroundColorSpan(0x6634D399),
+            start,
+            end,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        currentText.setText(span, TextView.BufferType.SPANNABLE)
     }
 
     private fun syncControls() {
@@ -815,9 +814,9 @@ class MangaReaderActivity : Activity(), Reader.Listener {
         prevSentence.alpha = if (canStep) 1f else 0.4f
         nextSentence.alpha = if (canStep) 1f else 0.4f
 
-        val from = currentPage.coerceAtLeast(0)
-        val hasPrevPage = cues.any { it.pageIndex < from }
-        val hasNextPage = cues.any { it.pageIndex > from }
+        val page = activePage.takeIf { it >= 0 } ?: feedView.currentPage()
+        val hasPrevPage = pages.isNotEmpty() && page > 0
+        val hasNextPage = pages.isNotEmpty() && page < pages.size - 1
         prevPage.isEnabled = hasPrevPage
         nextPage.isEnabled = hasNextPage
         prevPage.alpha = if (hasPrevPage) 1f else 0.4f
@@ -854,8 +853,14 @@ class MangaReaderActivity : Activity(), Reader.Listener {
 
     private fun showMoreSettingsDialog() {
         val prefs = NovelSpeakApp.instance.prefs
+        val direction = when (prefs.mangaReadingDirection) {
+            "rtl" -> "Right to left"
+            "ltr" -> "Left to right"
+            else -> "Auto (script)"
+        }
         val items = arrayOf(
             "Translate: ${if (prefs.mangaTranslate) "ON" else "OFF"}",
+            "Reading order: $direction",
             "Highlight boxes: ${if (prefs.highlight) "ON" else "OFF"}",
             "Re-run OCR + Read"
         )
@@ -872,15 +877,27 @@ class MangaReaderActivity : Activity(), Reader.Listener {
                         ).show()
                     }
                     1 -> {
+                        prefs.mangaReadingDirection = when (prefs.mangaReadingDirection) {
+                            "auto" -> "rtl"
+                            "rtl" -> "ltr"
+                            else -> "auto"
+                        }
+                        Toast.makeText(
+                            this,
+                            "Reading order: ${prefs.mangaReadingDirection}. Re-run OCR to apply.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    2 -> {
                         prefs.highlight = !prefs.highlight
-                        pageView.setBoxesVisible(prefs.highlight)
+                        feedView.setBoxesVisible(prefs.highlight)
                         Toast.makeText(
                             this,
                             "Highlight boxes ${if (prefs.highlight) "on" else "off"}",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
-                    2 -> startSession()
+                    3 -> startSession()
                 }
             }
             .setNegativeButton("Close", null)
@@ -905,7 +922,6 @@ class MangaReaderActivity : Activity(), Reader.Listener {
             }
         }
         setPages(uris.map { MangaPageSource(it.toString()) })
-        loadPageBitmap(0)
         statusView.text = "${uris.size} page${if (uris.size == 1) "" else "s"} loaded. Tap OCR + READ."
     }
 
@@ -929,6 +945,8 @@ class MangaReaderActivity : Activity(), Reader.Listener {
         session?.cancel()
         session = null
         reader.removeListener(this)
+        reader.setWordHighlightOverride(null)
+        feedView.release()
         loader.clearMemory()
         super.onDestroy()
     }
@@ -958,6 +976,7 @@ class MangaReaderActivity : Activity(), Reader.Listener {
             } else {
                 @Suppress("DEPRECATION")
                 top = insets.systemWindowInsetTop
+                @Suppress("DEPRECATION")
                 bottom = insets.systemWindowInsetBottom
             }
             v.setPadding(dp(8), top, dp(8), bottom + dp(6))

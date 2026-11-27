@@ -56,12 +56,48 @@ class MangaPageView @JvmOverloads constructor(
     private var bitmap: Bitmap? = null
     private var blocks: List<OcrBlock> = emptyList()
     private var activeBlock = -1
+    private var activeBlocks: List<Int> = emptyList()
     private var showBoxes = true
     private var currentScale = 1f
     private var baseScale = 1f
     private var longStrip = false
+    private var feedMode = false
+    private var placeholder = ""
+    private val placeholderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Palette.MUTED
+        textAlign = Paint.Align.CENTER
+    }
 
     var onBlockTap: ((Int) -> Unit)? = null
+
+    /** True when a decoded bitmap is currently attached and drawable. */
+    val hasBitmap: Boolean
+        get() = bitmap != null && !bitmap!!.isRecycled
+
+    /** True while this page is part of a continuous vertical feed. */
+    fun setFeedMode(enabled: Boolean) {
+        feedMode = enabled
+        if (enabled) longStrip = false
+        if (width > 0 && height > 0) updateBaseMatrix()
+        invalidate()
+    }
+
+    /** Text drawn while the bitmap is still downloading (e.g. "Page 12"). */
+    fun setPlaceholder(text: String) {
+        placeholder = text
+        if (bitmap == null) invalidate()
+    }
+
+    /**
+     * Y position of an OCR box's centre in this view, after the current zoom/pan. Used by the
+     * feed to scroll the bubble being spoken into view.
+     */
+    fun blockCenterY(index: Int): Float? {
+        val box = blocks.getOrNull(index)?.boundingBox ?: return null
+        if (box.isEmpty || bitmap == null) return null
+        matrix.mapRect(mapped, box)
+        return mapped.centerY()
+    }
 
     private val scaleDetector = ScaleGestureDetector(
         context,
@@ -155,6 +191,7 @@ class MangaPageView @JvmOverloads constructor(
         bitmap = page
         blocks = ocrBlocks
         activeBlock = activeIndex
+        activeBlocks = if (activeIndex >= 0) listOf(activeIndex) else emptyList()
         showBoxes = boxesVisible
         if (width > 0 && height > 0) updateBaseMatrix()
         else matrix.reset()
@@ -167,17 +204,25 @@ class MangaPageView @JvmOverloads constructor(
     fun setBlocks(ocrBlocks: List<OcrBlock>, activeIndex: Int = activeBlock) {
         blocks = ocrBlocks
         activeBlock = activeIndex
+        activeBlocks = if (activeIndex >= 0) listOf(activeIndex) else emptyList()
         ensureActiveVisible()
         updateDescription()
         invalidate()
     }
 
     fun setActiveBlock(index: Int, autoPan: Boolean = true) {
-        if (activeBlock == index) {
+        setActiveBlocks(if (index >= 0) listOf(index) else emptyList(), autoPan)
+    }
+
+    /** Highlights every box covered by the current speech chunk. */
+    fun setActiveBlocks(indices: List<Int>, autoPan: Boolean = true) {
+        val next = indices.filter { it in blocks.indices }.distinct()
+        if (activeBlocks == next) {
             if (autoPan) ensureActiveVisible()
             return
         }
-        activeBlock = index
+        activeBlocks = next
+        activeBlock = next.firstOrNull() ?: -1
         if (autoPan) ensureActiveVisible()
         updateDescription()
         invalidate()
@@ -202,7 +247,7 @@ class MangaPageView @JvmOverloads constructor(
         val vh = height - paddingTop - paddingBottom
         if (vw <= 0 || vh <= 0 || b.width <= 0 || b.height <= 0) return
         val contain = minOf(vw.toFloat() / b.width, vh.toFloat() / b.height)
-        longStrip = b.height > b.width * 2.2f
+        longStrip = !feedMode && b.height > b.width * 2.2f
         baseScale = if (longStrip) max(contain, vw.toFloat() / b.width) else contain
         val drawW = b.width * baseScale
         val drawH = b.height * baseScale
@@ -241,6 +286,8 @@ class MangaPageView @JvmOverloads constructor(
     }
 
     private fun ensureActiveVisible() {
+        // The continuous feed owns the scroll; panning inside a page as well would fight it.
+        if (feedMode) return
         val box = blocks.getOrNull(activeBlock)?.boundingBox ?: return
         if (box.isEmpty || bitmap == null) return
         matrix.mapRect(mapped, box)
@@ -273,8 +320,11 @@ class MangaPageView @JvmOverloads constructor(
     }
 
     private fun updateDescription() {
-        val label = if (activeBlock >= 0) {
-            "Page image. Reading: " + (blocks.getOrNull(activeBlock)?.text ?: "")
+        val label = if (activeBlocks.isNotEmpty()) {
+            val spoken = activeBlocks.mapNotNull { blocks.getOrNull(it)?.text }
+                .filter { it.isNotBlank() }
+                .joinToString(" / ")
+            "Page image. Reading: $spoken"
         } else {
             "Manga page image"
         }
@@ -289,7 +339,15 @@ class MangaPageView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val b = bitmap ?: return
+        val b = bitmap
+        if (b == null) {
+            if (placeholder.isNotEmpty()) {
+                placeholderPaint.textSize = dp(13f)
+                val y = (height / 2f) - (placeholderPaint.ascent() + placeholderPaint.descent()) / 2f
+                canvas.drawText(placeholder, width / 2f, y, placeholderPaint)
+            }
+            return
+        }
         canvas.save()
         canvas.concat(matrix)
         canvas.drawBitmap(b, 0f, 0f, imagePaint)
@@ -300,7 +358,7 @@ class MangaPageView @JvmOverloads constructor(
             val box = blocks[i].boundingBox
             if (box.isEmpty) continue
             matrix.mapRect(mapped, box)
-            if (i == activeBlock) {
+            if (activeBlocks.contains(i)) {
                 mapped.inset(-dp(2f), -dp(2f))
                 canvas.drawRect(mapped, activeFill)
                 canvas.drawRect(mapped, activeStroke)
@@ -311,7 +369,12 @@ class MangaPageView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        // At fit scale the page must let the surrounding feed scroll vertically. Only a zoomed
+        // page (or an in-progress pinch) owns the gesture.
+        val ownsGesture = feedMode && currentScale > 1.01f
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            parent?.requestDisallowInterceptTouchEvent(ownsGesture)
+        } else if (scaleDetector.isInProgress) {
             parent?.requestDisallowInterceptTouchEvent(true)
         }
         scaleDetector.onTouchEvent(event)

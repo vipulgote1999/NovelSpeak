@@ -142,6 +142,11 @@ class Prefs(ctx: Context) {
         get() = sp.getBoolean(K_MANGA_TRANSLATE, false)
         set(v) = sp.edit().putBoolean(K_MANGA_TRANSLATE, v).apply()
 
+    /** "auto" follows the OCR script; "ltr"/"rtl" override the bubble reading order. */
+    var mangaReadingDirection: String
+        get() = sp.getString(K_MANGA_DIRECTION, "auto") ?: "auto"
+        set(v) = sp.edit().putString(K_MANGA_DIRECTION, v).apply()
+
     var highlight: Boolean
         get() = sp.getBoolean(K_HIGHLIGHT, true)
         set(v) = sp.edit().putBoolean(K_HIGHLIGHT, v).apply()
@@ -336,6 +341,7 @@ class Prefs(ctx: Context) {
         private const val K_MANGA_OCR_LANG = "manga_ocr_lang"
         private const val K_MANGA_TARGET_LANG = "manga_target_lang"
         private const val K_MANGA_TRANSLATE = "manga_translate"
+        private const val K_MANGA_DIRECTION = "manga_reading_direction"
         private const val K_HIGHLIGHT = "highlight"
         private const val K_READER = "reader_mode"
         private const val K_AUTOSCROLL = "autoscroll"

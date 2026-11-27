@@ -206,8 +206,17 @@ class Reader(private val app: NovelSpeakApp) {
     // sentence is estimated from elapsed time and the current speed. Sentence highlight is
     // authoritative; word highlight is an enhancement and can be turned off in Settings.
     private var wordTick: Runnable? = null
+    private var wordHighlightOverride: Boolean? = null
     private var sentenceStartAt = 0L
     private var sentenceChars = 0
+
+    /**
+     * Lets a specialised reader (the manga feed) turn word-level read-along on without
+     * changing the user's global novel-reader preference. Pass null to restore the preference.
+     */
+    fun setWordHighlightOverride(enabled: Boolean?) {
+        wordHighlightOverride = enabled
+    }
 
     fun addListener(l: Listener) { if (!listeners.contains(l)) listeners.add(l) }
     fun removeListener(l: Listener) { listeners.remove(l) }
@@ -352,7 +361,7 @@ class Reader(private val app: NovelSpeakApp) {
     private fun startWordTracking() {
         stopWordTracking()
         if (!playing) return
-        if (!app.prefs.readerWordHighlight) return
+        if (!(wordHighlightOverride ?: app.prefs.readerWordHighlight)) return
         val block = sentences.getOrNull(cursor) ?: return
         sentenceStartAt = android.os.SystemClock.uptimeMillis()
         sentenceChars = block.text.length
