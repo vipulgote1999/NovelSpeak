@@ -4,6 +4,20 @@ An Android browser that reads any serialized novel aloud — with neural voices 
 screen-off controls, and no account, meter or telemetry.
 
 <p align="center">
+  <a href="https://novelspeak.pages.dev/"><strong>Website</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://novelspeak.pages.dev/features/">Features</a>
+  &nbsp;·&nbsp;
+  <a href="https://novelspeak.pages.dev/voices/">Voices</a>
+  &nbsp;·&nbsp;
+  <a href="https://novelspeak.pages.dev/changelog/">Changelog</a>
+  &nbsp;·&nbsp;
+  <a href="https://novelspeak.pages.dev/privacy/">Privacy</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/vipulgote1999/NovelSpeak/releases/latest">Download</a>
+</p>
+
+<p align="center">
   <a href="docs/media/novelspeak-launch-landscape.mp4" title="Watch the 23-second launch film (with audio)">
     <img src="docs/media/novelspeak-launch-landscape.gif" alt="NovelSpeak launch film — real reader with read-along highlight and player" width="960">
   </a>
@@ -245,10 +259,10 @@ Nothing is bundled in the APK. Downloads come from the official
 
 ## Website
 
-The project site is plain HTML, CSS and one small script in [`site/`](site/) — no build step. It
-publishes to Cloudflare Pages and still to GitHub Pages, which serves the privacy-policy URL
-registered in Play Console. Links are relative so the same files work at a domain root and under
-`/NovelSpeak/`. Edit `site/`, then run `node tools/site-check.mjs` (structure, paths, budgets,
+The project site is live at **https://novelspeak.pages.dev/** (Cloudflare Pages) and
+**https://vipulgote1999.github.io/NovelSpeak/** (GitHub Pages mirror; the privacy-policy URL
+registered in Play Console). It is plain HTML, CSS and one small script in [`site/`](site/) — no
+build step. Links are relative so the same files work at a domain root and under `/NovelSpeak/`. Edit `site/`, then run `node tools/site-check.mjs` (structure, paths, budgets,
 tokens, contrast). Deployment, custom domains and the token-gated workflow are in
 [`docs/cloudflare-pages.md`](docs/cloudflare-pages.md); the design contract and claim ledger are in
 [`docs/website/`](docs/website/).
