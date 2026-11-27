@@ -5,7 +5,7 @@ Kind: `software` (see `brief.md`). Primary action: **Download the APK**.
 
 ## 0. The idea in one paragraph
 
-The page is the front matter of a book, set in the app's own ink. One serif voice for the title
+The page is the front matter of a book, set in a deep green-black ink. One serif voice for the title
 pages, one sans voice for instructions, one mono voice for numbers. Chapter numerals count the
 sections; a running rule closes each one. The product is shown at true size, never tilted, never in
 a generic dashboard mockup: the reader page with its lit sentence, the library, the cast roster,
@@ -23,28 +23,32 @@ value appears outside `:root`.
 
 | Token | Value | Role | Contrast |
 |---|---|---|---|
-| `--ink` | `#0e1318` | page ground (app's own background) | — |
-| `--ink-2` | `#161d24` | surface: plates, cards, header | — |
-| `--ink-3` | `#1d262e` | raised surface inside a card | text 14.1:1 |
-| `--rule` | `#2c3944` | decorative hairline only | 1.6:1, decoration |
-| `--rule-ui` | `#5b6f80` | boundaries of controls and inputs | 3.6:1 on ink, 3.3:1 on surface |
-| `--text` | `#f1f6fa` | body and headings on ink | 17.2:1 |
-| `--text-2` | `#b9c6d2` | secondary prose on ink | 10.7:1 |
-| `--text-3` | `#9aa9b8` | labels, captions, meta on ink | 7.8:1 |
-| `--accent` | `#6fe7be` | the one accent: links, marks, the lit word | 12.3:1 on ink |
-| `--accent-ink` | `#06231a` | text on an accent fill | 11.0:1 |
-| `--paper` | `#f2ece2` | the one light section | — |
-| `--paper-2` | `#e8dfd0` | paper surface inset | — |
-| `--paper-accent` | `#0f5138` | the accent on paper (lit word, highlight, focus) | 7.9:1 |
-| `--paper-rule` | `#cfc3ae` | hairline on paper | 1.4:1, decoration |
-| `--paper-text` | `#191c1f` | body on paper | 14.6:1 |
-| `--paper-text-2` | `#4b5157` | secondary on paper | 6.8:1 |
-| `--lamp` | `radial-gradient(60% 50% at 72% 28%, rgba(111,231,190,.10), transparent 70%)` | the single glow, hero only | non-text |
+| `--ink` | `#101915` | page ground: a deeper green-black than the app | — |
+| `--ink-2` | `#17221c` | surface: plates, cards, header | — |
+| `--ink-3` | `#1f2c25` | raised surface inside a card | text 12.4:1 |
+| `--rule` | `#2d3b32` | decorative hairline only | 1.5:1, decoration |
+| `--rule-ui` | `#617b6c` | boundaries of controls and inputs | 3.9:1 on ink, 3.6:1 on surface |
+| `--text` | `#f2ece1` | body and headings on ink (bone) | 15.2:1 |
+| `--text-2` | `#c4cdc0` | secondary prose on ink | 11.0:1 |
+| `--text-3` | `#9fb0a2` | labels, captions, meta on ink | 7.9:1 |
+| `--accent` | `#e2b96d` | the one accent: brass for links, marks and actions | 9.7:1 on ink |
+| `--accent-hover` | `#d4a95c` | the brass press/hover fill | 7.9:1 with `--accent-ink` |
+| `--accent-ink` | `#241a08` | text on an accent fill | 9.3:1 |
+| `--paper` | `#f1e8d6` | the one light section (parchment) | — |
+| `--paper-2` | `#e6dbc6` | paper surface inset | — |
+| `--paper-sheet` | `#fbf5e9` | the sheet inside the paper section | text 15.1:1 |
+| `--paper-accent` | `#2e5a43` | the accent on paper (lit word, highlight, focus) | 6.5:1 on paper, 7.3:1 on sheet |
+| `--paper-highlight` | `rgba(46, 90, 67, 0.14)` | the marker behind read-along words | non-text |
+| `--paper-rule` | `#cfc1a8` | hairline on paper | 1.5:1, decoration |
+| `--paper-text` | `#1b211b` | body on paper | 13.5:1 |
+| `--paper-text-2` | `#4e574e` | secondary on paper | 6.2:1 |
+| `--lamp` | `radial-gradient(60% 50% at 72% 28%, rgba(226,185,109,.10), transparent 70%)` | the single brass glow, hero only | non-text |
 
-No amber, no violet, no second accent. The app's own amber warning colour is deliberately not
-carried over: caution is expressed with a label and a rule, not a hue. `--paper-accent` is the same
-hue family rendered for the one light surface, not a second brand colour; it exists because mint on
-cream is 1.5:1 and would be unreadable (round 1: MO-3).
+One accent. The brass is the site's frame; the app's mint stays inside the screenshots as the
+product's own signal and is not promoted to a site colour. `--paper-accent` is a deep green rendered
+for parchment, not a second brand colour; it exists because brass on parchment is 1.8:1 and would be
+unreadable. No violet, no second accent, and no colour used as a warning: caution is a label and a
+rule.
 
 ### Type
 
