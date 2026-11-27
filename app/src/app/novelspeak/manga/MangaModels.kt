@@ -24,6 +24,18 @@ data class MangaPageSource(
 )
 
 /**
+ * One speech unit carved out of an OCR bubble. A long bubble can produce several chunks, all of
+ * which keep the bubble's box so the highlight stays on the same part of the page.
+ */
+data class MangaChunk(
+    val blockIndex: Int,
+    val text: String,
+    val originalText: String,
+    /** Every bubble this chunk covers; adjacent short bubbles are merged for TTS. */
+    val blockIndices: List<Int> = listOf(blockIndex)
+)
+
+/**
  * A speakable chunk mapped back to its page and OCR box. [readerIndex] is the
  * [app.novelspeak.Reader.Block.blockIndex] assigned when the chunk is queued; the reader view
  * uses it to switch pages and move the highlight whenever TTS advances.
@@ -32,6 +44,8 @@ data class MangaCue(
     val readerIndex: Int,
     val pageIndex: Int,
     val pageBlockIndex: Int,
+    /** All boxes highlighted for this cue (merged short bubbles can cover more than one). */
+    val blockIndices: List<Int>,
     val text: String,
     val originalText: String,
     val boundingBox: RectF
