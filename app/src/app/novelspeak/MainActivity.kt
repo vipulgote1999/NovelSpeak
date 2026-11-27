@@ -81,6 +81,9 @@ import app.novelspeak.library.LibraryStore
 import app.novelspeak.library.PrefsLibraryStorage
 import app.novelspeak.library.ReadingStats
 import kotlin.math.min
+import app.novelspeak.manga.MangaDexResolver
+import app.novelspeak.manga.MangaHtmlResolver
+import app.novelspeak.manga.MangaProvider
 /**
  * WebView browser + reader UI.
  *
@@ -259,6 +262,7 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     private var mangaReadingActive = false
     // Guards against a second tap while the page is still being scrolled and collected.
     private var mangaExtractionRunning = false
+    private var mangaSourceUrl: String? = null
 
     private val reader: Reader get() = NovelSpeakApp.instance.reader
 
@@ -1662,6 +1666,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         s.databaseEnabled = true
         s.loadsImagesAutomatically = true
         s.cacheMode = WebSettings.LOAD_DEFAULT
+        // A stock WebView UA contains "; wv" and "Version/4.0"; several manga providers sniff
+        // that and serve an "open in the app" error instead of the reader. Present the same
+        // mobile Chrome identity the desktop regression uses.
+        s.userAgentString = s.userAgentString
+            .replace("; wv", "")
+            .replace(Regex("Version/\\d+(\\.\\d+)*\\s+"), "")
         // The app only shows HTTPS pages (network security config blocks cleartext); never
         // silently upgrade or render mixed content inside an untrusted page.
         s.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
@@ -1958,6 +1968,12 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         urlBar.clearFocus()
         setEditingUi(false)
         dismissSuggestions()
+        val mangaKind = MangaProvider.detect(target)
+        if (mangaKind != MangaProvider.Kind.GENERIC) {
+            hideHome()
+            resolveMangaProvider(target, mangaKind, fromBar = true)
+            return
+        }
         try {
             web.loadUrl(target)
         } catch (t: Throwable) {
@@ -2508,8 +2524,92 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
         extractNow(append = false)
     }
 
-    /** Read a manga chapter: collect consecutive page images in the browser, then open the reader. */
+    /** Read a manga chapter: resolve via a provider API, or scan the page for consecutive images. */
     private fun readMangaChapter() {
+        if (mangaExtractionRunning) return
+        val pageUrl = web.url ?: lastDisplayedUrl
+        val kind = MangaProvider.detect(pageUrl)
+        DiagLog.line(
+            this,
+            "manga provider=$kind chapter=${MangaProvider.mangaDexChapterId(pageUrl) ?: "none"} " +
+                "url=${pageUrl.take(140)}"
+        )
+        if (kind != MangaProvider.Kind.GENERIC) {
+            resolveMangaProvider(pageUrl, kind, fromBar = false)
+            return
+        }
+        startGenericMangaExtraction(pageUrl)
+    }
+
+    /** Resolves a known provider without rendering its (sometimes hostile) reader page. */
+    private fun resolveMangaProvider(
+        pageUrl: String,
+        kind: MangaProvider.Kind,
+        fromBar: Boolean
+    ) {
+        if (mangaExtractionRunning) return
+        mangaExtractionRunning = true
+        val progress = when (kind) {
+            MangaProvider.Kind.MANGADEX -> "Resolving MangaDex chapter…"
+            MangaProvider.Kind.WEBTOONS -> "Reading Webtoons chapter…"
+            MangaProvider.Kind.TAPAS -> "Reading Tapas episode…"
+            else -> "Resolving manga chapter…"
+        }
+        statusView.text = progress
+        if (fromBar) Toast.makeText(this, progress, Toast.LENGTH_SHORT).show()
+        val cookie = try {
+            android.webkit.CookieManager.getInstance().getCookie(pageUrl)
+        } catch (t: Throwable) {
+            null
+        }
+        Thread {
+            val resolved: Pair<String, List<String>>? = try {
+                when (kind) {
+                    MangaProvider.Kind.MANGADEX -> MangaDexResolver
+                        .resolve(MangaProvider.mangaDexChapterId(pageUrl)!!)
+                        ?.let { it.title to it.urls }
+                    MangaProvider.Kind.WEBTOONS, MangaProvider.Kind.TAPAS ->
+                        MangaHtmlResolver.resolve(kind, pageUrl, cookie)
+                            ?.let { it.title to it.urls }
+                    else -> null
+                }
+            } catch (t: Throwable) {
+                DiagLog.exception(this, "manga provider $kind failed", t)
+                null
+            }
+            runOnUiThread {
+                if (isFinishing || isDestroyed) {
+                    mangaExtractionRunning = false
+                    return@runOnUiThread
+                }
+                if (resolved != null && resolved.second.isNotEmpty()) {
+                    mangaExtractionRunning = false
+                    DiagLog.line(
+                        this,
+                        "manga provider=${kind.name.lowercase()} pages=${resolved.second.size} " +
+                            "title=\"${resolved.first.take(80)}\""
+                    )
+                    openMangaReader(resolved.second, resolved.first, pageUrl)
+                } else {
+                    mangaExtractionRunning = false
+                    if (fromBar) {
+                        Toast.makeText(
+                            this,
+                            "Could not resolve this chapter — opening the page",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        try { web.loadUrl(pageUrl) } catch (ignored: Throwable) {}
+                    } else {
+                        statusView.text = "Provider resolver unavailable; scanning page…"
+                        startGenericMangaExtraction(pageUrl)
+                    }
+                }
+            }
+        }.start()
+    }
+
+    /** Generic DOM/payload scan used by every provider without a dedicated API adapter. */
+    private fun startGenericMangaExtraction(pageUrl: String) {
         if (mangaExtractionRunning) return
         mangaExtractionRunning = true
         statusView.text = "Scanning manga pages…"
@@ -2551,25 +2651,8 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
                             "manga extract pages=${urls.size} elapsed=${elapsed}ms " +
                                 "title=\"${title.take(80)}\" first=${urls.first().take(120)}"
                         )
-                        // Keep OCR and the page images together in the dedicated reader: it
-                        // stacks the chapter, overlays each OCR box and follows the TTS cursor.
-                        statusView.text = "Found ${urls.size} manga pages. Opening reader…"
-                        mangaReadingActive = true
-                        val intent = Intent(
-                            this@MainActivity, MangaReaderActivity::class.java
-                        ).apply {
-                            putStringArrayListExtra(
-                                MangaReaderActivity.EXTRA_IMAGE_URLS,
-                                ArrayList(urls)
-                            )
-                            putExtra(MangaReaderActivity.EXTRA_TITLE, title)
-                            putExtra(
-                                MangaReaderActivity.EXTRA_REFERER,
-                                web.url ?: lastDisplayedUrl
-                            )
-                        }
-                        startActivity(intent)
-                    } else if (elapsed > 30000) {
+                        openMangaReader(urls, title, pageUrl)
+                    } else if (elapsed > 40000) {
                         mangaExtractionRunning = false
                         statusView.text = "No consecutive manga pages found on this page"
                         DiagLog.line(this@MainActivity, "manga extract empty elapsed=${elapsed}ms")
@@ -2580,6 +2663,35 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             }
         }
         handler.postDelayed(poll, 700)
+    }
+
+    private fun openMangaReader(urls: List<String>, title: String, referer: String?) {
+        if (isFinishing || isDestroyed || urls.isEmpty()) return
+        // Keep OCR and the page images together in the dedicated reader: it stacks the
+        // chapter, overlays each OCR box and follows the TTS cursor.
+        statusView.text = "Found ${urls.size} manga pages. Opening reader…"
+        mangaReadingActive = true
+        // The reader owns the chapter now. Release the provider page before it can keep
+        // running heavy scripts behind the reader (Tapas' mobile page has crashed the
+        // emulator renderer while OCR was running). The URL is restored on return.
+        if (!referer.isNullOrBlank()) {
+            mangaSourceUrl = referer
+            try {
+                web.stopLoading()
+                web.loadUrl("about:blank")
+            } catch (t: Throwable) {
+                DiagLog.exception(this, "manga webview release failed", t)
+            }
+        }
+        val intent = Intent(this, MangaReaderActivity::class.java).apply {
+            putStringArrayListExtra(
+                MangaReaderActivity.EXTRA_IMAGE_URLS,
+                ArrayList(urls)
+            )
+            putExtra(MangaReaderActivity.EXTRA_TITLE, title)
+            putExtra(MangaReaderActivity.EXTRA_REFERER, referer)
+        }
+        startActivity(intent)
     }
 
     /**
@@ -2617,6 +2729,10 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
             Regex("\\s*[-|–—]\\s*(read|free|online|manga online).*$", RegexOption.IGNORE_CASE),
             ""
         )
+        // "Chapter 1 | One Piece | Weeb Central" -> "One Piece · Chapter 1".
+        Regex("^(Chapter\\s+[^|]+?)\\s*\\|\\s*([^|]+?)\\s*(?:\\|.*)?$")
+            .find(title)
+            ?.let { title = "${it.groupValues[2].trim()} · ${it.groupValues[1].trim()}" }
         return title.ifBlank { "Manga" }.take(80)
     }
 
@@ -4443,6 +4559,11 @@ class MainActivity : Activity(), Reader.Listener, AdBlocker.Listener {
     override fun onResume() {
         super.onResume()
         try { web.onResume() } catch (t: Throwable) { }
+        val returnUrl = mangaSourceUrl
+        if (returnUrl != null && web.url == "about:blank") {
+            mangaSourceUrl = null
+            web.loadUrl(returnUrl)
+        }
         updateReaderButton()
         val prefs = NovelSpeakApp.instance.prefs
         val host = UrlTools.host(web.url ?: "") ?: ""
