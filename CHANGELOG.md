@@ -17,12 +17,32 @@ All notable changes to NovelSpeak are documented here. The format follows
 - Manga OCR now reuses its ML Kit recognizer per language, merges each speech bubble's lines
   into one box, caches decoded pages with a bounded memory/disk cache, and streams OCR results
   page by page into the playback queue so reading can start after the first page.
+- **Continuous manga feed.** Pages are stacked in one vertical scroll surface and only the
+  pages near the viewport hold bitmaps. TTS scrolls the spoken bubble into view inside the page
+  and keeps the badge on the page actually being read; a manual scroll pauses auto-follow for a
+  few seconds instead of fighting the finger.
+- **Chapter extraction that survives real sites.** The new `manga-extract.js` walks lazy-loading
+  pages, reads Next.js/Nuxt serialized page lists, resolves `srcset`/`data-src`/CSS/preload
+  candidates, rejects logos/avatars, and keeps the longest numbered run, so a 57-page One Piece
+  chapter is recovered completely even though only two `<img>` tags exist at load time.
+- **Validated speech chunks.** Bubbles are sorted into reading order (including right-to-left
+  manga), OCR line-break hyphens are repaired, empty/SFX-only/page-number fragments are dropped,
+  and speech is split at sentence/clause boundaries to a configurable cap (180 characters by
+  default). Adjacent short bubbles in the same column are joined for natural prosody without
+  merging across unrelated panels.
+- **Read-along inside the bubble.** The text panel highlights the estimated word while it is
+  spoken, and **Chunks** lists every detected chunk with its page so the reader can jump to any
+  point. A manga session logs page count, OCR time, chunk count, character count and max chunk
+  size for on-device validation.
 
 ### Changed
 
 - Manga pages are downloaded with the site referer and cookies, so hotlink-protected images
-  load, and the page viewer supports pinch zoom, double-tap zoom, panning, and fit-page.
-- Added Maestro coverage for browser-to-page sync (`33`) and TTS-driven page turns (`34`).
+  load. The page view supports pinch/double-tap zoom and panning, while the feed owns vertical
+  scrolling at fit width.
+- Added Maestro coverage for browser-to-feed sync (`33`) and TTS-driven scrolling (`34`), plus
+  a headless-Chromium fixture for consecutive-page extraction and a host harness for reading
+  order and chunk validation.
 
 ### Reader and Home UI
 
@@ -60,9 +80,13 @@ All notable changes to NovelSpeak are documented here. The format follows
 
 ### Verification
 
-- Host suite: **28/28 harnesses**, browser regressions green.
-- Device suite: **28/28 Maestro flows** (16m 59s), plus `text-scale.sh` at 2.0× and
-  `narrow.sh` at 320 dp at 1×/2×.
+- Host suite: **29/29 harnesses**, browser regressions green (including the new
+  consecutive-page extractor fixture).
+- Manga device suite: flows **31–34, 4/4** on emulator-5554, including TTS-driven scrolling.
+  The full 28-flow suite remains the release gate.
+- Real-chapter check: One Piece chapter 1 from onpiecemanga.online, 57/57 pages extracted,
+  56 pages with text, 708 chunks, 15,940 characters, max chunk 177/180, ML Kit OCR and
+  system TTS both on-device (emulator x86_64).
 
 ## [1.4.0] - 2026-11-22
 

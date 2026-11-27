@@ -175,6 +175,20 @@ distinction, 96.2% word accuracy after spelling normalisation, Supertonic RTF **
 closer to normal audiobook pacing; it remains the quality option pending a listening test.
 Ultra-short lines and emotional range are the open quality work.
 
+### Manga (image chapters)
+
+Open a manga chapter in the browser and tap **Manga**. The extractor walks the page, reads the
+site's serialized page list when it has one, rejects logos/avatars, and keeps the longest run of
+consecutive page images. The dedicated reader stacks those pages in one continuous scroll, runs
+ML Kit OCR on-device page by page, and streams the text into the existing TTS queue while later
+pages are still being processed.
+
+The bubble being spoken is outlined on the page (all boxes when short bubbles were joined), the
+feed scrolls it into view, and the text panel shows the current chunk with word-level read-along.
+**Chunks** lists every detected chunk with its page; tap one to jump. OCR language and
+left-to-right/right-to-left reading order live in the manga settings. Everything after the page
+download runs on the device: OCR, reading-order sorting, chunk validation, and speech.
+
 ### Ad blocking
 
 Ads are blocked at three levels, because a WebView cannot be a mini-uBO:
@@ -350,6 +364,8 @@ TtsEngine           interface
  ├ SystemTtsEngine  android.speech.tts, QUEUE_ADD pipelining, voice/speed
  └ SherpaEngine     sherpa-onnx OfflineTts (Kokoro/Pocket), streaming callback, boundaries
 PcmPlayer           low-latency mono 16-bit AudioTrack, drain tracking
+MangaFeedView       continuous page stack, lazy bitmap window, follow-the-speech scroll
+MangaSession        per-page load → ML Kit OCR → reading order → chunk validation
 ModelManager        download + SHA-256 + tar.bz2 extract of model bundles
 WavReader           24 kHz mono conversion + NekoSpeak cleanup chain (for Pocket reference clips)
 PlaybackService     foreground service + MediaSession + wake lock (screen-off playback)

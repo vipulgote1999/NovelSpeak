@@ -37,6 +37,25 @@
 - `tools/maestro/flows/31_manga_launch.yaml`, `32_manga_ocr_read.yaml`,
   `33_manga_page_sync.yaml`, `34_manga_tts_page_turn.yaml`
 
+## 2026-11-27 upgrade
+
+- **Continuous feed.** `MangaFeedView` stacks every page in one scroll surface, keeps only a
+  window of bitmaps decoded, and scrolls the spoken bubble into view. The old single-page view
+  remains the page renderer inside the feed.
+- **Real-site extraction.** `app/assets/manga-extract.js` recovers a chapter from rendered DOM,
+  lazy attributes, `srcset`, CSS backgrounds, preload links and the framework's serialized page
+  list, then keeps the longest numbered run and rejects chrome/avatars. Regression fixture:
+  `tools/manga-extract-test/`.
+- **Reading order and chunk validation.** `MangaTextLayout` sorts bubbles into rows/columns,
+  honours right-to-left pages, repairs line-break hyphens, drops non-speech fragments, and splits
+  long text at the configured cap. `MangaSession` joins only vertically adjacent short bubbles
+  in the same column, so unrelated panels are not read as one sentence.
+- **Read-along.** The manga reader turns on word-level highlighting through a Reader override,
+  shows the current chunk, and exposes the full chunk list.
+- **Validation.** Host harness `tools/manga-text-test/` (reading order and chunk rules), browser
+  fixture `tools/manga-extract-test/`, and Maestro flows `33`/`34` for feed sync and TTS scrolling.
+  Real One Piece chapter 1: 57/57 pages, 56 with text, 708 chunks, max 177/180 chars.
+
 ## Known limits
 
 - ML Kit OCR now ships its native pipeline library (`libmlkit_google_ocr_pipeline.so`) and Latin model assets inside the APK (see build.sh "2b/7" and the merged asset dir), so OCR works on the emulator. Other scripts (Japanese/Chinese/Korean/Devanagari) still rely on Play Services to fetch their models on first use.
@@ -44,6 +63,7 @@
   folder import in v1.
 - The browser flow extracts page images from the rendered page; image-only sites whose pages are
   canvas-rendered or behind a cross-origin `blob:` still need a dedicated source.
-- OCR reading order follows ML Kit's text-block order. Right-to-left panel sorting is not applied;
-  the bubble boxes still let the user jump to any line.
+- Reading order is block-based, not panel-segmented: a row of unrelated panels can still order
+  bubbles left-to-right by row. The same-column merge guard prevents the worst cross-panel joins,
+  and tapping a box always corrects playback.
 - Translation models download on first use; until then text is read in the source language.
